@@ -176,6 +176,39 @@ class ClientSpaceTest extends TestCase
             ->assertJsonPath('data.invoices.overdue', 50000);
     }
 
+    public function test_the_company_chooses_its_payment_methods(): void
+    {
+        Sanctum::actingAs($this->admin);
+        $url = "/api/v1/companies/{$this->company->id}";
+
+        // IBAN obligatoire pour un compte bancaire, numéro pour le Mobile Money
+        $this->patchJson($url, ['invoice_payment_methods' => [['method' => 'bank_transfer', 'enabled' => true, 'bank' => 'SGCI']]])
+            ->assertUnprocessable()->assertJsonValidationErrors(['invoice_payment_methods.0.iban' => 'Indiquez l\'IBAN du compte bancaire.']);
+
+        $this->patchJson($url, ['invoice_payment_methods' => [
+            ['method' => 'bank_transfer', 'enabled' => true, 'bank' => 'SGCI', 'holder' => 'Livraison Express', 'iban' => 'ci93 ci0000101234567890123456', 'bic' => 'sgci cici', 'phone' => 'ignoré'],
+            ['method' => 'mobile_money', 'enabled' => true, 'operator' => 'Wave', 'phone' => '07 00 00 00 00'],
+            ['method' => 'mobile_money', 'enabled' => false, 'operator' => 'Orange Money', 'phone' => '07 11 11 11 11'],
+            ['method' => 'cheque', 'enabled' => true, 'payee' => 'Livraison Express CI'],
+        ]])->assertOk()->assertJsonCount(4, 'data.invoice_payment_methods');
+
+        $saved = $this->company->fresh()->invoice_payment_methods;
+        $this->assertSame('CI93 CI00 0010 1234 5678 9012 3456', $saved[0]['iban']);
+        $this->assertSame('SGCICICI', $saved[0]['bic']);
+        $this->assertArrayNotHasKey('phone', $saved[0]);
+
+        // Sur la facture : seulement les moyens proposés, dans l'ordre choisi
+        $this->plan();
+        $this->send()->assertCreated();
+        $this->travelTo('2026-12-01 08:00:00');
+        $this->artisan('billing:invoice')->assertSuccessful();
+        Sanctum::actingAs($this->admin);
+        $methods = $this->getJson('/api/v1/client-invoices/'.ClientInvoice::firstOrFail()->id)->assertOk()->json('data.payment_methods');
+
+        $this->assertSame(['Virement bancaire', 'Wave', 'Chèque'], array_column($methods, 'title'));
+        $this->assertSame(['label' => 'IBAN', 'value' => 'CI93 CI00 0010 1234 5678 9012 3456', 'copy' => true], $methods[0]['lines'][2]);
+    }
+
     public function test_notification_settings_follow_the_activities(): void
     {
         Sanctum::actingAs($this->merchantUser);

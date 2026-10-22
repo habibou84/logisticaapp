@@ -55,6 +55,7 @@ class CompanyResource extends JsonResource
             'cutoff_by_day' => (object) ($this->cutoff_by_day ?? []),
             'tagline' => $this->tagline,
             'invoice_payment_info' => $this->invoice_payment_info,
+            'invoice_payment_methods' => $this->invoice_payment_methods ?? [],
             'merchant_signup' => $this->merchant_signup,
             'weekly_report' => $this->weekly_report,
             'logo_url' => Branding::logoUrl($this->resource),

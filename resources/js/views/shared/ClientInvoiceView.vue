@@ -67,11 +67,24 @@
         <button class="btn-secondary" :disabled="busy">+ Ajouter</button>
       </form>
 
-      <!-- Comment payer : moyens de paiement de l'entreprise (Réglages › Entreprise) -->
-      <div v-if="invoice.payment_info && invoice.status !== 'void'" class="rounded border border-slate-200 bg-slate-50 p-3 text-sm">
+      <!-- Comment payer : moyens choisis par l'entreprise (Réglages › Entreprise) -->
+      <div v-if="(invoice.payment_methods?.length || invoice.payment_info) && invoice.status !== 'void' && invoice.status !== 'paid'" class="rounded border border-slate-200 bg-slate-50 p-3 text-sm space-y-2">
         <p class="font-semibold">Comment payer</p>
-        <p class="whitespace-pre-line text-gray-700">{{ invoice.payment_info }}</p>
-        <p class="text-xs text-gray-500 mt-1">Indiquez le numéro {{ invoice.number }} en référence du paiement.</p>
+        <div v-if="invoice.payment_methods?.length" class="grid sm:grid-cols-2 gap-2">
+          <div v-for="(m, i) in invoice.payment_methods" :key="i" class="rounded bg-white border border-slate-200 p-2">
+            <p class="font-medium">{{ ICONS[m.method] }} {{ m.title }}</p>
+            <!-- Libellé au-dessus de la valeur : un IBAN tient sur une ligne, sans être coupé -->
+            <div v-for="l in m.lines" :key="l.label" class="mt-1">
+              <p class="text-xs text-gray-500">{{ l.label }}</p>
+              <p class="flex items-baseline justify-between gap-2">
+                <span :class="l.copy ? 'font-mono tracking-tight' : ''">{{ l.value }}</span>
+                <button v-if="l.copy" type="button" class="no-print shrink-0 text-xs text-blue-600" @click="copy(l.value)">Copier</button>
+              </p>
+            </div>
+          </div>
+        </div>
+        <p v-if="invoice.payment_info" class="whitespace-pre-line text-gray-700">{{ invoice.payment_info }}</p>
+        <p class="text-xs text-gray-500">Indiquez le numéro {{ invoice.number }} en référence du paiement.</p>
       </div>
 
       <div v-if="invoice.payments.length" class="text-sm space-y-1">
@@ -188,6 +201,18 @@ function voidInvoice() {
 async function addLine() {
   await run(() => http.post(`/client-invoices/${invoice.value.id}/lines`, { ...line }), 'Ligne ajoutée.')
   Object.assign(line, { label: '', quantity: 1, unit_price: 0 })
+}
+
+const ICONS = { bank_transfer: '🏦', mobile_money: '📱', cheque: '🧾', cash: '💵', other: '💳' }
+
+// IBAN ou numéro copié pour le coller dans l'application de la banque ou du Mobile Money
+async function copy(value) {
+  try {
+    await navigator.clipboard.writeText(value.replace(/\s+/g, ''))
+    toasts.success('Copié.')
+  } catch {
+    toasts.error('Copie impossible : sélectionnez le texte.')
+  }
 }
 
 const removeLine = (l) => run(() => http.delete(`/client-invoices/${invoice.value.id}/lines/${l.id}`), 'Ligne retirée.')

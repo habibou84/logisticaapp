@@ -3,6 +3,7 @@
 namespace App\Http\Requests\V1;
 
 use App\Rules\PhoneNumber;
+use App\Support\InvoicePayments;
 use App\Support\PhoneNumber as Phone;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -43,6 +44,8 @@ class UpdateCompanyRequest extends FormRequest
             'depot_closes_at' => ['sometimes', 'nullable', 'date_format:H:i'],
             'tagline' => ['sometimes', 'nullable', 'string', 'max:160'],
             'invoice_payment_info' => ['sometimes', 'nullable', 'string', 'max:1000'],
+            // Moyens de paiement des factures : comptes bancaires, Mobile Money, chèque… au choix de l'entreprise
+            ...InvoicePayments::rules(),
             'merchant_signup' => ['sometimes', 'boolean'],
             'weekly_report' => ['sometimes', 'boolean'],
             'pickup_assign_alert_minutes' => ['sometimes', 'integer', 'min:0', 'max:1440'],
@@ -62,6 +65,18 @@ class UpdateCompanyRequest extends FormRequest
             'courier_available_alert' => ['sometimes', 'boolean'],
             'directory_listed' => ['sometimes', 'boolean'],
             'directory_pitch' => ['sometimes', 'nullable', 'string', 'max:240'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'invoice_payment_methods.*.bank.required_if' => 'Indiquez la banque du compte.',
+            'invoice_payment_methods.*.iban.required_if' => 'Indiquez l\'IBAN du compte bancaire.',
+            'invoice_payment_methods.*.operator.required_if' => 'Indiquez l\'opérateur Mobile Money (Orange Money, Wave…).',
+            'invoice_payment_methods.*.phone.required_if' => 'Indiquez le numéro Mobile Money.',
+            'invoice_payment_methods.*.payee.required_if' => 'Indiquez à l\'ordre de qui les chèques sont faits.',
+            'invoice_payment_methods.*.label.required_if' => 'Donnez un nom à ce moyen de paiement.',
         ];
     }
 
@@ -85,6 +100,12 @@ class UpdateCompanyRequest extends FormRequest
             'courier_available_alert' => 'alerte livreur libre',
             'directory_listed' => 'annuaire',
             'directory_pitch' => 'présentation dans l\'annuaire',
+            'invoice_payment_methods.*.bank' => 'banque',
+            'invoice_payment_methods.*.iban' => 'IBAN',
+            'invoice_payment_methods.*.operator' => 'opérateur Mobile Money',
+            'invoice_payment_methods.*.phone' => 'numéro Mobile Money',
+            'invoice_payment_methods.*.payee' => 'ordre des chèques',
+            'invoice_payment_methods.*.label' => 'nom du moyen de paiement',
         ];
     }
 }

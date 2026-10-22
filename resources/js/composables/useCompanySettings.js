@@ -5,7 +5,7 @@ import { useAuthStore } from '../stores/auth'
 import { useToastStore } from '../stores/toasts'
 
 // Champs qu'on peut vider (sinon un champ vide est ignoré) ; les heures vides deviennent null
-const CLEARABLE = ['tagline', 'daily_cutoff_time', 'depot_closes_at', 'auto_delivery_max_cod']
+const CLEARABLE = ['tagline', 'daily_cutoff_time', 'depot_closes_at', 'auto_delivery_max_cod', 'invoice_payment_info']
 const TIMES = ['daily_cutoff_time', 'depot_closes_at']
 
 /**
@@ -39,7 +39,10 @@ export function useCompanySettings(fields) {
       const payload = Object.fromEntries(Object.entries(form.value)
         .filter(([k, v]) => CLEARABLE.includes(k) || (v !== null && v !== ''))
         .map(([k, v]) => [k, TIMES.includes(k) || v === '' ? v || null : v]))
-      await http.patch(`/companies/${auth.user.company_id}`, payload)
+      const { data } = await http.patch(`/companies/${auth.user.company_id}`, payload)
+      // Valeurs telles qu'enregistrées (ex. IBAN mis en forme par le serveur)
+      company.value = data.data
+      form.value = Object.fromEntries(fields.map((f) => [f, data.data[f]]))
       original.value = JSON.parse(JSON.stringify(form.value))
       await auth.fetchUser()
       toasts.success('Réglages enregistrés.')

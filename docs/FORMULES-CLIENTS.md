@@ -131,8 +131,23 @@ L'application s'adapte aux activités du client :
 - **Accueil** : facture à payer (rouge si en retard), une carte par formule (envois utilisés sur le forfait, envois en plus,
   facture estimée à ce jour) et, en MAD, **ses livreurs attitrés** (nom, téléphone, état : disponible, en course,
   indisponible, absent ; jamais leur position).
-- **Onglet Factures** à la place d'« Argent » pour un client sans e-commerce ; chaque facture montre comment la payer
-  (**Réglages › Entreprise › Moyens de paiement des factures clients**, imprimés aussi sur la facture).
+- **Onglet Factures** à la place d'« Argent » pour un client sans e-commerce ; chaque facture montre comment la payer,
+  avec un bouton « Copier » pour l'IBAN et les numéros (imprimé aussi sur la facture).
+
+### Moyens de paiement des factures
+
+**Réglages › Entreprise › Paiement des factures clients** : l'entreprise ajoute librement ses moyens de paiement, autant
+qu'elle veut, et coche ceux **proposés aux clients** (l'ordre de la liste est celui de la facture) :
+
+| Moyen | Informations |
+|---|---|
+| Compte bancaire | Banque, titulaire, IBAN (mis en forme par groupes de quatre), BIC |
+| Mobile Money | Opérateur (Orange Money, MTN MoMo, Moov Money, Wave ou autre), numéro, au nom de |
+| Chèque | À l'ordre de |
+| Espèces | Où et quand |
+| Autre | Nom (ex. carte bancaire) et précisions |
+
+Une note libre peut compléter (ex. « envoyez la preuve de paiement sur WhatsApp »).
 - **Statistiques** : envois par type, destination (forfait, à l'unité, intérieur) et délai.
 - **Import Excel** : colonnes facultatives « Activité », « Type d'envoi », « Poids », « Délai ».
 

@@ -12,6 +12,7 @@ use App\Models\Merchant;
 use App\Models\Order;
 use App\Services\Finance\ClientInvoicing;
 use App\Services\Finance\ClientSpace;
+use App\Support\InvoicePayments;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -181,6 +182,7 @@ class ClientInvoiceController extends Controller
             ...$this->summary($invoice),
             'notes' => $invoice->notes,
             // Moyens de paiement de l'entreprise (Réglages › Entreprise), imprimés sur la facture
+            'payment_methods' => InvoicePayments::forClients($invoice->company),
             'payment_info' => $invoice->company?->invoice_payment_info,
             'client' => [
                 'business_name' => $merchant->business_name,

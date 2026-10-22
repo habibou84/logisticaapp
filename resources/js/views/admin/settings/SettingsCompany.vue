@@ -10,13 +10,25 @@
           <label class="label" for="tagline">Accroche de la page d'accueil des clients</label>
           <input id="tagline" v-model="form.tagline" class="input" maxlength="160" placeholder="Vos colis livrés vite, vos clients satisfaits.">
         </div>
-        <div class="sm:col-span-2">
-          <label class="label" for="payment-info">Moyens de paiement des factures clients</label>
-          <textarea id="payment-info" v-model="form.invoice_payment_info" rows="3" class="input" maxlength="1000" placeholder="Virement : IBAN CI00 0000 0000 0000&#10;Wave / Orange Money : 07 00 00 00 00&#10;Chèque à l'ordre de …" />
-          <p class="text-xs text-gray-500 mt-1">Imprimés sur les factures du mois (distribution, MAD) et affichés au client dans son application.</p>
-        </div>
       </div>
       <SaveBar :dirty="dirty" :saving="saving" :error="error" @save="save" @reset="reset" />
+    </section>
+
+    <!-- Paiement des factures clients (distribution, MAD) : au choix de l'entreprise -->
+    <section v-if="payments.form.value" class="card p-4 space-y-3">
+      <div>
+        <h2 class="font-semibold">Paiement des factures clients</h2>
+        <p class="text-sm text-gray-600">
+          Les moyens que vous acceptez : comptes bancaires, comptes Mobile Money, chèque, espèces… Ceux « proposés aux clients »
+          sont imprimés sur les factures du mois et affichés dans l'application du client, avec un bouton pour copier l'IBAN ou le numéro.
+        </p>
+      </div>
+      <InvoicePaymentMethods v-model="payments.form.value.invoice_payment_methods" />
+      <div>
+        <label class="label" for="payment-info">Note pour le client (facultatif)</label>
+        <textarea id="payment-info" v-model="payments.form.value.invoice_payment_info" rows="2" class="input" maxlength="1000" placeholder="Ex. : envoyez la preuve de paiement sur WhatsApp au 07 00 00 00 00" />
+      </div>
+      <SaveBar :dirty="payments.dirty.value" :saving="payments.saving.value" :error="payments.error.value" @save="payments.save" @reset="payments.reset" />
     </section>
 
     <!-- Identité visuelle : enregistrée dès l'envoi -->
@@ -50,11 +62,14 @@ import SettingsPage from '../../../components/settings/SettingsPage.vue'
 import SaveBar from '../../../components/settings/SaveBar.vue'
 import MoreHelp from '../../../components/settings/MoreHelp.vue'
 import AppearanceSettings from '../../../components/AppearanceSettings.vue'
+import InvoicePaymentMethods from '../../../components/settings/InvoicePaymentMethods.vue'
 import { useCompanySettings } from '../../../composables/useCompanySettings'
 import { useToastStore } from '../../../stores/toasts'
 import { loadBranding } from '../../../composables/useBranding'
 
-const { form, company, dirty, saving, error, save, reset } = useCompanySettings(['name', 'phone', 'address', 'tagline', 'invoice_payment_info'])
+const { form, company, dirty, saving, error, save, reset } = useCompanySettings(['name', 'phone', 'address', 'tagline'])
+// Moyens de paiement des factures : enregistrés à part
+const payments = useCompanySettings(['invoice_payment_methods', 'invoice_payment_info'])
 const toasts = useToastStore()
 const logoUrl = ref(null)
 const uploading = ref(false)
