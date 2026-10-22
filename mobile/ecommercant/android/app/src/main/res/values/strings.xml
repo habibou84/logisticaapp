@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Jibiat E-commerçant</string>
+    <string name="title_activity_main">Jibiat E-commerçant</string>
+    <string name="package_name">com.jibiat.ecommercant</string>
+    <string name="custom_url_scheme">com.jibiat.ecommercant</string>
+</resources>

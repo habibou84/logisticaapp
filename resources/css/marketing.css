@@ -1,0 +1,37 @@
+/* Site de présentation (jibiat.com) : feuille à part, légère */
+@import 'tailwindcss' source(none);
+
+@source '../views/marketing/**/*.blade.php';
+@source '../views/components/marketing/**/*.blade.php';
+
+@theme {
+    --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    /* Orange du logo Jibiat */
+    --color-brand-50: #fff6ed;
+    --color-brand-100: #ffead4;
+    --color-brand-200: #ffd0a8;
+    --color-brand-300: #ffad70;
+    --color-brand-400: #ff8a3d;
+    --color-brand-500: #f96f02;
+    --color-brand-600: #e45a00;
+    --color-brand-700: #bd4406;
+    --color-brand-800: #96370d;
+    --color-brand-900: #792f0f;
+    --color-flame: #f1340e;
+}
+
+@layer base {
+    html {
+        scroll-behavior: smooth;
+    }
+    summary::-webkit-details-marker {
+        display: none;
+    }
+}
+
+@utility btn-brand {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand-600 to-flame px-5 py-3 font-semibold text-white shadow-lg shadow-brand-600/25 transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500;
+}
+@utility btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 font-semibold ring-1 transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500;
+}

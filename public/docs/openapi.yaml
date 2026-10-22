@@ -1,0 +1,751 @@
+openapi: 3.1.0
+info:
+  title: API publique — livraison
+  version: 1.0.0
+  description: |
+    API des e-commerçants : créer et suivre des courses depuis une boutique en ligne,
+    un logiciel de caisse ou une application indépendante.
+
+    ## Authentification
+    Créez une clé dans l'application marchand (**Profil › Intégrations**). Elle n'est affichée qu'une fois.
+    Envoyez-la à chaque requête : `Authorization: Bearer lv_xxxxxxxx_…` (ou en-tête `X-Api-Key`).
+
+    Portées : `orders:read` (lire les courses et le point), `orders:write` (créer, annuler),
+    `stock:read` (produits et stock), `webhooks:write` (gérer ses adresses webhook par l'API),
+    `payouts:read` (reversements et leur détail). Les zones, entrepôts, devis et `GET /me` sont
+    accessibles à toute clé.
+
+    ## Applications partenaires
+    Une application qui agit pour le marchand peut s'identifier avec l'en-tête `X-Client-App`
+    (`jibiat-marchand` pour Jibiat Marchand) : les courses qu'elle crée gardent cette origine.
+
+    ## Idempotence
+    `POST /orders` exige l'en-tête `Idempotency-Key` (par exemple un UUID par commande). Une requête
+    relancée avec la même clé renvoie la réponse d'origine (en-tête `Idempotent-Replayed: true`)
+    au lieu de créer un doublon. Les clés sont conservées 24 heures.
+
+    ## Limitation de débit
+    120 requêtes par minute et par clé (en-têtes `X-RateLimit-Limit` et `X-RateLimit-Remaining`).
+    Au-delà : réponse `429`, réessayez après le délai indiqué par `Retry-After`.
+
+    ## Erreurs
+    Toujours au format `{ "message": "…", "errors": { "champ": ["…"] } }`. `401` clé absente ou invalide,
+    `403` portée manquante ou compte suspendu, `404` course introuvable, `422` données invalides ou règle métier.
+
+    ## Webhooks
+    Déclarez une adresse HTTPS dans **Profil › Intégrations** (ou par `POST /webhooks`) pour recevoir les événements
+    `order.created`, `order.status_changed`, `order.incident`, `order.updated`, `payout.paid` et `stock.low`.
+    `order.updated` signale un changement **sans changement de statut** : date de livraison (modifiée, décalée parce que la
+    journée est fermée, nouvelle date d'un report), adresse, montant, retour demandé… La liste des champs changés est dans
+    `data.change.fields` ; la course complète, à jour, est dans `data.order`.
+    Chaque envoi est un `POST` JSON `{ id, event, created_at, data }` avec les en-têtes
+    `X-Webhook-Id`, `X-Webhook-Event`, `X-Webhook-Timestamp` et
+    `X-Webhook-Signature: sha256=HMAC_SHA256(secret, "<timestamp>.<corps brut>")`.
+    Vérifiez la signature et la fraîcheur de l'horodatage, puis répondez `2xx` rapidement.
+    Sans réponse `2xx`, nouvelles tentatives après 1 min, 5 min, 30 min, 2 h et 6 h.
+    Un même événement peut arriver deux fois : dédoublonnez sur `X-Webhook-Id`.
+servers:
+  - url: /api/public/v1
+security:
+  - bearer: []
+tags:
+  - name: Référentiels
+  - name: Courses
+  - name: Stock
+  - name: Compte
+paths:
+  /zones:
+    get:
+      tags: [Référentiels]
+      summary: Zones de livraison (communes et quartiers)
+      responses:
+        '200':
+          description: Zones actives
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Zone' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /delivery-day:
+    get:
+      tags: [Référentiels]
+      summary: Journée de livraison (ouverte ou fermée)
+      description: |
+        Passé l'heure limite, ou quand l'agence a fermé la journée, une nouvelle course est livrée le prochain jour
+        (`earliest_delivery_date`). À afficher avant d'envoyer une course « pour aujourd'hui ».
+      responses:
+        '200':
+          description: État de la journée
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      closed: { type: boolean }
+                      reason: { type: [string, 'null'], enum: [cutoff, manual, null] }
+                      message: { type: [string, 'null'], example: 'livraisons du jour closes depuis 16:00' }
+                      cutoff_time: { type: [string, 'null'], example: '16:00' }
+                      today: { type: string, format: date }
+                      next_day: { type: string, format: date }
+                      earliest_delivery_date: { type: string, format: date }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /hubs:
+    get:
+      tags: [Référentiels]
+      summary: Entrepôts de l'entreprise de livraison
+      responses:
+        '200':
+          description: Entrepôts actifs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: integer }
+                        name: { type: string }
+                        zone_id: { type: integer }
+  /quotes:
+    post:
+      tags: [Référentiels]
+      summary: Devis d'une livraison
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: 'Indiquez delivery_zone_id ou delivery_zone (nom de la commune ou du quartier).'
+              properties:
+                delivery_zone_id: { type: integer }
+                delivery_zone: { type: string, example: Cocody Angré, description: 'Nom de la zone, si vous ne connaissez pas son identifiant' }
+                pickup_zone_id: { type: integer, description: 'Par défaut, la zone de ramassage du marchand' }
+                pickup_zone: { type: string, description: 'Nom de la zone de ramassage' }
+                is_express: { type: boolean }
+                is_fragile: { type: boolean }
+                weight_kg: { type: number }
+      responses:
+        '200':
+          description: Prix en francs CFA
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      base_price: { type: integer }
+                      total: { type: integer }
+                      is_shipping: { type: boolean }
+                      shipping_fee_estimate: { type: [integer, 'null'] }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /orders:
+    get:
+      tags: [Courses]
+      summary: Lister les courses
+      description: Portée `orders:read`. Pour synchroniser, passez la date de votre dernier appel dans `updated_since`.
+      parameters:
+        - { name: 'status[]', in: query, schema: { type: array, items: { $ref: '#/components/schemas/Status' } } }
+        - { name: merchant_reference, in: query, schema: { type: string } }
+        - { name: updated_since, in: query, schema: { type: string, format: date-time } }
+        - { name: from, in: query, schema: { type: string, format: date } }
+        - { name: to, in: query, schema: { type: string, format: date } }
+        - { name: per_page, in: query, schema: { type: integer, maximum: 100, default: 30 } }
+        - { name: page, in: query, schema: { type: integer } }
+      responses:
+        '200':
+          description: Page de courses, les plus récentes d'abord
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Order' }
+                  meta: { type: object }
+                  links: { type: object }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Courses]
+      summary: Créer une course
+      description: Portée `orders:write`. Le prix est calculé par la plateforme. La course est « en attente » jusqu'à sa validation par l'entreprise.
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: { type: string, maxLength: 100 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NewOrder' }
+      responses:
+        '201':
+          description: Course créée
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Order' }
+        '409': { description: 'Requête identique en cours de traitement' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /orders/{tracking_code}:
+    get:
+      tags: [Courses]
+      summary: Suivre une course (avec son historique)
+      parameters:
+        - { name: tracking_code, in: path, required: true, schema: { type: string, example: LV-7K2M-QX9P } }
+      responses:
+        '200':
+          description: Course et événements
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Order' }
+        '404': { description: 'Course introuvable' }
+    patch:
+      tags: [Courses]
+      summary: Modifier une course
+      description: |
+        Avant le ramassage : tous les champs (le prix est recalculé si la zone ou le colis change).
+        Colis récupéré : seulement la livraison (adresse, repère, téléphones, zone, date). Plus rien une fois
+        la course en route ou terminée. Portée orders:write.
+      parameters:
+        - { name: tracking_code, in: path, required: true, schema: { type: string } }
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NewOrder' }
+      responses:
+        '200':
+          description: Course modifiée
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Order' }
+        '422': { description: 'Champ invalide ou modification impossible à ce stade' }
+  /orders/{tracking_code}/decision:
+    post:
+      tags: [Courses]
+      summary: Décider de la suite après une livraison échouée (needs_decision)
+      parameters:
+        - { name: tracking_code, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [decision]
+              properties:
+                decision: { type: string, enum: [redeliver, return] }
+                date: { type: string, format: date, description: 'Obligatoire pour redeliver (aujourd''hui ou après)' }
+                note: { type: string, maxLength: 1000 }
+      responses:
+        '200':
+          description: 'Course reportée (rescheduled) ou retour demandé'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Order' }
+        '422': { description: 'Aucune décision attendue, ou date invalide' }
+  /orders/{tracking_code}/return-request:
+    post:
+      tags: [Courses]
+      summary: Demander le retour du colis (déjà ramassé ; avant, annulez la course)
+      parameters:
+        - { name: tracking_code, in: path, required: true, schema: { type: string } }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                note: { type: string, maxLength: 1000 }
+      responses:
+        '200':
+          description: Retour demandé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Order' }
+        '422': { description: 'Retour impossible à ce stade' }
+  /orders/{tracking_code}/notes:
+    post:
+      tags: [Courses]
+      summary: Laisser une note à l'agence et au livreur
+      parameters:
+        - { name: tracking_code, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [note]
+              properties:
+                note: { type: string, maxLength: 2000 }
+      responses:
+        '201': { description: Note enregistrée }
+  /orders/{tracking_code}/cancel:
+    post:
+      tags: [Courses]
+      summary: Annuler une course (avant le ramassage)
+      parameters:
+        - { name: tracking_code, in: path, required: true, schema: { type: string } }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason: { type: string, maxLength: 500 }
+      responses:
+        '200':
+          description: Course annulée
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Order' }
+        '422': { description: 'Annulation impossible à ce stade' }
+  /reports/summary:
+    get:
+      tags: [Courses]
+      summary: Point de la période (volumes et montants)
+      parameters:
+        - { name: from, in: query, schema: { type: string, format: date }, description: 'Par défaut le 1er du mois' }
+        - { name: to, in: query, schema: { type: string, format: date }, description: 'Par défaut aujourd''hui' }
+      responses:
+        '200':
+          description: Point
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      counts: { type: object, additionalProperties: { type: integer } }
+                      amounts:
+                        type: object
+                        properties:
+                          collected: { type: integer }
+                          fees: { type: integer }
+                          shipping_fees: { type: integer }
+                          other_fees: { type: integer }
+                          net_to_merchant: { type: integer }
+  /products:
+    get:
+      tags: [Stock]
+      summary: Produits et stock disponible
+      description: Portée `stock:read`.
+      parameters:
+        - { name: search, in: query, schema: { type: string } }
+        - { name: per_page, in: query, schema: { type: integer, maximum: 200, default: 50 } }
+      responses:
+        '200':
+          description: Produits actifs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Product' }
+  /me:
+    get:
+      tags: [Compte]
+      summary: Identité du marchand, de l'entreprise de livraison et de la clé
+      responses:
+        '200':
+          description: Compte
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      merchant:
+                        type: object
+                        properties:
+                          id: { type: integer }
+                          business_name: { type: string }
+                          contact_name: { type: [string, 'null'] }
+                          phone: { type: [string, 'null'] }
+                          status: { type: string }
+                          default_fee_payer: { type: [string, 'null'] }
+                      company:
+                        type: object
+                        properties:
+                          name: { type: string }
+                          slug: { type: string }
+                          url: { type: string, format: uri }
+                          phone: { type: [string, 'null'] }
+                      key:
+                        type: object
+                        properties:
+                          name: { type: string }
+                          prefix: { type: string }
+                          scopes: { type: array, items: { type: string } }
+                          expires_at: { type: [string, 'null'], format: date-time }
+                      webhook_events: { type: array, items: { type: string } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /webhooks:
+    get:
+      tags: [Compte]
+      summary: Adresses webhook du marchand
+      description: Portée `webhooks:write`.
+      responses:
+        '200':
+          description: Adresses
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/Webhook' } }
+    post:
+      tags: [Compte]
+      summary: Déclarer une adresse webhook
+      description: Portée `webhooks:write`. Le secret de signature n'est renvoyé qu'une fois, dans cette réponse.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url, events]
+              properties:
+                url: { type: string, format: uri }
+                events: { type: array, items: { type: string, enum: [order.created, order.status_changed, order.incident, order.updated, payout.paid, stock.low] } }
+                description: { type: string, maxLength: 255 }
+      responses:
+        '201':
+          description: Adresse créée
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Webhook' }
+                  secret: { type: string, example: whsec_… }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /webhooks/{webhook}:
+    delete:
+      tags: [Compte]
+      summary: Supprimer une adresse webhook
+      description: Portée `webhooks:write`.
+      parameters:
+        - { name: webhook, in: path, required: true, schema: { type: integer } }
+      responses:
+        '204': { description: Supprimée }
+        '404': { description: Adresse introuvable }
+  /payouts:
+    get:
+      tags: [Compte]
+      summary: Reversements au marchand
+      description: Portée `payouts:read`.
+      parameters:
+        - { name: status, in: query, schema: { type: string } }
+        - { name: paid_since, in: query, description: 'Reversements payés depuis cette date (rattrapage)', schema: { type: string, format: date-time } }
+        - { name: per_page, in: query, schema: { type: integer, maximum: 100, default: 30 } }
+      responses:
+        '200':
+          description: Reversements, du plus récent au plus ancien
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/Payout' } }
+  /payouts/{reference}:
+    get:
+      tags: [Compte]
+      summary: Détail d'un reversement (écritures et courses concernées)
+      description: Portée `payouts:read`. Sert au rapprochement des reversements avec les commandes.
+      parameters:
+        - { name: reference, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: Reversement
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    allOf:
+                      - { $ref: '#/components/schemas/Payout' }
+                      - type: object
+                        properties:
+                          entries:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                type: { type: string }
+                                amount: { type: integer, description: 'Positif : dû au marchand ; négatif : frais retenus' }
+                                description: { type: [string, 'null'] }
+                                order:
+                                  type: [object, 'null']
+                                  properties:
+                                    tracking_code: { type: string }
+                                    merchant_reference: { type: [string, 'null'] }
+                                created_at: { type: string, format: date-time }
+        '404': { description: Reversement introuvable }
+  /attachments/{attachment}:
+    get:
+      tags: [Courses]
+      summary: Photo de preuve d'une course
+      description: Lien signé et temporaire (24 h) donné dans `proof.photos[].url` d'une course ; ne demande pas de clé.
+      security: []
+      parameters:
+        - { name: attachment, in: path, required: true, schema: { type: integer } }
+        - { name: expires, in: query, required: true, schema: { type: integer } }
+        - { name: signature, in: query, required: true, schema: { type: string } }
+      responses:
+        '200': { description: Image }
+        '403': { description: Lien expiré ou invalide }
+components:
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer
+      description: Clé API (lv_…)
+  responses:
+    Unauthorized:
+      description: Clé absente, invalide, expirée ou révoquée
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Forbidden:
+      description: Portée manquante ou compte suspendu
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    ValidationError:
+      description: Données invalides
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+  schemas:
+    Error:
+      type: object
+      properties:
+        message: { type: string }
+        errors:
+          type: object
+          additionalProperties: { type: array, items: { type: string } }
+    Status:
+      type: string
+      enum: [pending, confirmed, rejected, pickup_assigned, pickup_in_progress, picked_up, at_hub, delivery_assigned, out_for_delivery, delivered, delivery_failed, rescheduled, return_assigned, returning, returned, cancelled, lost]
+    Zone:
+      type: object
+      properties:
+        id: { type: integer }
+        parent_id: { type: [integer, 'null'] }
+        name: { type: string }
+        full_name: { type: string, example: Cocody › Angré }
+        is_shipping: { type: boolean, description: 'Zone d''expédition (dépôt à une gare)' }
+        shipping_fee_estimate: { type: [integer, 'null'] }
+    NewOrder:
+      type: object
+      required: [recipient_phone]
+      description: 'La zone de livraison se donne par delivery_zone_id ou par delivery_zone (nom).'
+      properties:
+        merchant_reference: { type: string, description: 'Votre numéro de commande' }
+        recipient_name: { type: string }
+        recipient_phone: { type: string, example: '07 08 09 10 11' }
+        recipient_phone2: { type: string }
+        delivery_zone_id: { type: integer, description: 'Identifiant (GET /zones) ; ou bien delivery_zone' }
+        delivery_zone:
+          type: string
+          example: Yopougon Siporex
+          description: >-
+            Nom de la commune ou du quartier, tel que saisi par votre client (« Cocody », « yop siporex »).
+            Zone inconnue ou ambiguë : erreur 422 sur ce champ, avec les zones possibles.
+        delivery_address: { type: string }
+        delivery_landmark: { type: string, example: Face pharmacie }
+        delivery_scheduled_date: { type: string, format: date }
+        delivery_time_slot: { type: string, example: '08-12' }
+        description: { type: string }
+        items_amount: { type: integer, description: 'Montant des articles à encaisser (0 si déjà payé) ; par défaut la somme des articles' }
+        fee_payer: { type: string, enum: [merchant, recipient], description: 'Qui paie la livraison' }
+        notify_merchant: { type: boolean, default: true, description: "false : votre application prévient elle-même l'équipe du marchand ; pas d'alerte en double dans la cloche de l'application de livraison" }
+        is_express: { type: boolean }
+        is_fragile: { type: boolean }
+        weight_kg: { type: number }
+        merchant_note: { type: string, description: 'Instruction pour le livreur' }
+        pickup_hub_id: { type: integer, description: 'Préparer la commande dans cet entrepôt (produits en stock chez l''entreprise)' }
+        items:
+          type: array
+          maxItems: 50
+          items:
+            type: object
+            required: [quantity]
+            properties:
+              product_id: { type: integer, description: 'Produit du stock (réservé à la création)' }
+              label: { type: string, description: 'Article libre (sans product_id)' }
+              quantity: { type: integer, minimum: 1 }
+              unit_price: { type: integer }
+    Order:
+      type: object
+      properties:
+        tracking_code: { type: string, example: LV-7K2M-QX9P }
+        merchant_reference: { type: [string, 'null'] }
+        status: { $ref: '#/components/schemas/Status' }
+        status_label: { type: string, example: En chemin }
+        tracking_url: { type: string, format: uri, description: 'Page de suivi à envoyer au client' }
+        delivery_code: { type: string, description: 'Code à donner au client, demandé par le livreur à la livraison' }
+        recipient:
+          type: object
+          properties:
+            name: { type: [string, 'null'] }
+            phone: { type: string }
+            phone2: { type: [string, 'null'] }
+        delivery:
+          type: object
+          properties:
+            zone_id: { type: integer }
+            zone_name: { type: string }
+            address: { type: [string, 'null'] }
+            landmark: { type: [string, 'null'] }
+            scheduled_date: { type: [string, 'null'], format: date }
+        pickup:
+          type: object
+          properties:
+            hub_id: { type: [integer, 'null'] }
+            zone_id: { type: [integer, 'null'] }
+            zone_name: { type: [string, 'null'] }
+            address: { type: [string, 'null'] }
+            landmark: { type: [string, 'null'] }
+            contact_name: { type: [string, 'null'] }
+            phone: { type: [string, 'null'] }
+        from_warehouse: { type: boolean }
+        description: { type: [string, 'null'] }
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              product_id: { type: [integer, 'null'] }
+              label: { type: string }
+              quantity: { type: integer }
+              unit_price: { type: integer }
+        amounts:
+          type: object
+          properties:
+            items_amount: { type: integer }
+            delivery_fee: { type: integer }
+            fee_payer: { type: string, enum: [merchant, recipient] }
+            cod_amount: { type: integer, description: 'Total à encaisser auprès du client' }
+            collected_amount: { type: [integer, 'null'] }
+            shipping_fee: { type: [integer, 'null'] }
+        attempts_count: { type: integer }
+        needs_decision: { type: boolean, description: 'Échec de livraison : le marchand doit décider (relivrer, reporter ou faire revenir le colis)' }
+        return_requested: { type: boolean, description: 'Le marchand a demandé le retour du colis' }
+        last_incident: { type: [string, 'null'] }
+        events:
+          type: array
+          description: Présents sur GET /orders/{tracking_code}
+          items:
+            type: object
+            properties:
+              type: { type: string }
+              status: { type: [string, 'null'] }
+              note: { type: [string, 'null'] }
+              incident: { type: [string, 'null'] }
+              rescheduled_to: { type: [string, 'null'], format: date }
+              at: { type: string, format: date-time }
+        proof:
+          type: object
+          description: Preuves de la course (photos prises par le livreur)
+          properties:
+            delivered_at: { type: [string, 'null'], format: date-time }
+            photos:
+              type: array
+              items:
+                type: object
+                properties:
+                  type: { type: string, enum: [photo_pickup, photo_delivery, photo_incident] }
+                  url: { type: string, format: uri, description: 'Lien signé valable 24 h' }
+                  taken_at: { type: string, format: date-time }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        delivered_at: { type: [string, 'null'], format: date-time }
+        cancelled_at: { type: [string, 'null'], format: date-time }
+        returned_at: { type: [string, 'null'], format: date-time }
+    Product:
+      type: object
+      properties:
+        id: { type: integer }
+        sku: { type: [string, 'null'] }
+        name: { type: string }
+        price: { type: integer }
+        available: { type: integer }
+        levels:
+          type: array
+          items:
+            type: object
+            properties:
+              hub_id: { type: [integer, 'null'], description: 'null = chez le marchand' }
+              label: { type: string }
+              on_hand: { type: integer }
+              reserved: { type: integer }
+              available: { type: integer }
+    Webhook:
+      type: object
+      properties:
+        id: { type: integer }
+        url: { type: string, format: uri }
+        events: { type: array, items: { type: string } }
+        description: { type: [string, 'null'] }
+        is_active: { type: boolean }
+        consecutive_failures: { type: integer }
+        created_at: { type: string, format: date-time }
+    Payout:
+      type: object
+      properties:
+        reference: { type: string }
+        status: { type: string }
+        period_start: { type: [string, 'null'], format: date }
+        period_end: { type: [string, 'null'], format: date }
+        total_collected: { type: integer }
+        total_fees: { type: integer }
+        total_shipping_fees: { type: integer }
+        total_other_fees: { type: integer }
+        total_storage_fees: { type: integer }
+        total_adjustments: { type: integer }
+        net_amount: { type: integer }
+        method: { type: [string, 'null'] }
+        transaction_ref: { type: [string, 'null'] }
+        paid_at: { type: [string, 'null'], format: date-time }
+        created_at: { type: string, format: date-time }

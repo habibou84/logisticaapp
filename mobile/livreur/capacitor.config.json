@@ -1,0 +1,11 @@
+{
+    "appId": "com.jibiat.livreur",
+    "appName": "Jibiat Livreur",
+    "webDir": "www",
+    "android": {
+        "backgroundColor": "#1d4ed8"
+    },
+    "ios": {
+        "backgroundColor": "#1d4ed8"
+    }
+}

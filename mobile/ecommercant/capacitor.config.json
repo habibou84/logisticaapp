@@ -1,0 +1,11 @@
+{
+    "appId": "com.jibiat.ecommercant",
+    "appName": "Jibiat E-commerçant",
+    "webDir": "www",
+    "android": {
+        "backgroundColor": "#047857"
+    },
+    "ios": {
+        "backgroundColor": "#047857"
+    }
+}

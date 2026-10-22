@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Jibiat · motion</title>
+<link rel="stylesheet" href="motion.css">
+</head>
+<body>
+<div id="stage"></div>
+<script src="motion.js"></script>
+<script>
+  // player.html?scene=deux-applications&f=v (v : 1080 × 1920, f : 1080 × 1350, w : 1920 × 1080)
+  const params = new URLSearchParams(location.search)
+  const s = document.createElement('script')
+  s.src = `scenes/${params.get('scene')}.js`
+  s.onload = () => Motion.start(window.SCENE, params.get('f') || 'v', params.has('play'))
+  document.body.appendChild(s)
+</script>
+</body>
+</html>

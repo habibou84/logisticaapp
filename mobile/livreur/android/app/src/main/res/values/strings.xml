@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Jibiat Livreur</string>
+    <string name="title_activity_main">Jibiat Livreur</string>
+    <string name="package_name">com.jibiat.livreur</string>
+    <string name="custom_url_scheme">com.jibiat.livreur</string>
+</resources>

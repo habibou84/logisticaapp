@@ -1,0 +1,80 @@
+{
+ "bs-accueil": {
+  "bouton": {
+   "x": 115,
+   "y": 353,
+   "w": 160,
+   "h": 48
+  }
+ },
+ "bs-nouveautes": {
+  "titre": {
+   "x": 16,
+   "y": 80,
+   "w": 142,
+   "h": 32
+  }
+ },
+ "bs-produit": {
+  "prix": {
+   "x": 16,
+   "y": 579,
+   "w": 99,
+   "h": 32
+  }
+ },
+ "bs-ajout": {
+  "ajouter": {
+   "x": 16,
+   "y": 442,
+   "w": 358,
+   "h": 48
+  },
+  "panier": {
+   "x": 16,
+   "y": 720,
+   "w": 358,
+   "h": 44
+  }
+ },
+ "bs-panier": {
+  "commander": {
+   "x": 16,
+   "y": 606,
+   "w": 358,
+   "h": 48
+  }
+ },
+ "bs-commande": {
+  "coordonnees": {
+   "x": 16,
+   "y": 169,
+   "w": 358,
+   "h": 50
+  },
+  "quartier": {
+   "x": 16,
+   "y": 421,
+   "w": 358,
+   "h": 50
+  }
+ },
+ "bs-recap": {
+  "total": {
+   "x": 33,
+   "y": 307,
+   "w": 68,
+   "h": 20
+  },
+  "confirmer": {
+   "x": 33,
+   "y": 516,
+   "w": 324,
+   "h": 48
+  }
+ },
+ "bs-merci": {},
+ "bs-gestion": {
+  "commande": null
+ }
+}

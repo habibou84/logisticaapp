@@ -1,0 +1,141 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master, production]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Style (Pint)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer:v2
+          coverage: none
+      - run: composer install --no-interaction --no-progress --prefer-dist
+      - run: vendor/bin/pint --test
+
+  tests:
+    name: Tests (PostgreSQL, PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 8.4 : version de Debian 13 (serveur ISPConfig)
+        php: ['8.3', '8.4']
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: livraison
+          POSTGRES_PASSWORD: secret
+          POSTGRES_DB: livraison_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U livraison -d livraison_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: livraison_test
+      DB_USERNAME: livraison
+      DB_PASSWORD: secret
+      # Pas de Redis en CI : cache et sessions en mémoire, files synchrones
+      CACHE_STORE: array
+      SESSION_DRIVER: array
+      QUEUE_CONNECTION: sync
+      BROADCAST_CONNECTION: log
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: pdo_pgsql, intl
+          tools: composer:v2
+          coverage: none
+      - uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache/files
+          key: composer-${{ matrix.php }}-${{ hashFiles('composer.lock') }}
+      - run: composer install --no-interaction --no-progress --prefer-dist
+      - run: cp .env.example .env && php artisan key:generate
+      - name: Migrations (aller-retour)
+        run: php artisan migrate --force && php artisan migrate:rollback --force && php artisan migrate --seed --force
+      - run: php artisan test
+
+  frontend:
+    name: Build front-end
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+
+  mobile:
+    name: Téléphone (largeur des pages)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: livraison
+          POSTGRES_PASSWORD: secret
+          POSTGRES_DB: livraison_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U livraison -d livraison_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: livraison_test
+      DB_USERNAME: livraison
+      DB_PASSWORD: secret
+      CACHE_STORE: array
+      SESSION_DRIVER: array
+      QUEUE_CONNECTION: sync
+      BROADCAST_CONNECTION: log
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_pgsql, intl
+          tools: composer:v2
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: composer install --no-interaction --no-progress --prefer-dist
+      - run: npm ci
+      - run: npm run build
+      - run: cp .env.example .env && php artisan key:generate
+      - run: php artisan migrate --seed --force
+      - run: npx playwright install --with-deps chromium
+      # Comptes de démonstration (DemoSeeder) ; chaque page de l'administration à 360 px de large
+      - name: Pages de l'administration sur téléphone
+        run: |
+          php artisan serve --host=127.0.0.1 --port=8000 > serve.log 2>&1 &
+          for i in $(seq 1 30); do curl -sf -o /dev/null http://127.0.0.1:8000/up && break; sleep 1; done
+          npm run test:mobile
+      - if: failure()
+        run: tail -50 serve.log; tail -50 storage/logs/laravel.log || true

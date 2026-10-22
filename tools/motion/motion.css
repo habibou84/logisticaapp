@@ -1,0 +1,158 @@
+/* Vidéos en motion design de Jibiat et Jibiat Marchand : gabarit commun des trois formats */
+:root {
+  --jibiat: #f96f02;
+  --jibiat-deep: #e45a00;
+  --marchand: #039a45;
+  --marchand-deep: #01653a;
+  --night: #0b1220;
+  --ink: #0f172a;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--night);
+  font-family: 'Inter', 'Inter Display', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+#stage {
+  position: relative;
+  overflow: hidden;
+  background: var(--night);
+  color: #fff;
+}
+
+.fmt-v #stage { width: 1080px; height: 1920px; }
+.fmt-f #stage { width: 1080px; height: 1350px; }
+.fmt-w #stage { width: 1920px; height: 1080px; }
+
+/* Fond : halos de couleur qui dérivent lentement */
+.halo { position: absolute; border-radius: 50%; opacity: .5; will-change: transform; }
+
+.layer { position: absolute; inset: 0; }
+
+/* Titres : gros, lisibles sans le son, un mot après l'autre */
+.headline {
+  position: absolute;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.04;
+  text-wrap: balance;
+}
+.headline .w { display: inline-block; will-change: transform, opacity; white-space: pre; }
+.headline .hl-jibiat { color: var(--jibiat); }
+.headline .hl-marchand { color: #6be79a; }
+.headline .hl-white { color: #fff; }
+.sub {
+  position: absolute;
+  font-weight: 600;
+  color: #cbd5e1;
+  line-height: 1.25;
+  text-wrap: balance;
+}
+
+.fmt-v .headline { left: 80px; right: 80px; top: 150px; font-size: 100px; text-align: center; }
+.fmt-v .sub { left: 100px; right: 100px; top: 470px; font-size: 44px; text-align: center; }
+.fmt-f .headline { left: 70px; right: 70px; top: 70px; font-size: 80px; text-align: center; }
+.fmt-f .sub { left: 90px; right: 90px; top: 280px; font-size: 36px; text-align: center; }
+.fmt-w .headline { left: 140px; width: 900px; top: 300px; font-size: 92px; }
+.fmt-w .sub { left: 140px; width: 860px; top: 640px; font-size: 40px; }
+
+/* Voile derrière le titre quand le téléphone, filmé de près, passe dessous */
+.scrim { position: absolute; left: 0; right: 0; top: 0; z-index: 5; pointer-events: none; opacity: 0;
+  background: linear-gradient(180deg, rgba(11, 18, 32, .96) 0%, rgba(11, 18, 32, .9) 70%, rgba(11, 18, 32, 0) 100%); }
+.fmt-v .scrim { height: 700px; }
+.fmt-f .scrim { height: 430px; }
+.fmt-w .scrim { left: 0; right: auto; width: 1150px; height: 100%; background: linear-gradient(90deg, rgba(11, 18, 32, .96) 0%, rgba(11, 18, 32, .9) 75%, rgba(11, 18, 32, 0) 100%); }
+.headline, .sub { z-index: 6; }
+
+/* Plan « accroche » : texte seul, très gros, centré */
+.hook {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  text-align: center; font-weight: 800; letter-spacing: -0.04em; line-height: 1.02;
+}
+.fmt-v .hook { font-size: 132px; padding: 0 70px; }
+.fmt-f .hook { font-size: 112px; padding: 0 70px; }
+.fmt-w .hook { font-size: 120px; padding: 0 180px; }
+.hook .w { display: inline-block; white-space: pre; will-change: transform, opacity; }
+
+/* Téléphone : vraie capture de l'application dans un cadre, filmée de près */
+.phone {
+  position: absolute;
+  border-radius: 9% / 4.2%;
+  background: #05070c;
+  padding: 2.6%;
+  box-shadow: 0 60px 120px rgba(0, 0, 0, .55), 0 0 0 2px rgba(255, 255, 255, .08) inset;
+  will-change: transform, opacity;
+}
+.phone .screen {
+  position: relative; width: 100%; height: 100%; overflow: hidden;
+  border-radius: 7.2% / 3.4%; background: #fff;
+}
+.phone .screen img { position: absolute; left: 0; top: 0; width: 100%; will-change: transform; }
+.phone .notch {
+  position: absolute; left: 50%; top: 3.2%; width: 26%; height: 2.4%; transform: translateX(-50%);
+  background: #05070c; border-radius: 999px; z-index: 3;
+}
+
+/* Toucher : un rond qui s'élargit */
+.tap {
+  position: absolute; border-radius: 50%; pointer-events: none; z-index: 4;
+  border: 6px solid rgba(249, 111, 2, .95); background: rgba(249, 111, 2, .25);
+}
+.brand-marchand .tap { border-color: rgba(15, 187, 79, .95); background: rgba(15, 187, 79, .25); }
+
+/* Cadre de mise en valeur d'une zone de l'écran */
+.focus-ring {
+  position: absolute; z-index: 4; border-radius: 22px; pointer-events: none;
+  border: 6px solid var(--jibiat); box-shadow: 0 0 0 9999px rgba(11, 18, 32, .35);
+}
+.brand-marchand .focus-ring { border-color: #0fbb4f; }
+
+/* Pastille flottante : un chiffre, un résultat */
+.pill {
+  position: absolute; z-index: 6; white-space: nowrap;
+  border-radius: 999px; font-weight: 800; letter-spacing: -0.02em;
+  background: #fff; color: var(--ink); box-shadow: 0 24px 60px rgba(0, 0, 0, .35);
+  display: flex; align-items: center; gap: .4em; will-change: transform, opacity;
+}
+.pill .dot { width: .55em; height: .55em; border-radius: 50%; background: var(--jibiat); }
+.brand-marchand .pill .dot { background: #0fbb4f; }
+.fmt-v .pill { font-size: 54px; padding: 26px 44px; }
+.fmt-f .pill { font-size: 44px; padding: 22px 36px; }
+.fmt-w .pill { font-size: 44px; padding: 22px 36px; }
+
+/* Étiquette de l'application montrée (Jibiat Marchand ou Jibiat) */
+.app-tag {
+  position: absolute; z-index: 6; display: flex; align-items: center; gap: 18px;
+  font-weight: 800; letter-spacing: -0.02em; white-space: nowrap; will-change: transform, opacity;
+}
+.app-tag .logo { width: 1.6em; height: 1.6em; border-radius: .38em; display: grid; place-items: center; font-weight: 900; overflow: hidden; }
+.app-tag .logo img { width: 100%; height: 100%; object-fit: cover; }
+.fmt-v .app-tag { font-size: 40px; }
+.fmt-f .app-tag { font-size: 34px; }
+.fmt-w .app-tag { font-size: 36px; }
+
+/* Carte de fin */
+.end {
+  position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; gap: 48px;
+}
+.end .logos { display: flex; gap: 40px; align-items: center; justify-content: center; }
+.end .brand-block { display: flex; flex-direction: column; align-items: center; gap: 18px; }
+.end .brand-logo { width: 190px; height: 190px; border-radius: 44px; display: grid; place-items: center; font-weight: 900; font-size: 110px; overflow: hidden; box-shadow: 0 30px 80px rgba(0, 0, 0, .4); }
+.end .brand-logo img { width: 100%; height: 100%; object-fit: cover; }
+.end .brand-name { font-weight: 800; font-size: 46px; letter-spacing: -0.02em; }
+.end .brand-url { font-weight: 700; font-size: 40px; color: #e2e8f0; }
+.end .plus { font-size: 90px; font-weight: 300; color: #94a3b8; }
+.end .tagline { font-weight: 800; letter-spacing: -0.035em; line-height: 1.05; padding: 0 70px; }
+.end .cta { border-radius: 999px; font-weight: 800; padding: 30px 64px; font-size: 50px; background: #fff; color: var(--ink); }
+.fmt-v .end .tagline { font-size: 96px; }
+.fmt-f .end .tagline { font-size: 78px; }
+.fmt-w .end .tagline { font-size: 84px; padding: 0 200px; }
+.fmt-f .end { gap: 34px; }
+.fmt-f .end .brand-logo { width: 150px; height: 150px; font-size: 86px; }
+.fmt-w .end { gap: 36px; }
+.fmt-w .end .brand-logo { width: 150px; height: 150px; font-size: 86px; }

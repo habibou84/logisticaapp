@@ -1,0 +1,36 @@
+{
+    "$schema": "https://www.schemastore.org/package.json",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "build": "vite build",
+        "dev": "vite",
+        "mobile:livreur": "vite build -c vite.mobile.config.js --mode livreur && cd mobile/livreur && cap sync",
+        "mobile:ecommercant": "vite build -c vite.mobile.config.js --mode ecommercant && cd mobile/ecommercant && cap sync",
+        "test:mobile": "node tests/browser/mobile-width.mjs"
+    },
+    "devDependencies": {
+        "@capacitor/android": "8.5.2",
+        "@capacitor/cli": "8.5.2",
+        "@capacitor/ios": "8.5.2",
+        "@tailwindcss/vite": "^4.0.0",
+        "@vitejs/plugin-vue": "^6.0.3",
+        "axios": "^1.13.4",
+        "concurrently": "^9.0.1",
+        "laravel-echo": "^2.6.1",
+        "laravel-vite-plugin": "^2.0.0",
+        "playwright": "1.56.1",
+        "pusher-js": "^8.6.0",
+        "tailwindcss": "^4.0.0",
+        "vite": "^7.0.7"
+    },
+    "dependencies": {
+        "@capacitor/app": "8.1.1",
+        "@capacitor/core": "8.5.2",
+        "leaflet": "^1.9.4",
+        "pinia": "^3.0.4",
+        "qrcode": "^1.5.4",
+        "vue": "^3.5.27",
+        "vue-router": "^4.6.4"
+    }
+}

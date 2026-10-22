@@ -1,0 +1,59 @@
+name: Applications mobiles
+
+# APK Android de test des applications Jibiat Livreur et Jibiat E-commerçant.
+# À télécharger dans l'onglet Actions (section « Artifacts » de l'exécution), puis à installer sur le téléphone.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+    paths:
+      - 'mobile/**'
+      - 'resources/js/**'
+      - 'resources/css/app.css'
+      - 'vite.mobile.config.js'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/mobile.yml'
+  pull_request:
+    paths:
+      - 'mobile/**'
+      - 'resources/js/**'
+      - 'vite.mobile.config.js'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/mobile.yml'
+
+concurrency:
+  group: mobile-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android:
+    name: Android (${{ matrix.app }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [livreur, ecommercant]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      - run: npm ci
+      - name: Écrans de l'application et projet Android
+        run: npm run mobile:${{ matrix.app }}
+      - name: APK de test
+        working-directory: mobile/${{ matrix.app }}/android
+        run: ./gradlew assembleDebug --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: jibiat-${{ matrix.app }}-apk
+          path: mobile/${{ matrix.app }}/android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
