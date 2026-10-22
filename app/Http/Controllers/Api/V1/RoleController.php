@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Enums\Activity;
+use App\Enums\Permission;
 use App\Enums\Role;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
@@ -16,9 +18,17 @@ class RoleController extends Controller
     {
         return response()->json([
             'data' => array_map(
-                fn (Role $role) => ['value' => $role->value, 'label' => $role->label()],
+                fn (Role $role) => [
+                    'value' => $role->value,
+                    'label' => $role->label(),
+                    // Permissions du rôle : base du réglage fin
+                    'permissions' => array_map(fn (Permission $p) => $p->value, $role->permissions()),
+                ],
                 Role::assignableBy($request->user()),
             ),
+            // Catalogue des permissions et des activités (écran Utilisateurs)
+            'permissions' => array_map(fn (Permission $p) => ['value' => $p->value, 'label' => $p->label()], Permission::cases()),
+            'activities' => array_map(fn (Activity $a) => ['value' => $a->value, 'label' => $a->label()], Activity::cases()),
         ]);
     }
 }

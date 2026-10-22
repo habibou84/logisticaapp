@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Enums\Activity;
 use App\Enums\Permission;
 use App\Http\Controllers\Controller;
 use App\Services\Reports\Statistics;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -101,7 +103,10 @@ class StatisticsController extends Controller
         // Personnel de l'entreprise seulement (pas les e-commerçants)
         abort_if($request->user()->merchant_id !== null || $request->user()->company === null, 403);
 
-        return $this->statistics->for($request->user()->company);
+        // Une activité choisie (dans le périmètre de l'utilisateur, filtré par ailleurs)
+        $request->validate(['activity' => ['nullable', Rule::enum(Activity::class)]]);
+
+        return $this->statistics->for($request->user()->company)->forActivity($request->input('activity'));
     }
 
     private function withAmounts(Request $request): bool

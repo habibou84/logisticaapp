@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\AuthenticateApiKey;
+use App\Http\Middleware\EnsureActivity;
 use App\Http\Middleware\EnsureApiScope;
 use App\Http\Middleware\EnsureIdempotency;
 use App\Http\Middleware\EnsureUserIsActive;
@@ -39,6 +40,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->encryptCookies(except: [PreprodGate::COOKIE]);
         $middleware->alias([
             'active' => EnsureUserIsActive::class,
+            'activity' => EnsureActivity::class,
             'api.key' => AuthenticateApiKey::class,
             'api.scope' => EnsureApiScope::class,
             'idempotent' => EnsureIdempotency::class,

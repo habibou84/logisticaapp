@@ -49,12 +49,27 @@ class Statistics
     // Statistiques d'un seul e-commerçant (son application) ; null = toute l'entreprise
     private ?int $merchantId = null;
 
+    // Une seule activité (e-commerce, distribution, MAD) ; null = toutes celles du périmètre
+    private ?string $activity = null;
+
     public function for(Company $company): self
     {
         $clone = clone $this;
         $clone->company = $company;
         $clone->tz = $company->timezone ?: config('app.timezone');
         $clone->merchantId = null;
+        $clone->activity = null;
+
+        return $clone;
+    }
+
+    /**
+     * Les courses d'une seule activité.
+     */
+    public function forActivity(?string $activity): self
+    {
+        $clone = clone $this;
+        $clone->activity = $activity;
 
         return $clone;
     }
@@ -504,7 +519,8 @@ class Statistics
     private function orders()
     {
         return Order::forCompany($this->company->id)
-            ->when($this->merchantId !== null, fn ($q) => $q->where('merchant_id', $this->merchantId));
+            ->when($this->merchantId !== null, fn ($q) => $q->where('merchant_id', $this->merchantId))
+            ->when($this->activity !== null, fn ($q) => $q->where('activity', $this->activity));
     }
 
     /**

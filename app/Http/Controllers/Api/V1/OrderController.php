@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Enums\Activity;
 use App\Enums\AssignmentType;
 use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
@@ -43,6 +44,8 @@ class OrderController extends Controller
             // File « Sans livreur » : ramassage, livraison ou les deux
             'awaiting' => ['nullable', Rule::in([AwaitingCourier::PICKUP, AwaitingCourier::DELIVERY])],
             'merchant_id' => ['nullable', 'integer'],
+            // Activité : e-commerce, distribution, MAD (dans le périmètre de l'utilisateur)
+            'activity' => ['nullable', Rule::enum(Activity::class)],
             'hub_id' => ['nullable', 'integer'],
             'courier_id' => ['nullable', 'integer'],
             'zone_id' => ['nullable', 'integer'],
@@ -74,6 +77,7 @@ class OrderController extends Controller
             // Sans livreur : de la plus ancienne attente à la plus récente
             ->when($queue === 'unassigned', fn ($q) => $q->orderBy('status_changed_at'))
             ->when($request->filled('merchant_id'), fn ($q) => $q->where('merchant_id', $request->integer('merchant_id')))
+            ->when($request->filled('activity'), fn ($q) => $q->where('activity', $request->string('activity')))
             ->when($request->filled('hub_id'), fn ($q) => $q->where('pickup_hub_id', $request->integer('hub_id')))
             ->when($request->filled('courier_id'), fn ($q) => $q->where(fn ($q) => $q
                 ->where('pickup_courier_id', $request->integer('courier_id'))

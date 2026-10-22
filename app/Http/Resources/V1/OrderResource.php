@@ -24,6 +24,9 @@ class OrderResource extends JsonResource
             'tracking_code' => $this->tracking_code,
             'merchant_reference' => $this->merchant_reference,
             'source' => $this->source,
+            // E-commerce, distribution ou MAD
+            'activity' => $this->activity?->value,
+            'activity_label' => $this->activity?->label(),
             'status' => $this->status,
             'status_label' => $this->statusLabel(),
             'merchant_id' => $this->merchant_id,

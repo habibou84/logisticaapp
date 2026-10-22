@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\Activity;
 use App\Enums\Role;
 use App\Enums\UserStatus;
 use App\Support\PhoneNumber;
@@ -23,7 +24,11 @@ use Spatie\Permission\Traits\HasRoles;
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasApiTokens, HasFactory, HasRoles, Notifiable, SoftDeletes;
+    use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
+
+    use HasRoles {
+        hasPermissionTo as private roleHasPermissionTo;
+    }
 
     // Les rôles et permissions sont globaux (non liés à une entreprise) :
     // l'isolation entre entreprises se fait par company_id.
@@ -37,6 +42,9 @@ class User extends Authenticatable
         'email',
         'password',
         'status',
+        // Périmètre de l'équipe (activités visibles, vide : toutes) et permissions retirées au rôle
+        'activities',
+        'denied_permissions',
     ];
 
     protected $hidden = [
@@ -51,6 +59,8 @@ class User extends Authenticatable
             'last_login_at' => 'datetime',
             'setup_seen_at' => 'datetime',
             'password' => 'hashed',
+            'activities' => 'array',
+            'denied_permissions' => 'array',
             'status' => UserStatus::class,
         ];
     }
@@ -112,6 +122,54 @@ class User extends Authenticatable
             );
             $this->unsetRelation('courier');
         }
+    }
+
+    /**
+     * Activités que ce compte de l'équipe voit (valeurs), ou null : toutes (administrateur, compte sans
+     * périmètre, livreur, client).
+     *
+     * @return list<string>|null
+     */
+    public function activityScope(): ?array
+    {
+        if ($this->merchant_id !== null || $this->isCourier() || $this->hasRole(Role::Admin->value)) {
+            return null;
+        }
+        $values = array_values(array_intersect(Activity::values(), (array) ($this->activities ?? [])));
+
+        return $values === [] ? null : $values;
+    }
+
+    /**
+     * Réglage fin : une permission retirée à ce compte l'emporte sur son rôle et ses permissions ajoutées
+     * (vérifications par can(), les middlewares et les policies).
+     */
+    public function hasPermissionTo($permission, ?string $guardName = null): bool
+    {
+        $name = $permission instanceof \BackedEnum ? $permission->value : (is_string($permission) ? $permission : ($permission->name ?? null));
+        if ($name !== null && in_array($name, (array) ($this->denied_permissions ?? []), true)) {
+            return false;
+        }
+
+        return $this->roleHasPermissionTo($permission, $guardName);
+    }
+
+    /**
+     * Permissions effectives : celles du rôle et celles ajoutées, moins celles retirées (réglage fin).
+     *
+     * @return list<string>
+     */
+    public function effectivePermissions(): array
+    {
+        return $this->getAllPermissions()->pluck('name')
+            ->diff((array) ($this->denied_permissions ?? []))->values()->all();
+    }
+
+    public function seesActivity(Activity|string $activity): bool
+    {
+        $scope = $this->activityScope();
+
+        return $scope === null || in_array($activity instanceof Activity ? $activity->value : $activity, $scope, true);
     }
 
     public function isCourier(): bool

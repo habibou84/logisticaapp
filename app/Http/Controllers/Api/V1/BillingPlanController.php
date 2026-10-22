@@ -28,7 +28,8 @@ class BillingPlanController extends Controller
     {
         abort_unless($request->user()->can(Permission::MerchantsView->value), 403);
 
-        return BillingPlanResource::collection($merchant->billingPlans()->with('couriers.user')->get());
+        return BillingPlanResource::collection($merchant->billingPlans()->with('couriers.user')->get()
+            ->filter(fn (BillingPlan $p) => $request->user()->seesActivity($p->activity))->values());
     }
 
     public function store(Request $request, Merchant $merchant): JsonResponse
@@ -38,12 +39,15 @@ class BillingPlanController extends Controller
 
         $plan = DB::transaction(function () use ($merchant, $data) {
             $starts = CarbonImmutable::parse($data['starts_on']);
-            // La formule en cours s'arrête la veille ; une formule qui n'a pas commencé est remplacée
-            BillingPlan::where('merchant_id', $merchant->id)->whereDate('starts_on', '>=', $starts)->get()
+            $activity = BillingFormula::from($data['formula'])->activity();
+            // Le client a l'activité de la formule
+            $merchant->syncActivities([...$merchant->activityList(), $activity]);
+            // Même activité : la formule en cours s'arrête la veille, une formule qui n'a pas commencé est remplacée
+            BillingPlan::where('merchant_id', $merchant->id)->where('activity', $activity->value)->whereDate('starts_on', '>=', $starts)->get()
                 ->each(fn (BillingPlan $p) => Order::where('billing_plan_id', $p->id)->exists()
                     ? throw new BusinessRuleException('Une formule qui commence à cette date ou après a déjà des courses.', 'starts_on')
                     : $p->delete());
-            BillingPlan::where('merchant_id', $merchant->id)->activeOn($starts)
+            BillingPlan::where('merchant_id', $merchant->id)->where('activity', $activity->value)->activeOn($starts)
                 ->update(['ends_on' => $starts->subDay()->toDateString()]);
 
             $plan = BillingPlan::create([
@@ -97,7 +101,9 @@ class BillingPlanController extends Controller
 
     private function authorizeManage(Request $request): void
     {
-        abort_unless($request->user()->can(Permission::MerchantsManage->value), 403);
+        abort_unless($request->user()->can(Permission::RatesManage->value), 403);
+        $formula = BillingFormula::tryFrom((string) $request->input('formula', $request->route('billingPlan')?->formula?->value));
+        abort_if($formula !== null && ! $request->user()->seesActivity($formula->activity()), 403, 'Vous ne gérez pas cette activité.');
     }
 
     /** @return array<string, mixed> */

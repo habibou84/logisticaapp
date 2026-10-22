@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
+use App\Enums\Activity;
 use App\Enums\BillingFormula;
 use App\Enums\DeliveryDelay;
 use App\Models\Concerns\BelongsToCompany;
+use App\Models\Scopes\ActivityScope;
 use App\Support\Money;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
@@ -21,7 +23,7 @@ class BillingPlan extends Model
     use BelongsToCompany;
 
     protected $fillable = [
-        'company_id', 'merchant_id', 'formula', 'monthly_fee', 'included_quantity', 'overage_price',
+        'company_id', 'merchant_id', 'formula', 'activity', 'monthly_fee', 'included_quantity', 'overage_price',
         'delivery_delay', 'cheque_price', 'extra_kg_price', 'starts_on', 'ends_on', 'notes',
     ];
 
@@ -29,6 +31,7 @@ class BillingPlan extends Model
     {
         return [
             'formula' => BillingFormula::class,
+            'activity' => Activity::class,
             'delivery_delay' => DeliveryDelay::class,
             'monthly_fee' => 'integer',
             'included_quantity' => 'integer',
@@ -38,6 +41,14 @@ class BillingPlan extends Model
             'starts_on' => 'date:Y-m-d',
             'ends_on' => 'date:Y-m-d',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        // Périmètre de l'équipe (activités visibles)
+        static::addGlobalScope(new ActivityScope);
+        // L'activité suit la formule : distribution ou MAD
+        static::saving(fn (self $plan) => $plan->activity = $plan->formula->activity());
     }
 
     public function merchant(): BelongsTo
@@ -67,12 +78,34 @@ class BillingPlan extends Model
             ->where(fn ($q) => $q->whereNull('ends_on')->orWhereDate('ends_on', '>=', $from));
     }
 
-    public static function activeFor(Merchant $merchant, CarbonInterface|string|null $date = null): ?self
+    /**
+     * Formule en cours du client pour une activité (distribution ou MAD).
+     */
+    public static function activeFor(Merchant $merchant, Activity $activity, CarbonInterface|string|null $date = null): ?self
     {
         $day = $date ?? now($merchant->company?->timezone ?? config('app.timezone'));
 
         return self::forCompany($merchant->company_id)->where('merchant_id', $merchant->id)
+            ->where('activity', $activity->value)
             ->activeOn($day)->latest('starts_on')->latest('id')->first();
+    }
+
+    /**
+     * Résumé pour les écrans (fiche client, saisie des courses).
+     *
+     * @return array<string, mixed>
+     */
+    public function brief(): array
+    {
+        return [
+            'id' => $this->id,
+            'activity' => $this->activity->value,
+            'formula' => $this->formula->value,
+            'formula_label' => $this->formula->label(),
+            'has_forfait' => $this->formula->hasForfait(),
+            'delivery_delay' => $this->delivery_delay->value,
+            'summary' => $this->describe(),
+        ];
     }
 
     public function describe(): string

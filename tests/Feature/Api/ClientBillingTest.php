@@ -56,8 +56,11 @@ class ClientBillingTest extends TestCase
             'starts_on' => '2026-11-01',
             ...$attributes,
         ])->assertCreated()->json('data.id');
+        $plan = BillingPlan::findOrFail($id);
+        // Client de cette seule activité : ses courses en relèvent sans avoir à la choisir
+        $this->merchant->syncActivities([$plan->activity]);
 
-        return BillingPlan::findOrFail($id);
+        return $plan;
     }
 
     public function test_contract_courses_are_billed_on_the_monthly_invoice(): void
@@ -117,7 +120,7 @@ class ClientBillingTest extends TestCase
 
         // Émission : numéro, échéance, plus de modification
         $this->postJson("/api/v1/client-invoices/{$invoice->id}/issue")->assertOk()
-            ->assertJsonPath('data.number', 'FAC-202611-0001')
+            ->assertJsonPath('data.number', 'DIS-202611-0001')
             ->assertJsonPath('data.status', 'issued')
             ->assertJsonPath('data.due_at', '2026-12-16');
         $this->postJson("/api/v1/client-invoices/{$invoice->id}/lines", ['label' => 'X', 'quantity' => 1, 'unit_price' => 10])->assertUnprocessable();
@@ -237,7 +240,7 @@ class ClientBillingTest extends TestCase
 
         $next = $this->plan(['monthly_fee' => 60000, 'starts_on' => '2026-11-15']);
         $this->assertSame('2026-11-14', $plan->fresh()->ends_on->toDateString());
-        $this->getJson("/api/v1/merchants/{$this->merchant->id}")->assertOk()->assertJsonPath('data.billing_plan.id', $plan->id);
+        $this->getJson("/api/v1/merchants/{$this->merchant->id}")->assertOk()->assertJsonPath('data.billing_plans.0.id', $plan->id);
         $this->travelTo('2026-11-15 09:00:00');
         $this->assertSame($next->id, $this->createOrder()->billing_plan_id);
 
@@ -258,7 +261,7 @@ class ClientBillingTest extends TestCase
         $this->getJson('/api/v1/client-invoices')->assertOk()->assertJsonCount(0, 'data');
         $this->getJson("/api/v1/client-invoices/{$invoice->id}")->assertNotFound();
 
-        $invoice->update(['status' => ClientInvoiceStatus::Issued, 'number' => 'FAC-202611-0001']);
+        $invoice->update(['status' => ClientInvoiceStatus::Issued, 'number' => 'DIS-202611-0001']);
         $this->getJson('/api/v1/client-invoices')->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('totals', null);
         $this->getJson("/api/v1/client-invoices/{$invoice->id}")->assertOk()->assertJsonPath('data.total', 50000);
         $this->postJson("/api/v1/client-invoices/{$invoice->id}/payments", ['amount' => 1, 'method' => 'cash', 'paid_on' => '2026-12-01'])->assertForbidden();

@@ -2,6 +2,7 @@
 
 namespace App\Services\Finance;
 
+use App\Enums\Activity;
 use App\Enums\ClientInvoiceStatus;
 use App\Enums\InvoicePaymentMethod;
 use App\Enums\OrderStatus;
@@ -19,7 +20,8 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Factures du mois des clients sous formule (distribution, MAD), payées à part.
+ * Factures du mois des clients sous formule, payées à part : une par client, mois et activité (distribution,
+ * MAD), chaque activité avec sa série de numéros.
  *
  * Calculée en brouillon (chaque 1er du mois pour le mois écoulé, ou à la demande), la facture reprend :
  * le forfait de chaque formule en cours dans le mois, les plis et colis (ou courses) du forfait et ceux
@@ -33,19 +35,25 @@ class ClientInvoicing
     /**
      * Brouillons du mois pour tous les clients concernés (sans toucher aux factures déjà émises).
      *
+     * @param  list<string>|null  $activities  activités à facturer (périmètre de l'utilisateur), null : toutes
      * @return int nombre de factures calculées
      */
-    public function generate(Company $company, CarbonImmutable $month): int
+    public function generate(Company $company, CarbonImmutable $month, ?array $activities = null): int
     {
         [$from, $to] = $this->bounds($company, $month);
 
-        $merchantIds = BillingPlan::forCompany($company->id)->overlapping($from->toDateString(), $to->toDateString())->pluck('merchant_id')
-            ->merge($this->orders($company->id, null, $from, $to)->pluck('merchant_id'))
-            ->unique()->values();
+        // Couples client et activité : une formule dans le mois, ou des courses facturées au mois
+        $pairs = BillingPlan::forCompany($company->id)->overlapping($from->toDateString(), $to->toDateString())
+            ->get(['merchant_id', 'activity'])->map(fn ($p) => $p->merchant_id.'|'.$p->activity->value)
+            ->merge($this->orders($company->id, null, null, $from, $to)->get(['merchant_id', 'activity'])->map(fn ($o) => $o->merchant_id.'|'.$o->activity->value))
+            ->unique()->sort()
+            ->filter(fn ($p) => $activities === null || in_array(explode('|', $p)[1], $activities, true))->values();
+        $merchants = Merchant::withoutGlobalScopes()->with('company')->where('company_id', $company->id)->whereIn('id', $pairs->map(fn ($p) => (int) explode('|', $p)[0]))->get()->keyBy('id');
 
         $count = 0;
-        foreach (Merchant::forCompany($company->id)->whereIn('id', $merchantIds)->orderBy('id')->get() as $merchant) {
-            if ($this->compute($merchant, $month) !== null) {
+        foreach ($pairs as $pair) {
+            [$merchantId, $activity] = explode('|', $pair);
+            if (isset($merchants[(int) $merchantId]) && $this->compute($merchants[(int) $merchantId], Activity::from($activity), $month) !== null) {
                 $count++;
             }
         }
@@ -54,30 +62,33 @@ class ClientInvoicing
     }
 
     /**
-     * Calcule (ou recalcule) le brouillon du mois d'un client. Null : rien à facturer, ou facture déjà émise.
+     * Calcule (ou recalcule) le brouillon du mois d'un client pour une activité. Null : rien à facturer, ou
+     * facture déjà émise.
      */
-    public function compute(Merchant $merchant, CarbonImmutable $month): ?ClientInvoice
+    public function compute(Merchant $merchant, Activity $activity, CarbonImmutable $month): ?ClientInvoice
     {
         $company = $merchant->company;
         [$from, $to] = $this->bounds($company, $month);
         $period = $from->startOfMonth()->toDateString();
 
-        $invoice = ClientInvoice::forCompany($company->id)->where('merchant_id', $merchant->id)->whereDate('period', $period)->first();
+        $invoice = ClientInvoice::forCompany($company->id)->withoutGlobalScopes()->where('company_id', $company->id)
+            ->where('merchant_id', $merchant->id)->where('activity', $activity->value)->whereDate('period', $period)->first();
         if ($invoice !== null && $invoice->status !== ClientInvoiceStatus::Draft) {
             return null;
         }
 
-        $lines = $this->lines($merchant, $from, $to);
+        $lines = $this->lines($merchant, $activity, $from, $to);
         if ($lines === [] && ($invoice === null || ! $invoice->lines()->where('manual', true)->exists())) {
             $invoice?->delete();
 
             return null;
         }
 
-        return DB::transaction(function () use ($company, $merchant, $period, $invoice, $lines) {
+        return DB::transaction(function () use ($company, $merchant, $activity, $period, $invoice, $lines) {
             $invoice ??= ClientInvoice::create([
                 'company_id' => $company->id,
                 'merchant_id' => $merchant->id,
+                'activity' => $activity,
                 'period' => $period,
                 'status' => ClientInvoiceStatus::Draft,
             ]);
@@ -96,10 +107,10 @@ class ClientInvoicing
      *
      * @return list<array{kind: string, label: string, quantity: int, unit_price: int, amount: int}>
      */
-    public function lines(Merchant $merchant, CarbonImmutable $from, CarbonImmutable $to): array
+    public function lines(Merchant $merchant, Activity $activity, CarbonImmutable $from, CarbonImmutable $to): array
     {
-        $orders = $this->orders($merchant->company_id, $merchant->id, $from, $to)->get();
-        $plans = BillingPlan::forCompany($merchant->company_id)->where('merchant_id', $merchant->id)
+        $orders = $this->orders($merchant->company_id, $merchant->id, $activity, $from, $to)->get();
+        $plans = BillingPlan::forCompany($merchant->company_id)->where('merchant_id', $merchant->id)->where('activity', $activity->value)
             ->overlapping($from->toDateString(), $to->toDateString())->orderBy('starts_on')->orderBy('id')->get();
         $month = $from->locale('fr')->translatedFormat('F Y');
         $lines = [];
@@ -144,11 +155,12 @@ class ClientInvoicing
     /**
      * Courses facturées au mois d'un client (ou de tous), créées entre ces deux instants.
      */
-    public function orders(int $companyId, ?int $merchantId, CarbonImmutable $from, CarbonImmutable $to)
+    public function orders(int $companyId, ?int $merchantId, ?Activity $activity, CarbonImmutable $from, CarbonImmutable $to)
     {
         return Order::withoutGlobalScopes()
             ->where('company_id', $companyId)
             ->when($merchantId, fn ($q) => $q->where('merchant_id', $merchantId))
+            ->when($activity, fn ($q) => $q->where('activity', $activity->value))
             ->whereNotNull('billing_plan_id')
             ->whereNull('deleted_at')
             ->whereNotIn('status', [OrderStatus::Cancelled->value, OrderStatus::Rejected->value])
@@ -165,7 +177,7 @@ class ClientInvoicing
         $company = $invoice->company;
         [$from, $to] = $this->bounds($company, CarbonImmutable::parse($invoice->period));
 
-        return $this->orders($company->id, $invoice->merchant_id, $from, $to)->with('deliveryZone:id,name,city');
+        return $this->orders($company->id, $invoice->merchant_id, $invoice->activity, $from, $to)->with('deliveryZone:id,name,city');
     }
 
     public function addLine(ClientInvoice $invoice, string $label, int $quantity, int $unitPrice): ClientInvoice
@@ -203,8 +215,9 @@ class ClientInvoicing
         }
 
         return DB::transaction(function () use ($invoice) {
-            $prefix = config('platform.client_invoices.prefix', 'FAC').'-'.$invoice->period->format('Ym').'-';
-            $last = ClientInvoice::forCompany($invoice->company_id)->where('number', 'like', $prefix.'%')->lockForUpdate()->pluck('number')
+            // Une série par activité : DIS-AAAAMM-0001, MAD-AAAAMM-0001
+            $prefix = config('platform.client_invoices.prefixes.'.$invoice->activity->value, $invoice->activity->invoicePrefix()).'-'.$invoice->period->format('Ym').'-';
+            $last = ClientInvoice::withoutGlobalScopes()->where('company_id', $invoice->company_id)->where('number', 'like', $prefix.'%')->lockForUpdate()->pluck('number')
                 ->map(fn ($n) => (int) substr($n, strlen($prefix)))->max() ?? 0;
             $today = CarbonImmutable::now($invoice->company->timezone ?: config('app.timezone'));
 

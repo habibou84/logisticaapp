@@ -139,6 +139,7 @@ class ClientRateController extends Controller
     private function authorize(Request $request, bool $read = false): void
     {
         $user = $request->user();
-        abort_unless($user->can(Permission::SettingsManage->value) || ($read && $user->canAny([Permission::OrdersCreate->value, Permission::FinanceView->value])), 403);
+        abort_unless($user->canAny([Permission::SettingsManage->value, Permission::RatesManage->value])
+            || ($read && $user->canAny([Permission::OrdersCreate->value, Permission::FinanceView->value, Permission::InvoicesView->value])), 403);
     }
 }

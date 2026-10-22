@@ -28,6 +28,11 @@ enum BillingFormula: string
         return $this !== self::DistributionUnit;
     }
 
+    public function activity(): Activity
+    {
+        return $this === self::MadContract ? Activity::Mad : Activity::Distribution;
+    }
+
     public function isMad(): bool
     {
         return $this === self::MadContract;

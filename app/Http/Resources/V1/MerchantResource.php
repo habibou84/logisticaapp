@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\V1;
 
+use App\Enums\Activity;
 use App\Models\Merchant;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -39,15 +40,10 @@ class MerchantResource extends JsonResource
             'pricing_grid_id' => $this->when($isStaff, $this->pricing_grid_id),
             'notes' => $this->when($isStaff, $this->notes),
             'orders_count' => $this->whenCounted('orders'),
-            // Formule de facturation en cours (distribution, MAD) ; null : courses ordinaires
-            'billing_plan' => $this->whenLoaded('billingPlans', fn () => ($plan = $this->billingPlans->first()) ? [
-                'id' => $plan->id,
-                'formula' => $plan->formula->value,
-                'formula_label' => $plan->formula->label(),
-                'has_forfait' => $plan->formula->hasForfait(),
-                'delivery_delay' => $plan->delivery_delay->value,
-                'summary' => $plan->describe(),
-            ] : null),
+            // Activités du client (e-commerce, distribution, MAD) et formules en cours (une par activité facturée)
+            'activities' => array_map(fn (Activity $a) => $a->value, $this->resource->activityList()),
+            'billing_plans' => $this->whenLoaded('billingPlans', fn () => $this->billingPlans->unique(fn ($p) => $p->activity->value)
+                ->map(fn ($p) => $p->brief())->values()),
             'users' => UserResource::collection($this->whenLoaded('users')),
             'created_at' => $this->created_at,
         ];

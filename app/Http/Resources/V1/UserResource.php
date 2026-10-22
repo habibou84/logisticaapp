@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\V1;
 
+use App\Enums\Activity;
 use App\Models\BillingPlan;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -46,13 +47,10 @@ class UserResource extends JsonResource
             'merchant' => $this->whenLoaded('merchant', fn () => $this->merchant ? [
                 'id' => $this->merchant->id,
                 'business_name' => $this->merchant->business_name,
-                // Formule en cours (distribution, MAD) : type d'envoi et délai sur ses courses
-                'billing_plan' => ($plan = BillingPlan::activeFor($this->merchant)) ? [
-                    'formula' => $plan->formula->value,
-                    'formula_label' => $plan->formula->label(),
-                    'has_forfait' => $plan->formula->hasForfait(),
-                    'delivery_delay' => $plan->delivery_delay->value,
-                ] : null,
+                // Activités et formules en cours (distribution, MAD) : activité, type d'envoi et délai sur ses courses
+                'activities' => array_map(fn (Activity $a) => $a->value, $this->merchant->activityList()),
+                'billing_plans' => collect([Activity::Distribution, Activity::Mad])
+                    ->map(fn (Activity $a) => BillingPlan::activeFor($this->merchant, $a)?->brief())->filter()->values(),
                 // Rappel dans l'application tant que le lieu de ramassage n'est pas localisé
                 'has_pickup_location' => $this->merchant->hasPickupLocation(),
                 'pickup_location_source' => $this->merchant->pickup_location_source,
@@ -62,9 +60,13 @@ class UserResource extends JsonResource
                 'is_available' => $this->courier->is_available,
                 'vehicle_type' => $this->courier->vehicle_type,
             ] : null),
+            // Équipe : périmètre (activités visibles, vide : toutes) et réglage fin des permissions
+            'activities' => $this->activities ?? [],
+            'extra_permissions' => $this->whenLoaded('permissions', fn () => $this->permissions->pluck('name')->values()),
+            'denied_permissions' => $this->denied_permissions ?? [],
             'permissions' => $this->when(
                 $this->withPermissions,
-                fn () => $this->getAllPermissions()->pluck('name')->values(),
+                fn () => $this->resource->effectivePermissions(),
             ),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,

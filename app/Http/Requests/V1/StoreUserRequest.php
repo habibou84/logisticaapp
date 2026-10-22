@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\V1;
 
+use App\Enums\Activity;
+use App\Enums\Permission;
 use App\Enums\Role;
 use App\Models\User;
 use App\Rules\PhoneNumber;
@@ -38,6 +40,13 @@ class StoreUserRequest extends FormRequest
             'phone' => ['required', 'string', new PhoneNumber, User::uniqueIn($companyId, 'phone')],
             'email' => ['nullable', 'email', 'max:255', User::uniqueIn($companyId, 'email')],
             'password' => ['required', 'string', Password::min(8)],
+            // Équipe : périmètre (activités visibles, vide : toutes) et réglage fin des permissions
+            'activities' => ['sometimes', 'nullable', 'array'],
+            'activities.*' => [Rule::enum(Activity::class)],
+            'extra_permissions' => ['sometimes', 'array'],
+            'extra_permissions.*' => [Rule::enum(Permission::class)],
+            'denied_permissions' => ['sometimes', 'array'],
+            'denied_permissions.*' => [Rule::enum(Permission::class)],
             'role' => ['required', Rule::in(Role::values(Role::assignableBy($actor)))],
         ];
     }

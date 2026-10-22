@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\V1;
 
+use App\Enums\Activity;
 use App\Enums\FeePayer;
 use App\Enums\MerchantStatus;
 use App\Rules\PhoneNumber;
@@ -33,6 +34,13 @@ class UpdateMerchantRequest extends FormRequest
         $companyId = $this->user()->company_id ?? $this->route('merchant')->company_id;
 
         return [
+            // Activités du client (au moins une), dans le périmètre de l'utilisateur
+            'activities' => ['sometimes', 'array', 'min:1'],
+            'activities.*' => [Rule::enum(Activity::class), function ($attribute, $value, $fail) {
+                if (! $this->user()->seesActivity((string) $value)) {
+                    $fail('Vous ne gérez pas cette activité.');
+                }
+            }],
             'business_name' => ['sometimes', 'required', 'string', 'max:255'],
             'contact_name' => ['sometimes', 'nullable', 'string', 'max:255'],
             'phone' => ['sometimes', 'required', 'string', new PhoneNumber,

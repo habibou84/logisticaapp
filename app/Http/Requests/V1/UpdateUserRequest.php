@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\V1;
 
+use App\Enums\Activity;
+use App\Enums\Permission;
 use App\Enums\Role;
 use App\Enums\UserStatus;
 use App\Models\User;
@@ -24,7 +26,7 @@ class UpdateUserRequest extends FormRequest
 
         // Changer un rôle ou un statut demande un droit supplémentaire
         // (personne ne peut modifier son propre rôle ou statut)
-        if ($this->hasAny(['role', 'status'])) {
+        if ($this->hasAny(['role', 'status', 'activities', 'extra_permissions', 'denied_permissions'])) {
             return ! $this->user()->is($user)
                 && $this->user()->can('changeRoleOrStatus', $user);
         }
@@ -51,6 +53,13 @@ class UpdateUserRequest extends FormRequest
             'phone' => ['sometimes', 'required', 'string', new PhoneNumber, User::uniqueIn($user->company_id, 'phone')->ignore($user)],
             'email' => ['sometimes', 'nullable', 'email', 'max:255', User::uniqueIn($user->company_id, 'email')->ignore($user)],
             'password' => ['sometimes', 'required', 'string', Password::min(8)],
+            // Équipe : périmètre (activités visibles, vide : toutes) et réglage fin des permissions
+            'activities' => ['sometimes', 'nullable', 'array'],
+            'activities.*' => [Rule::enum(Activity::class)],
+            'extra_permissions' => ['sometimes', 'array'],
+            'extra_permissions.*' => [Rule::enum(Permission::class)],
+            'denied_permissions' => ['sometimes', 'array'],
+            'denied_permissions.*' => [Rule::enum(Permission::class)],
             'role' => ['sometimes', 'required', Rule::in(Role::values(Role::assignableBy($this->user())))],
             'status' => ['sometimes', 'required', new Enum(UserStatus::class)],
         ];

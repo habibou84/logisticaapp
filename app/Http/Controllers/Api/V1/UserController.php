@@ -32,7 +32,7 @@ class UserController extends Controller
         ]);
 
         $users = User::query()
-            ->with(['roles', 'company'])
+            ->with(['roles', 'permissions', 'company'])
             ->forCompany($actor->company_id)
             ->when($request->filled('role'), fn ($q) => $q->role($request->string('role')->toString()))
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
@@ -61,15 +61,18 @@ class UserController extends Controller
                 'phone' => $data['phone'],
                 'email' => $data['email'] ?? null,
                 'password' => $data['password'],
+                'activities' => $data['activities'] ?? null,
+                'denied_permissions' => $data['denied_permissions'] ?? null,
             ]);
 
             $user->assignRole($data['role']);
+            $user->syncPermissions($data['extra_permissions'] ?? []);
             $user->syncCourierProfile();
 
             return $user;
         });
 
-        return UserResource::make($user->load(['roles', 'company']))
+        return UserResource::make($user->load(['roles', 'permissions', 'company']))
             ->response()
             ->setStatusCode(201);
     }
@@ -78,7 +81,7 @@ class UserController extends Controller
     {
         Gate::authorize('view', $user);
 
-        return UserResource::make($user->load(['roles', 'company']));
+        return UserResource::make($user->load(['roles', 'permissions', 'company']));
     }
 
     public function update(UpdateUserRequest $request, User $user): UserResource
@@ -86,7 +89,12 @@ class UserController extends Controller
         $data = $request->validated();
 
         DB::transaction(function () use ($user, $data) {
-            $user->fill(collect($data)->except('role')->all())->save();
+            $user->fill(collect($data)->except(['role', 'extra_permissions'])->all())->save();
+
+            // Réglage fin : permissions ajoutées au rôle (directes) ; celles retirées sont dans denied_permissions
+            if (array_key_exists('extra_permissions', $data)) {
+                $user->syncPermissions($data['extra_permissions']);
+            }
 
             if (isset($data['role'])) {
                 $user->syncRoles([$data['role']]);
@@ -99,7 +107,7 @@ class UserController extends Controller
             }
         });
 
-        return UserResource::make($user->load(['roles', 'company']));
+        return UserResource::make($user->load(['roles', 'permissions', 'company']));
     }
 
     public function destroy(Request $request, User $user): JsonResponse

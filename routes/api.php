@@ -45,6 +45,7 @@ use App\Http\Controllers\Api\V1\QuoteController;
 use App\Http\Controllers\Api\V1\ReferenceController;
 use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\ReturnSlipController;
+use App\Http\Controllers\Api\V1\RevenueController;
 use App\Http\Controllers\Api\V1\RoleController;
 use App\Http\Controllers\Api\V1\SetupGuideController;
 use App\Http\Controllers\Api\V1\ShopController;
@@ -357,6 +358,9 @@ Route::prefix('v1')->name('v1.')->group(function () {
             Route::delete('interior-rates/{interiorRate}', 'destroyInterior')->name('interior-rates.destroy');
         });
 
+        // Chiffre d'affaires par activité (e-commerce, distribution, MAD)
+        Route::get('revenue', RevenueController::class)->name('revenue');
+
         // Factures du mois des clients sous formule
         Route::prefix('client-invoices')->name('client-invoices.')->controller(ClientInvoiceController::class)->group(function () {
             Route::get('/', 'index')->name('index');
@@ -392,14 +396,17 @@ Route::prefix('v1')->name('v1.')->group(function () {
             Route::get('remittances', 'remittances')->name('remittances.index');
             Route::post('remittances', 'storeRemittance')->name('remittances.store');
 
-            Route::get('merchants', 'merchants')->name('merchants.index');
-            Route::get('merchants/{merchant}/ledger', 'ledger')->name('merchants.ledger');
-            Route::post('merchants/{merchant}/adjustments', 'adjustMerchant')->name('merchants.adjustments');
-            Route::get('payouts', 'payouts')->name('payouts.index');
-            Route::post('payouts', 'storePayout')->name('payouts.store');
-            Route::get('payouts/{payout}', 'showPayout')->name('payouts.show');
-            Route::post('payouts/{payout}/pay', 'payPayout')->name('payouts.pay');
-            Route::post('payouts/{payout}/cancel', 'cancelPayout')->name('payouts.cancel');
+            // Comptes et reversements des clients : e-commerce (frais déduits course par course)
+            Route::middleware('activity:ecommerce')->group(function () {
+                Route::get('merchants', 'merchants')->name('merchants.index');
+                Route::get('merchants/{merchant}/ledger', 'ledger')->name('merchants.ledger');
+                Route::post('merchants/{merchant}/adjustments', 'adjustMerchant')->name('merchants.adjustments');
+                Route::get('payouts', 'payouts')->name('payouts.index');
+                Route::post('payouts', 'storePayout')->name('payouts.store');
+                Route::get('payouts/{payout}', 'showPayout')->name('payouts.show');
+                Route::post('payouts/{payout}/pay', 'payPayout')->name('payouts.pay');
+                Route::post('payouts/{payout}/cancel', 'cancelPayout')->name('payouts.cancel');
+            });
 
             Route::get('courier-payouts', 'courierPayouts')->name('courier-payouts.index');
             Route::post('courier-payouts', 'storeCourierPayout')->name('courier-payouts.store');

@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\Enums\Activity;
 use App\Enums\FeePayer;
 use App\Enums\MerchantStatus;
 use App\Enums\NotificationEvent;
 use App\Models\Concerns\BelongsToCompany;
+use App\Models\Scopes\ActivityScope;
 use App\Support\PhoneNumber;
 use Database\Factories\MerchantFactory;
 use Illuminate\Database\Eloquent\Builder;
@@ -100,6 +102,58 @@ class Merchant extends Model
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class);
+    }
+
+    protected static function booted(): void
+    {
+        // Périmètre de l'équipe (activités visibles)
+        static::addGlobalScope(new ActivityScope('activityRows'));
+        // Nouveau client : e-commerce, sauf activités choisies ensuite
+        static::created(fn (self $merchant) => $merchant->activityRows()->firstOrCreate(['activity' => Activity::Ecommerce->value]));
+    }
+
+    public function activityRows(): HasMany
+    {
+        return $this->hasMany(MerchantActivity::class);
+    }
+
+    /**
+     * Activités du client (e-commerce par défaut).
+     *
+     * @return list<Activity>
+     */
+    public function activityList(): array
+    {
+        $rows = $this->relationLoaded('activityRows') ? $this->activityRows : $this->activityRows()->get();
+        $list = $rows->pluck('activity')->sortBy(fn (Activity $a) => array_search($a, Activity::cases(), true))->values()->all();
+
+        return $list ?: [Activity::Ecommerce];
+    }
+
+    public function hasActivity(Activity $activity): bool
+    {
+        return in_array($activity, $this->activityList(), true);
+    }
+
+    /**
+     * @param  list<Activity|string>  $activities
+     */
+    public function syncActivities(array $activities): void
+    {
+        $values = collect($activities)->map(fn ($a) => $a instanceof Activity ? $a->value : $a)->unique()->values();
+        $this->activityRows()->whereNotIn('activity', $values)->delete();
+        foreach ($values as $value) {
+            $this->activityRows()->firstOrCreate(['activity' => $value]);
+        }
+        $this->unsetRelation('activityRows');
+    }
+
+    /** Clients qui ont au moins une de ces activités */
+    public function scopeWithActivity(Builder $query, array $activities): Builder
+    {
+        $values = array_map(fn ($a) => $a instanceof Activity ? $a->value : $a, $activities);
+
+        return $query->whereHas('activityRows', fn ($q) => $q->whereIn('activity', $values));
     }
 
     /** Formules de facturation (distribution, MAD), la plus récente en premier */

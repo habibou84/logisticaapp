@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Enums\Activity;
 use App\Enums\DeliveryDelay;
 use App\Enums\ShipmentType;
 use App\Http\Controllers\Controller;
 use App\Models\Merchant;
 use App\Models\Zone;
+use App\Services\Orders\OrderService;
 use App\Services\Orders\ZoneResolver;
 use App\Services\Pricing\ClientPricing;
 use App\Services\Pricing\PricingService;
@@ -40,19 +42,22 @@ class QuoteController extends Controller
             'weight_kg' => ['nullable', 'numeric', 'min:0'],
             'shipment_type' => ['nullable', Rule::enum(ShipmentType::class)],
             'delivery_delay' => ['nullable', Rule::enum(DeliveryDelay::class)],
+            'activity' => ['nullable', Rule::enum(Activity::class)],
         ]);
 
         $merchant = Merchant::findOrFail($user->merchant_id ?? $data['merchant_id']);
         $pickupZone = Zone::findOrFail($data['pickup_zone_id'] ?? $merchant->pickup_zone_id);
         $deliveryZone = Zone::findOrFail($data['delivery_zone_id']);
 
-        // Client sous formule : rien à payer sur la course, elle passe sur la facture du mois
-        if ($billed = $clientPricing->price($merchant, $pickupZone, $deliveryZone, $data)) {
+        // Distribution ou MAD : rien à payer sur la course, elle passe sur la facture du mois
+        $activity = app(OrderService::class)->activity($user, $merchant, $data['activity'] ?? null);
+        if ($billed = $clientPricing->price($merchant, $activity, $pickupZone, $deliveryZone, $data)) {
             return response()->json(['data' => [
                 'base_price' => 0,
                 'surcharges' => [],
                 'surcharges_total' => 0,
                 'total' => 0,
+                'activity' => $activity->value,
                 'billing' => $billed['pricing_details']['billing'],
                 'shipment_type' => $billed['shipment_type']->value,
                 'delivery_delay' => $billed['delivery_delay']->value,

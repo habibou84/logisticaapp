@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\V1;
 
+use App\Enums\Activity;
 use App\Enums\FeePayer;
 use App\Models\Merchant;
 use App\Models\User;
@@ -41,6 +42,13 @@ class StoreMerchantRequest extends FormRequest
         $companyId = $this->user()->company_id;
 
         return [
+            // Activités du client (au moins une), dans le périmètre de l'utilisateur
+            'activities' => ['sometimes', 'array', 'min:1'],
+            'activities.*' => [Rule::enum(Activity::class), function ($attribute, $value, $fail) {
+                if (! $this->user()->seesActivity((string) $value)) {
+                    $fail('Vous ne gérez pas cette activité.');
+                }
+            }],
             'business_name' => ['required', 'string', 'max:255'],
             'contact_name' => ['nullable', 'string', 'max:255'],
             'phone' => ['required', 'string', new PhoneNumber, Rule::unique('merchants', 'phone')->where('company_id', $companyId)],

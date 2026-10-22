@@ -2,13 +2,17 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Enums\Activity;
 use App\Enums\Role;
+use App\Exceptions\BusinessRuleException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\V1\StoreMerchantRequest;
 use App\Http\Requests\V1\UpdateMerchantRequest;
 use App\Http\Resources\V1\MerchantResource;
 use App\Http\Resources\V1\UserResource;
+use App\Models\BillingPlan;
 use App\Models\Merchant;
+use App\Models\Order;
 use App\Models\User;
 use App\Rules\PhoneNumber;
 use App\Support\PhoneNumber as Phone;
@@ -31,13 +35,15 @@ class MerchantController extends Controller
             'search' => ['nullable', 'string', 'max:100'],
             'status' => ['nullable', 'string'],
             'source' => ['nullable', 'string', 'in:backoffice,signup'],
+            'activity' => ['nullable', Rule::enum(Activity::class)],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:200'],
         ]);
 
         $merchants = Merchant::query()
-            ->with(['pickupZone', 'billingPlans' => fn ($q) => $q->activeOn(now())])
+            ->with(['pickupZone', 'activityRows', 'billingPlans' => fn ($q) => $q->activeOn(now())])
             ->withCount('orders')
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
+            ->when($request->filled('activity'), fn ($q) => $q->withActivity([$request->string('activity')->toString()]))
             // Inscrits en ligne
             ->when($request->filled('source'), fn ($q) => $q->where('source', $request->string('source'))->latest())
             ->when($request->filled('search'), function ($q) use ($request) {
@@ -57,7 +63,8 @@ class MerchantController extends Controller
         $data = $request->validated();
 
         $merchant = DB::transaction(function () use ($data, $request) {
-            $merchant = Merchant::create(Arr::except($data, 'owner'));
+            $merchant = Merchant::create(Arr::except($data, ['owner', 'activities']));
+            $merchant->syncActivities($data['activities'] ?? [Activity::Ecommerce]);
             self::trackLocationSource($merchant);
 
             if (! empty($data['owner'])) {
@@ -89,7 +96,24 @@ class MerchantController extends Controller
 
     public function update(UpdateMerchantRequest $request, Merchant $merchant): MerchantResource
     {
-        $merchant->update($request->validated());
+        $data = $request->validated();
+        $merchant->update(Arr::except($data, 'activities'));
+        if (isset($data['activities'])) {
+            // Activité retirée : seulement sans course ni formule (l'historique reste rattaché)
+            $kept = array_map(fn ($a) => $a instanceof Activity ? $a->value : $a, $data['activities']);
+            foreach ($merchant->activityList() as $activity) {
+                if ($request->user()->seesActivity($activity) && ! in_array($activity->value, $kept, true)
+                    && (Order::withoutGlobalScopes()->where('merchant_id', $merchant->id)->where('activity', $activity->value)->exists()
+                        || BillingPlan::withoutGlobalScopes()->where('merchant_id', $merchant->id)->where('activity', $activity->value)->exists())) {
+                    throw new BusinessRuleException("Ce client a déjà des courses ou une formule {$activity->label()} : l'activité ne peut pas être retirée.", 'activities');
+                }
+            }
+            // Activités hors du périmètre de l'utilisateur : gardées telles quelles
+            $merchant->syncActivities([
+                ...array_filter($merchant->activityList(), fn (Activity $a) => ! $request->user()->seesActivity($a)),
+                ...$data['activities'],
+            ]);
+        }
         self::trackLocationSource($merchant);
 
         // Un marchand suspendu ne peut plus se connecter

@@ -2,6 +2,7 @@
 
 namespace App\Services\Pricing;
 
+use App\Enums\Activity;
 use App\Enums\BillingFormula;
 use App\Enums\DeliveryDelay;
 use App\Enums\ShipmentType;
@@ -28,16 +29,23 @@ class ClientPricing
     public function __construct(private readonly PricingService $pricing) {}
 
     /**
-     * Champs de tarification de la course, ou null quand le client n'a pas de formule ce jour-là.
+     * Champs de tarification d'une course de distribution ou de MAD, ou null pour une course e-commerce
+     * (tarif ordinaire). Sans formule en cours pour l'activité : la course est refusée.
      *
      * @param  array{shipment_type?: ?string, delivery_delay?: ?string, weight_kg?: mixed, is_express?: bool, is_fragile?: bool}  $data
      * @return array<string, mixed>|null
      */
-    public function price(Merchant $merchant, Zone $pickupZone, Zone $deliveryZone, array $data): ?array
+    public function price(Merchant $merchant, Activity $activity, Zone $pickupZone, Zone $deliveryZone, array $data): ?array
     {
-        $plan = BillingPlan::activeFor($merchant);
-        if ($plan === null) {
+        if (! $activity->isBilled()) {
             return null;
+        }
+        $plan = BillingPlan::activeFor($merchant, $activity);
+        if ($plan === null) {
+            throw new BusinessRuleException(
+                "Aucune formule {$activity->label()} en cours pour ce client : ajoutez-la sur sa fiche (Formule).",
+                'activity',
+            );
         }
 
         $weight = isset($data['weight_kg']) && $data['weight_kg'] !== '' ? (float) $data['weight_kg'] : null;

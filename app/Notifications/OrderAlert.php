@@ -35,6 +35,11 @@ class OrderAlert extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
+        // Membre de l'équipe limité à d'autres activités : rien
+        if ($notifiable instanceof User && ! $notifiable->seesActivity($this->order->activity)) {
+            return [];
+        }
+
         $channels = ['database', 'broadcast'];
 
         // Téléphone du livreur prévenu même en veille : nouvelle mission, consigne de l'agence

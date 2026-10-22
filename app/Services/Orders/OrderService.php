@@ -2,6 +2,7 @@
 
 namespace App\Services\Orders;
 
+use App\Enums\Activity;
 use App\Enums\FeePayer;
 use App\Enums\OrderEventType;
 use App\Enums\OrderStatus;
@@ -63,7 +64,9 @@ class OrderService
             throw new BusinessRuleException('Ce compte marchand est suspendu.', 'merchant_id');
         }
 
-        return DB::transaction(function () use ($actor, $merchant, $data, $source) {
+        $activity = $this->activity($actor, $merchant, $data['activity'] ?? null);
+
+        return DB::transaction(function () use ($actor, $merchant, $data, $source, $activity) {
             $company = $merchant->company;
             $hub = $this->hub($merchant, $data['pickup_hub_id'] ?? null);
             $items = $this->items($merchant, $data['items'] ?? [], $hub);
@@ -107,13 +110,14 @@ class OrderService
 
             $feePayer = FeePayer::tryFrom($data['fee_payer'] ?? '') ?? $merchant->default_fee_payer;
             $itemsAmount = (int) ($data['items_amount'] ?? 0);
-            $pricing = $this->price($merchant, $data);
+            $pricing = $this->price($merchant, $activity, $data);
 
             $order = new Order([
                 ...Arr::only($data, [...self::PICKUP_FIELDS, ...self::DELIVERY_FIELDS, ...self::PACKAGE_FIELDS]),
                 'company_id' => $merchant->company_id,
                 'merchant_id' => $merchant->id,
                 'source' => $source,
+                'activity' => $activity,
                 // L'application qui envoie la course prévient elle-même l'équipe du marchand
                 'merchant_alerts_muted' => ($data['notify_merchant'] ?? true) === false,
                 'created_by' => $actor->id,
@@ -206,7 +210,7 @@ class OrderService
             }
 
             if ($order->isDirty(['pickup_zone_id', 'delivery_zone_id', 'is_express', 'is_fragile', 'weight_kg', 'shipment_type', 'delivery_delay'])) {
-                $order->fill($this->price($order->merchant, [
+                $order->fill($this->price($order->merchant, $order->activity, [
                     ...$order->only(['pickup_zone_id', 'delivery_zone_id', 'is_express', 'is_fragile', 'weight_kg']),
                     'shipment_type' => $order->shipment_type?->value,
                     'delivery_delay' => $order->delivery_delay?->value,
@@ -317,11 +321,33 @@ class OrderService
     }
 
     /**
+     * Activité de la course : celle demandée (parmi celles du client), sinon l'unique activité du client,
+     * sinon l'e-commerce s'il en fait (API, imports), sinon sa première. Toujours dans le périmètre de l'auteur.
+     */
+    public function activity(User $actor, Merchant $merchant, Activity|string|null $wanted): Activity
+    {
+        $list = $merchant->activityList();
+        $wanted = $wanted instanceof Activity ? $wanted : Activity::tryFrom((string) $wanted);
+
+        if ($wanted !== null && ! in_array($wanted, $list, true)) {
+            throw new BusinessRuleException("Ce client n'a pas l'activité {$wanted->label()} : ajoutez-la sur sa fiche.", 'activity');
+        }
+        $allowed = array_values(array_filter($list, fn (Activity $a) => $actor->seesActivity($a)));
+        $activity = $wanted ?? (in_array(Activity::Ecommerce, $allowed, true) ? Activity::Ecommerce : ($allowed[0] ?? $list[0]));
+
+        if (! $actor->seesActivity($activity)) {
+            throw new BusinessRuleException("Vous ne gérez pas l'activité {$activity->label()}.", 'activity');
+        }
+
+        return $activity;
+    }
+
+    /**
      * Client sous formule (distribution, MAD) : facturé au mois (ClientPricing) ; sinon tarif de la course.
      *
      * @return array{delivery_fee: int, surcharges_total: int, pricing_details: array}
      */
-    private function price(Merchant $merchant, array $data): array
+    private function price(Merchant $merchant, Activity $activity, array $data): array
     {
         $pickupZone = Zone::forCompany($merchant->company_id)->find($data['pickup_zone_id']);
         $deliveryZone = Zone::forCompany($merchant->company_id)->find($data['delivery_zone_id']);
@@ -330,7 +356,7 @@ class OrderService
             throw new BusinessRuleException('Zone inconnue.', $pickupZone ? 'delivery_zone_id' : 'pickup_zone_id');
         }
 
-        if ($billed = $this->clientPricing->price($merchant, $pickupZone, $deliveryZone, $data)) {
+        if ($billed = $this->clientPricing->price($merchant, $activity, $pickupZone, $deliveryZone, $data)) {
             return $billed;
         }
 

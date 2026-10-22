@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Enums\Activity;
 use App\Enums\ClientInvoiceStatus;
 use App\Enums\InvoicePaymentMethod;
 use App\Enums\Permission;
@@ -29,6 +30,7 @@ class ClientInvoiceController extends Controller
         $this->authorizeView($request);
         $request->validate([
             'status' => ['nullable', Rule::enum(ClientInvoiceStatus::class)],
+            'activity' => ['nullable', Rule::enum(Activity::class)],
             'merchant_id' => ['nullable', 'integer'],
             'period' => ['nullable', 'date_format:Y-m'],
         ]);
@@ -38,6 +40,7 @@ class ClientInvoiceController extends Controller
             ->when($user->merchant_id, fn ($q) => $q->where('merchant_id', $user->merchant_id)->whereIn('status', [ClientInvoiceStatus::Issued->value, ClientInvoiceStatus::Paid->value]))
             ->when(! $user->merchant_id && $request->filled('merchant_id'), fn ($q) => $q->where('merchant_id', $request->integer('merchant_id')))
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
+            ->when($request->filled('activity'), fn ($q) => $q->where('activity', $request->string('activity')))
             ->when($request->filled('period'), fn ($q) => $q->whereDate('period', $request->string('period').'-01'))
             ->orderByDesc('period')->orderBy('id')
             ->limit(500)
@@ -50,6 +53,9 @@ class ClientInvoiceController extends Controller
                 'overdue' => (int) $invoices->filter->isOverdue()->sum(fn (ClientInvoice $i) => $i->balance()),
                 'drafts' => $invoices->where('status', ClientInvoiceStatus::Draft)->count(),
             ],
+            // Activités facturées au mois que l'utilisateur voit (filtre, calcul)
+            'activities' => collect([Activity::Distribution, Activity::Mad])->filter(fn (Activity $a) => $user->seesActivity($a))
+                ->map(fn (Activity $a) => ['value' => $a->value, 'label' => $a->label()])->values(),
         ]);
     }
 
@@ -67,12 +73,17 @@ class ClientInvoiceController extends Controller
         $data = $request->validate([
             'month' => ['required', 'date_format:Y-m'],
             'merchant_id' => ['nullable', 'integer', Rule::exists('merchants', 'id')->where('company_id', $request->user()->company_id)],
-        ], [], ['month' => 'mois']);
+            'activity' => [Rule::requiredIf($request->filled('merchant_id')), 'nullable', Rule::in([Activity::Distribution->value, Activity::Mad->value])],
+        ], [], ['month' => 'mois', 'activity' => 'activité']);
         $month = CarbonImmutable::createFromFormat('Y-m-d', $data['month'].'-01');
+        $user = $request->user();
+        $activities = array_values(array_filter([Activity::Distribution->value, Activity::Mad->value], fn ($a) => $user->seesActivity($a)
+            && (! isset($data['activity']) || $data['activity'] === $a)));
+        abort_if($activities === [], 403, 'Vous ne gérez pas cette activité.');
 
         $count = isset($data['merchant_id'])
-            ? (int) ($this->invoicing->compute(Merchant::findOrFail($data['merchant_id']), $month) !== null)
-            : $this->invoicing->generate($request->user()->company, $month);
+            ? (int) ($this->invoicing->compute(Merchant::findOrFail($data['merchant_id']), Activity::from($activities[0]), $month) !== null)
+            : $this->invoicing->generate($user->company, $month, $activities);
 
         return response()->json(['data' => ['count' => $count]]);
     }
@@ -80,7 +91,7 @@ class ClientInvoiceController extends Controller
     public function refresh(Request $request, ClientInvoice $clientInvoice): JsonResponse
     {
         $this->authorizeManage($request);
-        $invoice = $this->invoicing->compute($clientInvoice->merchant, CarbonImmutable::parse($clientInvoice->period));
+        $invoice = $this->invoicing->compute($clientInvoice->merchant, $clientInvoice->activity, CarbonImmutable::parse($clientInvoice->period));
 
         return response()->json(['data' => $invoice ? $this->detail($invoice) : null]);
     }
@@ -140,6 +151,8 @@ class ClientInvoiceController extends Controller
         return [
             'id' => $invoice->id,
             'number' => $invoice->number,
+            'activity' => $invoice->activity->value,
+            'activity_label' => $invoice->activity->label(),
             'merchant' => $invoice->merchant ? ['id' => $invoice->merchant->id, 'business_name' => $invoice->merchant->business_name] : null,
             'period' => $invoice->period->format('Y-m'),
             'period_label' => ucfirst($invoice->period->locale('fr')->translatedFormat('F Y')),
@@ -216,11 +229,14 @@ class ClientInvoiceController extends Controller
 
             return;
         }
-        abort_unless($user->can(Permission::FinanceView->value), 403);
+        abort_unless($user->can(Permission::InvoicesView->value), 403);
+        abort_if($invoice !== null && ! $user->seesActivity($invoice->activity), 404);
     }
 
     private function authorizeManage(Request $request): void
     {
-        abort_unless($request->user()->merchant_id === null && $request->user()->can(Permission::FinanceManage->value), 403);
+        abort_unless($request->user()->merchant_id === null && $request->user()->can(Permission::InvoicesManage->value), 403);
+        $invoice = $request->route('clientInvoice');
+        abort_if($invoice instanceof ClientInvoice && ! $request->user()->seesActivity($invoice->activity), 404);
     }
 }

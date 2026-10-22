@@ -7,6 +7,9 @@ use App\Models\User;
 enum Role: string
 {
     case Admin = 'admin';
+    // Responsable d'une ou plusieurs activités (e-commerce, distribution, MAD) : clients, formules, tarifs,
+    // courses, factures et chiffre d'affaires de son périmètre
+    case ActivityManager = 'activity_manager';
     case Dispatcher = 'dispatcher';
     case Cashier = 'cashier';
     case HubAgent = 'hub_agent';
@@ -18,6 +21,7 @@ enum Role: string
     {
         return match ($this) {
             self::Admin => 'Administrateur',
+            self::ActivityManager => 'Responsable d\'activité',
             self::Dispatcher => 'Dispatcher',
             self::Cashier => 'Caissier',
             self::HubAgent => 'Agent de dépôt',
@@ -36,6 +40,19 @@ enum Role: string
     {
         return match ($this) {
             self::Admin => Permission::companyScoped(),
+            self::ActivityManager => [
+                Permission::UsersView,
+                Permission::MerchantsView,
+                Permission::MerchantsManage,
+                Permission::OrdersView,
+                Permission::OrdersCreate,
+                Permission::OrdersDispatch,
+                Permission::OrdersUpdateStatus,
+                Permission::InvoicesView,
+                Permission::InvoicesManage,
+                Permission::RatesManage,
+                Permission::RevenueView,
+            ],
             self::Dispatcher => [
                 Permission::UsersView,
                 Permission::MerchantsView,
@@ -48,6 +65,9 @@ enum Role: string
                 Permission::OrdersView,
                 Permission::FinanceView,
                 Permission::FinanceManage,
+                Permission::InvoicesView,
+                Permission::InvoicesManage,
+                Permission::RevenueView,
             ],
             self::HubAgent => [
                 Permission::MerchantsView,
@@ -79,7 +99,7 @@ enum Role: string
      */
     public static function staff(): array
     {
-        return [self::Admin, self::Dispatcher, self::Cashier, self::HubAgent];
+        return [self::Admin, self::ActivityManager, self::Dispatcher, self::Cashier, self::HubAgent];
     }
 
     /**

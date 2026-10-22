@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\Activity;
 use App\Enums\AssignmentType;
 use App\Enums\DeliveryDelay;
 use App\Enums\FeePayer;
@@ -10,6 +11,7 @@ use App\Enums\OrderStatus;
 use App\Enums\Role;
 use App\Enums\ShipmentType;
 use App\Models\Concerns\BelongsToCompany;
+use App\Models\Scopes\ActivityScope;
 use App\Support\PhoneNumber;
 use Database\Factories\OrderFactory;
 use Illuminate\Database\Eloquent\Builder;
@@ -34,6 +36,7 @@ class Order extends Model
         'merchant_id',
         'merchant_reference',
         'source',
+        'activity',
         'merchant_alerts_muted',
         'created_by',
         'pickup_zone_id',
@@ -86,6 +89,7 @@ class Order extends Model
             'status' => OrderStatus::class,
             'fee_payer' => FeePayer::class,
             'pricing_details' => 'array',
+            'activity' => Activity::class,
             'shipment_type' => ShipmentType::class,
             'delivery_delay' => DeliveryDelay::class,
             'billing_amount' => 'integer',
@@ -128,6 +132,8 @@ class Order extends Model
 
     protected static function booted(): void
     {
+        // Périmètre de l'équipe (activités visibles)
+        static::addGlobalScope(new ActivityScope);
         static::creating(function (Order $order) {
             $order->tracking_code ??= static::generateTrackingCode();
             $order->delivery_code ??= str_pad((string) random_int(0, 9999), 4, '0', STR_PAD_LEFT);

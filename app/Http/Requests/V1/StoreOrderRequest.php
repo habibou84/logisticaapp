@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\V1;
 
+use App\Enums\Activity;
 use App\Enums\DeliveryDelay;
 use App\Enums\FeePayer;
 use App\Enums\ShipmentType;
@@ -88,6 +89,8 @@ class StoreOrderRequest extends FormRequest
             'package_size' => ['nullable', Rule::in(['S', 'M', 'L', 'XL'])],
             'weight_kg' => ['nullable', 'numeric', 'min:0', 'max:500'],
             // Clients sous formule : pli, colis ou chèque ; délai (distribution à l'unité)
+            // Activité de la course (client qui en a plusieurs) : e-commerce, distribution, mad
+            'activity' => ['nullable', Rule::enum(Activity::class)],
             'shipment_type' => ['nullable', Rule::enum(ShipmentType::class)],
             'delivery_delay' => ['nullable', Rule::enum(DeliveryDelay::class)],
             'is_fragile' => ['boolean'],
@@ -127,6 +130,7 @@ class StoreOrderRequest extends FormRequest
             'items_amount' => 'montant des articles',
             'fee_payer' => 'payeur des frais',
             'weight_kg' => 'poids',
+            'activity' => 'activité',
             'shipment_type' => 'type d\'envoi',
             'delivery_delay' => 'délai de livraison',
             'pickup_hub_id' => 'entrepôt',

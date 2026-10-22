@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Enums\Activity;
 use App\Enums\ClientInvoiceStatus;
 use App\Models\Concerns\BelongsToCompany;
+use App\Models\Scopes\ActivityScope;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -16,7 +18,7 @@ class ClientInvoice extends Model
     use BelongsToCompany;
 
     protected $fillable = [
-        'company_id', 'merchant_id', 'number', 'period', 'status', 'total', 'amount_paid',
+        'company_id', 'merchant_id', 'activity', 'number', 'period', 'status', 'total', 'amount_paid',
         'issued_at', 'due_at', 'paid_at', 'notes',
     ];
 
@@ -24,6 +26,7 @@ class ClientInvoice extends Model
     {
         return [
             'status' => ClientInvoiceStatus::class,
+            'activity' => Activity::class,
             'period' => 'date:Y-m-d',
             'total' => 'integer',
             'amount_paid' => 'integer',
@@ -31,6 +34,12 @@ class ClientInvoice extends Model
             'due_at' => 'date:Y-m-d',
             'paid_at' => 'datetime',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        // Périmètre de l'équipe (activités visibles)
+        static::addGlobalScope(new ActivityScope);
     }
 
     public function merchant(): BelongsTo

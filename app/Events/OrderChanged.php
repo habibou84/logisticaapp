@@ -49,6 +49,8 @@ class OrderChanged implements ShouldBroadcast
                 'id' => $this->order->id,
                 'tracking_code' => $this->order->tracking_code,
                 'merchant_id' => $this->order->merchant_id,
+                // Écrans de l'équipe limitée à certaines activités : changement ignoré hors périmètre
+                'activity' => $this->order->activity?->value,
                 'status' => $this->order->status->value,
                 'status_label' => $this->order->statusLabel(),
             ],
