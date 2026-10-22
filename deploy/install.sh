@@ -85,9 +85,11 @@ else
     env_set TRUSTED_PROXIES '*'
     [[ -n "$EMAIL" ]] && env_set VAPID_SUBJECT "mailto:$EMAIL"
     env_set WHATSAPP_VERIFY_TOKEN "$(random 16)"
-    chmod 640 .env
     info ".env créé pour https://$DOMAIN."
 fi
+# Lisible par root et par le groupe www-data des conteneurs (gid 33) : l'application y lit sa configuration
+chown root:33 .env
+chmod 640 .env
 APP_PORT="$(env_get APP_PORT)"
 APP_PORT="${APP_PORT:-8090}"
 

@@ -28,6 +28,9 @@ main() {
     git checkout -q "$branch"
     git reset -q --hard "origin/$branch"
 
+    # .env lisible par l'application des conteneurs (groupe www-data, gid 33), fermé aux autres comptes
+    chown root:33 .env && chmod 640 .env
+
     echo "==> Construction des images (le site reste en ligne)"
     docker compose build
 

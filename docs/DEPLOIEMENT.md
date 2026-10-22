@@ -160,6 +160,7 @@ du `.env` (généré à l'installation). Pages exigées par Meta : `/confidentia
 | Le site ne répond pas | `docker compose ps` (tous `running`, `app` et bases `healthy`) ; `curl -I http://127.0.0.1:8090/up` sur le serveur |
 | Erreur 502/503 d'Apache | Conteneur `web` arrêté : `docker compose up -d` ; `tail /var/log/apache2/app.logisticadelivery.com-error.log` |
 | Page blanche ou erreur 500 | Journal de l'application (section 5) |
+| Conteneur `app` en erreur au démarrage | `docker compose logs --tail=50 app` ; `.env` lisible par l'application : `chown root:33 .env && chmod 640 .env` |
 | Pas de temps réel (alertes, carte) | `docker compose logs reverb` ; module `proxy_wstunnel` actif (`apache2ctl -M`) |
 | Messages ou notifications en retard | `docker compose logs horizon` |
 | Certificat expiré | `certbot renew --dry-run` (le port 80 doit être libre, voir section 3) |
