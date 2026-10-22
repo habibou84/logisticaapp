@@ -54,7 +54,7 @@ class WhatsAppEmbeddedSignupTest extends TestCase
         return substr($url, strpos($url, '#') + 1);
     }
 
-    /** Page de la console : fin de la fenêtre de Meta, sans session (le ticket suffit) */
+    /** Page /connecter-whatsapp : fin de la fenêtre de Meta, sans session (le ticket suffit) */
     private function signup(array $data = [], ?string $ticket = null)
     {
         $ticket ??= $this->ticket();
@@ -74,7 +74,7 @@ class WhatsAppEmbeddedSignupTest extends TestCase
             ->assertJsonPath('data.embedded_signup.config_id', '2222')
             ->assertJsonMissing(['app-secret']);
 
-        // Page de la console : entreprise et identifiants publics, à partir du seul ticket
+        // Page /connecter-whatsapp : entreprise et identifiants publics, à partir du seul ticket
         $ticket = $this->ticket();
         $this->app['auth']->forgetGuards();
         $this->postJson('/api/v1/whatsapp-signup/session', ['ticket' => $ticket])->assertOk()
@@ -145,28 +145,23 @@ class WhatsAppEmbeddedSignupTest extends TestCase
         Http::assertNothingSent();
     }
 
-    public function test_meta_window_always_opens_from_the_platform_address(): void
+    public function test_meta_window_opens_from_the_application_address(): void
     {
         $this->withoutVite();
-        config(['platform.domain' => 'jibiat.test', 'platform.scheme' => 'https']);
-        $this->company->update(['slug' => 'express-ds']);
+        config(['app.url' => 'https://app.logistica.test']);
         Sanctum::actingAs($this->admin);
 
-        // Une seule adresse à déclarer chez Facebook : jibiat.com, quelle que soit l'entreprise
-        $url = $this->postJson('http://express-ds.jibiat.test/api/v1/whatsapp/signup-ticket')->assertOk()->json('data.url');
-        $this->assertStringStartsWith('https://jibiat.test/connecter-whatsapp#', $url);
+        // Adresse à déclarer chez Facebook : celle de l'application
+        $url = $this->postJson('/api/v1/whatsapp/signup-ticket')->assertOk()->json('data.url');
+        $this->assertStringStartsWith('https://app.logistica.test/connecter-whatsapp#', $url);
 
-        // La page s'ouvre sur l'adresse de la plateforme, sans invitation à installer une application
-        $this->get('http://jibiat.test/connecter-whatsapp')->assertOk()
+        // La page s'ouvre sans invitation à installer une application
+        $this->get('/connecter-whatsapp')->assertOk()
             ->assertSee('<div id="app">', false)
             ->assertDontSee('rel="manifest"', false);
 
         $this->app['auth']->forgetGuards();
-        $this->postJson('http://jibiat.test/api/v1/whatsapp-signup/session', ['ticket' => substr($url, strpos($url, '#') + 1)])
-            ->assertOk()->assertJsonPath('data.origin', 'http://express-ds.jibiat.test');
-
-        // Le reste de l'adresse de la plateforme ne change pas : site de présentation, pas d'API
-        $this->getJson('http://jibiat.test/api/v1/whatsapp/settings')->assertNotFound();
+        $this->postJson('/api/v1/whatsapp-signup/session', ['ticket' => substr($url, strpos($url, '#') + 1)])->assertOk();
     }
 
     public function test_button_requires_server_configuration_and_settings_permission(): void

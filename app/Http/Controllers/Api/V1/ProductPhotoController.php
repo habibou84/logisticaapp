@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\V1\ProductResource;
 use App\Models\Product;
-use App\Support\Tenancy;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -54,8 +53,6 @@ class ProductPhotoController extends Controller
      */
     public function show(Product $product): StreamedResponse
     {
-        // Photo publique (boutique) : seulement à l'adresse de l'entreprise du produit
-        abort_if(app(Tenancy::class)->zone() === Tenancy::COMPANY && $product->company_id !== app(Tenancy::class)->company()?->id, 404);
         abort_if($product->photo_path === null || ! Storage::disk('local')->exists($product->photo_path), 404);
 
         return Storage::disk('local')->response($product->photo_path, null, [

@@ -14,7 +14,6 @@ use App\Models\Recipient;
 use App\Models\User;
 use App\Models\Zone;
 use App\Services\Assignment\AutoAssigner;
-use App\Services\Platform\Billing;
 use App\Services\Pricing\PricingService;
 use App\Services\Stock\StockKeeper;
 use App\Support\PhoneNumber;
@@ -58,13 +57,6 @@ class OrderService
     {
         if (! $merchant->isActive()) {
             throw new BusinessRuleException('Ce compte marchand est suspendu.', 'merchant_id');
-        }
-
-        // Facture de la plateforme impayée au-delà du délai : plus de nouvelles courses
-        if ($merchant->company && app(Billing::class)->isRestricted($merchant->company)) {
-            throw new BusinessRuleException($actor->merchant_id
-                ? 'La création de courses est momentanément suspendue. Contactez votre entreprise de livraison.'
-                : 'Création de courses suspendue : une facture de votre abonnement est impayée. Voir « Mon abonnement ».');
         }
 
         return DB::transaction(function () use ($actor, $merchant, $data, $source) {

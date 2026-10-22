@@ -2,8 +2,6 @@
 
 namespace App\Providers;
 
-use App\Models\PlatformInvoice;
-use App\Models\User;
 use App\Services\Messaging\Gateways\AutoWhatsAppGateway;
 use App\Services\Messaging\Gateways\LogSmsGateway;
 use App\Services\Messaging\Gateways\LogWhatsAppGateway;
@@ -14,14 +12,11 @@ use App\Services\Messaging\Gateways\WhatsAppGateway;
 use App\Services\WhatsApp\ClaudeOrderParser;
 use App\Services\WhatsApp\HeuristicOrderParser;
 use App\Services\WhatsApp\OrderMessageParser;
-use App\Support\Tenancy;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -31,9 +26,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        // Entreprise de l'adresse : une par requête
-        $this->app->scoped(Tenancy::class);
-
         // WhatsApp : réel pour les numéros connectés (auto), forcé (meta) ou simulé partout (log)
         $this->app->bind(WhatsAppGateway::class, fn () => match (config('messaging.whatsapp.driver')) {
             'meta' => new MetaCloudGateway,
@@ -65,12 +57,6 @@ class AppServiceProvider extends ServiceProvider
 
         DB::prohibitDestructiveCommands($this->app->isProduction());
 
-        // Le super administrateur de la plateforme a tous les droits
-        Gate::before(fn (User $user) => $user->isSuperAdmin() ? true : null);
-
-        // Factures de la plateforme : {invoice} dans les routes de la console et de l'abonnement
-        Route::model('invoice', PlatformInvoice::class);
-
         RateLimiter::for('login', fn (Request $request) => [
             Limit::perMinute(5)->by(mb_strtolower((string) $request->input('login')).'|'.$request->ip()),
             Limit::perMinute(20)->by($request->ip()),
@@ -89,15 +75,9 @@ class AppServiceProvider extends ServiceProvider
             Limit::perHour(30)->by('shop-hour:'.$request->ip()),
         ]);
 
-        // Inscription des entreprises en libre-service
-        RateLimiter::for('company-signup', fn (Request $request) => [
-            Limit::perMinute(5)->by('cs-min:'.$request->ip()),
-            Limit::perHour(10)->by('cs-hour:'.$request->ip()),
-        ]);
-
         RateLimiter::for('verification-sms', fn (Request $request) => Limit::perHour(10)->by('sms:'.$request->ip()));
 
-        // Espace connecté : quota par compte et par entreprise
+        // Espace connecté : quota par compte et pour toute l'entreprise
         RateLimiter::for('tenant', function (Request $request) {
             $user = $request->user();
 

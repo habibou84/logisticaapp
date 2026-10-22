@@ -56,12 +56,6 @@ class UserFactory extends Factory
         ]);
     }
 
-    public function superAdmin(): static
-    {
-        return $this->state(fn (array $attributes) => ['company_id' => null])
-            ->withRole(Role::SuperAdmin);
-    }
-
     public function withRole(Role $role): static
     {
         return $this->afterCreating(function (User $user) use ($role) {

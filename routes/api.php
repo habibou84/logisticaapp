@@ -10,16 +10,10 @@ use App\Http\Controllers\Api\V1\ApiKeyController;
 use App\Http\Controllers\Api\V1\AppearanceController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CompanyController;
-use App\Http\Controllers\Api\V1\CompanySignupController;
-use App\Http\Controllers\Api\V1\ConsoleBillingController;
-use App\Http\Controllers\Api\V1\ConsoleController;
-use App\Http\Controllers\Api\V1\ConsolePlanController;
-use App\Http\Controllers\Api\V1\ConsoleWaveController;
 use App\Http\Controllers\Api\V1\CourierAvailabilityController;
 use App\Http\Controllers\Api\V1\CourierController;
 use App\Http\Controllers\Api\V1\CourierMessageController;
 use App\Http\Controllers\Api\V1\CourierSpaceController;
-use App\Http\Controllers\Api\V1\CustomDomainController;
 use App\Http\Controllers\Api\V1\DeliveryDayController;
 use App\Http\Controllers\Api\V1\FieldReportController;
 use App\Http\Controllers\Api\V1\FinanceController;
@@ -56,7 +50,6 @@ use App\Http\Controllers\Api\V1\SignupController;
 use App\Http\Controllers\Api\V1\StatisticsController;
 use App\Http\Controllers\Api\V1\StockMovementController;
 use App\Http\Controllers\Api\V1\StorageContractController;
-use App\Http\Controllers\Api\V1\SubscriptionController;
 use App\Http\Controllers\Api\V1\TrackingController;
 use App\Http\Controllers\Api\V1\UserController;
 use App\Http\Controllers\Api\V1\VerificationController;
@@ -142,11 +135,6 @@ Route::prefix('v1')->name('v1.')->group(function () {
     Route::post('verifications/{token}/sms', [VerificationController::class, 'sms'])->middleware('throttle:verification-sms')->name('verifications.sms');
     Route::post('verifications/{token}/code', [VerificationController::class, 'code'])->middleware('throttle:20,1')->name('verifications.code');
 
-    // Inscription d'une entreprise de livraison en libre-service (adresse de la console)
-    Route::get('company-signup', [CompanySignupController::class, 'options'])->middleware('throttle:60,1')->name('company-signup.options');
-    Route::get('company-signup/slug', [CompanySignupController::class, 'slug'])->middleware('throttle:60,1')->name('company-signup.slug');
-    Route::post('company-signup', [CompanySignupController::class, 'store'])->middleware('throttle:company-signup')->name('company-signup.store');
-
     // Page de commande publique d'un marchand (/b/{lien}) : catalogue, devis, commande
     Route::get('shops/{slug}', [ShopController::class, 'show'])->middleware('throttle:60,1')->name('shops.show');
     Route::post('shops/{slug}/quote', [ShopController::class, 'quote'])->middleware('throttle:60,1')->name('shops.quote');
@@ -184,39 +172,6 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::delete('push/subscriptions', [PushSubscriptionController::class, 'destroy'])->name('push.unsubscribe');
         Route::post('push/test', [PushSubscriptionController::class, 'test'])->middleware('throttle:5,1')->name('push.test');
 
-        // Console du super administrateur (plateforme)
-        Route::prefix('console')->name('console.')->middleware('role:super_admin')->controller(ConsoleController::class)->group(function () {
-            Route::get('companies', 'companies')->name('companies');
-            Route::get('companies/{company}', 'show')->name('companies.show');
-            Route::post('companies/{company}/support-session', 'supportSession')->middleware('throttle:10,1')->name('companies.support');
-        });
-        Route::prefix('console')->name('console.')->middleware('role:super_admin')->controller(ConsolePlanController::class)->group(function () {
-            Route::get('plans', 'index')->name('plans.index');
-            Route::post('plans', 'store')->name('plans.store');
-            Route::post('plans/suggested', 'suggested')->name('plans.suggested');
-            Route::patch('plans/{plan}', 'update')->name('plans.update');
-        });
-        Route::prefix('console')->name('console.')->middleware('role:super_admin')->controller(ConsoleBillingController::class)->group(function () {
-            Route::get('invoices', 'index')->name('invoices.index');
-            Route::post('invoices/generate', 'generate')->name('invoices.generate');
-            Route::get('invoices/{invoice}', 'show')->name('invoices.show');
-            Route::post('invoices/{invoice}/payments', 'pay')->name('invoices.pay');
-            Route::post('invoices/{invoice}/void', 'void')->name('invoices.void');
-            Route::get('settings', 'settings')->name('settings.show');
-            Route::put('settings', 'updateSettings')->name('settings.update');
-        });
-        Route::prefix('console')->name('console.')->middleware('role:super_admin')->controller(ConsoleWaveController::class)->group(function () {
-            Route::get('wave', 'show')->name('wave.show');
-            Route::put('wave', 'update')->name('wave.update');
-            Route::post('wave/qr', 'uploadQr')->name('wave.qr');
-            Route::delete('wave/qr', 'removeQr')->name('wave.qr.remove');
-            Route::put('wave/mail', 'updateMail')->name('wave.mail');
-            Route::post('wave/test-alert', 'testAlert')->middleware('throttle:5,1')->name('wave.test-alert');
-            Route::get('wave/payments', 'pending')->name('wave.pending');
-            Route::post('wave/payments/{payment}/decide', 'decide')->name('wave.decide');
-        });
-
-        // Domaine personnalisé de l'entreprise (module de la formule pour le choisir)
         // Reprise de l'ancienne application : clé à coller dans son bouton, module à y copier
         Route::prefix('company/legacy-import')->name('company.legacy-import.')->middleware('can:settings.manage')->controller(LegacyImportController::class)->group(function () {
             Route::get('/', 'show')->name('show');
@@ -224,21 +179,8 @@ Route::prefix('v1')->name('v1.')->group(function () {
             Route::delete('key', 'destroyKey')->name('key.destroy');
             Route::get('module', 'module')->name('module');
         });
-        Route::prefix('company/domain')->name('company.domain.')->middleware('can:settings.manage')->controller(CustomDomainController::class)->group(function () {
-            Route::get('/', 'show')->name('show');
-            Route::put('/', 'update')->middleware(['feature:custom_domain', 'throttle:10,1'])->name('update');
-            Route::post('check', 'check')->middleware(['feature:custom_domain', 'throttle:10,1'])->name('check');
-            Route::delete('/', 'destroy')->name('destroy');
-        });
-
-        // Formule, essai et consommation du mois de l'entreprise
-        Route::get('subscription', [SubscriptionController::class, 'show'])->middleware('can:settings.manage')->name('subscription.show');
-        Route::get('subscription/invoices/{invoice}', [SubscriptionController::class, 'invoice'])->middleware('can:settings.manage')->name('subscription.invoice');
-        Route::post('subscription/invoices/{invoice}/wave', [SubscriptionController::class, 'waveStart'])->middleware(['can:settings.manage', 'throttle:10,1'])->name('subscription.wave');
-        Route::post('subscription/wave-payments/{payment}/paid', [SubscriptionController::class, 'waveClaim'])->middleware(['can:settings.manage', 'throttle:10,1'])->name('subscription.wave.paid');
-
         Route::get('roles', [RoleController::class, 'index'])->name('roles.index');
-        Route::apiResource('companies', CompanyController::class)->except('destroy');
+        Route::apiResource('companies', CompanyController::class)->only(['show', 'update']);
         Route::apiResource('users', UserController::class);
 
         // Référentiels
@@ -277,7 +219,7 @@ Route::prefix('v1')->name('v1.')->group(function () {
             Route::post('whatsapp/connect', [WhatsAppSettingsController::class, 'connect'])->middleware('throttle:20,1')->name('whatsapp.connect');
             Route::post('whatsapp/signup-ticket', [WhatsAppSignupController::class, 'ticket'])->middleware('throttle:10,1')->name('whatsapp.signup-ticket');
             Route::post('whatsapp/templates/submit', [WhatsAppSettingsController::class, 'submitTemplates'])->middleware('throttle:5,1')->name('whatsapp.templates.submit');
-            Route::post('whatsapp/simulate', [WhatsAppSettingsController::class, 'simulate'])->middleware(['throttle:60,1', 'feature:whatsapp_bot'])->name('whatsapp.simulate');
+            Route::post('whatsapp/simulate', [WhatsAppSettingsController::class, 'simulate'])->middleware('throttle:60,1')->name('whatsapp.simulate');
         });
 
         // Remontées terrain des livreurs (notes, problèmes) : consultation et suivi par le dispatch
@@ -379,36 +321,27 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::post('orders/{order}/expenses/{expense}/cancel', [OrderExpenseController::class, 'cancel'])->name('orders.expenses.cancel');
         Route::get('orders/{order}/attachments/{attachment}', [OrderActionController::class, 'showAttachment'])->name('orders.attachments.show');
 
-        // Clés de l'API publique et webhooks sortants : module « API et webhooks »
-        Route::middleware('feature:api')->group(function () {
-            // Le marchand pour lui-même, l'administration pour un marchand
-            Route::get('api-keys', [ApiKeyController::class, 'index'])->name('api-keys.index');
-            Route::post('api-keys', [ApiKeyController::class, 'store'])->name('api-keys.store');
-            Route::delete('api-keys/{apiKey}', [ApiKeyController::class, 'destroy'])->name('api-keys.destroy');
+        // Clés de l'API publique et webhooks sortants : le marchand pour lui-même, l'administration pour un marchand
+        Route::get('api-keys', [ApiKeyController::class, 'index'])->name('api-keys.index');
+        Route::post('api-keys', [ApiKeyController::class, 'store'])->name('api-keys.store');
+        Route::delete('api-keys/{apiKey}', [ApiKeyController::class, 'destroy'])->name('api-keys.destroy');
 
-            Route::apiResource('webhooks', WebhookController::class)->except('show');
-            Route::post('webhooks/{webhook}/secret', [WebhookController::class, 'rotateSecret'])->name('webhooks.secret');
-            Route::post('webhooks/{webhook}/test', [WebhookController::class, 'test'])->middleware('throttle:10,1')->name('webhooks.test');
-            Route::get('webhooks/{webhook}/deliveries', [WebhookController::class, 'deliveries'])->name('webhooks.deliveries');
-            Route::post('webhook-deliveries/{delivery}/redeliver', [WebhookController::class, 'redeliver'])->middleware('throttle:30,1')->name('webhook-deliveries.redeliver');
-        });
+        Route::apiResource('webhooks', WebhookController::class)->except('show');
+        Route::post('webhooks/{webhook}/secret', [WebhookController::class, 'rotateSecret'])->name('webhooks.secret');
+        Route::post('webhooks/{webhook}/test', [WebhookController::class, 'test'])->middleware('throttle:10,1')->name('webhooks.test');
+        Route::get('webhooks/{webhook}/deliveries', [WebhookController::class, 'deliveries'])->name('webhooks.deliveries');
+        Route::post('webhook-deliveries/{delivery}/redeliver', [WebhookController::class, 'redeliver'])->middleware('throttle:30,1')->name('webhook-deliveries.redeliver');
 
         // Produits : catalogue de la boutique ou stock en entrepôt (droits vérifiés par ProductPolicy)
-        Route::middleware('feature:stock,shop')->group(function () {
-            Route::apiResource('products', ProductController::class);
-            Route::post('products/{product}/photo', [ProductPhotoController::class, 'store'])->middleware('throttle:30,1')->name('products.photo.store');
-            Route::delete('products/{product}/photo', [ProductPhotoController::class, 'destroy'])->name('products.photo.destroy');
-        });
+        Route::apiResource('products', ProductController::class);
+        Route::post('products/{product}/photo', [ProductPhotoController::class, 'store'])->middleware('throttle:30,1')->name('products.photo.store');
+        Route::delete('products/{product}/photo', [ProductPhotoController::class, 'destroy'])->name('products.photo.destroy');
         // Réglages de la page de commande du marchand
-        Route::middleware('feature:shop')->group(function () {
-            Route::get('shop', [MerchantShopController::class, 'show'])->name('shop.show');
-            Route::patch('shop', [MerchantShopController::class, 'update'])->name('shop.update');
-        });
-        Route::middleware('feature:stock')->group(function () {
-            Route::get('stock/movements', [StockMovementController::class, 'index'])->name('stock.movements.index');
-            Route::post('stock/movements', [StockMovementController::class, 'store'])->name('stock.movements.store');
-            Route::apiResource('storage-contracts', StorageContractController::class)->except('show');
-        });
+        Route::get('shop', [MerchantShopController::class, 'show'])->name('shop.show');
+        Route::patch('shop', [MerchantShopController::class, 'update'])->name('shop.update');
+        Route::get('stock/movements', [StockMovementController::class, 'index'])->name('stock.movements.index');
+        Route::post('stock/movements', [StockMovementController::class, 'store'])->name('stock.movements.store');
+        Route::apiResource('storage-contracts', StorageContractController::class)->except('show');
 
         Route::get('reports/summary', [ReportController::class, 'summary'])->name('reports.summary');
 
@@ -418,9 +351,8 @@ Route::prefix('v1')->name('v1.')->group(function () {
             Route::get('deliveries', 'deliveries')->name('deliveries');
             Route::get('couriers', 'couriers')->name('couriers');
             Route::get('merchants', 'merchants')->name('merchants');
-            // Statistiques avancées : selon la formule de l'entreprise
-            Route::get('zones', 'zones')->middleware('feature:advanced_stats')->name('zones');
-            Route::get('finances', 'finances')->middleware('feature:advanced_stats')->name('finances');
+            Route::get('zones', 'zones')->name('zones');
+            Route::get('finances', 'finances')->name('finances');
         });
 
         // Caisse et finances (droits vérifiés dans le contrôleur : finance.view / finance.manage)

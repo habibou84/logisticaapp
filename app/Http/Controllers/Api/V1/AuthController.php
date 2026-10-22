@@ -29,8 +29,8 @@ class AuthController extends Controller
         // Plateforme : seulement les comptes de l'entreprise de l'adresse. Un même numéro peut
         // avoir un compte dans plusieurs entreprises : on garde celui dont le mot de passe correspond.
         $matches = (str_contains($login, '@')
-            ? User::loginableHere()->where('email', mb_strtolower($login))
-            : User::loginableHere()->where('phone', PhoneNumber::normalize($login)))
+            ? User::query()->where('email', mb_strtolower($login))
+            : User::query()->where('phone', PhoneNumber::normalize($login)))
             ->with('company')
             ->get()
             ->filter(fn (User $u) => Hash::check($request->string('password'), $u->password));
@@ -87,13 +87,13 @@ class AuthController extends Controller
         return [
             'token' => $user->createToken($device)->plainTextToken,
             'token_type' => 'Bearer',
-            'user' => UserResource::make($user->load(['company.plan', 'merchant', 'courier']))->withPermissions(),
+            'user' => UserResource::make($user->load(['company', 'merchant', 'courier']))->withPermissions(),
         ];
     }
 
     public function me(Request $request): UserResource
     {
-        return UserResource::make($request->user()->load(['company.plan', 'merchant', 'courier']))->withPermissions();
+        return UserResource::make($request->user()->load(['company', 'merchant', 'courier']))->withPermissions();
     }
 
     public function logout(Request $request): JsonResponse

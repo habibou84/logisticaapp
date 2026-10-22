@@ -7,7 +7,6 @@ use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\OrderEvent;
-use App\Support\Tenancy;
 use Illuminate\Http\JsonResponse;
 
 /**
@@ -27,7 +26,6 @@ class TrackingController extends Controller
         $order = Order::withoutGlobalScopes()
             ->whereNull('deleted_at')
             ->where('tracking_code', mb_strtoupper(trim($code)))
-            ->tap(fn ($q) => app(Tenancy::class)->restrict($q))
             ->with(['merchant' => fn ($q) => $q->withoutGlobalScopes(), 'deliveryZone' => fn ($q) => $q->withoutGlobalScopes(), 'deliveryCourier.user'])
             ->first();
 

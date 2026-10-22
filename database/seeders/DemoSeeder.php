@@ -29,8 +29,6 @@ class DemoSeeder extends Seeder
 {
     public function run(): void
     {
-        $this->user(null, Role::SuperAdmin, 'Super administrateur', '0700000000', 'superadmin@livraison.test');
-
         $company = Company::firstOrCreate(
             ['slug' => 'livraison-express-ci'],
             ['name' => 'Livraison Express CI', 'phone' => '+2252722000000', 'email' => 'contact@livraison.test'],

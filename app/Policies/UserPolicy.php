@@ -30,8 +30,7 @@ class UserPolicy
     public function update(User $actor, User $user): bool
     {
         return $actor->belongsToSameCompanyAs($user)
-            && $actor->can(Permission::UsersManage->value)
-            && ! $user->isSuperAdmin();
+            && $actor->can(Permission::UsersManage->value);
     }
 
     public function delete(User $actor, User $user): bool

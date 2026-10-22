@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\Company;
 use App\Services\Legacy\LegacyAccountsImporter;
-use App\Support\Tenancy;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -66,12 +65,6 @@ class LegacyImportController extends Controller
         $company = $this->companyForKey((string) $request->bearerToken());
         if ($company === null) {
             return response()->json(['message' => 'Clé de reprise invalide ou expirée : créez-en une dans Paramètres › Reprise de l\'ancienne application.'], 401);
-        }
-
-        // Sur la plateforme, la clé ne vaut que pour l'adresse de son entreprise
-        $here = Tenancy::enabled() ? app(Tenancy::class)->company() : null;
-        if ($here !== null && $here->id !== $company->id) {
-            return response()->json(['message' => 'Cette clé appartient à une autre entreprise : vérifiez l\'adresse saisie.'], 403);
         }
 
         $data = $request->validate([

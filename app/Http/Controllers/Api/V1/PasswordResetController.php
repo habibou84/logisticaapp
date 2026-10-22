@@ -31,7 +31,7 @@ class PasswordResetController extends Controller
 
         // Plusieurs entreprises sur une seule adresse (sans plateforme) : celle de la page d'accueil d'abord
         $company = Branding::company();
-        $users = User::loginableHere()->where('phone', $phone)->with('company')->get();
+        $users = User::query()->where('phone', $phone)->with('company')->get();
         $user = $users->count() > 1 ? ($users->firstWhere('company_id', $company?->id) ?? $users->first()) : $users->first();
         $user = $user?->fresh();
         $company = $user?->company ?? $company;

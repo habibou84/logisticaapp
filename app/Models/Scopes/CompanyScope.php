@@ -9,8 +9,8 @@ use Illuminate\Support\Facades\Auth;
 
 /**
  * Limite automatiquement les requêtes à l'entreprise de l'utilisateur connecté.
- * Aucun filtre pour le super administrateur ni hors requête authentifiée
- * (console, jobs) : ces contextes doivent filtrer explicitement.
+ * Aucun filtre hors requête authentifiée (console, jobs) : ces contextes
+ * doivent filtrer explicitement.
  */
 class CompanyScope implements Scope
 {

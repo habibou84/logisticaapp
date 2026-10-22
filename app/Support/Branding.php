@@ -8,18 +8,13 @@ use App\Models\Company;
 /**
  * Identité visuelle affichée sur les pages publiques (connexion, accueil des
  * e-commerçants) : l'entreprise de livraison qui exploite ce site.
- * BRANDING_COMPANY (slug ou identifiant) la désigne quand plusieurs entreprises
- * partagent l'installation ; sinon, la première entreprise active.
+ * BRANDING_COMPANY (slug ou identifiant) la désigne si besoin ; sinon, la
+ * première entreprise active.
  */
 class Branding
 {
     public static function company(): ?Company
     {
-        // Plateforme : l'entreprise de l'adresse (aucune sur la présentation ou la console)
-        if (Tenancy::enabled()) {
-            return app(Tenancy::class)->company();
-        }
-
         $wanted = config('app.branding_company');
 
         $query = Company::query()->where('status', CompanyStatus::Active->value);

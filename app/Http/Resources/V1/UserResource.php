@@ -2,11 +2,9 @@
 
 namespace App\Http\Resources\V1;
 
-use App\Models\SupportSession;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Laravel\Sanctum\PersonalAccessToken;
 
 /**
  * @mixin User
@@ -56,30 +54,12 @@ class UserResource extends JsonResource
                 'is_available' => $this->courier->is_available,
                 'vehicle_type' => $this->courier->vehicle_type,
             ] : null),
-            // Session d'assistance ouverte par le super administrateur (bandeau dans l'espace)
-            'support_session' => $this->when($this->resource->is($request->user()), fn () => $this->supportSession()),
             'permissions' => $this->when(
                 $this->withPermissions,
                 fn () => $this->getAllPermissions()->pluck('name')->values(),
             ),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
-        ];
-    }
-
-    /**
-     * @return array{opened_by: ?string, expires_at: mixed}|null
-     */
-    private function supportSession(): ?array
-    {
-        $token = $this->resource->currentAccessToken();
-        if (! $token instanceof PersonalAccessToken || ! str_starts_with($token->name, SupportSession::TOKEN_PREFIX)) {
-            return null;
-        }
-
-        return [
-            'opened_by' => User::query()->withoutGlobalScopes()->whereKey((int) substr($token->name, strlen(SupportSession::TOKEN_PREFIX)))->value('name'),
-            'expires_at' => $token->expires_at,
         ];
     }
 }

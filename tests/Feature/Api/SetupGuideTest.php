@@ -3,12 +3,10 @@
 namespace Tests\Feature\Api;
 
 use App\Enums\OrderStatus;
-use App\Enums\Role;
 use App\Models\CashCollection;
 use App\Models\Company;
 use App\Models\Merchant;
 use App\Models\Order;
-use App\Models\User;
 use App\Models\WhatsAppAccount;
 use App\Models\Zone;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -126,7 +124,7 @@ class SetupGuideTest extends TestCase
         $this->assertNotNull($this->company->fresh()->setup_test_delivered_at);
     }
 
-    public function test_the_health_check_and_the_console_view(): void
+    public function test_the_health_check(): void
     {
         Sanctum::actingAs($this->admin);
         WhatsAppAccount::create(['company_id' => $this->company->id, 'owner_type' => 'company', 'owner_id' => $this->company->id,
@@ -139,11 +137,5 @@ class SetupGuideTest extends TestCase
         $this->assertStringContainsString('L\'accès WhatsApp expire le', $health[1]['text']);
         $this->assertStringContainsString('2 livreur(s) sans zone', $health[2]['text']);
         $this->assertStringContainsString('aucune règle de ramassage', $health[3]['text']);
-
-        // Console : progression et alertes de chaque entreprise
-        Sanctum::actingAs(User::factory()->withRole(Role::SuperAdmin)->create(['company_id' => null]));
-        $row = collect($this->getJson('/api/v1/console/companies')->assertOk()->json('data'))->firstWhere('id', $this->company->id);
-        $this->assertSame([false, 2], [$row['setup']['ready'], $row['setup']['alerts']]);
-        $this->getJson("/api/v1/console/companies/{$this->company->id}")->assertOk()->assertJsonCount(4, 'data.setup.health');
     }
 }

@@ -4,7 +4,6 @@ namespace App\Services\WhatsApp;
 
 use App\Enums\FeePayer;
 use App\Enums\OrderStatus;
-use App\Enums\PlatformFeature;
 use App\Exceptions\BusinessRuleException;
 use App\Models\Company;
 use App\Models\InboundMessage;
@@ -95,8 +94,8 @@ class Conversation
             return $this->done();
         }
 
-        // Activé par l'entreprise et inclus dans sa formule
-        if (! $company->whatsapp_orders || ! $company->hasFeature(PlatformFeature::WhatsAppBot)) {
+        // Activé par l'entreprise
+        if (! $company->whatsapp_orders) {
             $this->reply("La création de courses par WhatsApp n'est pas activée. Utilisez votre application {$company->name}.");
 
             return $this->done();

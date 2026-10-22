@@ -51,10 +51,8 @@ class CompanyScopeTest extends TestCase
         $this->assertNull(TenantRecord::where('label', 'B')->first());
     }
 
-    public function test_super_admin_sees_every_record(): void
+    public function test_outside_an_authenticated_request_every_record_is_seen(): void
     {
-        Auth::login(User::factory()->superAdmin()->create());
-
         $this->assertEqualsCanonicalizing(['A', 'B'], TenantRecord::pluck('label')->all());
     }
 

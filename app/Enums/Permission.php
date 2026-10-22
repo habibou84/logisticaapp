@@ -4,7 +4,6 @@ namespace App\Enums;
 
 enum Permission: string
 {
-    case CompaniesManage = 'companies.manage';
     case UsersView = 'users.view';
     case UsersManage = 'users.manage';
     case SettingsManage = 'settings.manage';
@@ -21,16 +20,12 @@ enum Permission: string
     case IntegrationsManage = 'integrations.manage';
 
     /**
-     * Toutes les permissions limitées à une entreprise (tout sauf la gestion
-     * des entreprises, réservée au super administrateur).
+     * Toutes les permissions de l'entreprise (rôle administrateur).
      *
      * @return list<self>
      */
     public static function companyScoped(): array
     {
-        return array_values(array_filter(
-            self::cases(),
-            fn (self $permission) => $permission !== self::CompaniesManage,
-        ));
+        return self::cases();
     }
 }

@@ -7,44 +7,43 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * Politique de confidentialité : publique, sur toutes les adresses (exigée par Meta).
+ * Politique de confidentialité et conditions générales : publiques (exigées par Meta), au nom de l'entreprise.
  */
 class PrivacyPageTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_privacy_page_is_public_on_every_address(): void
+    public function test_privacy_page_is_public_and_names_the_company(): void
     {
-        config(['platform.domain' => 'jibiat.test', 'platform.operator' => 'Jibiat', 'platform.contact_email' => 'contact@jibiat.test']);
-        Company::factory()->create(['slug' => 'rapide', 'name' => 'Rapide Express']);
+        Company::factory()->create(['name' => 'Rapide Express', 'email' => 'contact@rapide.test']);
 
-        $this->get('http://admin.jibiat.test/confidentialite')->assertOk()
+        $this->get('/confidentialite')->assertOk()
             ->assertSee('Politique de confidentialité')
+            ->assertSee('Rapide Express')
             ->assertSee('id="suppression"', false)
-            ->assertSee('contact@jibiat.test');
-
-        // Adresse d'une entreprise : elle est nommée comme responsable
-        $this->get('http://rapide.jibiat.test/confidentialite')->assertOk()->assertSee('Rapide Express');
-
-        // Présentation de la plateforme : la page est servie, pas la page d'accueil
-        $this->get('http://jibiat.test/confidentialite')->assertOk()->assertSee('Supprimer vos données')->assertSee('href="/conditions"', false);
+            ->assertSee('contact@rapide.test')
+            ->assertSee('href="/conditions"', false);
     }
 
-    public function test_terms_are_public_on_every_address(): void
+    public function test_legal_settings_replace_the_company_details(): void
     {
-        config(['platform.domain' => 'jibiat.test', 'platform.trial_days' => 30, 'platform.contact_email' => null, 'marketing.legal.rccm' => 'CI-ABJ-2026-B-12345']);
-        Company::factory()->create(['slug' => 'rapide', 'name' => 'Rapide Express']);
+        config(['platform.legal' => ['name' => 'Logistica SARL', 'address' => 'Cocody, Abidjan', 'email' => 'legal@logistica.test', 'rccm' => 'CI-ABJ-2026-B-12345']]);
+        Company::factory()->create(['name' => 'Rapide Express']);
 
-        $this->get('http://jibiat.test/conditions')->assertOk()
-            ->assertSee("Conditions générales d'utilisation et de vente", false)
-            ->assertSee('Jibiat SARL')
+        $this->get('/conditions')->assertOk()
+            ->assertSee("Conditions générales d'utilisation", false)
+            ->assertSee('Logistica SARL')
+            ->assertSee('Cocody, Abidjan')
             ->assertSee('CI-ABJ-2026-B-12345')
-            ->assertSee('mailto:contact@jibiat.com', false)
-            ->assertSee("30 jours d'essai gratuit", false)
-            ->assertSee('payable sous 10 jours');
+            ->assertSee('mailto:legal@logistica.test', false)
+            ->assertDontSee('abonnement');
 
-        // Adresse d'une entreprise : elle est nommée comme fournisseur du service de livraison
-        $this->get('http://rapide.jibiat.test/conditions')->assertOk()->assertSee('Rapide Express');
-        $this->get('http://admin.jibiat.test/conditions')->assertOk();
+        $this->get('/confidentialite')->assertOk()->assertSee('Logistica SARL');
+    }
+
+    public function test_pages_work_before_the_company_is_created(): void
+    {
+        $this->get('/conditions')->assertOk();
+        $this->get('/confidentialite')->assertOk();
     }
 }

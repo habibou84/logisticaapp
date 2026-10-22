@@ -17,40 +17,40 @@ class NativeAppTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        config(['platform.domain' => 'jibiat.test', 'platform.scheme' => 'https']);
+        config(['app.url' => 'https://app.logistica.test']);
         $this->buildWorld();
         $this->company->update(['slug' => 'rapide', 'name' => 'Rapide Express']);
     }
 
-    public function test_company_is_found_by_its_code_from_the_platform_address(): void
+    public function test_company_is_found_by_its_code(): void
     {
-        $this->getJson('http://jibiat.test/api/public/apps/companies/Rapide')
+        $this->getJson('/api/public/apps/companies/Rapide')
             ->assertOk()
             ->assertJsonPath('data.code', 'rapide')
             ->assertJsonPath('data.name', 'Rapide Express')
-            ->assertJsonPath('data.url', 'https://rapide.jibiat.test')
+            ->assertJsonPath('data.url', 'https://app.logistica.test')
             ->assertJsonPath('data.logo_url', null);
 
-        // Logo : lien absolu vers le site de l'entreprise
+        // Logo : lien absolu vers le site
         $this->company->forceFill(['logo_path' => 'branding/logo.png'])->save();
-        $this->assertStringStartsWith('https://rapide.jibiat.test/branding/logo?v=',
-            $this->getJson('http://jibiat.test/api/public/apps/companies/rapide')->json('data.logo_url'));
+        $this->assertStringStartsWith('https://app.logistica.test/branding/logo?v=',
+            $this->getJson('/api/public/apps/companies/rapide')->json('data.logo_url'));
     }
 
     public function test_unknown_or_suspended_company_is_not_found(): void
     {
-        $this->getJson('http://jibiat.test/api/public/apps/companies/inconnue')
+        $this->getJson('/api/public/apps/companies/inconnue')
             ->assertNotFound()
             ->assertJsonPath('message', 'Code introuvable. Vérifiez-le auprès de votre entreprise de livraison.');
 
         Company::factory()->create(['slug' => 'fermee', 'status' => 'suspended']);
-        $this->getJson('http://jibiat.test/api/public/apps/companies/fermee')->assertNotFound();
+        $this->getJson('/api/public/apps/companies/fermee')->assertNotFound();
     }
 
     public function test_apps_may_call_the_company_api(): void
     {
         foreach (['https://localhost', 'capacitor://localhost'] as $origin) {
-            $this->call('OPTIONS', 'http://rapide.jibiat.test/api/v1/auth/login', server: [
+            $this->call('OPTIONS', '/api/v1/auth/login', server: [
                 'HTTP_ORIGIN' => $origin,
                 'HTTP_ACCESS_CONTROL_REQUEST_METHOD' => 'POST',
                 'HTTP_ACCESS_CONTROL_REQUEST_HEADERS' => 'authorization,content-type',
@@ -58,7 +58,7 @@ class NativeAppTest extends TestCase
         }
 
         // Une autre origine n'est pas autorisée
-        $this->call('OPTIONS', 'http://rapide.jibiat.test/api/v1/auth/login', server: [
+        $this->call('OPTIONS', '/api/v1/auth/login', server: [
             'HTTP_ORIGIN' => 'https://exemple.com',
             'HTTP_ACCESS_CONTROL_REQUEST_METHOD' => 'POST',
         ])->assertHeaderMissing('Access-Control-Allow-Origin');

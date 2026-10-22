@@ -2,7 +2,6 @@
 
 namespace App\Http\Middleware;
 
-use App\Support\Tenancy;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -62,11 +61,8 @@ class PreprodGate
         }
         RateLimiter::clear($key);
 
-        // Valable sur la plateforme, la console et toutes les entreprises de test (*.domaine), 30 jours
-        $domain = Tenancy::domain();
-        $cookieDomain = str_contains($domain, '.') && str_ends_with($request->getHost(), $domain) ? '.'.$domain : null;
-
-        return redirect($back)->withCookie(Cookie::create(self::COOKIE, $pass, now()->addDays(30), '/', $cookieDomain, $request->isSecure(), true, false, Cookie::SAMESITE_LAX));
+        // Valable 30 jours
+        return redirect($back)->withCookie(Cookie::create(self::COOKIE, $pass, now()->addDays(30), '/', null, $request->isSecure(), true, false, Cookie::SAMESITE_LAX));
     }
 
     // Retour seulement vers une page de ce site

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Api;
 
+use App\Enums\CompanyStatus;
 use App\Enums\Role;
 use App\Models\Company;
 use App\Models\User;
@@ -18,44 +19,12 @@ class CompanyManagementTest extends TestCase
 
     protected string $seeder = RolesAndPermissionsSeeder::class;
 
-    public function test_super_admin_creates_a_company_with_its_first_admin(): void
-    {
-        Sanctum::actingAs(User::factory()->superAdmin()->create());
-
-        $response = $this->postJson('/api/v1/companies', [
-            'name' => 'Rapide Livraison Abidjan',
-            'phone' => '27 22 00 00 00',
-            'admin' => [
-                'name' => 'Aminata Diallo',
-                'phone' => '0102030405',
-                'password' => 'motdepasse',
-            ],
-        ])->assertCreated()
-            ->assertJsonPath('data.slug', 'rapide-livraison-abidjan')
-            ->assertJsonPath('data.phone', '+2252722000000')
-            ->assertJsonPath('data.users_count', 1);
-
-        $admin = User::where('phone', '+2250102030405')->firstOrFail();
-        $this->assertSame($response->json('data.id'), $admin->company_id);
-        $this->assertTrue($admin->hasRole(Role::Admin->value));
-    }
-
-    public function test_slugs_are_made_unique(): void
-    {
-        Sanctum::actingAs(User::factory()->superAdmin()->create());
-        Company::factory()->create(['slug' => 'express']);
-
-        $this->postJson('/api/v1/companies', ['name' => 'Express'])
-            ->assertCreated()
-            ->assertJsonPath('data.slug', 'express-2');
-    }
-
-    public function test_company_admin_cannot_list_or_create_companies(): void
+    public function test_companies_cannot_be_listed_or_created_from_the_api(): void
     {
         Sanctum::actingAs(User::factory()->withRole(Role::Admin)->create());
 
-        $this->getJson('/api/v1/companies')->assertForbidden();
-        $this->postJson('/api/v1/companies', ['name' => 'Concurrent'])->assertForbidden();
+        $this->getJson('/api/v1/companies')->assertNotFound();
+        $this->postJson('/api/v1/companies', ['name' => 'Concurrent'])->assertNotFound();
     }
 
     public function test_company_admin_updates_their_own_company_settings(): void
@@ -68,24 +37,28 @@ class CompanyManagementTest extends TestCase
             ->assertJsonPath('data.default_max_attempts', 2);
     }
 
-    public function test_company_admin_cannot_suspend_their_company_or_touch_another_one(): void
+    public function test_status_and_slug_are_not_changed_from_the_settings(): void
     {
+        $admin = User::factory()->withRole(Role::Admin)->create();
+        $slug = $admin->company->slug;
+        Sanctum::actingAs($admin);
+
+        $this->patchJson("/api/v1/companies/{$admin->company_id}", ['status' => 'suspended', 'slug' => 'autre-adresse'])->assertOk();
+
+        $this->assertSame(CompanyStatus::Active, $admin->company->fresh()->status);
+        $this->assertSame($slug, $admin->company->fresh()->slug);
+    }
+
+    public function test_only_an_admin_of_the_company_changes_its_settings(): void
+    {
+        $dispatcher = User::factory()->withRole(Role::Dispatcher)->create();
+        Sanctum::actingAs($dispatcher);
+        $this->patchJson("/api/v1/companies/{$dispatcher->company_id}", ['name' => 'X'])->assertForbidden();
+
         $admin = User::factory()->withRole(Role::Admin)->create();
         $other = Company::factory()->create();
         Sanctum::actingAs($admin);
-
-        $this->patchJson("/api/v1/companies/{$admin->company_id}", ['status' => 'suspended'])->assertForbidden();
         $this->getJson("/api/v1/companies/{$other->id}")->assertForbidden();
         $this->patchJson("/api/v1/companies/{$other->id}", ['name' => 'X'])->assertForbidden();
-    }
-
-    public function test_super_admin_can_suspend_a_company(): void
-    {
-        Sanctum::actingAs(User::factory()->superAdmin()->create());
-        $company = Company::factory()->create();
-
-        $this->patchJson("/api/v1/companies/{$company->id}", ['status' => 'suspended'])
-            ->assertOk()
-            ->assertJsonPath('data.status', 'suspended');
     }
 }

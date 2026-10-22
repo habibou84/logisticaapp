@@ -6,7 +6,6 @@ use App\Models\User;
 
 enum Role: string
 {
-    case SuperAdmin = 'super_admin';
     case Admin = 'admin';
     case Dispatcher = 'dispatcher';
     case Cashier = 'cashier';
@@ -18,7 +17,6 @@ enum Role: string
     public function label(): string
     {
         return match ($this) {
-            self::SuperAdmin => 'Super administrateur',
             self::Admin => 'Administrateur',
             self::Dispatcher => 'Dispatcher',
             self::Cashier => 'Caissier',
@@ -30,15 +28,13 @@ enum Role: string
     }
 
     /**
-     * Permissions accordées à chaque rôle. Le super administrateur passe
-     * toutes les vérifications via Gate::before et n'en a pas besoin.
+     * Permissions accordées à chaque rôle.
      *
      * @return list<Permission>
      */
     public function permissions(): array
     {
         return match ($this) {
-            self::SuperAdmin => [],
             self::Admin => Permission::companyScoped(),
             self::Dispatcher => [
                 Permission::UsersView,
@@ -94,7 +90,7 @@ enum Role: string
      */
     public static function assignableBy(User $actor): array
     {
-        if ($actor->isSuperAdmin() || $actor->hasRole(self::Admin->value)) {
+        if ($actor->hasRole(self::Admin->value)) {
             return [...self::staff(), self::Courier];
         }
 

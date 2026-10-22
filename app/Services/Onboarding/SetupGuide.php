@@ -3,7 +3,6 @@
 namespace App\Services\Onboarding;
 
 use App\Enums\OrderStatus;
-use App\Enums\PlatformFeature;
 use App\Enums\Role;
 use App\Models\ApiKey;
 use App\Models\Company;
@@ -54,7 +53,6 @@ class SetupGuide
             $this->alerts($company),
             $this->automation($company),
             $this->integrations($company),
-            $this->billing($company),
         ]));
 
         $steps = array_map(fn (array $s) => [...$s, 'skipped' => ! $s['essential'] && $s['status'] !== self::DONE && in_array($s['key'], $skipped, true)], $steps);
@@ -332,9 +330,6 @@ class SetupGuide
 
     private function integrations(Company $c): ?array
     {
-        if (! $c->hasFeature(PlatformFeature::Api)) {
-            return null;
-        }
         $keys = ApiKey::withoutGlobalScopes()->where('company_id', $c->id)->count();
 
         return $this->step('integrations', 'Les boutiques en ligne', false,
@@ -342,18 +337,6 @@ class SetupGuide
             $keys > 0 ? self::DONE : self::TODO,
             [$keys > 0 ? "{$keys} clé(s) d'accès créée(s)." : 'Aucune boutique reliée pour le moment.'],
             '/admin/integrations', 'Relier une boutique');
-    }
-
-    private function billing(Company $c): ?array
-    {
-        if ($c->plan_id === null) {
-            return null;
-        }
-        $plan = $c->loadMissing('plan')->plan;
-
-        return $this->step('billing', 'L\'abonnement', false,
-            'Votre formule décide des modules disponibles et du nombre de courses par mois.',
-            self::DONE, ['Formule '.($plan?->name ?? '—').'.'], '/admin/abonnement', 'Voir l\'abonnement');
     }
 
     /**

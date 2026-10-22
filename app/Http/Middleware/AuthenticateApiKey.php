@@ -2,7 +2,6 @@
 
 namespace App\Http\Middleware;
 
-use App\Enums\PlatformFeature;
 use App\Models\ApiKey;
 use Closure;
 use Illuminate\Http\JsonResponse;
@@ -30,12 +29,6 @@ class AuthenticateApiKey
 
         if ($actor === null || ! $actor->isActive()) {
             return $this->error('Le compte de ce marchand est suspendu ou n\'a plus d\'utilisateur actif.', 403);
-        }
-
-        // Module « API et webhooks » de la formule de l'entreprise de livraison ; une application reliée par
-        // l'annuaire (connexion en un clic) marche avec toutes les formules
-        if ($key->client === null && ! $actor->loadMissing('company')->company?->hasFeature(PlatformFeature::Api)) {
-            return $this->error('L\'API n\'est pas incluse dans la formule de votre entreprise de livraison.', 403);
         }
 
         Auth::setUser($actor);

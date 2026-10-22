@@ -52,17 +52,17 @@ class UserManagementTest extends TestCase
             ->assertJsonPath('data.company_id', $this->company->id);
     }
 
-    public function test_admin_cannot_choose_another_company(): void
+    public function test_a_company_sent_with_the_user_is_ignored(): void
     {
         Sanctum::actingAs($this->admin);
         $other = Company::factory()->create();
 
         $this->postJson('/api/v1/users', $this->courierPayload(['company_id' => $other->id]))
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors('company_id');
+            ->assertCreated()
+            ->assertJsonPath('data.company_id', $this->company->id);
     }
 
-    public function test_admin_cannot_create_a_super_admin(): void
+    public function test_admin_cannot_create_an_unknown_role(): void
     {
         Sanctum::actingAs($this->admin);
 
@@ -189,18 +189,5 @@ class UserManagementTest extends TestCase
 
         $this->assertContains('courier', $roles);
         $this->assertNotContains('super_admin', $roles);
-    }
-
-    public function test_super_admin_creates_users_in_any_company_and_must_choose_one(): void
-    {
-        Sanctum::actingAs(User::factory()->superAdmin()->create());
-
-        $this->postJson('/api/v1/users', $this->courierPayload())
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors('company_id');
-
-        $this->postJson('/api/v1/users', $this->courierPayload(['company_id' => $this->company->id]))
-            ->assertCreated()
-            ->assertJsonPath('data.company_id', $this->company->id);
     }
 }

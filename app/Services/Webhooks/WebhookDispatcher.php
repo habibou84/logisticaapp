@@ -4,12 +4,9 @@ namespace App\Services\Webhooks;
 
 use App\Enums\OrderEventType;
 use App\Enums\OrderStatus;
-use App\Enums\PlatformFeature;
 use App\Enums\WebhookEvent;
 use App\Http\Resources\PublicV1\PublicOrderResource;
 use App\Jobs\SendWebhook;
-use App\Models\ApiKey;
-use App\Models\Company;
 use App\Models\MerchantPayout;
 use App\Models\Order;
 use App\Models\OrderEvent;
@@ -118,10 +115,6 @@ class WebhookDispatcher
      */
     public function dispatch(int $companyId, int $merchantId, string $event, array $data): void
     {
-        if (! $this->apiIncluded($companyId, $merchantId)) {
-            return;
-        }
-
         WebhookSubscription::forCompany($companyId)
             ->where('merchant_id', $merchantId)
             ->where('is_active', true)
@@ -157,15 +150,6 @@ class WebhookDispatcher
 
     private function hasSubscribers(int $companyId, int $merchantId): bool
     {
-        return $this->apiIncluded($companyId, $merchantId) && WebhookSubscription::forCompany($companyId)->where('merchant_id', $merchantId)->where('is_active', true)->exists();
-    }
-
-    // Webhooks : module « API et webhooks » de la formule de l'entreprise, ou e-commerçant relié par l'annuaire
-    // (connexion en un clic, toutes formules)
-    private function apiIncluded(int $companyId, int $merchantId): bool
-    {
-        return (bool) Company::query()->find($companyId)?->hasFeature(PlatformFeature::Api)
-            || ApiKey::withoutGlobalScopes()->where('company_id', $companyId)->where('merchant_id', $merchantId)
-                ->whereNotNull('client')->whereNull('revoked_at')->exists();
+        return WebhookSubscription::forCompany($companyId)->where('merchant_id', $merchantId)->where('is_active', true)->exists();
     }
 }

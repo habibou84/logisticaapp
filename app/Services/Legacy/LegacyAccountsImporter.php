@@ -10,7 +10,6 @@ use App\Models\Merchant;
 use App\Models\User;
 use App\Models\Zone;
 use App\Services\Orders\ZoneResolver;
-use App\Services\Platform\Subscription;
 use App\Support\PhoneNumber;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -59,7 +58,6 @@ class LegacyAccountsImporter
 
     public function __construct(
         private readonly ZoneResolver $zoneResolver,
-        private readonly Subscription $subscription,
     ) {}
 
     /**
@@ -253,13 +251,8 @@ class LegacyAccountsImporter
             return;
         }
 
-        // Livreur inactif dans l'ancienne application, ou formule au maximum : compte suspendu
+        // Livreur inactif dans l'ancienne application : compte suspendu
         $active = ($courier['status'] ?? 'active') === 'active';
-        $max = $company->loadMissing('plan')->plan?->max_couriers;
-        if ($active && $max !== null && $this->subscription->activeCouriers($company) >= $max) {
-            $active = false;
-            $this->warn('livreur', $courier['id'], $name, "importé suspendu : la formule permet {$max} livreur(s) actif(s)");
-        }
 
         $account = $this->account($company, $user, [
             'name' => $name ?: 'Livreur '.PhoneNumber::display($phone),

@@ -3,7 +3,6 @@
 namespace App\Http\Resources\V1;
 
 use App\Models\Company;
-use App\Services\Platform\Billing;
 use App\Support\Branding;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -59,15 +58,6 @@ class CompanyResource extends JsonResource
             'weekly_report' => $this->weekly_report,
             'logo_url' => Branding::logoUrl($this->resource),
             'status' => $this->status,
-            // Formule : modules disponibles (menus et pages de l'application)
-            'features' => $this->resource->features(),
-            'plan' => $this->whenLoaded('plan', fn () => $this->plan ? ['id' => $this->plan->id, 'name' => $this->plan->name] : null),
-            'trial_ends_at' => $this->trial_ends_at?->toDateString(),
-            // Facture impayée (bandeau du back-office) : seulement pour qui gère l'abonnement
-            'billing_state' => $this->when(
-                $this->plan_id !== null && (bool) $request->user()?->can('settings.manage') && ! $request->user()->isSuperAdmin(),
-                fn () => app(Billing::class)->state($this->resource)['state'],
-            ),
             'users_count' => $this->whenCounted('users'),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,

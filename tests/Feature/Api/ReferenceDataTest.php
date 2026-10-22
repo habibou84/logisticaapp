@@ -195,16 +195,6 @@ class ReferenceDataTest extends TestCase
         $this->getJson('/api/v1/couriers')->assertForbidden();
     }
 
-    public function test_new_company_is_provisioned_with_abidjan_communes(): void
-    {
-        Sanctum::actingAs(User::factory()->superAdmin()->create());
-
-        $id = $this->postJson('/api/v1/companies', ['name' => 'Nouvelle Express'])->assertCreated()->json('data.id');
-
-        $this->assertSame(13, Zone::forCompany($id)->count());
-        $this->assertTrue(PricingGrid::forCompany($id)->where('is_default', true)->exists());
-    }
-
     public function test_incident_reasons_are_listed(): void
     {
         Sanctum::actingAs($this->courierA->user);

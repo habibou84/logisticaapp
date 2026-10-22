@@ -16,16 +16,11 @@ Schedule::command('horizon:snapshot')->everyFiveMinutes();
 Schedule::command('reports:send')->everyFiveMinutes()->withoutOverlapping();
 // Point de la semaine des administrateurs : vérifié toutes les 15 minutes, envoyé le lundi à 7 h 30 (heure de l'entreprise)
 Schedule::command('reports:weekly')->everyFifteenMinutes()->withoutOverlapping();
-// Domaines personnalisés en attente : activés dès qu'ils répondent en HTTPS
-Schedule::command('domains:check')->everyTenMinutes()->withoutOverlapping();
 // Fiches de paie des livreurs à la fin de chaque période (prêtes à payer le matin)
 Schedule::command('payroll:close')->dailyAt('00:20')->withoutOverlapping();
 // Position des marchands d'après les ramassages des livreurs (rattrapage)
 Schedule::command('merchants:locate')->dailyAt('03:10')->withoutOverlapping();
 Schedule::command('storage:bill')->monthlyOn(1, '01:10')->withoutOverlapping();
-// Abonnements des entreprises : factures du mois écoulé, puis rappels d'impayés chaque matin
-Schedule::command('billing:invoice')->monthlyOn(1, '01:30')->withoutOverlapping();
-Schedule::command('billing:remind')->dailyAt('08:05')->withoutOverlapping();
 // Accès WhatsApp du bouton « Connecter WhatsApp » (60 jours) : relais par la plateforme ou alerte avant l'échéance
 Schedule::command('whatsapp:tokens')->dailyAt('08:15')->withoutOverlapping();
 Schedule::command('model:prune', ['--model' => [IdempotencyKey::class, WebhookDelivery::class, CourierLocation::class]])->daily();

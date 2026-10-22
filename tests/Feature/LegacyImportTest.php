@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Enums\Role;
 use App\Enums\UserStatus;
 use App\Models\Merchant;
-use App\Models\Plan;
 use App\Models\User;
 use App\Services\Legacy\SqlDumpReader;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -144,17 +143,6 @@ class LegacyImportTest extends TestCase
             ])
             ->assertSuccessful();
         $this->assertSame($merchants + 3, Merchant::count());
-    }
-
-    public function test_couriers_beyond_the_plan_are_imported_suspended(): void
-    {
-        // Deux livreurs actifs existent déjà ; la formule en permet deux
-        $plan = Plan::create(['name' => 'Essentiel', 'price_monthly' => 25000, 'included_orders' => 100, 'overage_per_order' => 30, 'max_couriers' => 2, 'features' => []]);
-        $this->company->update(['plan_id' => $plan->id]);
-
-        $this->import()->assertSuccessful();
-
-        $this->assertSame(UserStatus::Suspended, User::where('phone', '+2250153141666')->value('status'));
     }
 
     public function test_unknown_company_or_file_is_refused(): void

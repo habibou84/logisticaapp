@@ -2,29 +2,15 @@
 
 namespace App\Http\Requests\V1;
 
-use App\Enums\CompanyStatus;
-use App\Models\Company;
 use App\Rules\PhoneNumber;
 use App\Support\PhoneNumber as Phone;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rules\Enum;
 
 class UpdateCompanyRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        $company = $this->route('company');
-
-        if (! $this->user()->can('update', $company)) {
-            return false;
-        }
-
-        // Statut, adresse (slug), formule et essai : gérés par le super administrateur
-        if ($this->hasAny(['status', 'slug', 'plan_id', 'trial_ends_at'])) {
-            return $this->user()->can('changeStatus', $company);
-        }
-
-        return true;
+        return $this->user()->can('update', $this->route('company'));
     }
 
     protected function prepareForValidation(): void
@@ -41,7 +27,6 @@ class UpdateCompanyRequest extends FormRequest
     {
         return [
             'name' => ['sometimes', 'required', 'string', 'max:255'],
-            'slug' => ['sometimes', 'required', ...Company::slugRules($this->route('company'))],
             'timezone' => ['sometimes', 'required', 'timezone:all'],
             'phone' => ['sometimes', 'nullable', 'string', new PhoneNumber],
             'email' => ['sometimes', 'nullable', 'email', 'max:255'],
@@ -76,10 +61,6 @@ class UpdateCompanyRequest extends FormRequest
             'courier_available_alert' => ['sometimes', 'boolean'],
             'directory_listed' => ['sometimes', 'boolean'],
             'directory_pitch' => ['sometimes', 'nullable', 'string', 'max:240'],
-            'status' => ['sometimes', 'required', new Enum(CompanyStatus::class)],
-            // Vide = sans formule (aucune limite)
-            'plan_id' => ['sometimes', 'nullable', 'integer', 'exists:plans,id'],
-            'trial_ends_at' => ['sometimes', 'nullable', 'date_format:Y-m-d'],
         ];
     }
 
@@ -89,7 +70,6 @@ class UpdateCompanyRequest extends FormRequest
             'name' => 'nom',
             'phone' => 'téléphone',
             'address' => 'adresse',
-            'status' => 'statut',
             'daily_cutoff_time' => 'heure limite du jour',
             'pickup_mission_custody' => 'colis après une mission ramassage',
             'depot_closes_at' => 'heure de fermeture du dépôt',
@@ -104,8 +84,6 @@ class UpdateCompanyRequest extends FormRequest
             'courier_available_alert' => 'alerte livreur libre',
             'directory_listed' => 'annuaire',
             'directory_pitch' => 'présentation dans l\'annuaire',
-            'plan_id' => 'formule',
-            'trial_ends_at' => 'fin de l\'essai',
         ];
     }
 }

@@ -2,12 +2,10 @@
 
 use App\Http\Middleware\AuthenticateApiKey;
 use App\Http\Middleware\EnsureApiScope;
-use App\Http\Middleware\EnsureFeature;
 use App\Http\Middleware\EnsureIdempotency;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\PreprodGate;
 use App\Http\Middleware\PreventIndexing;
-use App\Http\Middleware\ResolveTenant;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -35,8 +33,6 @@ return Application::configure(basePath: dirname(__DIR__))
         ['prefix' => 'api', 'middleware' => ['auth:sanctum', 'active']],
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // Entreprise désignée par l'adresse (plateforme multi-entreprises)
-        $middleware->prepend(ResolveTenant::class);
         // Préproduction : fermée au public par un code d'accès, jamais indexée
         $middleware->prepend(PreprodGate::class);
         $middleware->append(PreventIndexing::class);
@@ -45,7 +41,6 @@ return Application::configure(basePath: dirname(__DIR__))
             'active' => EnsureUserIsActive::class,
             'api.key' => AuthenticateApiKey::class,
             'api.scope' => EnsureApiScope::class,
-            'feature' => EnsureFeature::class,
             'idempotent' => EnsureIdempotency::class,
             'role' => RoleMiddleware::class,
             'permission' => PermissionMiddleware::class,
