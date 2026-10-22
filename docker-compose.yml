@@ -1,0 +1,121 @@
+# Application en conteneurs, sur un serveur qui héberge déjà d'autres sites (Apache, MySQL…).
+# Rien n'est exposé sur Internet : seul le conteneur « web » écoute, sur 127.0.0.1:${APP_PORT},
+# et Apache (HTTPS, certificat Let's Encrypt) lui transmet les visites (deploy/apache-site.conf).
+#
+#   docker compose up -d --build     # installation et mises à jour (deploy/update.sh)
+#   docker compose exec app php artisan …
+#
+# Les valeurs ${…} viennent du fichier .env de l'application (même dossier).
+
+name: ${COMPOSE_PROJECT_NAME:-logistica}
+
+# Site, files d'attente, temps réel et tâches planifiées : la même image
+x-app: &app
+  image: ${COMPOSE_PROJECT_NAME:-logistica}-app
+  build:
+    context: .
+    target: app
+    args: &build-args
+      VITE_APP_NAME: ${APP_NAME:-Livraison}
+      VITE_REVERB_APP_KEY: ${REVERB_APP_KEY}
+      VITE_REVERB_HOST: ${VITE_REVERB_HOST}
+      VITE_REVERB_PORT: ${VITE_REVERB_PORT:-443}
+      VITE_REVERB_SCHEME: ${VITE_REVERB_SCHEME:-https}
+  restart: unless-stopped
+  volumes:
+    - ./.env:/var/www/html/.env:ro
+    - storage:/var/www/html/storage
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+
+services:
+  app:
+    <<: *app
+    environment:
+      CONTAINER_ROLE: app
+    healthcheck:
+      test: ["CMD", "test", "-f", "/tmp/ready"]
+      interval: 5s
+      timeout: 3s
+      retries: 60
+      start_period: 120s
+
+  # Files d'attente : messages WhatsApp, notifications, webhooks, rapports
+  horizon:
+    <<: *app
+    command: ["php", "artisan", "horizon"]
+    stop_grace_period: 60s
+    environment:
+      CONTAINER_ROLE: worker
+    depends_on:
+      app:
+        condition: service_healthy
+
+  # Temps réel (WebSocket) : alertes sonores, carte des livreurs, consignes
+  reverb:
+    <<: *app
+    command: ["php", "artisan", "reverb:start", "--host=0.0.0.0", "--port=8080"]
+    environment:
+      CONTAINER_ROLE: worker
+    depends_on:
+      app:
+        condition: service_healthy
+
+  # Tâches planifiées (alertes, rappels, paie, rapports) : chaque minute
+  scheduler:
+    <<: *app
+    command: ["php", "artisan", "schedule:work"]
+    environment:
+      CONTAINER_ROLE: worker
+    depends_on:
+      app:
+        condition: service_healthy
+
+  web:
+    image: ${COMPOSE_PROJECT_NAME:-logistica}-web
+    build:
+      context: .
+      target: web
+      args: *build-args
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${APP_PORT:-8090}:80"
+    depends_on:
+      app:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_DATABASE}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  # Fichiers envoyés (logos, photos de preuve, imports) et journaux
+  storage:
+  postgres:
+  redis:

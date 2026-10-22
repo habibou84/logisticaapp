@@ -11,17 +11,16 @@ use RuntimeException;
 class ImportLegacyAccounts extends Command
 {
     protected $signature = 'legacy:import
-        {company : Adresse de l\'entreprise sur la plateforme (ex. rapide-express)}
-        {file : Export SQL de l\'ancienne application (phpMyAdmin : tables clients, livreurs et users, .sql ou .sql.gz)}
+        {file : Export SQL de l\'ancienne application (mysqldump ou phpMyAdmin : tables clients, livreurs et users, .sql ou .sql.gz)}
         {--dry-run : Simule l\'import et affiche le rapport, sans rien enregistrer}';
 
     protected $description = 'Reprend les e-commerçants et les livreurs de l\'ancienne application (mêmes numéros, mêmes mots de passe)';
 
     public function handle(LegacyAccountsImporter $importer): int
     {
-        $company = Company::where('slug', $this->argument('company'))->first();
+        $company = Company::query()->orderBy('id')->first();
         if ($company === null) {
-            $this->error('Aucune entreprise à l\'adresse « '.$this->argument('company').' » (voir php artisan platform:status).');
+            $this->error('Créez d\'abord l\'entreprise : php artisan app:install.');
 
             return self::FAILURE;
         }

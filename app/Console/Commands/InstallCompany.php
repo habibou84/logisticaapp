@@ -26,13 +26,19 @@ class InstallCompany extends Command
         {--name= : Nom de l\'entreprise de livraison}
         {--admin-name= : Nom de l\'administrateur}
         {--admin-phone= : Téléphone de l\'administrateur (identifiant de connexion)}
-        {--admin-email= : E-mail de l\'administrateur (facultatif)}';
+        {--admin-email= : E-mail de l\'administrateur (facultatif)}
+        {--skip-if-installed : Ne rien faire si l\'entreprise existe déjà (scripts d\'installation)}';
 
     protected $description = 'Crée l\'entreprise de livraison et son premier administrateur (première mise en service)';
 
     public function handle(CompanyProvisioner $provisioner): int
     {
         if (Company::query()->exists()) {
+            if ($this->option('skip-if-installed')) {
+                $this->info('Entreprise déjà créée : '.Company::query()->orderBy('id')->value('name').'.');
+
+                return self::SUCCESS;
+            }
             $this->error('L\'entreprise est déjà créée : '.Company::query()->orderBy('id')->value('name').'.');
             $this->line('Pour un autre compte, créez-le dans Utilisateurs ; mot de passe perdu : php artisan user:password <téléphone>.');
 

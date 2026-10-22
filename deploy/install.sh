@@ -1,123 +1,158 @@
 #!/usr/bin/env bash
 #
-# Installation complète sur un VPS NU (sans panneau d'administration) :
-# Ubuntu 22.04 / 24.04 ou Debian 12, à lancer en root.
-# Serveur avec ISPConfig : utilisez deploy/ispconfig.sh à la place.
+# Installation sur un serveur Ubuntu/Debian qui a déjà Apache (et d'autres sites) et Docker.
+# À lancer en root, depuis le dossier de l'application (git clone déjà fait) :
 #
-#   DOMAIN=test.mondomaine.ci EMAIL=moi@mondomaine.ci bash deploy/install.sh
+#   DOMAIN=app.logisticadelivery.com EMAIL=vous@exemple.com bash deploy/install.sh
 #
-# Variables :
-#   DOMAIN   (obligatoire) nom de domaine qui pointe vers l'adresse IP du VPS
-#   EMAIL    (obligatoire) adresse pour le certificat HTTPS (Let's Encrypt)
-#   REPO     dépôt Git (défaut : git@github.com:habibou84/deliverynew.git)
-#   BRANCH   branche à déployer (défaut : main)
-#   APP_DIR  dossier de l'application (défaut : /var/www/livraison)
-#   DEMO     1 = données de démonstration (mot de passe « password »), 0 = base vide
+# Étapes (chacune est sautée si elle est déjà faite ; le script peut être relancé sans risque) :
+#   1. .env de production (mots de passe et clés générés une seule fois) ;
+#   2. construction des images et démarrage des conteneurs (site, PostgreSQL, Redis, files d'attente,
+#      temps réel, tâches planifiées) ; rien n'est ouvert sur Internet, seulement 127.0.0.1:APP_PORT ;
+#   3. entreprise et premier administrateur (questions posées à l'écran) ;
+#   4. certificat HTTPS (Let's Encrypt) et site Apache pour DOMAIN ;
+#   5. sauvegarde de la base chaque nuit (deploy/backup.sh).
 #
-# Relançable sans risque : base de données, .env et clés sont conservés.
+# Ne touche ni aux autres sites Apache, ni à PHP, ni à MySQL du serveur.
 
 set -euo pipefail
 
-DOMAIN="${DOMAIN:-}"
+APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+DOMAIN="${DOMAIN:-app.logisticadelivery.com}"
 EMAIL="${EMAIL:-}"
-REPO="${REPO:-git@github.com:habibou84/deliverynew.git}"
-BRANCH="${BRANCH:-main}"
-APP_DIR="${APP_DIR:-/var/www/livraison}"
-DEMO="${DEMO:-1}"
-APP_USER=www-data
-TOOLS_HOME=/var/www
-REVERB_PORT=8080
-NODE_MAJOR=22
-PHP_V=8.3
+APP_PORT="${APP_PORT:-8090}"
+PROJECT="${COMPOSE_PROJECT_NAME:-logistica}"
 
-. "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
+step() { printf '\n\033[1;34m==> %s\033[0m\n' "$*"; }
+info() { printf '    %s\n' "$*"; }
+fail() { printf '\033[1;31mErreur : %s\033[0m\n' "$*" >&2; exit 1; }
+random() { tr -dc 'A-Za-z0-9' </dev/urandom | head -c "$1"; }
 
-[[ $EUID -eq 0 ]] || fail "lancez ce script en root (sudo -i)."
-[[ -n "$DOMAIN" ]] || fail "indiquez le domaine : DOMAIN=test.mondomaine.ci EMAIL=… bash deploy/install.sh"
-[[ -n "$EMAIL" ]] || fail "indiquez une adresse e-mail pour le certificat HTTPS : EMAIL=moi@mondomaine.ci"
-[[ ! -d /usr/local/ispconfig ]] || fail "ISPConfig est installé sur ce serveur : utilisez deploy/ispconfig.sh."
+env_get() { grep -E "^$1=" "$APP_DIR/.env" | tail -n1 | cut -d= -f2- | sed -e 's/^"//' -e 's/"$//'; }
+env_set() {
+    local value="$2"
+    [[ "$value" =~ [[:space:]\#\"\$] ]] && value="\"${value//\"/\\\"}\""
+    if grep -qE "^$1=" "$APP_DIR/.env"; then
+        local escaped
+        escaped="$(printf '%s' "$value" | sed -e 's/[\/&|]/\\&/g')"
+        sed -i -E "s|^$1=.*|$1=$escaped|" "$APP_DIR/.env"
+    else
+        printf '%s=%s\n' "$1" "$value" >> "$APP_DIR/.env"
+    fi
+}
 
-. /etc/os-release
-case "$ID:$VERSION_ID" in
-    ubuntu:22.04|ubuntu:24.04|debian:12) ;;
-    *) fail "système non prévu ($PRETTY_NAME). Utilisez Ubuntu 22.04/24.04 ou Debian 12." ;;
-esac
+compose() { docker compose --project-directory "$APP_DIR" "$@"; }
 
-export DEBIAN_FRONTEND=noninteractive
+[[ $EUID -eq 0 ]] || fail "lancez ce script en root."
+command -v docker >/dev/null || fail "Docker n'est pas installé."
+docker compose version >/dev/null 2>&1 || fail "Docker Compose (docker compose) n'est pas installé."
+command -v apache2ctl >/dev/null || fail "Apache n'est pas installé."
+cd "$APP_DIR"
 
-step "Paquets système (Nginx, PostgreSQL, Redis, Supervisor, Certbot)"
-apt-get update -q
-apt-get install -y -q ca-certificates curl gnupg git unzip ufw openssl sudo \
-    nginx postgresql redis-server supervisor certbot python3-certbot-nginx
-
-step "PHP $PHP_V"
-if [[ "$ID:$VERSION_ID" == "ubuntu:22.04" ]]; then
-    apt-get install -y -q software-properties-common
-    add-apt-repository -y ppa:ondrej/php
-    apt-get update -q
-elif [[ "$ID" == "debian" ]]; then
-    curl -fsSL https://packages.sury.org/php/apt.gpg -o /usr/share/keyrings/sury-php.gpg
-    echo "deb [signed-by=/usr/share/keyrings/sury-php.gpg] https://packages.sury.org/php/ $VERSION_CODENAME main" > /etc/apt/sources.list.d/sury-php.list
-    apt-get update -q
-fi
-apt-get install -y -q php$PHP_V-fpm php$PHP_V-cli php$PHP_V-pgsql php$PHP_V-redis php$PHP_V-mbstring \
-    php$PHP_V-xml php$PHP_V-curl php$PHP_V-zip php$PHP_V-bcmath php$PHP_V-intl php$PHP_V-gd
-PHP_BIN=/usr/bin/php$PHP_V
-PHP_FPM_SOCK=/run/php/php$PHP_V-fpm.sock
-
-# Photos et imports jusqu'à 20 Mo
-for ini in /etc/php/$PHP_V/fpm/php.ini /etc/php/$PHP_V/cli/php.ini; do
-    sed -i -e 's/^upload_max_filesize.*/upload_max_filesize = 20M/' -e 's/^post_max_size.*/post_max_size = 25M/' "$ini"
-done
-systemctl restart php$PHP_V-fpm
-
-step "Composer"
-if ! command -v composer >/dev/null; then
-    expected="$(curl -fsSL https://composer.github.io/installer.sig)"
-    curl -fsSL https://getcomposer.org/installer -o /tmp/composer-setup.php
-    [[ "$expected" == "$(sha384sum /tmp/composer-setup.php | cut -d' ' -f1)" ]] || fail "signature de l'installateur Composer invalide."
-    php /tmp/composer-setup.php --quiet --install-dir=/usr/local/bin --filename=composer
-    rm -f /tmp/composer-setup.php
-fi
-
-step "Node.js $NODE_MAJOR (compilation de l'interface)"
-if ! command -v node >/dev/null || [[ "$(node -v | cut -d. -f1 | tr -d v)" -lt 20 ]]; then
-    curl -fsSL https://deb.nodesource.com/setup_$NODE_MAJOR.x | bash -
-    apt-get install -y -q nodejs
-fi
-
-systemctl enable --now redis-server
-setup_postgres
-fetch_code
-write_env
-build_app
-chown -R "$APP_USER:" "$APP_DIR/storage" "$APP_DIR/bootstrap/cache"
-
-step "Nginx"
-sed -e "s|__DOMAIN__|$DOMAIN|g" -e "s|__APP_DIR__|$APP_DIR|g" -e "s|__PHP_FPM_SOCK__|$PHP_FPM_SOCK|g" \
-    -e "s|__REVERB_PORT__|$REVERB_PORT|g" "$APP_DIR/deploy/nginx.conf" > /etc/nginx/sites-available/livraison
-ln -sf /etc/nginx/sites-available/livraison /etc/nginx/sites-enabled/livraison
-rm -f /etc/nginx/sites-enabled/default
-nginx -t
-systemctl reload nginx
-
-install_supervisor
-install_cron
-save_deploy_conf
-
-step "Pare-feu"
-if ufw allow OpenSSH >/dev/null && ufw allow 'Nginx Full' >/dev/null && ufw --force enable >/dev/null; then
-    info "Ouverts : SSH, HTTP, HTTPS. Reverb, PostgreSQL et Redis restent internes."
+# ───────────────────────────── 1. Configuration (.env) ─────────────────────────────
+step "Configuration (.env)"
+if [[ -f .env ]]; then
+    info ".env déjà présent : conservé."
 else
-    warn "Pare-feu non activé (ufw indisponible) : vérifiez le pare-feu dans l'espace client de l'hébergeur."
+    cp .env.example .env
+    env_set COMPOSE_PROJECT_NAME "$PROJECT"
+    env_set APP_PORT "$APP_PORT"
+    env_set APP_ENV production
+    env_set APP_DEBUG false
+    env_set APP_URL "https://$DOMAIN"
+    env_set APP_KEY "base64:$(head -c 32 /dev/urandom | base64)"
+    env_set LOG_STACK daily
+    env_set LOG_LEVEL info
+    # Services des conteneurs (noms de docker-compose.yml)
+    env_set DB_CONNECTION pgsql
+    env_set DB_HOST postgres
+    env_set DB_PORT 5432
+    env_set DB_DATABASE logistica
+    env_set DB_USERNAME logistica
+    env_set DB_PASSWORD "$(random 32)"
+    env_set REDIS_HOST redis
+    # Temps réel : Reverb dans son conteneur ; le navigateur passe par https://DOMAIN/app/
+    env_set REVERB_APP_ID "$((RANDOM * RANDOM))"
+    env_set REVERB_APP_KEY "$(random 20)"
+    env_set REVERB_APP_SECRET "$(random 32)"
+    env_set REVERB_HOST reverb
+    env_set REVERB_PORT 8080
+    env_set REVERB_SCHEME http
+    env_set VITE_REVERB_HOST "$DOMAIN"
+    env_set VITE_REVERB_PORT 443
+    env_set VITE_REVERB_SCHEME https
+    # Apache, puis Nginx du conteneur, devant l'application : adresse réelle des visiteurs et HTTPS
+    env_set TRUSTED_PROXIES '*'
+    [[ -n "$EMAIL" ]] && env_set VAPID_SUBJECT "mailto:$EMAIL"
+    env_set WHATSAPP_VERIFY_TOKEN "$(random 16)"
+    chmod 640 .env
+    info ".env créé pour https://$DOMAIN."
+fi
+APP_PORT="$(env_get APP_PORT)"
+APP_PORT="${APP_PORT:-8090}"
+
+# ───────────────────────────── 2. Conteneurs ─────────────────────────────
+step "Construction des images (quelques minutes la première fois)"
+compose build
+
+# Clés des notifications push : une seule fois (les changer désabonne les appareils)
+if [[ -z "$(env_get VAPID_PUBLIC_KEY)" ]]; then
+    step "Clés des notifications push"
+    vapid="$(compose run --rm --no-deps -T --entrypoint php app artisan webpush:vapid)"
+    env_set VAPID_PUBLIC_KEY "$(echo "$vapid" | grep '^VAPID_PUBLIC_KEY=' | cut -d= -f2- | tr -d '\r')"
+    env_set VAPID_PRIVATE_KEY "$(echo "$vapid" | grep '^VAPID_PRIVATE_KEY=' | cut -d= -f2- | tr -d '\r')"
 fi
 
-step "HTTPS (Let's Encrypt)"
-if certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos -m "$EMAIL" --redirect; then
-    info "Certificat installé, renouvellement automatique."
+step "Démarrage des conteneurs"
+compose up -d --remove-orphans --wait
+compose ps
+
+# ───────────────────────────── 3. Entreprise ─────────────────────────────
+step "Entreprise et premier administrateur"
+compose exec -u www-data app php artisan app:install --skip-if-installed
+
+# ───────────────────────────── 4. HTTPS et Apache ─────────────────────────────
+step "Modules Apache (relais vers les conteneurs, temps réel)"
+a2enmod -q proxy proxy_http proxy_wstunnel headers rewrite ssl
+
+step "Certificat HTTPS pour $DOMAIN"
+if [[ -d "/etc/letsencrypt/live/$DOMAIN" ]]; then
+    info "Certificat déjà présent."
 else
-    warn "Certificat non obtenu : vérifiez que $DOMAIN pointe vers l'adresse IP du VPS (enregistrement A),"
-    warn "puis lancez : certbot --nginx -d $DOMAIN -m $EMAIL --agree-tos --redirect"
+    command -v certbot >/dev/null || fail "certbot n'est pas installé (apt-get install certbot)."
+    [[ -n "$EMAIL" ]] || fail "indiquez EMAIL=… (adresse de contact Let's Encrypt)."
+    if ss -ltnH 'sport = :80' | grep -q .; then
+        # Port 80 servi par Apache : validation par Apache (comme les autres sites)
+        certbot certonly --apache -d "$DOMAIN" -m "$EMAIL" --agree-tos -n
+    else
+        # Port 80 libre : Certbot l'ouvre lui-même quelques secondes (et à chaque renouvellement)
+        certbot certonly --standalone -d "$DOMAIN" -m "$EMAIL" --agree-tos -n
+    fi
 fi
 
-summary
+step "Site Apache $DOMAIN"
+# Même adresse d'écoute que les sites HTTPS déjà présents (« *:443 » ou l'adresse IP du serveur)
+ADDR="$(grep -rhoE '<VirtualHost [^>]*:443>' /etc/apache2/sites-enabled/ 2>/dev/null | grep -v "$DOMAIN" | head -n1 | sed -E 's/<VirtualHost ([^>]*)>/\1/' || true)"
+ADDR="${ADDR:-*:443}"
+sed -e "s|__ADDR__|$ADDR|g" -e "s|__DOMAIN__|$DOMAIN|g" -e "s|__PORT__|$APP_PORT|g" \
+    deploy/apache-site.conf > "/etc/apache2/sites-available/$DOMAIN.conf"
+a2ensite -q "$DOMAIN"
+apache2ctl configtest
+systemctl reload apache2
+info "Écoute : $ADDR"
+
+# ───────────────────────────── 5. Sauvegardes ─────────────────────────────
+step "Sauvegarde de la base chaque nuit (/var/backups/$PROJECT, 14 jours)"
+cat > "/etc/cron.d/$PROJECT-backup" <<CRON
+# Sauvegarde de la base de l'application (deploy/install.sh)
+30 2 * * * root bash $APP_DIR/deploy/backup.sh >> /var/log/$PROJECT-backup.log 2>&1
+CRON
+
+step "Terminé"
+cat <<TXT
+    Back-office : https://$DOMAIN/admin
+    Livreurs    : https://$DOMAIN/livreur
+    E-commerçants : https://$DOMAIN
+    Mise à jour : bash $APP_DIR/deploy/update.sh
+    Commandes   : cd $APP_DIR && docker compose exec -u www-data app php artisan …
+TXT

@@ -1,6 +1,8 @@
-# Livraison : plateforme de gestion de livraison pour e-commerçants
+# Logistica : gestion de livraison pour e-commerçants
 
-Back-office (entreprise de livraison), espace e-commerçant et application livreur.
+Back-office (entreprise de livraison), espace e-commerçant et application livreur, pour une seule entreprise de
+livraison. Repris de Delivery App (`habibou84/deliverynew`) sans la partie plateforme (plusieurs entreprises,
+abonnements).
 
 - **Plan d'exécution, choix techniques et roadmap** : [`docs/PLAN.md`](docs/PLAN.md)
 - **Schéma de base de données** : [`docs/database.dbml`](docs/database.dbml) (à importer sur https://dbdiagram.io)
@@ -78,7 +80,7 @@ simulation (messages visibles dans **Messages**, sur la fiche colis et dans `sto
 
 Pour envoyer de vrais messages :
 
-1. Une fois pour la plateforme : l'application Meta et le webhook (`docs/PLATEFORME.md`, « WhatsApp : application Meta ») ;
+1. Une fois : l'application Meta et le webhook (`docs/DEPLOIEMENT.md`, « WhatsApp ») ;
    `WHATSAPP_APP_SECRET` et `WHATSAPP_VERIFY_TOKEN` dans `.env`.
 2. Dans le back-office, **WhatsApp** : identifiant du numéro, identifiant WABA et jeton permanent, puis « Enregistrer et
    vérifier ». L'application interroge Meta (`App\Services\Messaging\WhatsAppConnection`) : nom vérifié, note de qualité,
@@ -273,103 +275,23 @@ Les envois passent par la file `messages` et les points d'activité par le plani
 | `/livreur` (→ `/livreur/connexion`) | Livreurs | Application mobile bleue |
 
 Chaque page accepte tous les comptes : après connexion, chacun arrive dans son espace. Le logo (PNG, JPEG ou WebP)
-et l'accroche se règlent dans **Réglages › Entreprise et marque** ; `BRANDING_COMPANY` (slug ou identifiant)
-désigne l'entreprise affichée si plusieurs partagent l'installation (par défaut : la première entreprise active).
+et l'accroche se règlent dans **Réglages › Entreprise et marque**.
 
-### Plateforme multi-entreprises (une adresse par entreprise)
+### Une seule entreprise
 
-Avec `PLATFORM_DOMAIN` (ex. `jibiat.com`), une seule installation sert toutes les entreprises de livraison,
-**chacune à son adresse** `{slug}.jibiat.com` (le slug de l'entreprise) :
+L'installation sert **une seule entreprise de livraison**, à l'adresse `APP_URL` (ex. `https://app.logisticadelivery.com`) :
+pas de super administrateur, pas d'abonnement, tous les modules sont inclus (WhatsApp, API et webhooks, stock,
+boutiques, statistiques avancées).
 
-| Adresse | Contenu |
-|---|---|
-| `jibiat.com`, `www.jibiat.com` | Présentation de la plateforme (pas d'API) |
-| `admin.jibiat.com` | Console du super administrateur (seul ce compte peut s'y connecter) |
-| `{slug}.jibiat.com` | L'entreprise : pages publiques (logo, inscription des marchands, mot de passe oublié, suivi, boutiques, application installable à son nom) et espaces équipe, marchand et livreur |
-| autre sous-domaine | « Aucune entreprise à cette adresse » ; entreprise suspendue : « service suspendu » |
-
-- Un compte ne se connecte et ne s'utilise qu'à l'adresse de son entreprise (un jeton présenté ailleurs est refusé).
-- **Numéro et e-mail uniques par entreprise** : un livreur qui travaille pour deux entreprises, ou un marchand client
-  de deux entreprises, a un compte dans chacune (mot de passe propre à chaque compte). Sans plateforme, si un numéro
-  a un compte dans plusieurs entreprises, la connexion retient celui dont le mot de passe correspond ; s'il y en a
-  plusieurs, il faut se connecter depuis l'adresse de son entreprise. Les super administrateurs (sans entreprise)
-  restent uniques entre eux.
-- Suivi des colis, boutiques et photos de produits : seulement ceux de l'entreprise de l'adresse.
-- Les liens envoyés par WhatsApp et SMS (suivi, fiche de course, bon de retour, boutique) et `tracking_url` de l'API
-  publique utilisent l'adresse de l'entreprise (`Company::url()`), plus `APP_URL`.
-- Webhooks entrants (WhatsApp) et API publique (clé d'API) fonctionnent à toutes les adresses.
-- Sans `PLATFORM_DOMAIN`, rien ne change : une seule entreprise, désignée par `BRANDING_COMPANY`.
-
-**Console du super administrateur** (`admin.jibiat.com` → `/console`, ou `/console` sans plateforme) :
-
-- tableau des entreprises : adresse, marchands, livreurs, courses du mois, dernière course, statut ; recherche et
-  filtre (`GET /console/companies`) ;
-- création d'une entreprise : nom, adresse (proposée d'après le nom : minuscules, chiffres et tirets, 3 à 40
-  caractères, ni réservée comme `www` ou `admin`, ni déjà prise), fuseau horaire et premier administrateur avec un mot
-  de passe provisoire (`POST /companies`) ; zones, grille tarifaire et plan de paie de départ créés automatiquement ;
-- fiche : informations (changer l'adresse coupe l'ancienne), suspension et réactivation (`PATCH /companies/{id}`) ;
-- **assistance** : « Ouvrir son espace » ouvre l'espace de l'entreprise avec le compte d'un membre de son équipe
-  (un administrateur par défaut) pour une heure, avec un bandeau rouge pendant toute la session et une trace de
-  chaque ouverture (qui, avec quel compte, motif, adresse IP). Le jeton passe dans le fragment de l'adresse
-  (`#support=…`), jamais envoyé au serveur, et en est retiré dès l'ouverture
-  (`POST /console/companies/{id}/support-session`). Sans plateforme, la session d'assistance remplace celle de la
-  console dans le navigateur (même adresse) ;
-- premier super administrateur : `php artisan app:create-super-admin`.
-
-**Mise en service** (DNS Cloudflare, certificat `*.jibiat.com`, ISPConfig ou Nginx) : guide pas à pas dans
-[`docs/PLATEFORME.md`](docs/PLATEFORME.md), script `deploy/platform.sh`.
-
-- `php artisan platform:status` : adresses de la console et des entreprises, points à corriger (aucun super
-  administrateur, adresse invalide) ; `--rename=ancienne:nouvelle` change l'adresse d'une entreprise.
-- Temps réel : sans `VITE_REVERB_HOST`, l'interface se connecte à Reverb sur l'adresse ouverte (chaque adresse
-  relaie `/app/`).
-- `TRUSTED_PROXIES=cloudflare` : adresse IP réelle des visiteurs derrière le proxy Cloudflare (sinon les limites de
-  tentatives par adresse IP seraient partagées par tous) ; ou une liste d'adresses de mandataires.
+- Première mise en service : `php artisan app:install` crée l'entreprise (communes d'Abidjan, grille tarifaire et plan de
+  paie de départ) et son premier administrateur ; refusé si l'entreprise existe déjà.
+- Les autres comptes se créent dans **Utilisateurs** ; mot de passe perdu : `php artisan user:password <téléphone>`.
+- Conditions générales (`/conditions`) et politique de confidentialité (`/confidentialite`) au nom de l'entreprise, ou
+  des réglages `LEGAL_NAME`, `LEGAL_ADDRESS`, `LEGAL_EMAIL`, `LEGAL_RCCM`.
 - Limites de l'espace connecté, par minute : `PLATFORM_USER_RATE_LIMIT` par compte (300) et
-  `PLATFORM_COMPANY_RATE_LIMIT` pour toute une entreprise (3000), pour qu'une entreprise très active ne ralentisse
-  pas les autres.
+  `PLATFORM_COMPANY_RATE_LIMIT` pour toute l'entreprise (3000).
 
-### Abonnements des entreprises : formules et limites
-
-Le super administrateur définit les **formules** dans la console (`/console/formules`, `console/plans`) :
-forfait mensuel, courses incluses par mois, prix de chaque course au-delà, livreurs actifs au plus, modules inclus.
-« Créer Essentiel, Pro et Entreprise » propose trois formules de départ à ajuster. Une formule retirée reste
-attribuée aux entreprises qui l'ont.
-
-- **Chaque entreprise** a une formule (fiche de la console, ou dès sa création) et un **essai gratuit**
-  (`PLATFORM_TRIAL_DAYS`, 30 jours par défaut) dont la fin se modifie dans la console. **Sans formule, aucune limite**
-  (installations existantes, entreprise unique).
-- **Modules** (`App\Enums\PlatformFeature`) : commandes par WhatsApp (`whatsapp_bot`), API et webhooks (`api`), stock et
-  entrepôt (`stock`), boutiques en ligne (`shop`). Hors formule : routes refusées en 403 (middleware `feature:…`),
-  API publique refusée, webhooks non envoyés, boutiques publiques introuvables, bot WhatsApp désactivé ; menus et pages
-  masqués dans les applications (`company.features` de `/auth/me`). Les produits restent accessibles avec le stock
-  **ou** les boutiques (catalogue).
-- **Livreurs actifs** : au-delà du maximum de la formule, création ou réactivation d'un livreur refusée (422).
-- **Courses** : jamais bloquées ; celles du mois au-delà des courses incluses sont comptées en dépassement
-  (hors courses annulées ou refusées).
-- **« Mon abonnement »** (`GET /subscription`, administrateurs) : formule, essai, consommation du mois (courses,
-  livreurs), estimation du mois (forfait + dépassement ; offert pendant l'essai) et modules.
-
-### Abonnements des entreprises : factures et paiements
-
-- **Facture mensuelle** (`billing:invoice`, le 1er à 01:30 pour le mois écoulé ; ou « Générer » dans la console,
-  `console/invoices/generate`) pour chaque entreprise active qui a une formule : forfait **au prorata** des jours hors
-  essai (et depuis la création de l'entreprise), courses incluses au même prorata, courses en plus × prix de la formule
-  (hors courses annulées ou refusées). Une seule facture par entreprise et par mois ; rien quand le mois est entièrement
-  en essai. Numéro `FAC-AAAAMM-0001` (`PLATFORM_INVOICE_PREFIX`), échéance à 10 jours (`PLATFORM_INVOICE_DUE_DAYS`).
-- **Paiements** enregistrés par le super administrateur (Mobile Money, virement, espèces, autre ; référence ; paiement
-  partiel possible ; facture payée quand le reste est nul). Une facture sans paiement peut être annulée.
-- **Impayés progressifs** (`App\Services\Platform\Billing`) : échéance passée → rappel ; J+7
-  (`PLATFORM_BILLING_WARNING_DAYS`) → bandeau orange dans le back-office ; J+15 (`PLATFORM_BILLING_RESTRICT_DAYS`) →
-  **plus de nouvelles courses** (back-office, application marchand, API, boutiques, WhatsApp), tout le reste
-  consultable ; tout reprend dès le paiement. `company.billing_state` (`ok`, `due`, `warning`, `restricted`) dans
-  `/auth/me` pour les administrateurs.
-- **Rappels** (`billing:remind`, chaque matin à 08:05) : une notification aux administrateurs de l'entreprise à
-  l'émission, à l'échéance, à l'alerte et à la restriction (une fois par étape).
-- **Console « Facturation »** : revenu mensuel récurrent (abonnements hors essai), encaissé du mois, reste à encaisser,
-  factures en retard ; liste filtrable, encaissement, annulation ; **mentions des factures** (émetteur, comment payer).
-- **Entreprise** : « Mon abonnement » affiche le reste à payer, comment payer et les factures ; **facture imprimable**
-  (et enregistrable en PDF depuis le navigateur).
+**Mise en ligne** (Docker derrière Apache, certificat Let's Encrypt) : [`docs/DEPLOIEMENT.md`](docs/DEPLOIEMENT.md).
 
 ### Statistiques de l'entreprise
 
@@ -397,10 +319,7 @@ Menu **📊 Statistiques** du back-office (`orders.view`, personnel seulement), 
   aux marchands, dû par des marchands).
 - Les montants ne sont renvoyés qu'aux comptes qui voient la caisse (`finance.view`). Tableaux triables et exportables
   (CSV pour Excel).
-- **Statistiques avancées** (module de formule `advanced_stats`) : onglets Zones et Finances et export CSV. Sans le
-  module, les onglets restent visibles avec un cadenas et un lien vers « Mon abonnement » ; l'API répond 403. La migration
-  ajoute le module à toutes les formules existantes (personne ne perd d'écran) : retirez-le dans la console > Formules
-  des formules d'entrée de gamme.
+- **Statistiques avancées** : onglets Zones et Finances et export CSV.
 - **Point de la semaine** (`reports:weekly`, vérifié toutes les 15 minutes, envoyé le lundi à 7 h 30 heure de
   l'entreprise, une fois par semaine) : aux administrateurs, par WhatsApp (modèle `point_semaine_gerant`, à faire
   approuver par Meta) et dans la cloche — courses créées et livrées, taux de livraison, chiffre d'affaires comparés à la
@@ -410,42 +329,13 @@ Menu **📊 Statistiques** du back-office (`orders.view`, personnel seulement), 
   l'évolution, réussite au premier passage, passages ratés et leurs motifs, communes de livraison, délais, courbe par
   jour ; montants (encaissé, frais) pour les comptes qui voient les paiements.
 
-### Inscription des entreprises en libre-service
-
-- Page **`https://admin.jibiat.com/creer-mon-entreprise`** (lien depuis la connexion de la console et la page de
-  présentation) : nom, **adresse** `{slug}.jibiat.com` proposée d'après le nom et vérifiée pendant la saisie
-  (`GET /api/v1/company-signup/slug`), **formule** parmi celles proposées, compte administrateur (nom, téléphone,
-  e-mail facultatif, mot de passe), acceptation de la facturation après l'essai.
-- À l'envoi (`POST /api/v1/company-signup`, service `App\Services\Platform\CompanySignup`) : entreprise créée avec
-  **l'essai gratuit** (`PLATFORM_TRIAL_DAYS`), espace préparé (communes, grille tarifaire, plan de paie), premier
-  administrateur ; la **session s'ouvre directement** sur l'adresse de l'entreprise (jeton dans le fragment `#session=`,
-  jamais envoyé au serveur). Le super administrateur est prévenu (cloche de la console).
-- **Garde-fous** : seulement depuis l'adresse de la console ; un numéro n'ouvre qu'une entreprise en ligne (un seul
-  essai) ; 3 inscriptions par jour et par connexion, 5 par minute et 10 par heure ; champ invisible contre les robots.
-- **Console** : entreprises marquées « en ligne » (filtre « Inscrites en ligne », nombre du mois) ; bouton
-  **Ouvrir / Fermer** l'inscription (`console/settings`, `company_signup`, ouverte par défaut). Fermée aussi tant
-  qu'aucune formule n'est proposée.
-
-### Domaine personnalisé et marque blanche
-
-- Module de formule `custom_domain`. L'administrateur choisit son domaine dans **Réglages › Entreprise et marque** (« Adresse de votre
-  espace ») ; l'écran donne l'enregistrement DNS à créer (`CNAME` vers `PLATFORM_CUSTOM_DOMAIN_TARGET`), l'état et les
-  erreurs lisibles ; « Vérifier maintenant » et vérification automatique (`domains:check`, toutes les 10 minutes, domaines
-  en attente depuis moins de 14 jours). Service `App\Services\Platform\CustomDomains`, API `company/domain`.
-- Actif quand `https://{domaine}/.well-known/domain-check` répond avec l'entreprise : `Tenancy` reconnaît l'entreprise
-  par son domaine (avec ou sans `www.`), `Company::url()` (liens WhatsApp, SMS, API) l'utilise ; les administrateurs sont
-  prévenus. L'adresse `{slug}.jibiat.com` continue de fonctionner.
-- Cloudflare for SaaS : nom d'hôte créé et supprimé automatiquement si `CLOUDFLARE_API_TOKEN` et `CLOUDFLARE_ZONE_ID` sont
-  renseignés. Mise en place du serveur : `docs/PLATEFORME.md`, « Domaines personnalisés ».
-- Marque blanche : sur l'adresse d'une entreprise, le titre des pages est son nom (plus celui de la plateforme).
-
 ### Politique de confidentialité
 
-Page publique `/confidentialite` (toutes les adresses, y compris la présentation), exigée par Meta pour publier
-l'application WhatsApp : données traitées, rôles (l'entreprise de livraison responsable, la plateforme sous-traitante),
-prestataires (Meta, SMS, Anthropic si activé, Cloudflare), durées, droits (loi ivoirienne n° 2013-450, ARTCI) et
-section `#suppression` (URL d'instructions de suppression des données demandée par Meta). Éditeur et contact :
-`PLATFORM_OPERATOR`, `PLATFORM_CONTACT_EMAIL`, `PLATFORM_CONTACT_PHONE`. Texte à faire relire avant publication.
+Page publique `/confidentialite`, exigée par Meta pour publier l'application WhatsApp : données traitées, responsable
+(l'entreprise de livraison), prestataires (Meta, SMS, Anthropic si activé, hébergement), durées, droits (loi ivoirienne
+n° 2013-450, ARTCI) et section `#suppression` (URL d'instructions de suppression des données demandée par Meta).
+Exploitant et contact : nom, adresse et e-mail de l'entreprise, ou `LEGAL_NAME`, `LEGAL_ADDRESS`, `LEGAL_EMAIL`.
+Texte à faire relire avant publication.
 
 ### Paie des livreurs : plans de rémunération
 
@@ -506,7 +396,7 @@ fiches prêtes en attente de paiement. Modèles : « Salarié » et « Mixte » 
   des zones), paie (plan par défaut avec des montants), e-commerçants (zone et adresse de ramassage), une première
   course livrée ;
 - **conseillées** (remises à plus tard si on veut) : WhatsApp et modèles approuvés, équipe du bureau, alertes,
-  assignation automatique, boutiques en ligne (module API), abonnement.
+  assignation automatique, boutiques en ligne.
 
 Chaque étape dit pourquoi elle compte, ce qui manque, et ouvre le bon réglage ; une barre « ← Revenir à la mise en
 route » suit l'administrateur dans les réglages ouverts depuis le parcours. Le parcours s'ouvre tout seul à la
@@ -525,8 +415,7 @@ la boutique d'essai, sans fausser la caisse ni les statistiques ; l'étape reste
 (rouge) ou à surveiller (orange) : trajets sans prix, accès WhatsApp qui expire dans moins de 14 jours ou en erreur,
 modèles refusés par Meta, livraison automatique avec des livreurs sans zone, ramassage automatique sans règle,
 automatisation suspendue, course d'essai pas effacée. Les alertes mettent un point rouge sur « Réglages » dans le
-menu. La **console** du super administrateur affiche la mise en route de chaque entreprise (colonne de la liste,
-détail des étapes et du bilan sur sa fiche).
+menu.
 
 ### Planning des livreurs et ramassage automatique
 
@@ -695,7 +584,6 @@ Créés par `DemoSeeder` (environnements `local` et `testing` uniquement). Mot d
 
 | Rôle | Téléphone | E-mail |
 |---|---|---|
-| Super administrateur | 07 00 00 00 00 | superadmin@livraison.test |
 | Administrateur | 07 00 00 00 01 | admin@livraison.test |
 | Dispatcher | 07 00 00 00 02 | dispatch@livraison.test |
 | Caissier (caisse, reversements, paie) | 07 00 00 00 03 | caisse@livraison.test |
@@ -711,21 +599,17 @@ On se connecte avec le **téléphone** (format local `07 xx xx xx xx` ou interna
 ```bash
 php artisan migrate --force
 php artisan db:seed --class=RolesAndPermissionsSeeder --force   # à chaque déploiement (idempotent)
-php artisan app:create-super-admin                               # première installation
+php artisan app:install                                          # première installation : entreprise et administrateur
 php artisan user:password 0700000000                             # changer un mot de passe (déconnecte le compte)
 php artisan app:demo-accounts --suspend                          # suspendre les comptes au mot de passe de démonstration
 ```
 
-**Mise en ligne sur un VPS (LWS ou autre)** : voir [docs/DEPLOIEMENT-LWS.md](docs/DEPLOIEMENT-LWS.md).
-`deploy/ispconfig.sh` pour un serveur géré par ISPConfig (Debian 13, Apache), `deploy/install.sh` pour un VPS nu
-(Nginx, PHP 8.3, PostgreSQL, Redis, Horizon, Reverb, cron, HTTPS) ; `deploy/update.sh` met à jour.
+**Mise en ligne** (Docker derrière l'Apache du serveur, HTTPS Let's Encrypt) : voir [docs/DEPLOIEMENT.md](docs/DEPLOIEMENT.md).
+`deploy/install.sh` installe, `deploy/update.sh` met à jour, `deploy/backup.sh` sauvegarde la base (chaque nuit).
 
 **Mode hors connexion des livreurs** (actions gardées sur le téléphone sans réseau, envoyées au retour) : voir [docs/MODE-HORS-CONNEXION.md](docs/MODE-HORS-CONNEXION.md).
 
-**Préproduction** (`preprod.jibiat.com`, code d'accès, non indexée, testée avant chaque mise en production) : voir [docs/PREPRODUCTION.md](docs/PREPRODUCTION.md).
-Mise à jour automatique des serveurs depuis GitHub après chaque fusion : [docs/MISE-A-JOUR-AUTOMATIQUE.md](docs/MISE-A-JOUR-AUTOMATIQUE.md).
-
-Processus à superviser (Supervisor/systemd) : `php artisan horizon`, `php artisan reverb:start`, et le planificateur (`php artisan schedule:run` chaque minute).
+Processus (un conteneur chacun, voir `docker-compose.yml`) : `php artisan horizon`, `php artisan reverb:start`, et le planificateur (`php artisan schedule:work`).
 Les notifications, la diffusion temps réel et les messages WhatsApp/SMS passent par les files `default` et `messages` : sans Horizon (ou `queue:work --queue=default,messages`), ils ne partent pas.
 
 ## Tests et qualité
@@ -760,10 +644,9 @@ Authentification : en-tête `Authorization: Bearer <jeton>`.
 | POST | `/verifications/{token}/code` | public (`code`) : vérifie le code SMS |
 | POST | `/password/reset` | public (`token`, `password`, `password_confirmation`) : nouveau mot de passe, session ouverte |
 | GET | `/roles` | rôles que l'utilisateur peut attribuer |
-| GET/POST | `/users` | `users.view` / `users.manage` (filtres `role`, `status`, `search`, `company_id` pour le super admin) |
+| GET/POST | `/users` | `users.view` / `users.manage` (filtres `role`, `status`, `search`) |
 | GET/PATCH/DELETE | `/users/{id}` | même entreprise + `users.manage` |
-| GET/POST | `/companies` | super administrateur (création avec premier admin facultatif) |
-| GET/PATCH | `/companies/{id}` | super admin, ou admin de l'entreprise (paramètres hors statut) |
+| GET/PATCH | `/companies/{id}` | administrateur de l'entreprise (paramètres hors statut et identifiant) |
 | GET | `/zones` · POST/PATCH/DELETE `/zones/{id}` | tous · `settings.manage` (`is_shipping`, `shipping_fee_estimate` pour une zone d'expédition) ; suppression refusée pour une zone utilisée (courses, e-commerçants, entrepôts, quartiers) : la désactiver |
 | CRUD | `/pricing-grids`, PUT `/pricing-grids/{id}/rules` et `/surcharges` | `settings.manage` |
 | POST | `/quotes` | devis d'une course (marchand ou personnel) |
@@ -805,8 +688,8 @@ Authentification : en-tête `Authorization: Bearer <jeton>`.
 
 Temps réel (Reverb) : canaux privés `company.{id}` (personnel), `merchant.{id}` (marchand) et `App.Models.User.{id}` (notifications), événement `order.changed`.
 
-## Architecture multi-entreprise
+## Architecture
 
-- Chaque utilisateur appartient à une entreprise (`users.company_id`), sauf le super administrateur (`null`).
+- Chaque utilisateur appartient à l'entreprise (`users.company_id`) ; le schéma garde la colonne `company_id` partout.
 - Les modèles métier utilisent le trait `App\Models\Concerns\BelongsToCompany` : filtrage automatique par entreprise et `company_id` rempli à la création.
 - Les rôles et permissions sont définis dans `App\Enums\Role` et `App\Enums\Permission`, puis synchronisés en base par `RolesAndPermissionsSeeder`.

@@ -46,5 +46,6 @@ class InstallCompanyTest extends TestCase
 
         Company::factory()->create(['name' => 'Déjà là']);
         $this->artisan('app:install')->expectsOutputToContain('L\'entreprise est déjà créée : Déjà là.')->assertFailed();
+        $this->artisan('app:install --skip-if-installed')->expectsOutputToContain('Entreprise déjà créée : Déjà là.')->assertSuccessful();
     }
 }

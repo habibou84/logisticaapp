@@ -32,7 +32,7 @@ class LegacyImportTest extends TestCase
 
     private function import(array $options = [])
     {
-        return $this->artisan('legacy:import', ['company' => $this->company->slug, 'file' => $this->file, ...$options]);
+        return $this->artisan('legacy:import', ['file' => $this->file, ...$options]);
     }
 
     public function test_reader_handles_phpmyadmin_exports(): void
@@ -145,10 +145,9 @@ class LegacyImportTest extends TestCase
         $this->assertSame($merchants + 3, Merchant::count());
     }
 
-    public function test_unknown_company_or_file_is_refused(): void
+    public function test_missing_file_is_refused(): void
     {
-        $this->artisan('legacy:import', ['company' => 'inconnue', 'file' => $this->file])->assertFailed();
-        $this->artisan('legacy:import', ['company' => $this->company->slug, 'file' => '/tmp/absent.sql'])
+        $this->artisan('legacy:import', ['file' => '/tmp/absent.sql'])
             ->expectsOutputToContain('introuvable')
             ->assertFailed();
     }

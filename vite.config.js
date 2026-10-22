@@ -6,7 +6,7 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
     plugins: [
         laravel({
-            input: ['resources/css/app.css', 'resources/js/app.js', 'resources/css/marketing.css'],
+            input: ['resources/css/app.css', 'resources/js/app.js'],
             refresh: true,
             valetTls: false,   // désactive totalement la détection Herd/Valet
         }),
