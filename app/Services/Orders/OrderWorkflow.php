@@ -112,7 +112,7 @@ class OrderWorkflow
                 $order = $order->fresh();
             }
 
-            // Colis récupéré avec la position du livreur : la position du marchand s'affine
+            // Colis récupéré avec la position du livreur : la position du client s'affine
             if ($to === OrderStatus::PickedUp && isset($context['lat'], $context['lng']) && $order->merchant) {
                 $this->locations->learn($order->merchant);
             }
@@ -222,11 +222,11 @@ class OrderWorkflow
         $returnStatuses = [OrderStatus::ReturnAssigned, OrderStatus::Returning];
 
         if ($to === OrderStatus::AtHub && $from === OrderStatus::Confirmed && ! $order->fromWarehouse()) {
-            throw new BusinessRuleException('Le colis doit d\'abord être ramassé chez le marchand.', 'status');
+            throw new BusinessRuleException('Le colis doit d\'abord être ramassé chez le client.', 'status');
         }
 
         if ($to === OrderStatus::Returned && ! in_array($from, $returnStatuses, true) && ! $order->fromWarehouse()) {
-            throw new BusinessRuleException('Assignez d\'abord un livreur pour le retour du colis au marchand.', 'status');
+            throw new BusinessRuleException('Assignez d\'abord un livreur pour le retour du colis au client.', 'status');
         }
 
         match ($to) {

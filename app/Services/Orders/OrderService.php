@@ -93,7 +93,7 @@ class OrderService
                     : implode(', ', array_map(fn ($i) => "{$i['quantity']} × {$i['label']}", $items));
             }
 
-            // Adresse de ramassage du marchand par défaut
+            // Adresse de ramassage du client par défaut
             if ($hub === null) {
                 $data['pickup_zone_id'] ??= $merchant->pickup_zone_id;
                 $data['pickup_address'] ??= $merchant->pickup_address;
@@ -118,7 +118,7 @@ class OrderService
                 'merchant_id' => $merchant->id,
                 'source' => $source,
                 'activity' => $activity,
-                // L'application qui envoie la course prévient elle-même l'équipe du marchand
+                // L'application qui envoie la course prévient elle-même l'équipe du client
                 'merchant_alerts_muted' => ($data['notify_merchant'] ?? true) === false,
                 'created_by' => $actor->id,
                 'pickup_hub_id' => $hub?->id,
@@ -250,7 +250,7 @@ class OrderService
             'note' => $note,
             'lat' => $lat,
             'lng' => $lng,
-            // Une note du marchand est toujours visible par lui
+            // Une note du client est toujours visible par lui
             'visible_to_merchant' => $actor->merchant_id !== null || $visibleToMerchant,
         ]);
     }
@@ -278,7 +278,7 @@ class OrderService
     }
 
     /**
-     * Articles de la course : produits du stock du marchand ou articles libres.
+     * Articles de la course : produits du stock du client ou articles libres.
      *
      * @param  list<array{product_id?: ?int, label?: ?string, quantity?: int, unit_price?: ?int}>  $rows
      * @return list<array{product: ?Product, label: string, quantity: int, unit_price: int}>

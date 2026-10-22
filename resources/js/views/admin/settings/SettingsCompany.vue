@@ -1,5 +1,5 @@
 <template>
-  <SettingsPage icon="🏢" title="Entreprise et marque" intro="Ce que voient vos e-commerçants, vos livreurs et votre équipe : nom, coordonnées, logo, couleurs, adresse de l'espace.">
+  <SettingsPage icon="🏢" title="Entreprise et marque" intro="Ce que voient vos clients, vos livreurs et votre équipe : nom, coordonnées, logo, couleurs, adresse de l'espace.">
     <section v-if="form" class="card p-4 space-y-3">
       <h2 class="font-semibold">Identité</h2>
       <div class="grid sm:grid-cols-2 gap-3">
@@ -7,7 +7,7 @@
         <div><label class="label" for="phone">Téléphone</label><input id="phone" v-model="form.phone" class="input"></div>
         <div class="sm:col-span-2"><label class="label" for="address">Adresse</label><input id="address" v-model="form.address" class="input"></div>
         <div class="sm:col-span-2">
-          <label class="label" for="tagline">Accroche de la page d'accueil des e-commerçants</label>
+          <label class="label" for="tagline">Accroche de la page d'accueil des clients</label>
           <input id="tagline" v-model="form.tagline" class="input" maxlength="160" placeholder="Vos colis livrés vite, vos clients satisfaits.">
         </div>
       </div>
@@ -31,7 +31,7 @@
           <p class="text-xs text-gray-500">PNG, JPEG ou WebP, 2 Mo au plus. Fond transparent conseillé (PNG).</p>
         </div>
       </div>
-      <MoreHelp>Affiché sur la page d'accueil des e-commerçants (adresse du site), les pages de connexion, l'en-tête de chaque espace et l'icône des applications.</MoreHelp>
+      <MoreHelp>Affiché sur la page d'accueil des clients (adresse du site), les pages de connexion, l'en-tête de chaque espace et l'icône des applications.</MoreHelp>
     </section>
 
     <AppearanceSettings v-if="company" />

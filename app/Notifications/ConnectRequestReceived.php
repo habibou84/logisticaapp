@@ -10,7 +10,7 @@ use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Notifications\Notification;
 
 /**
- * Un e-commerçant demande à devenir client (depuis l'annuaire ou Jibiat Marchand) : à valider par l'équipe.
+ * Un client demande à devenir client (depuis l'annuaire ou Jibiat Marchand) : à valider par l'équipe.
  */
 class ConnectRequestReceived extends Notification implements ShouldQueue
 {

@@ -8,7 +8,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
 
 /**
- * Intégrations (clés API, webhooks) : le marchand gère les siennes, l'administration
+ * Intégrations (clés API, webhooks) : le client gère les siennes, l'administration
  * (droit integrations.manage) celles de n'importe quel marchand de l'entreprise.
  */
 trait ResolvesIntegrationMerchant

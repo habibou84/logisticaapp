@@ -1,8 +1,19 @@
 # Formules des clients : distribution et mise à disposition (MAD)
 
-Par défaut, un e-commerçant paie ses courses une à une : les frais de chaque course sont déduits de ses
-reversements. Un client peut aussi avoir une **formule** : ses courses ne coûtent plus rien sur le moment et
-passent sur sa **facture du mois**, payée à part (virement, chèque, Mobile Money, espèces).
+Chaque client a une ou plusieurs **activités**, tenues séparément (courses, factures, chiffre d'affaires, équipes) :
+
+| Activité | Facturation |
+|---|---|
+| **E-commerce** | Courses une à une : les frais de chaque course sont déduits des reversements du client |
+| **Distribution** | Formule (contrat ou à l'unité) : facture du mois, série `DIS-AAAAMM-0001` |
+| **MAD** (mise à disposition de livreurs) | Formule MAD : facture du mois, série `MAD-AAAAMM-0001` |
+
+Les activités se cochent sur la fiche du client (**Clients** › « Modifier ») ; une activité qui a déjà des
+courses ou une formule ne peut plus être retirée. Les livreurs sont communs à toutes les activités.
+
+Avec une formule, les courses de l'activité ne coûtent rien sur le moment et passent sur la **facture du mois**
+de cette activité, payée à part (virement, chèque, Mobile Money, espèces). Un client à la fois en distribution et
+en MAD reçoit deux factures.
 
 ## 1. Préparer les tarifs (une fois)
 
@@ -11,10 +22,10 @@ sont les dix communes d'Abidjan (Abobo, Adjamé, Attécoubé, Cocody, Koumassi, 
 Treichville, Yopougon) ; « Mettre au forfait » ou « Retirer du forfait » sur chaque commune pour changer la liste.
 Les quartiers suivent leur commune.
 
-**Tarifs › Distribution à l'unité (Abidjan)** : pour les clients sans contrat, prix d'un pli (0-500 g), d'un
+**Clients › Formules et tarifs › Distribution à l'unité (Abidjan)** : pour les clients sans contrat, prix d'un pli (0-500 g), d'un
 colis (0-5 kg) et d'un chèque, pour chaque délai (24 h, 48 h, 72 h).
 
-**Tarifs › Villes de l'intérieur** : pour chaque ville et chaque délai, prix d'un pli, d'un colis et de chaque
+**Clients › Formules et tarifs › Villes de l'intérieur** : pour chaque ville et chaque délai, prix d'un pli, d'un colis et de chaque
 kilogramme au-delà de 5 kg. Saisie ligne par ligne, ou import d'un fichier (« Modèle CSV » pour le format) :
 
 | Ville | Délai | Pli | Colis | Kg supplémentaire |
@@ -28,7 +39,7 @@ sur la course comme une commune.
 
 ## 2. Donner une formule à un client
 
-**Clients › E-commerçants** › « Formule » sur la ligne du client :
+**Clients** › « Formule » sur la ligne du client (droit « Formules et tarifs », dans son périmètre) :
 
 - **Distribution sous contrat** : forfait mensuel, nombre de plis et colis inclus, prix de chacun au-delà, délai du
   contrat, prix d'un chèque livré, prix du kilogramme au-delà de 5 kg ;
@@ -37,12 +48,14 @@ sur la course comme une commune.
 - **Mise à disposition (MAD)** : forfait mensuel, nombre de courses incluses, prix de chacune au-delà, délai,
   livreurs mis à disposition.
 
-Une seule formule à la fois : en créer une nouvelle arrête la précédente la veille de son début. Une formule qui
+Une formule par activité : en créer une nouvelle arrête la précédente **de la même activité** la veille de son
+début (un contrat de distribution et une MAD peuvent coexister). Ajouter une formule ajoute son activité au client. Une formule qui
 a déjà des courses ne change plus de prix (pour changer les conditions : « Terminer… », puis une nouvelle formule).
 
 ## 3. Les courses
 
-Sur la course d'un client sous formule (back-office, application du client, API) : **type d'envoi** (pli, colis
+Un client à plusieurs activités choisit l'**activité** de chaque course (back-office, application du client,
+champ `activity` de l'API ; e-commerce par défaut). Sur une course de distribution ou de MAD : **type d'envoi** (pli, colis
 ou chèque), **poids** (facultatif) et, en distribution à l'unité, **délai**. Un pli de plus de 500 g compte comme
 un colis. Rien n'est retenu sur la course ; elle indique comment elle sera facturée :
 
@@ -60,7 +73,8 @@ même sans assignation automatique. Livreur absent ou indisponible : la course r
 ## 4. La facture du mois
 
 Le 1er de chaque mois à 01:30, la facture du mois écoulé de chaque client sous formule est **calculée en
-brouillon** (ou à la demande : **Finances › Factures clients** › « Calculer »). Elle reprend :
+brouillon**, une par activité (ou à la demande : **Finances › Factures clients** › « Calculer », toutes les activités
+ou celle du filtre). Elle reprend les courses de son activité :
 
 1. le forfait du mois ;
 2. les plis et colis (ou courses, en MAD) des communes du forfait, et ceux au-delà de la quantité incluse ;
@@ -74,9 +88,32 @@ Ensuite :
 
 - **Recalculer** : reprend les courses du mois (les lignes ajoutées à la main restent) ;
 - **Ajouter une ligne** : remise (prix négatif) ou frais ;
-- **Émettre** : numéro `FAC-AAAAMM-0001`, date et échéance (15 jours, `CLIENT_INVOICE_DUE_DAYS`) ; la facture ne
+- **Émettre** : numéro de la série de l'activité (`DIS-AAAAMM-0001`, `MAD-AAAAMM-0001` ; préfixes
+  `CLIENT_INVOICE_PREFIX_DISTRIBUTION`, `CLIENT_INVOICE_PREFIX_MAD`), date et échéance (15 jours, `CLIENT_INVOICE_DUE_DAYS`) ; la facture ne
   change plus et le client la voit dans son application (Profil › Mes factures) ;
 - **Enregistrer un paiement** : partiel ou total ; payée quand il ne reste rien ;
 - **Annuler** : seulement sans paiement (elle garde son numéro, marquée annulée).
 
 « Imprimer / PDF » donne la facture avec le détail des courses du mois.
+
+## 5. Chiffre d'affaires par activité
+
+**Finances › Chiffre d'affaires** (droit « Voir le chiffre d'affaires ») : mois par mois, chaque activité à part,
+puis le total, en montants **facturés** ou **encaissés**, avec le nombre de courses :
+
+- e-commerce : frais de livraison, de retour et de stockage retenus aux clients (encaissés quand le reversement est payé) ;
+- distribution, MAD : factures émises du mois, paiements reçus dans le mois.
+
+API : `GET /api/v1/revenue?from=2026-01&to=2026-12`.
+
+## 6. Équipes et permissions
+
+**Équipe › Utilisateurs** › « Modifier » :
+
+- **Périmètre** (activités) : un compte limité à la distribution ne voit que les clients, courses, factures, formules,
+  statistiques et notifications de la distribution (MAD, e-commerce de même). Aucune case : toutes les activités.
+  L'administrateur voit toujours tout ; la caisse et les reversements ne concernent que l'e-commerce.
+- **Rôle « Responsable d'activité »** : clients, courses et dispatch, factures, formules et chiffre d'affaires de son périmètre.
+- **Réglage fin** : chaque permission peut être **ajoutée** au rôle ou **retirée** pour ce seul compte (une permission
+  retirée l'emporte toujours). Nouvelles permissions : `invoices.view`, `invoices.manage` (factures clients),
+  `rates.manage` (formules et tarifs), `revenue.view` (chiffre d'affaires).

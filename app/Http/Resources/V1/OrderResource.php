@@ -111,7 +111,7 @@ class OrderResource extends JsonResource
                 'cod_amount' => $this->cod_amount,
                 'collected_amount' => $this->collected_amount,
             ],
-            // Le code de livraison est communiqué au destinataire par le marchand
+            // Le code de livraison est communiqué au destinataire par le client
             // (puis par WhatsApp en phase 3) ; jamais au livreur.
             'delivery_code' => $this->when(! $isCourier, fn () => $this->delivery_code),
 
@@ -130,7 +130,7 @@ class OrderResource extends JsonResource
             ),
             'attempts_count' => $this->attempts_count,
             'max_attempts' => $this->max_attempts,
-            // Colis non livré : décision attendue, ou décision déjà prise par le marchand
+            // Colis non livré : décision attendue, ou décision déjà prise par le client
             'needs_decision' => $this->needsDecision(),
             'decision_editable' => $this->decisionEditable(),
             'merchant_decision' => $this->whenLoaded('merchantDecision', fn () => $this->merchantDecisionSummary()),
@@ -163,7 +163,7 @@ class OrderResource extends JsonResource
     }
 
     /**
-     * Décision du marchand encore d'actualité (report en cours, retour pas encore parti).
+     * Décision du client encore d'actualité (report en cours, retour pas encore parti).
      *
      * @return array{kind: string, date: ?string, by: ?string, at: mixed}|null
      */

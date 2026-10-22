@@ -59,7 +59,7 @@ class OrderExpenseTest extends TestCase
         $entry = MerchantLedgerEntry::where('order_id', $this->order->id)->where('type', 'other_fee')->sole();
         $this->assertSame(-2000, $entry->amount);
 
-        // Remboursé sur son versement, visible dans le point du marchand et notifié
+        // Remboursé sur son versement, visible dans le point du client et notifié
         $this->as($this->courierA->user)->getJson('/api/v1/courier/wallet')->assertJsonPath('data.cash_in_hand', -2000);
         $this->as($this->merchantUser)->getJson('/api/v1/reports/summary')
             ->assertJsonPath('data.amounts.other_fees', 2000)
@@ -83,7 +83,7 @@ class OrderExpenseTest extends TestCase
         ])->assertCreated();
         $this->assertSame(0, MerchantLedgerEntry::where('type', 'other_fee')->count());
 
-        // Payé par le livreur de la course, facturé au marchand
+        // Payé par le livreur de la course, facturé au client
         $this->addExpense(['type' => 'packaging', 'amount' => 700])
             ->assertCreated()->assertJsonPath('data.courier_name', $this->courierA->user->name);
         $this->assertSame($this->courierA->id, OrderExpense::latest('id')->first()->courier_id);

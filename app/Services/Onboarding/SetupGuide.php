@@ -133,7 +133,7 @@ class SetupGuide
         ]));
 
         return $this->step('company', 'Votre entreprise', true,
-            'Le nom, le logo et le téléphone apparaissent sur les messages, le suivi des colis et l\'application des e-commerçants.',
+            'Le nom, le logo et le téléphone apparaissent sur les messages, le suivi des colis et l\'application des clients.',
             $missing === [] ? self::DONE : (count($missing) < 3 ? self::PARTIAL : self::TODO),
             $missing === [] ? ["{$c->name} · coordonnées et logo en place"] : ['Il manque '.$this->list($missing).'.'],
             '/admin/reglages/entreprise', 'Compléter l\'entreprise');
@@ -247,14 +247,14 @@ class SetupGuide
         $merchants = Merchant::withoutGlobalScopes()->where('company_id', $c->id)->where('status', 'active')->where('is_test', false)->get(['id', 'pickup_zone_id', 'pickup_address']);
         $ready = $merchants->filter(fn (Merchant $m) => $m->pickup_zone_id && filled($m->pickup_address))->count();
 
-        return $this->step('merchants', 'Les e-commerçants', true,
-            'Les courses viennent des e-commerçants : chacun a son compte, sa zone et son adresse de ramassage.',
+        return $this->step('merchants', 'Les clients', true,
+            'Les courses viennent des clients : chacun a son compte, sa zone et son adresse de ramassage.',
             $ready > 0 ? self::DONE : ($merchants->isEmpty() ? self::TODO : self::PARTIAL),
             array_values(array_filter([
-                $merchants->isEmpty() ? 'Aucun e-commerçant pour le moment.' : $merchants->count().' e-commerçant(s) actif(s), dont '.$ready.' avec zone et adresse de ramassage.',
+                $merchants->isEmpty() ? 'Aucun client pour le moment.' : $merchants->count().' client(s) actif(s), dont '.$ready.' avec zone et adresse de ramassage.',
                 'Inscriptions en ligne '.($c->merchant_signup ? 'ouvertes.' : 'fermées : vous créez vous-même les comptes.'),
             ])),
-            '/admin/marchands', 'Gérer les e-commerçants');
+            '/admin/marchands', 'Gérer les clients');
     }
 
     private function firstDelivery(Company $c): array
@@ -288,7 +288,7 @@ class SetupGuide
         $templates = $account ? MetaTemplate::query()->where('whatsapp_account_id', $account->id)->count() : 0;
 
         return $this->step('messages', 'Les messages aux clients', false,
-            'WhatsApp prévient le destinataire (livreur en route, code de livraison) et l\'e-commerçant à chaque étape.',
+            'WhatsApp prévient le destinataire (livreur en route, code de livraison) et le client à chaque étape.',
             $connected && $templates > 0 && $approved === $templates ? self::DONE : ($connected ? self::PARTIAL : self::TODO),
             [$connected ? "WhatsApp connecté ({$account->display_phone}) · modèles approuvés par Meta : {$approved} sur {$templates}." : 'WhatsApp n\'est pas encore connecté : les messages ne partent pas.'],
             '/admin/whatsapp', 'Connecter WhatsApp');

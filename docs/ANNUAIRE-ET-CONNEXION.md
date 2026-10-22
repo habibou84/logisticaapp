@@ -1,11 +1,11 @@
 # Annuaire des entreprises de livraison et connexion en un clic
 
-Objectif : les e-commerçants trouvent une entreprise de livraison fiable, et les entreprises de livraison trouvent
+Objectif : les clients trouvent une entreprise de livraison fiable, et les entreprises de livraison trouvent
 de nouveaux clients. Contrat partagé avec Jibiat Marchand : `habibou84/socle`, schémas `directory` et `connect-token`.
 
 ## Annuaire
 
-- L'entreprise choisit d'y figurer : Réglages › E-commerçants › « Figurer dans l'annuaire », avec une phrase de présentation.
+- L'entreprise choisit d'y figurer : Réglages › Clients › « Figurer dans l'annuaire », avec une phrase de présentation.
 - Ouvert à toutes les formules : la clé remise à Jibiat Marchand par la connexion en un clic (`api_keys.client`) ouvre l'API publique et les webhooks même sans le module Intégrations ; les clés créées à la main restent réservées à ce module.
 - Publié sur `jibiat.com/annuaire` et en JSON sur `GET https://jibiat.com/api/public/directory` (lu par Jibiat Marchand).
 - Chiffres calculés par l'application sur 90 jours, hors courses d'essai : colis livrés, part de réussite
@@ -15,7 +15,7 @@ de nouveaux clients. Contrat partagé avec Jibiat Marchand : `habibou84/socle`, 
 
 ## Connexion en un clic (Jibiat Marchand)
 
-1. Dans Jibiat Marchand, l'e-commerçant choisit une entreprise et touche « Connecter ».
+1. Dans Jibiat Marchand, le client choisit une entreprise et touche « Connecter ».
 2. Il arrive sur `{entreprise}.jibiat.com/marchand/connecter` :
    - déjà client : il se connecte puis touche « Autoriser » ;
    - inscriptions ouvertes : il crée son compte, puis autorise ;
@@ -28,13 +28,13 @@ Applications autorisées et adresses de retour : `config/connect.php` (`CONNECT_
 
 ## Demandes d'ouverture de compte
 
-- Arrivent dans E-commerçants (encadré « nouveaux clients potentiels ») et dans la cloche de l'équipe qui gère les e-commerçants.
+- Arrivent dans Clients (encadré « nouveaux clients potentiels ») et dans la cloche de l'équipe qui gère les clients.
 - Accepter crée la boutique et le compte du gérant avec le mot de passe qu'il a choisi ; il peut se connecter aussitôt
   et relancer « Connecter » depuis Jibiat Marchand. Refuser clôt la demande. Le mot de passe haché est effacé dans les deux cas.
 
-## Inviter ses e-commerçants sur Jibiat Marchand
+## Inviter ses clients sur Jibiat Marchand
 
-Réglages › E-commerçants donne à l'entreprise son lien d'invitation :
+Réglages › Clients donne à l'entreprise son lien d'invitation :
 `https://jibiat-marchand.com/creer-ma-boutique?partenaire=<identifiant de l'entreprise>` (adresse de Jibiat Marchand
 réglable par `JIBIAT_MARCHAND_URL`). Si l'entreprise figure dans l'annuaire, Jibiat Marchand offre un mois d'essai en
-plus à l'e-commerçant invité et garde l'entreprise comme parrain. Le lien se copie ou s'envoie par WhatsApp.
+plus au client invité et garde l'entreprise comme parrain. Le lien se copie ou s'envoie par WhatsApp.

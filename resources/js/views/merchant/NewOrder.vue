@@ -222,7 +222,7 @@ const blank = () => ({
   delivery_address: '',
   delivery_scheduled_date: null,
   items_amount: 0,
-  // Aucun choix par défaut : le marchand doit indiquer qui paie la livraison
+  // Aucun choix par défaut : le client doit indiquer qui paie la livraison
   fee_payer: null,
   description: '',
   is_express: false,
@@ -251,7 +251,7 @@ const picked = reactive({})
 // Jour de livraison : choix obligatoire, « Aujourd'hui » impossible quand l'agence a fermé la journée
 const { when, options: deliveryOptions, closed, closedReason, minDate, summary: dateSummary, isChosen: dateChosen, load: loadDeliveryDay, reset: resetDate } = useDeliveryDate(form)
 
-// Entrepôts où le marchand a du stock disponible
+// Entrepôts où le client a du stock disponible
 const stockHubs = computed(() => hubs.value.filter((h) => products.value.some((p) => p.levels.some((l) => l.hub_id === h.id && l.available > 0))))
 const sourceOptions = computed(() => [
   { value: null, label: 'De chez moi', icon: '🏠', description: 'un livreur passe le récupérer' },
@@ -273,7 +273,7 @@ function pick(product, delta) {
   fillDescription()
 }
 
-// « Que contient le colis ? » reprend les articles choisis, sauf si le marchand y a écrit autre chose
+// « Que contient le colis ? » reprend les articles choisis, sauf si le client y a écrit autre chose
 let autoDescription = ''
 function fillDescription() {
   if (form.description && form.description !== autoDescription) return
@@ -298,7 +298,7 @@ const extrasSummary = computed(() => [
   form.merchant_note ? 'message au livreur' : null,
 ].filter(Boolean).join(' · '))
 const shippingEstimate = computed(() => (quote.value?.is_shipping ? quote.value.shipping_fee_estimate || 0 : 0))
-// Ce que le marchand touche (ou paie) pour cette course, frais d'expédition estimés compris
+// Ce que le client touche (ou paie) pour cette course, frais d'expédition estimés compris
 const merchantNet = computed(() => (form.items_amount || 0) - (form.fee_payer === 'merchant' ? (quote.value?.total || 0) : 0) - shippingEstimate.value)
 const codAmount = computed(() => (form.items_amount || 0) + (form.fee_payer === 'recipient' && quote.value ? quote.value.total : 0))
 

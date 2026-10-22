@@ -21,8 +21,8 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 /**
- * Bons de retour : les colis d'un marchand à lui rendre partent ensemble avec
- * un livreur ; à la remise, le marchand signe (ou le livreur photographie la
+ * Bons de retour : les colis d'un client à lui rendre partent ensemble avec
+ * un livreur ; à la remise, le client signe (ou le livreur photographie la
  * remise) et toutes les courses passent « Retourné » d'un coup.
  */
 class ReturnSlips
@@ -69,7 +69,7 @@ class ReturnSlips
             $orders = Order::query()->whereIn('id', $orderIds)->where('merchant_id', $merchant->id)->lockForUpdate()->with('holder.user')->get();
 
             if ($orders->count() !== count($orderIds)) {
-                throw new BusinessRuleException('Certains colis sont introuvables ou n\'appartiennent pas à ce marchand.', 'order_ids');
+                throw new BusinessRuleException('Certains colis sont introuvables ou n\'appartiennent pas à ce client.', 'order_ids');
             }
 
             foreach ($orders as $order) {
@@ -110,7 +110,7 @@ class ReturnSlips
     }
 
     /**
-     * Remise des colis au marchand par le livreur du bon : nom de la personne qui
+     * Remise des colis au client par le livreur du bon : nom de la personne qui
      * reçoit, signature et/ou photo. Les colis non cochés restent à rendre (hors bon).
      *
      * @param  list<int>|null  $orderIds  colis effectivement remis (tous par défaut)
@@ -128,7 +128,7 @@ class ReturnSlips
         $signatureData = $this->decodeSignature($signature);
 
         if ($signatureData === null && $photo === null) {
-            throw new BusinessRuleException('Faites signer le marchand ou prenez une photo de la remise.', 'signature');
+            throw new BusinessRuleException('Faites signer le client ou prenez une photo de la remise.', 'signature');
         }
 
         DB::transaction(function () use ($actor, $slip, $receivedBy, $signatureData, $photo, $orderIds, $lat, $lng) {
@@ -139,7 +139,7 @@ class ReturnSlips
                 throw new BusinessRuleException('Cochez au moins un colis remis.', 'order_ids');
             }
 
-            $note = "Remis au marchand (bon {$slip->reference}), reçu par {$receivedBy}";
+            $note = "Remis au client (bon {$slip->reference}), reçu par {$receivedBy}";
 
             foreach ($handed as $order) {
                 // Déjà rendu individuellement depuis la mission
@@ -158,7 +158,7 @@ class ReturnSlips
                 Order::whereKey($missing->modelKeys())->update(['return_slip_id' => null]);
                 foreach ($missing as $order) {
                     $this->journal->record($order, $actor, OrderEventType::Note, [
-                        'note' => "Non remis avec le bon {$slip->reference} : reste à rendre au marchand",
+                        'note' => "Non remis avec le bon {$slip->reference} : reste à rendre au client",
                         'visible_to_merchant' => false,
                     ]);
                 }

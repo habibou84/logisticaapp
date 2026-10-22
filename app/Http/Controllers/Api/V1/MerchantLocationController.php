@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Position de ramassage d'un marchand : enregistrée par le marchand sur place (GPS de
+ * Position de ramassage d'un client : enregistrée par le client sur place (GPS de
  * son téléphone, repère ajusté sur la carte) ou par l'agence (carte, lien Google Maps).
  */
 class MerchantLocationController extends Controller
@@ -20,7 +20,7 @@ class MerchantLocationController extends Controller
     public function __construct(private MerchantLocation $locations) {}
 
     /**
-     * Le marchand connecté : sa position et son adresse de ramassage.
+     * Le client connecté : sa position et son adresse de ramassage.
      */
     public function mine(Request $request): JsonResponse
     {
@@ -43,7 +43,7 @@ class MerchantLocationController extends Controller
     }
 
     /**
-     * L'agence (gestion des marchands) place le repère, ou retire la position (lat null).
+     * L'agence (gestion des clients) place le repère, ou retire la position (lat null).
      */
     public function update(Request $request, Merchant $merchant): JsonResponse
     {
@@ -80,7 +80,7 @@ class MerchantLocationController extends Controller
     private function ownMerchant(Request $request): Merchant
     {
         $merchant = $request->user()->merchant;
-        abort_if($merchant === null, 403, 'Réservé aux e-commerçants.');
+        abort_if($merchant === null, 403, 'Réservé aux clients.');
 
         return $merchant;
     }

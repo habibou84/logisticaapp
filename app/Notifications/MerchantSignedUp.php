@@ -10,7 +10,7 @@ use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Notifications\Notification;
 
 /**
- * Nouvel e-commerçant inscrit en ligne : cloche et temps réel du back-office.
+ * Nouveau client inscrit en ligne : cloche et temps réel du back-office.
  */
 class MerchantSignedUp extends Notification implements ShouldQueue
 {
@@ -33,7 +33,7 @@ class MerchantSignedUp extends Notification implements ShouldQueue
     {
         return [
             'kind' => 'merchant_signup',
-            'title' => "Nouvel e-commerçant : {$this->merchant->business_name}",
+            'title' => "Nouveau client : {$this->merchant->business_name}",
             'body' => trim("{$this->merchant->contact_name} · ".PhoneNumber::display($this->merchant->phone).' · inscrit en ligne, compte actif.'),
             'merchant_id' => $this->merchant->id,
             'href' => '/admin/marchands?nouveaux=1',

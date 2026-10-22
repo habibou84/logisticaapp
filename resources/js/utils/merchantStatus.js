@@ -2,7 +2,7 @@ import { longDay } from '../composables/useDeliveryDate'
 import { today } from './format'
 
 /**
- * Où en est une course, en une phrase pour l'e-commerçant (au lieu du nom technique du statut),
+ * Où en est une course, en une phrase pour le client (au lieu du nom technique du statut),
  * avec une petite icône (StatusIcon) et un ton : bleu en route, vert livrée, orange à régler,
  * violet retour, rouge refusée ou perdue, gris le reste.
  */

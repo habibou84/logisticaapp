@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * Emplacement du stock d'un marchand : chez lui (hub_id null) ou dans un entrepôt.
+ * Emplacement du stock d'un client : chez lui (hub_id null) ou dans un entrepôt.
  */
 class StockLocation extends Model
 {
@@ -32,6 +32,6 @@ class StockLocation extends Model
 
     public function label(): string
     {
-        return $this->hub_id ? ($this->hub?->name ?? 'Entrepôt') : 'Chez le marchand';
+        return $this->hub_id ? ($this->hub?->name ?? 'Entrepôt') : 'Chez le client';
     }
 }

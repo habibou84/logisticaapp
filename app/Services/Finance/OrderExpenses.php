@@ -15,7 +15,7 @@ use App\Support\Money;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Frais engagés pour une course. Facturés au marchand, ils sont inscrits à son grand
+ * Frais engagés pour une course. Facturés au client, ils sont inscrits à son grand
  * livre (et donc déduits de son point) ; avancés par un livreur, ils sont déduits de
  * son prochain versement à la caisse.
  */
@@ -80,7 +80,7 @@ class OrderExpenses
     }
 
     /**
-     * Annule des frais saisis par erreur : contre-écriture au grand livre du marchand.
+     * Annule des frais saisis par erreur : contre-écriture au grand livre du client.
      */
     public function cancel(User $actor, OrderExpense $expense): OrderExpense
     {

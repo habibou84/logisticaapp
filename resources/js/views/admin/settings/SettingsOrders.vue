@@ -46,7 +46,7 @@
         <h2 class="font-semibold">Livreurs</h2>
         <label class="flex items-start gap-2 text-sm">
           <input v-model="form.require_delivery_code" type="checkbox" class="mt-1">
-          <span>Exiger le code de livraison du destinataire<span class="block text-gray-500">Le destinataire reçoit son code sur WhatsApp quand le livreur part livrer, ou par le marchand.</span></span>
+          <span>Exiger le code de livraison du destinataire<span class="block text-gray-500">Le destinataire reçoit son code sur WhatsApp quand le livreur part livrer, ou par le client.</span></span>
         </label>
         <label class="flex items-start gap-2 text-sm">
           <input v-model="form.offline_courier_actions" type="checkbox" class="mt-1">
@@ -56,8 +56,8 @@
         </label>
         <MoreHelp>
           Hors connexion, le livreur peut enregistrer « récupéré », « en route », « livré » (avec l'encaissement), un échec, un report ou une note,
-          à l'heure où ils ont été faits. Une livraison avec un code client faux est gardée mais signalée (file « Codes à vérifier »).
-          Les WhatsApp au client et au marchand partent au retour du réseau.
+          à l'heure où ils ont été faits. Une livraison avec un code du destinataire faux est gardée mais signalée (file « Codes à vérifier »).
+          Les WhatsApp au destinataire et au client partent au retour du réseau.
         </MoreHelp>
         <div>
           <p class="label">Après une mission ramassage, les colis…</p>

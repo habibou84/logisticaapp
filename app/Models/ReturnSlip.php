@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * Bon de retour : colis d'un marchand rapportés ensemble par un livreur.
+ * Bon de retour : colis d'un client rapportés ensemble par un livreur.
  */
 class ReturnSlip extends Model
 {
@@ -58,7 +58,7 @@ class ReturnSlip extends Model
     {
         return match ($this->status) {
             self::OPEN => 'En cours',
-            self::HANDED => 'Remis au marchand',
+            self::HANDED => 'Remis au client',
             self::CANCELLED => 'Annulé',
             default => $this->status,
         };

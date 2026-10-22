@@ -5,7 +5,7 @@
       <RouterLink to="/admin/whatsapp" class="btn-secondary">Paramètres WhatsApp</RouterLink>
     </div>
     <p class="text-sm text-gray-600">
-      Écrivez au bot comme un e-commerçant depuis son téléphone : demande de course, commande de client transférée,
+      Écrivez au bot comme un client depuis son téléphone : demande de course, commande de client transférée,
       suivi d'un colis… Les courses confirmées ici sont réellement créées (source « whatsapp »).
     </p>
 
@@ -63,7 +63,7 @@
           <select id="sender" v-model="senderKey" class="input" @change="log = []">
             <option v-for="s in senders" :key="s.key" :value="s.key">{{ s.label }}</option>
           </select>
-          <p class="text-xs text-gray-500">Numéro WhatsApp du marchand, ou un numéro inconnu pour voir le refus.</p>
+          <p class="text-xs text-gray-500">Numéro WhatsApp du client, ou un numéro inconnu pour voir le refus.</p>
         </div>
 
         <div class="card p-4 space-y-2 text-sm">

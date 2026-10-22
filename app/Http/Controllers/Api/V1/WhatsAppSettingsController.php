@@ -136,7 +136,7 @@ class WhatsAppSettingsController extends Controller
     }
 
     /**
-     * Simulateur : écrit au bot comme le ferait un marchand depuis son téléphone,
+     * Simulateur : écrit au bot comme le ferait un client depuis son téléphone,
      * sans compte Meta. Renvoie les réponses du bot.
      */
     public function simulate(Request $request, Conversation $conversation): JsonResponse
@@ -243,7 +243,7 @@ class WhatsAppSettingsController extends Controller
             'sms_fallback' => $company->sms_fallback,
             'merchant_push_first' => $company->merchant_push_first,
             'push_enabled' => WebPush::enabled(),
-            // E-commerçants prévenus sur leur téléphone (au moins un appareil abonné)
+            // Clients prévenus sur leur téléphone (au moins un appareil abonné)
             'merchants_with_push' => Merchant::where('company_id', $company->id)
                 ->whereHas('users', fn ($q) => $q->whereHas('pushSubscriptions'))
                 ->count(),

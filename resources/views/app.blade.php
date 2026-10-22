@@ -1,6 +1,6 @@
 @php
-    // Application installable selon l'espace : livreur ou e-commerçant (l'admin n'est pas une PWA)
-    // Pages des clients (boutique d'un marchand, suivi d'un colis) : pas d'application à installer
+    // Application installable selon l'espace : livreur ou client (l'admin n'est pas une PWA)
+    // Pages des clients (boutique d'un client, suivi d'un colis) : pas d'application à installer
     // Fenêtre « Connecter WhatsApp » : rien à installer non plus
     $pwa = request()->is('livreur*') ? 'livreur' : (request()->is('admin*', 'b/*', 'suivi*', 'connecter-whatsapp') ? null : 'marchand');
     // Marque blanche : sur l'adresse d'une entreprise, son nom ; sinon celui de la plateforme

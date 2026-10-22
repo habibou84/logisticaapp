@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * Écriture du grand livre d'un marchand. Solde = somme des montants.
+ * Écriture du grand livre d'un client. Solde = somme des montants.
  */
 class MerchantLedgerEntry extends Model
 {

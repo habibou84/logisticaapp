@@ -16,7 +16,7 @@
       </RouterLink>
     </div>
 
-    <!-- Ce qui attend une décision de l'e-commerçant (quelle que soit la date) -->
+    <!-- Ce qui attend une décision du client (quelle que soit la date) -->
     <section v-if="todo" class="space-y-2">
       <h2 class="text-xs font-bold uppercase tracking-wide text-slate-500">À faire maintenant</h2>
       <RouterLink
@@ -173,7 +173,7 @@ const loadingMore = ref(false)
 // Les alertes ne doivent pas repousser le point du jour hors de l'écran
 const showAllAlerts = ref(false)
 const visibleAlerts = computed(() => (showAllAlerts.value ? alerts.value : alerts.value.slice(0, 2)))
-// Ce que l'agence doit à l'e-commerçant (Mon argent), si son compte voit l'argent
+// Ce que l'agence doit au client (Mon argent), si son compte voit l'argent
 const balance = ref(null)
 const todayCount = ref(null)
 
@@ -262,7 +262,7 @@ watch(orderChanges, () => {
   load()
   loadBalance()
 })
-// Résumé du stock (seulement si le marchand a des produits)
+// Résumé du stock (seulement si le client a des produits)
 const stock = reactive({ total: 0, low: 0 })
 async function loadStock() {
   // Stock : seulement si la formule de l'entreprise l'inclut

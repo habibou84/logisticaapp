@@ -12,14 +12,14 @@ const APPS = {
     login: '/livreur/connexion',
     home: '/livreur',
     paths: ['/livreur', '/mot-de-passe-oublie'],
-    other: 'Cette application est réservée aux livreurs. Les e-commerçants utilisent l\'application « Jibiat E-commerçant ».',
+    other: 'Cette application est réservée aux livreurs. Les clients utilisent l\'application « Jibiat Client ».',
   },
   ecommercant: {
     roles: ['merchant_owner', 'merchant_staff'],
     login: '/marchand/connexion',
     home: '/marchand',
     paths: ['/marchand', '/inscription', '/mot-de-passe-oublie', '/suivi'],
-    other: 'Cette application est réservée aux e-commerçants. Les livreurs utilisent l\'application « Jibiat Livreur ».',
+    other: 'Cette application est réservée aux clients. Les livreurs utilisent l\'application « Jibiat Livreur ».',
   },
 }
 

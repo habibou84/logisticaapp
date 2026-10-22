@@ -29,7 +29,7 @@ class MerchantPolicy
     }
 
     /**
-     * Préférences de messages WhatsApp : le marchand lui-même ou le personnel autorisé.
+     * Préférences de messages WhatsApp : le client lui-même ou le personnel autorisé.
      */
     public function manageNotifications(User $user, Merchant $merchant): bool
     {

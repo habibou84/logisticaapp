@@ -8,7 +8,7 @@ export const push = reactive({
   // Applications Android et iOS : notifications natives (étape suivante), pas de Web Push
   supported: !nativeApp && typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window,
   serverEnabled: false,
-  // E-commerçant dont les messages passent en notification (sinon WhatsApp seulement)
+  // Client dont les messages passent en notification (sinon WhatsApp seulement)
   merchantMessages: false,
   permission: typeof Notification !== 'undefined' ? Notification.permission : 'default',
   subscribed: false,

@@ -7,6 +7,13 @@
           <label class="label" for="ci-month">Mois</label>
           <input id="ci-month" v-model="month" type="month" class="input w-auto" @change="load">
         </div>
+        <div v-if="activities.length > 1">
+          <label class="label" for="ci-activity">Activité</label>
+          <select id="ci-activity" v-model="activity" class="input w-auto" @change="load">
+            <option value="">Toutes</option>
+            <option v-for="a in activities" :key="a.value" :value="a.value">{{ a.label }}</option>
+          </select>
+        </div>
         <div>
           <label class="label" for="ci-status">État</label>
           <select id="ci-status" v-model="status" class="input w-auto" @change="load">
@@ -25,7 +32,8 @@
 
     <p class="text-sm text-gray-600">
       Clients sous formule (distribution, MAD) : chaque 1er du mois, la facture du mois écoulé est calculée en brouillon.
-      Vérifiez-la, ajoutez une remise si besoin, puis « Émettre » : elle reçoit son numéro et le client la voit dans son application.
+      Une facture par activité, avec sa propre série de numéros (DIS-…, MAD-…). Vérifiez-la, ajoutez une remise si besoin,
+      puis « Émettre » : elle reçoit son numéro et le client la voit dans son application.
     </p>
 
     <div v-if="totals" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -37,19 +45,20 @@
     <div class="card overflow-x-auto">
       <table class="w-full text-sm stack-table">
         <thead class="bg-slate-50 text-left text-gray-600">
-          <tr><th class="p-2">Numéro</th><th class="p-2">Client</th><th class="p-2">Mois</th><th class="p-2 text-right">Total</th><th class="p-2 text-right">Reste</th><th class="p-2">État</th><th /></tr>
+          <tr><th class="p-2">Numéro</th><th class="p-2">Client</th><th class="p-2">Activité</th><th class="p-2">Mois</th><th class="p-2 text-right">Total</th><th class="p-2 text-right">Reste</th><th class="p-2">État</th><th /></tr>
         </thead>
         <tbody class="divide-y">
           <tr v-for="i in invoices" :key="i.id">
             <td class="p-2 font-mono">{{ i.number || '—' }}</td>
             <td data-label="Client" class="p-2 font-medium">{{ i.merchant?.business_name }}</td>
+            <td data-label="Activité" class="p-2"><span :class="['rounded-full px-2 py-0.5 text-xs font-medium', activityBadge(i.activity)]">{{ activityShort(i.activity) }}</span></td>
             <td data-label="Mois" class="p-2">{{ i.period_label }}</td>
             <td data-label="Total" class="p-2 text-right">{{ money(i.total) }}</td>
             <td data-label="Reste" class="p-2 text-right">{{ i.status === 'issued' ? money(i.balance) : '—' }}</td>
             <td data-label="État" class="p-2"><span :class="['rounded-full px-2 py-0.5 text-xs font-medium', badge(i)]">{{ i.status_label }}</span></td>
             <td class="p-2 text-right"><RouterLink :to="`/admin/factures/${i.id}`" class="text-blue-600">Ouvrir</RouterLink></td>
           </tr>
-          <tr v-if="!invoices.length"><td colspan="7" class="p-6 text-center text-gray-500">{{ loading ? 'Chargement…' : 'Aucune facture.' }}</td></tr>
+          <tr v-if="!invoices.length"><td colspan="8" class="p-6 text-center text-gray-500">{{ loading ? 'Chargement…' : 'Aucune facture.' }}</td></tr>
         </tbody>
       </table>
     </div>
@@ -63,15 +72,19 @@ import StatCard from '../../components/StatCard.vue'
 import { useAuthStore } from '../../stores/auth'
 import { useToastStore } from '../../stores/toasts'
 import { money } from '../../utils/format'
+import { activityBadge, activityShort } from '../../utils/activities'
 
 const auth = useAuthStore()
 const toasts = useToastStore()
-const canManage = computed(() => auth.can('finance.manage'))
+const canManage = computed(() => auth.can('invoices.manage'))
 const invoices = ref([])
 const totals = ref(null)
 const loading = ref(false)
 const generating = ref(false)
 const status = ref('')
+const activity = ref('')
+// Activités facturées au mois de son périmètre (distribution, MAD)
+const activities = ref([])
 
 // Par défaut : le mois écoulé
 const previous = new Date()
@@ -90,9 +103,10 @@ const badge = (i) => (i.is_overdue ? 'bg-red-100 text-red-700' : BADGES[i.status
 async function load() {
   loading.value = true
   try {
-    const { data } = await http.get('/client-invoices', { params: { period: month.value || undefined, status: status.value || undefined } })
+    const { data } = await http.get('/client-invoices', { params: { period: month.value || undefined, status: status.value || undefined, activity: activity.value || undefined } })
     invoices.value = data.data
     totals.value = data.totals
+    activities.value = data.activities || []
   } finally {
     loading.value = false
   }
@@ -101,7 +115,7 @@ async function load() {
 async function generate() {
   generating.value = true
   try {
-    const { data } = await http.post('/client-invoices/generate', { month: month.value })
+    const { data } = await http.post('/client-invoices/generate', { month: month.value, activity: activity.value || undefined })
     toasts.success(`${data.data.count} facture(s) calculée(s) pour ${monthLabel.value}.`)
     await load()
   } catch (e) {

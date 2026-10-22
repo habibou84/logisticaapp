@@ -3,7 +3,7 @@
 ## Formulaire de l'équipe (Courses › Nouvelle course)
 
 L'essentiel est toujours visible :
-- e-commerçant ;
+- client ;
 - téléphone et nom du client ;
 - commune ou quartier (recherche à la frappe) ;
 - adresse et repère ;
@@ -20,16 +20,16 @@ Le reste est dans **Plus d'options** :
 - articles du stock ;
 - lieu de ramassage s'il diffère de l'adresse habituelle.
 
-- **Enregistrer et nouvelle** : enregistre la course, puis vide le formulaire en gardant l'e-commerçant, pour
+- **Enregistrer et nouvelle** : enregistre la course, puis vide le formulaire en gardant le client, pour
   enchaîner les saisies.
 - **Ctrl + Entrée** : enregistre la course.
-- **Alerte de doublon** : si une course existe déjà pour ce numéro chez cet e-commerçant dans les dernières 24 heures,
+- **Alerte de doublon** : si une course existe déjà pour ce numéro chez cet client dans les dernières 24 heures,
   un message l'indique avec un lien vers elle.
 
 ## Coller un message
 
-Le bouton **📋 Coller un message** existe dans le formulaire de l'équipe et dans l'application e-commerçant. On y
-colle le message du client ou de l'e-commerçant (WhatsApp, SMS), puis on clique sur **Analyser et remplir** :
+Le bouton **📋 Coller un message** existe dans le formulaire de l'équipe et dans l'application client. On y
+colle le message du client ou du client (WhatsApp, SMS), puis on clique sur **Analyser et remplir** :
 
 - téléphones, nom, commune, adresse et repère, montant, payeur de la livraison, contenu et instruction sont remplis ;
 - les champs remplis sont marqués **« à vérifier »** jusqu'à ce qu'on les modifie ;

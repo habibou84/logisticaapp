@@ -74,7 +74,7 @@
       </div>
     </template>
 
-    <!-- Soldes des marchands -->
+    <!-- Soldes des clients -->
     <template v-if="tab === 'merchants'">
       <p class="text-sm text-gray-600">
         « Disponible » = argent arrivé en caisse, prêt à être reversé. « En attente » = courses livrées dont l'argent est encore chez un livreur.
@@ -82,7 +82,7 @@
       <div class="card overflow-x-auto">
         <table class="w-full text-sm stack-table">
           <thead class="bg-slate-50 text-left text-gray-600">
-            <tr><th class="p-2">E-commerçant</th><th class="p-2 text-right">Disponible</th><th class="p-2 text-right">En attente</th><th class="p-2 text-right">Total non reversé</th><th /></tr>
+            <tr><th class="p-2">Client</th><th class="p-2 text-right">Disponible</th><th class="p-2 text-right">En attente</th><th class="p-2 text-right">Total non reversé</th><th /></tr>
           </thead>
           <tbody class="divide-y">
             <tr v-for="m in merchantBalances" :key="m.merchant_id">
@@ -106,12 +106,12 @@
       <div class="card overflow-x-auto">
         <table class="w-full text-sm stack-table">
           <thead class="bg-slate-50 text-left text-gray-600">
-            <tr><th class="p-2">Référence</th><th class="p-2">E-commerçant</th><th class="p-2">Période</th><th class="p-2 text-right">Net</th><th class="p-2">Statut</th><th class="p-2">Payé le</th></tr>
+            <tr><th class="p-2">Référence</th><th class="p-2">Client</th><th class="p-2">Période</th><th class="p-2 text-right">Net</th><th class="p-2">Statut</th><th class="p-2">Payé le</th></tr>
           </thead>
           <tbody class="divide-y">
             <tr v-for="p in payouts" :key="p.id" class="hover:bg-slate-50 cursor-pointer" @click="router.push(`/admin/caisse/reversements/${p.id}`)">
               <td class="p-2 font-mono text-xs">{{ p.reference }}</td>
-              <td data-label="E-commerçant" class="p-2">{{ p.merchant.business_name }}</td>
+              <td data-label="Client" class="p-2">{{ p.merchant.business_name }}</td>
               <td data-label="Période" class="p-2 text-xs">{{ date(p.period_start) }} → {{ date(p.period_end) }}</td>
               <td data-label="Net" :class="['p-2 text-right font-semibold', signedClass(p.net_amount)]">{{ money(p.net_amount) }}</td>
               <td data-label="Statut" class="p-2"><PayoutBadge :status="p.status" :label="p.status_label" /></td>
@@ -267,11 +267,11 @@
       </form>
     </Modal>
 
-    <!-- Grand livre d'un marchand -->
+    <!-- Grand livre d'un client -->
     <Modal :open="ledger.open" :title="`Grand livre · ${ledger.merchant?.business_name}`" @close="ledger.open = false">
       <LedgerTable :entries="ledger.entries" />
       <form v-if="canManage" class="border-t mt-4 pt-3 space-y-2" @submit.prevent="saveMerchantAdjust">
-        <p class="text-sm font-medium">Ajustement (+ en faveur du marchand, − à sa charge)</p>
+        <p class="text-sm font-medium">Ajustement (+ en faveur du client, − à sa charge)</p>
         <div class="flex gap-2">
           <input v-model.number="ledger.adjust.amount" type="number" class="input w-32" placeholder="Montant" required>
           <input v-model="ledger.adjust.description" class="input" placeholder="Motif" required>
@@ -345,7 +345,7 @@ const canManage = computed(() => auth.can('finance.manage'))
 
 const tabs = [
   { value: 'cash', label: 'Argent chez les livreurs' },
-  { value: 'merchants', label: 'Soldes marchands' },
+  { value: 'merchants', label: 'Soldes clients' },
   { value: 'payouts', label: 'Reversements' },
   { value: 'payroll', label: 'Paie des livreurs' },
 ]

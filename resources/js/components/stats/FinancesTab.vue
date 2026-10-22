@@ -22,7 +22,7 @@
           {{ data.margin >= 0 ? 'Bénéfice' : 'Perte' }} : {{ money(Math.abs(data.margin)) }}
         </p>
         <p v-if="data.rebilled" class="text-xs text-slate-500">
-          Frais avancés puis refacturés aux marchands (gare, transport…) : {{ money(data.rebilled) }}. Ni revenu ni dépense.
+          Frais avancés puis refacturés aux clients (gare, transport…) : {{ money(data.rebilled) }}. Ni revenu ni dépense.
         </p>
       </section>
 
@@ -30,9 +30,9 @@
         <h2 class="font-semibold">Argent en circulation <span class="text-sm font-normal text-slate-500">· aujourd'hui</span></h2>
         <dl class="divide-y text-sm">
           <div class="flex justify-between py-2"><dt class="text-slate-600">Chez les livreurs (à verser à la caisse)</dt><dd class="font-semibold">{{ money(data.circulation.with_couriers) }}</dd></div>
-          <div class="flex justify-between py-2"><dt class="text-slate-600">À reverser aux e-commerçants</dt><dd class="font-semibold">{{ money(data.circulation.to_merchants) }}</dd></div>
+          <div class="flex justify-between py-2"><dt class="text-slate-600">À reverser aux clients</dt><dd class="font-semibold">{{ money(data.circulation.to_merchants) }}</dd></div>
           <div class="flex justify-between py-2 pl-4"><dt class="text-slate-500">dont déjà en caisse, reversable</dt><dd>{{ money(data.circulation.to_merchants_available) }}</dd></div>
-          <div class="flex justify-between py-2"><dt class="text-slate-600">Dû par des e-commerçants</dt><dd :class="['font-semibold', data.circulation.owed_by_merchants ? 'text-red-600' : '']">{{ money(data.circulation.owed_by_merchants) }}</dd></div>
+          <div class="flex justify-between py-2"><dt class="text-slate-600">Dû par des clients</dt><dd :class="['font-semibold', data.circulation.owed_by_merchants ? 'text-red-600' : '']">{{ money(data.circulation.owed_by_merchants) }}</dd></div>
         </dl>
         <RouterLink to="/admin/caisse" class="inline-block text-sm text-blue-600">Ouvrir la caisse →</RouterLink>
       </section>
@@ -54,7 +54,7 @@
     </section>
     <p class="text-xs text-slate-500">
       Revenus : frais de livraison, de retour et de stockage facturés sur la période. Dépenses : paie des livreurs enregistrée (retenues déduites),
-      frais de course à la charge de l'entreprise, indemnités pour colis perdus. Les montants encaissés pour les marchands ne sont pas des revenus.
+      frais de course à la charge de l'entreprise, indemnités pour colis perdus. Les montants encaissés pour les clients ne sont pas des revenus.
     </p>
   </div>
 </template>

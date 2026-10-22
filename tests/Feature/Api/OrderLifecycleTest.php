@@ -60,7 +60,7 @@ class OrderLifecycleTest extends TestCase
 
         $response
             ->assertJsonPath('data.status', 'pending')
-            ->assertJsonPath('data.pickup.zone_id', $this->cocody->id) // adresse du marchand par défaut
+            ->assertJsonPath('data.pickup.zone_id', $this->cocody->id) // adresse du client par défaut
             ->assertJsonPath('data.recipient.phone', '+2250707070707')
             ->assertJsonPath('data.amounts.delivery_fee', 1500)
             ->assertJsonPath('data.amounts.cod_amount', 16500) // articles + frais payés par le destinataire

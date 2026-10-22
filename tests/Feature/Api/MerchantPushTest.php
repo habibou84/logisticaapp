@@ -23,7 +23,7 @@ use Tests\Concerns\BuildsDeliveryWorld;
 use Tests\TestCase;
 
 /**
- * Messages aux e-commerçants : notification sur leur téléphone d'abord (gratuite),
+ * Messages aux clients : notification sur leur téléphone d'abord (gratuite),
  * WhatsApp quand l'application n'y est pas activée ou que la notification n'arrive pas.
  */
 class MerchantPushTest extends TestCase
@@ -71,7 +71,7 @@ class MerchantPushTest extends TestCase
     }
 
     /**
-     * @return list<string> « canal:modèle » des messages au marchand
+     * @return list<string> « canal:modèle » des messages au client
      */
     private function merchantMessages(): array
     {

@@ -1,6 +1,6 @@
 # Ramassages groupés par client
 
-Un e-commerçant a souvent plusieurs colis à remettre à la même adresse. Les ramassages se gèrent
+Un client a souvent plusieurs colis à remettre à la même adresse. Les ramassages se gèrent
 donc par **client et adresse de ramassage** ; les livraisons restent une mission par colis.
 
 ## 1. Dispatch : « 🏪 Ramassages par client »

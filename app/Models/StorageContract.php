@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * Conditions de stockage d'un marchand dans les entrepôts de l'entreprise.
+ * Conditions de stockage d'un client dans les entrepôts de l'entreprise.
  */
 class StorageContract extends Model
 {

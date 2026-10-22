@@ -105,7 +105,7 @@
         </div>
         <label class="flex items-start gap-2 text-sm">
           <input :checked="s.whatsapp_orders" type="checkbox" class="mt-1" @change="saveOption('whatsapp_orders', $event.target.checked)">
-          <span>Les e-commerçants peuvent créer des courses en écrivant à ce numéro
+          <span>Les clients peuvent créer des courses en écrivant à ce numéro
             <span class="block text-gray-500">
               Ils envoient les informations de la course (ou transfèrent la commande de leur client) ; le bot demande ce qui manque,
               affiche un récapitulatif avec le prix et crée la course après confirmation. Menu : nouvelle course, point du jour, suivi d'un colis.
@@ -137,17 +137,17 @@
         </label>
         <label class="flex items-start gap-2 text-sm">
           <input :checked="s.merchant_push_first" type="checkbox" class="mt-1" :disabled="!s.push_enabled" @change="saveOption('merchant_push_first', $event.target.checked)">
-          <span>Prévenir les e-commerçants par notification sur leur téléphone plutôt que par WhatsApp
+          <span>Prévenir les clients par notification sur leur téléphone plutôt que par WhatsApp
             <span class="block text-gray-500">
-              Gratuit. WhatsApp ne sert que pour les e-commerçants qui n'ont pas activé les notifications dans leur application,
+              Gratuit. WhatsApp ne sert que pour les clients qui n'ont pas activé les notifications dans leur application,
               ou si la notification n'arrive pas.
               <template v-if="!s.push_enabled">Notifications push non configurées sur ce serveur (<code>php artisan webpush:vapid</code>).</template>
               <template v-else-if="s.merchants_total">
-                <strong>{{ s.merchants_with_push }} e-commerçant{{ s.merchants_with_push > 1 ? 's' : '' }} sur {{ s.merchants_total }}</strong> reçoivent déjà les notifications.
+                <strong>{{ s.merchants_with_push }} client{{ s.merchants_with_push > 1 ? 's' : '' }} sur {{ s.merchants_total }}</strong> reçoivent déjà les notifications.
               </template>
             </span></span>
         </label>
-        <p class="text-sm text-gray-500">Chaque marchand choisit les messages qu'il reçoit depuis son application (Profil).</p>
+        <p class="text-sm text-gray-500">Chaque client choisit les messages qu'il reçoit depuis son application (Profil).</p>
       </div>
 
       <!-- Test -->

@@ -6,7 +6,7 @@ export const VALIDATION_MODES = [
     value: 'rules',
     label: 'Automatique avec règles',
     short: 'automatique avec règles',
-    help: 'Validées dès leur enregistrement ; après l\'heure limite du jour, ou quand le dispatch ferme la journée, les courses du jour sont validées pour le lendemain (ramassage le jour même) et le marchand est prévenu.',
+    help: 'Validées dès leur enregistrement ; après l\'heure limite du jour, ou quand le dispatch ferme la journée, les courses du jour sont validées pour le lendemain (ramassage le jour même) et le client est prévenu.',
   },
 ]
 

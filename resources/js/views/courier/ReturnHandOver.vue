@@ -32,7 +32,7 @@
       </div>
 
       <div>
-        <p class="m-label">Signature du marchand</p>
+        <p class="m-label">Signature du client</p>
         <SignaturePad v-model="form.signature" />
       </div>
 

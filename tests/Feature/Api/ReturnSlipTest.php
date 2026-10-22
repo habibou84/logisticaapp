@@ -17,7 +17,7 @@ use Tests\Concerns\BuildsDeliveryWorld;
 use Tests\TestCase;
 
 /**
- * Bon de retour groupé : création par le dispatch, message au marchand,
+ * Bon de retour groupé : création par le dispatch, message au client,
  * remise signée par le livreur, colis non remis.
  */
 class ReturnSlipTest extends TestCase
@@ -131,7 +131,7 @@ class ReturnSlipTest extends TestCase
         $handed = OutboundMessage::where('template_name', 'retour_remis')->sole();
         $this->assertStringContainsString('Mariam Koné', $handed->body);
 
-        // Le marchand consulte son bon et la signature
+        // Le client consulte son bon et la signature
         Sanctum::actingAs($this->merchantUser);
         $this->getJson("/api/v1/return-slips/{$slipId}")->assertOk()->assertJsonPath('data.orders.0.id', $first->id);
         $this->get("/api/v1/return-slips/{$slipId}/proof/signature")->assertOk();

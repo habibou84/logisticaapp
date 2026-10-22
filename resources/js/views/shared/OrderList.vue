@@ -31,6 +31,19 @@
       <span v-if="filters.day" class="hidden sm:inline text-gray-500">· courses du jour et retards encore en cours</span>
     </div>
 
+    <!-- Activités côte à côte : toutes, ou une seule (e-commerce, distribution, MAD) -->
+    <div v-if="activityChoices.length > 1" class="flex flex-wrap items-center gap-2 text-sm" role="group" aria-label="Activité">
+      <span class="text-gray-600">Activité :</span>
+      <button
+        v-for="a in [{ value: '', label: 'Toutes' }, ...activityChoices]" :key="a.value" type="button"
+        :class="['rounded-full px-3 py-1 ring-1', filters.activity === a.value ? 'bg-slate-900 text-white ring-slate-900' : 'bg-white ring-slate-300']"
+        :aria-pressed="filters.activity === a.value"
+        @click="setActivity(a.value)"
+      >
+        {{ a.label }}
+      </button>
+    </div>
+
     <!-- Files d'attente du dispatch -->
     <div v-if="isStaff" class="flex gap-2 overflow-x-auto no-scrollbar pb-1 [mask-image:linear-gradient(to_right,black_88%,transparent)] md:[mask-image:none]">
       <button
@@ -98,9 +111,9 @@
             </select>
           </div>
           <div v-if="isStaff">
-            <label class="label" for="f-merchant">Marchand</label>
+            <label class="label" for="f-merchant">Client</label>
             <select id="f-merchant" v-model="filters.merchant_id" class="input" @change="load(1)">
-              <option value="">Tous les marchands</option>
+              <option value="">Tous les clients</option>
               <option v-for="m in merchants" :key="m.id" :value="String(m.id)">{{ m.business_name }}</option>
             </select>
           </div>
@@ -129,10 +142,10 @@
           <option v-for="(label, value) in STATUS_LABELS" :key="value" :value="value">{{ label }}</option>
         </select>
         <select v-if="isStaff" v-model="filters.merchant_id" class="input" @change="load(1)">
-          <option value="">Tous les marchands</option>
+          <option value="">Tous les clients</option>
           <option v-for="m in merchants" :key="m.id" :value="String(m.id)">{{ m.business_name }}</option>
         </select>
-        <!-- Dates : jour de livraison prévu (par défaut) ou jour de création ; l'e-commerçant voit toujours le jour de livraison -->
+        <!-- Dates : jour de livraison prévu (par défaut) ou jour de création ; le client voit toujours le jour de livraison -->
         <select v-if="isStaff" v-model="filters.date_basis" class="input" aria-label="Dates selon" title="Dates : jour de livraison prévu ou jour de création" @change="filters.from || filters.to ? onPeriod() : null">
           <option value="delivery">📅 Livraison</option>
           <option value="created">🆕 Création</option>
@@ -187,8 +200,9 @@
             <label v-if="isStaff" class="flex items-center gap-2 min-w-0" @click.stop>
               <input v-model="selected" type="checkbox" :value="o.id" :aria-label="`Sélectionner ${o.tracking_code}`">
               <span class="font-mono text-xs truncate">{{ o.tracking_code }}</span>
+              <span v-if="activityChoices.length > 1" :class="['rounded-full px-1.5 text-[11px] font-medium', activityBadge(o.activity)]">{{ activityShort(o.activity) }}</span>
             </label>
-            <span v-else class="font-mono text-xs">{{ o.tracking_code }}</span>
+            <span v-else class="font-mono text-xs">{{ o.tracking_code }}<span v-if="activityChoices.length > 1" :class="['ml-1 rounded-full px-1.5 text-[11px] font-medium font-sans', activityBadge(o.activity)]">{{ activityShort(o.activity) }}</span></span>
             <span class="font-semibold whitespace-nowrap">{{ money(o.amounts.cod_amount) }}</span>
           </div>
           <div class="flex items-center justify-between gap-2">
@@ -215,7 +229,7 @@
             <tr>
               <th v-if="isStaff" class="p-2 w-8"><input type="checkbox" :checked="allSelected" aria-label="Tout sélectionner" @change="toggleAll"></th>
               <th class="p-2">Code</th>
-              <th v-if="isStaff" class="p-2">Marchand</th>
+              <th v-if="isStaff" class="p-2">Client</th>
               <th class="p-2">Destinataire</th>
               <th class="p-2">Trajet</th>
               <th class="p-2">Statut</th>
@@ -235,7 +249,10 @@
               @click="open(o)"
             >
               <td v-if="isStaff" class="p-2" @click.stop><input v-model="selected" type="checkbox" :value="o.id" :aria-label="`Sélectionner ${o.tracking_code}`"></td>
-              <td class="p-2 font-mono text-xs">{{ o.tracking_code }}</td>
+              <td class="p-2 font-mono text-xs">
+                {{ o.tracking_code }}
+                <div v-if="activityChoices.length > 1"><span :class="['rounded-full px-1.5 font-sans font-medium', activityBadge(o.activity)]">{{ activityShort(o.activity) }}</span></div>
+              </td>
               <td v-if="isStaff" class="p-2">{{ o.merchant?.business_name }}</td>
               <td class="p-2">
                 <div>{{ o.recipient.name || '—' }}</div>
@@ -282,6 +299,7 @@ import { useToastStore } from '../../stores/toasts'
 import { useDispatchCountStore } from '../../stores/dispatchCounts'
 import { orderChanges, lastOrderChange } from '../../composables/useRealtime'
 import { date, dateTime, money, STATUS_LABELS } from '../../utils/format'
+import { ACTIVITIES, activityBadge, activityShort, myActivities } from '../../utils/activities'
 
 const auth = useAuthStore()
 const toasts = useToastStore()
@@ -331,6 +349,7 @@ const filters = reactive({
   search: route.query.search || '',
   status: '',
   merchant_id: route.query.merchant_id || '',
+  activity: route.query.activity || '',
   courier_id: route.query.courier_id || '',
   // File « Sans livreur » : pickup, delivery ou les deux
   awaiting: route.query.awaiting || '',
@@ -345,6 +364,15 @@ const filters = reactive({
 })
 
 const orders = ref([])
+// Activités entre lesquelles filtrer : son périmètre (équipe) ou celles de son entreprise (client)
+const activityChoices = computed(() => (auth.user?.merchant_id
+  ? ACTIVITIES.filter((a) => (auth.user.merchant?.activities || []).includes(a.value))
+  : myActivities(auth.user)))
+function setActivity(value) {
+  filters.activity = value
+  syncQuery()
+  load(1)
+}
 const meta = ref(null)
 const loading = ref(false)
 const merchants = ref([])
@@ -447,6 +475,7 @@ function syncQuery() {
   if (filters.queue) query.queue = filters.queue
   if (filters.queue === 'unassigned' && filters.awaiting) query.awaiting = filters.awaiting
   if (isStaff.value && filters.day !== todayIso) query.day = filters.day || 'all'
+  if (filters.activity) query.activity = filters.activity
   router.replace({ query })
 }
 
@@ -500,7 +529,7 @@ function toggleAll(e) {
 const deciding = ref(null)
 function decided(order) {
   deciding.value = null
-  toasts.success(order.status === 'rescheduled' ? `Relivraison prévue le ${date(order.delivery.scheduled_date)}.` : (order.return_requested ? 'Retour au marchand décidé.' : 'Décision enregistrée.'))
+  toasts.success(order.status === 'rescheduled' ? `Relivraison prévue le ${date(order.delivery.scheduled_date)}.` : (order.return_requested ? 'Retour au client décidé.' : 'Décision enregistrée.'))
   load(meta.value?.current_page || 1)
 }
 

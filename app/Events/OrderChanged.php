@@ -11,7 +11,7 @@ use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
 /**
- * Diffusé en temps réel au personnel de l'entreprise et au marchand concerné
+ * Diffusé en temps réel au personnel de l'entreprise et au client concerné
  * à chaque action sur une course (création, statut, assignation, note...).
  */
 class OrderChanged implements ShouldBroadcast

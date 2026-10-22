@@ -13,7 +13,7 @@ use Illuminate\Http\Request;
 /**
  * Suivi d'une vérification de numéro par le navigateur qui l'a demandée (jeton) :
  * état, envoi d'un code par SMS, saisie du code. À la fin d'une inscription, la
- * réponse ouvre la session du nouvel e-commerçant (une seule fois).
+ * réponse ouvre la session du nouveau client (une seule fois).
  */
 class VerificationController extends Controller
 {

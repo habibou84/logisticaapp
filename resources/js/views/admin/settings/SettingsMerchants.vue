@@ -1,17 +1,17 @@
 <template>
-  <SettingsPage icon="🏪" title="E-commerçants" intro="Comment les e-commerçants rejoignent votre entreprise.">
+  <SettingsPage icon="🏪" title="Clients" intro="Comment les clients rejoignent votre entreprise.">
     <template v-if="form">
       <section class="card p-4 space-y-3">
         <label class="flex items-start gap-2 text-sm">
           <input v-model="form.merchant_signup" type="checkbox" class="mt-1">
-          <span>Inscriptions en ligne ouvertes<span class="block text-gray-500">Les e-commerçants créent leur compte depuis la page d'accueil (« Créer mon compte »). Le compte est actif dès que le numéro est vérifié par WhatsApp ou SMS ; vous êtes prévenu à chaque inscription. Fermées : ils vous envoient une demande, que vous acceptez ou refusez dans E-commerçants.</span></span>
+          <span>Inscriptions en ligne ouvertes<span class="block text-gray-500">Les clients créent leur compte depuis la page d'accueil (« Créer mon compte »). Le compte est actif dès que le numéro est vérifié par WhatsApp ou SMS ; vous êtes prévenu à chaque inscription. Fermées : ils vous envoient une demande, que vous acceptez ou refusez dans Clients.</span></span>
         </label>
       </section>
 
       <section class="card p-4 space-y-3">
         <h2 class="font-semibold">Annuaire des entreprises de livraison</h2>
         <p class="text-sm text-gray-600">
-          Les e-commerçants de Jibiat Marchand et les visiteurs de jibiat.com/annuaire vous trouvent, voient vos villes, votre prix de départ
+          Les clients de Jibiat Marchand et les visiteurs de jibiat.com/annuaire vous trouvent, voient vos villes, votre prix de départ
           et vos vrais résultats des 90 derniers jours (livraisons réussies, délai moyen), puis se connectent à vous en un clic.
         </p>
         <label class="flex items-start gap-2 text-sm">
@@ -26,7 +26,7 @@
       </section>
 
       <section v-if="inviteUrl" class="card p-4 space-y-3">
-        <h2 class="font-semibold">Inviter vos e-commerçants sur Jibiat Marchand</h2>
+        <h2 class="font-semibold">Inviter vos clients sur Jibiat Marchand</h2>
         <p class="text-sm text-gray-600">
           Jibiat Marchand gère leurs commandes, leur stock et leur boutique en ligne, et vous envoie leurs courses toutes seules.
           Avec votre lien, ils ont <strong>un mois d'essai en plus</strong> de l'offre Pro, puis se connectent à vous en un clic.
@@ -52,7 +52,7 @@ import { useAuthStore } from '../../../stores/auth'
 
 const auth = useAuthStore()
 
-// Lien d'invitation Jibiat Marchand (un mois d'essai en plus pour les e-commerçants invités)
+// Lien d'invitation Jibiat Marchand (un mois d'essai en plus pour les clients invités)
 const inviteUrl = computed(() => auth.user?.company?.jibiat_marchand_invite_url)
 const whatsappUrl = computed(() => `https://wa.me/?text=${encodeURIComponent(`Gérez vos commandes, votre stock et votre boutique en ligne avec Jibiat Marchand, et envoyez-nous vos courses en un clic. Un mois d'essai en plus avec ce lien : ${inviteUrl.value}`)}`)
 const copied = ref(false)

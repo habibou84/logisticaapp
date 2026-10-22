@@ -7,7 +7,7 @@ use Tests\Concerns\BuildsDeliveryWorld;
 use Tests\TestCase;
 
 /**
- * Chaque page de connexion n'ouvre que les comptes de son espace (e-commerçant, livreur, équipe).
+ * Chaque page de connexion n'ouvre que les comptes de son espace (client, livreur, équipe).
  */
 class LoginSpaceTest extends TestCase
 {
@@ -30,7 +30,7 @@ class LoginSpaceTest extends TestCase
         $merchant = $this->merchantUser->phone;
         $staff = $this->dispatcher->phone;
 
-        // Livreur sur la page des e-commerçants : refusé, avec l'espace où aller, sans session ouverte
+        // Livreur sur la page des clients : refusé, avec l'espace où aller, sans session ouverte
         $this->login($courier, 'merchant')->assertStatus(422)
             ->assertJsonPath('space', 'courier')
             ->assertJsonPath('message', 'Ce compte est un compte livreur : connectez-vous depuis l\'espace livreur.')

@@ -9,7 +9,7 @@ class LocateMerchants extends Command
 {
     protected $signature = 'merchants:locate';
 
-    protected $description = 'Estime la position de ramassage des marchands qui n\'en ont pas, d\'après les ramassages des livreurs';
+    protected $description = 'Estime la position de ramassage des clients qui n\'en ont pas, d\'après les ramassages des livreurs';
 
     public function handle(MerchantLocation $locations): int
     {

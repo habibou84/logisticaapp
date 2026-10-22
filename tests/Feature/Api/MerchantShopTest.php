@@ -28,7 +28,7 @@ class MerchantShopTest extends TestCase
         parent::setUp();
         $this->buildWorld();
 
-        // Robe : stock non suivi ; sac : 3 en stock chez le marchand
+        // Robe : stock non suivi ; sac : 3 en stock chez le client
         $this->dress = $this->product('Robe wax', 15000);
         $this->bag = $this->product('Sac à main', 8000);
         $keeper = app(StockKeeper::class);
@@ -105,11 +105,11 @@ class MerchantShopTest extends TestCase
             ->assertOk()->assertJsonPath('data.items_total', 30000)->assertJsonPath('data.delivery_fee', 1500)
             ->assertJsonPath('data.fee_payer', 'recipient')->assertJsonPath('data.total', 31500);
 
-        // Livraison offerte par le marchand sur sa boutique
+        // Livraison offerte par le client sur sa boutique
         $this->merchant->update(['shop_fee_payer' => 'merchant']);
         $this->postJson('/api/v1/shops/boutique-test/quote', $quote)->assertJsonPath('data.fee_payer', 'merchant')->assertJsonPath('data.total', 30000);
 
-        // Réglage propre à la boutique : indépendant de celui des autres courses du marchand
+        // Réglage propre à la boutique : indépendant de celui des autres courses du client
         $this->merchant->update(['shop_fee_payer' => 'recipient', 'default_fee_payer' => 'merchant']);
         $response = $this->postJson('/api/v1/shops/boutique-test/orders', $this->orderData([
             'items' => [['product_id' => $this->dress->id, 'quantity' => 2], ['product_id' => $this->bag->id, 'quantity' => 1]],

@@ -75,7 +75,7 @@
             <li v-for="o in s.orders" :key="o.id" class="flex items-center gap-2 text-sm">
               <input v-model="picked" type="checkbox" :value="o.id" :aria-label="`Colis ${o.tracking_code}`">
               <span class="font-mono text-xs">{{ o.tracking_code }}</span>
-              <span class="text-gray-600 truncate">→ {{ o.delivery_zone_name || 'Client' }}</span>
+              <span class="text-gray-600 truncate">→ {{ o.delivery_zone_name || 'Destinataire' }}</span>
               <span class="ml-auto text-xs text-gray-500 whitespace-nowrap">{{ o.delivery_date ? `livraison ${date(o.delivery_date)}` : 'dès que possible' }}</span>
             </li>
           </ul>

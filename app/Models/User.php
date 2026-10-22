@@ -186,7 +186,7 @@ class User extends Authenticatable
     }
 
     /**
-     * Espace de l'application de ce compte : e-commerçant, livreur, ou équipe (administration).
+     * Espace de l'application de ce compte : client, livreur, ou équipe (administration).
      */
     public function space(): string
     {

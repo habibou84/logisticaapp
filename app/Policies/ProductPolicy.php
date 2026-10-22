@@ -7,7 +7,7 @@ use App\Models\Product;
 use App\Models\User;
 
 /**
- * Le marchand gère ses produits et le stock gardé chez lui ; le personnel
+ * Le client gère ses produits et le stock gardé chez lui ; le personnel
  * (droit stock.manage) gère le stock des entrepôts de l'entreprise.
  */
 class ProductPolicy
@@ -33,7 +33,7 @@ class ProductPolicy
     }
 
     /**
-     * Créer ou modifier les produits d'un marchand.
+     * Créer ou modifier les produits d'un client.
      */
     public function manageFor(User $user, int $merchantId): bool
     {
@@ -55,7 +55,7 @@ class ProductPolicy
     }
 
     /**
-     * Mouvement de stock : le marchand chez lui, le personnel dans les entrepôts.
+     * Mouvement de stock : le client chez lui, le personnel dans les entrepôts.
      */
     public function moveStock(User $user, Product $product, ?int $hubId): bool
     {

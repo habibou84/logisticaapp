@@ -3,7 +3,7 @@
   <section v-if="requests.length" class="card p-4 space-y-3 border-amber-300 bg-amber-50/40">
     <div>
       <h2 class="font-semibold">🤝 {{ requests.length }} {{ requests.length > 1 ? 'nouveaux clients potentiels' : 'nouveau client potentiel' }}</h2>
-      <p class="text-sm text-gray-600">Ces e-commerçants vous ont trouvé dans l'annuaire ou dans Jibiat Marchand et demandent à ouvrir un compte. Accepté : leur compte est créé avec le mot de passe qu'ils ont choisi, ils peuvent se connecter aussitôt.</p>
+      <p class="text-sm text-gray-600">Ces clients vous ont trouvé dans l'annuaire ou dans Jibiat Marchand et demandent à ouvrir un compte. Accepté : leur compte est créé avec le mot de passe qu'ils ont choisi, ils peuvent se connecter aussitôt.</p>
     </div>
     <ul class="divide-y rounded-lg border bg-white">
       <li v-for="r in requests" :key="r.id" class="p-3 flex flex-wrap items-start justify-between gap-3">

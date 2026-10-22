@@ -22,7 +22,7 @@ enum ExpenseType: string
     }
 
     /**
-     * Écriture du grand livre du marchand quand les frais lui sont facturés.
+     * Écriture du grand livre du client quand les frais lui sont facturés.
      */
     public function ledgerType(): LedgerEntryType
     {

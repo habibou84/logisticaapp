@@ -9,7 +9,7 @@ use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Notifications\Notification;
 
 /**
- * Adresse webhook coupée après trop d'échecs d'affilée : le marchand est prévenu (cloche, temps réel)
+ * Adresse webhook coupée après trop d'échecs d'affilée : le client est prévenu (cloche, temps réel)
  * pour la réparer dans son application, puis la réactiver.
  */
 class WebhookDisabled extends Notification implements ShouldQueue

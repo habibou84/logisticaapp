@@ -3,7 +3,7 @@
 namespace App\Enums;
 
 /**
- * Événements pour lesquels un marchand peut recevoir un message WhatsApp.
+ * Événements pour lesquels un client peut recevoir un message WhatsApp.
  * Les notifications dans l'application sont toujours envoyées.
  */
 enum NotificationEvent: string
@@ -28,7 +28,7 @@ enum NotificationEvent: string
     }
 
     /**
-     * Réglage par défaut : on évite d'inonder le marchand de messages de routine.
+     * Réglage par défaut : on évite d'inonder le client de messages de routine.
      */
     public function enabledByDefault(): bool
     {

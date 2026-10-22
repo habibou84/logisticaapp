@@ -86,7 +86,7 @@ enum OrderStatus: string
     }
 
     /**
-     * Le colis n'a pas encore été récupéré chez le marchand.
+     * Le colis n'a pas encore été récupéré chez le client.
      */
     public function isBeforePickup(): bool
     {

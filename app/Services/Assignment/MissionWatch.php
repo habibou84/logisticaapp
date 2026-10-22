@@ -179,7 +179,7 @@ class MissionWatch
 
     private function tell(Company $company, $order, string $kind, string $title, string $body, string $href): int
     {
-        $users = User::forCompany($company->id)->where('status', 'active')->role([Role::Admin->value, Role::Dispatcher->value])->get();
+        $users = User::forCompany($company->id)->where('status', 'active')->role([Role::Admin->value, Role::ActivityManager->value, Role::Dispatcher->value])->get();
         if ($users->isEmpty()) {
             return 0;
         }

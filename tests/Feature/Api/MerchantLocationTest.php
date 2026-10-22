@@ -13,7 +13,7 @@ use Tests\Concerns\BuildsDeliveryWorld;
 use Tests\TestCase;
 
 /**
- * Position de ramassage des marchands : par le marchand, par l'agence, et apprise
+ * Position de ramassage des clients : par le client, par l'agence, et apprise
  * d'après les ramassages des livreurs.
  */
 class MerchantLocationTest extends TestCase
@@ -98,7 +98,7 @@ class MerchantLocationTest extends TestCase
         $this->assertEqualsWithDelta(-3.97, $merchant->pickup_lng, 0.00001);
         $this->assertSame(15, $merchant->pickup_location_accuracy);
 
-        // Position confirmée par le marchand : les livreurs ne la changent plus
+        // Position confirmée par le client : les livreurs ne la changent plus
         $this->as($this->merchantUser)->putJson('/api/v1/merchant/pickup-location', ['lat' => 5.3605, 'lng' => -3.9705])->assertOk();
         $this->pickUpAt(5.36001, -3.97001);
         $this->assertSame([5.3605, -3.9705, 'merchant'], [$this->merchant->fresh()->pickup_lat, $this->merchant->fresh()->pickup_lng, $this->merchant->fresh()->pickup_location_source]);

@@ -143,7 +143,7 @@ class StatisticsTest extends TestCase
         Sanctum::actingAs($this->userWithRole(Role::Cashier));
         $this->getJson('/api/v1/stats/couriers')->assertForbidden();
 
-        // E-commerçant et livreur : rien
+        // Client et livreur : rien
         Sanctum::actingAs($this->merchantUser);
         $this->getJson('/api/v1/stats/overview')->assertForbidden();
         Sanctum::actingAs($this->courierA->user);
@@ -180,7 +180,7 @@ class StatisticsTest extends TestCase
         $this->assertSame(1, $data['totals']['inactive']);
         $this->assertEquals(100, $data['totals']['top5_share']);
 
-        // Sans accès à la caisse : pas de montants ; sans accès aux marchands : rien
+        // Sans accès à la caisse : pas de montants ; sans accès aux clients : rien
         Sanctum::actingAs($this->dispatcher);
         $this->getJson('/api/v1/stats/merchants')->assertOk()->assertJsonPath('data.merchants.0.revenue', null)->assertJsonPath('data.totals.to_pay', null);
         Sanctum::actingAs($this->userWithRole(Role::Cashier));

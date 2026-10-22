@@ -63,12 +63,12 @@ class OrderNotifier
 
             case OrderEventType::Note:
                 if ($actorIsMerchant) {
-                    $toStaff = ['note', "Note du marchand sur {$code}", $merchantName.' :'.$note];
+                    $toStaff = ['note', "Note du client sur {$code}", $merchantName.' :'.$note];
                 } else {
                     if ($event->visible_to_merchant) {
                         $toMerchant = ['note', "Note sur votre colis {$code}", trim(($event->actor_name ?? '').' :'.$note)];
                     }
-                    // Note d'un livreur : toujours signalée au dispatch, même invisible pour le marchand
+                    // Note d'un livreur : toujours signalée au dispatch, même invisible pour le client
                     if ($actor?->isCourier()) {
                         $toStaff = ['note', "Note du livreur sur {$code}", trim(($event->actor_name ?? '').' :'.$note)];
                     }
@@ -86,7 +86,7 @@ class OrderNotifier
 
             case OrderEventType::ReturnRequested:
                 $toStaff = $actorIsMerchant
-                    ? ['return_requested', "Décision du marchand {$code}", $merchantName.' demande le retour du colis.'.$note]
+                    ? ['return_requested', "Décision du client {$code}", $merchantName.' demande le retour du colis.'.$note]
                     : ['return_requested', "Retour demandé pour {$code}", ($event->actor_name ?: 'L\'agence').' a demandé le retour du colis.'.$note];
                 break;
 
@@ -99,7 +99,7 @@ class OrderNotifier
                 break;
         }
 
-        // Course envoyée par une application qui prévient elle-même le marchand (Jibiat Marchand) : pas de doublon
+        // Course envoyée par une application qui prévient elle-même le client (Jibiat Marchand) : pas de doublon
         if ($toMerchant && ! $order->merchant_alerts_muted) {
             $this->send($this->merchantUsers($order), $actor, $order, ...$toMerchant);
         }
@@ -131,7 +131,7 @@ class OrderNotifier
             OrderStatus::Rescheduled => [
                 $actorIsMerchant ? null : ['rescheduled', "Livraison reportée {$code}", "Livraison reportée au {$date}.{$why}{$note}"],
                 $actorIsMerchant
-                    ? ['rescheduled', "Décision du marchand {$code}", "{$order->merchant->business_name} : relivrer le {$date}.{$note}"]
+                    ? ['rescheduled', "Décision du client {$code}", "{$order->merchant->business_name} : relivrer le {$date}.{$note}"]
                     : ['rescheduled', "Livraison reportée {$code}", "Reportée au {$date}.{$why}{$note}"],
             ],
             OrderStatus::Confirmed => $event->from_status === OrderStatus::Pending
@@ -140,7 +140,7 @@ class OrderNotifier
             OrderStatus::Returned => [['returned', "Colis {$code} retourné", 'Le colis vous a été retourné.'], null],
             OrderStatus::Rejected => [['rejected', "Course {$code} refusée", 'La course a été refusée par l\'entreprise de livraison.'.$note], null],
             OrderStatus::Cancelled => $actorIsMerchant
-                ? [null, ['cancelled', "Course {$code} annulée", 'Le marchand a annulé la course.'.$note]]
+                ? [null, ['cancelled', "Course {$code} annulée", 'Le client a annulé la course.'.$note]]
                 : [['cancelled', "Course {$code} annulée", 'La course a été annulée.'.$note], null],
             default => [null, null],
         };
@@ -163,7 +163,7 @@ class OrderNotifier
     {
         return User::forCompany($order->company_id)
             ->where('status', 'active')
-            ->role([Role::Admin->value, Role::Dispatcher->value])
+            ->role([Role::Admin->value, Role::ActivityManager->value, Role::Dispatcher->value])
             ->get();
     }
 

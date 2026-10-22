@@ -1,9 +1,9 @@
 import { nativeApp } from '../native'
 
 /**
- * Une session par espace (e-commerçant, livreur, équipe) : une personne qui a deux comptes peut être
+ * Une session par espace (client, livreur, équipe) : une personne qui a deux comptes peut être
  * connectée aux deux dans le même navigateur, et l'application livreur installée ne reprend jamais la
- * session e-commerçant du navigateur (elles partagent le même stockage).
+ * session client du navigateur (elles partagent le même stockage).
  */
 const SPACE_KEY = 'space'
 const NATIVE_SPACES = { livreur: 'livreur', ecommercant: 'marchand' }

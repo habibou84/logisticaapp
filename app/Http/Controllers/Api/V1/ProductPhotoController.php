@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
- * Photo d'un produit (page de commande du marchand).
+ * Photo d'un produit (page de commande du client).
  */
 class ProductPhotoController extends Controller
 {

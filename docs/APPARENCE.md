@@ -2,22 +2,22 @@
 
 **Paramètres › Apparence des espaces** (administrateur de l'entreprise) :
 
-- **Couleur de chaque espace** : e-commerçant, livreur, équipe (administration). On choisit parmi les couleurs
+- **Couleur de chaque espace** : client, livreur, équipe (administration). On choisit parmi les couleurs
   proposées ou une couleur libre. Une alerte s'affiche si la couleur est trop claire pour du texte blanc.
 - **Nom sous l'icône du téléphone** pour les deux applications installables. Sans réglage : le nom de
-  l'entreprise pour l'application e-commerçant, « Livreur » pour l'application livreur.
+  l'entreprise pour l'application client, « Livreur » pour l'application livreur.
 - **Icône des applications** :
   - par défaut, le logo de l'entreprise sur la couleur de l'espace ;
   - on peut aussi envoyer une image carrée (au moins 192 × 192) ;
   - sans logo ni image, les icônes standard sont utilisées.
-- **Même apparence pour tous les espaces** : la couleur et l'icône de l'espace e-commerçant s'appliquent partout.
+- **Même apparence pour tous les espaces** : la couleur et l'icône de l'espace client s'appliquent partout.
   Les noms des applications restent propres à chacune.
 - Un **aperçu** montre la barre du haut, un bouton et l'icône du téléphone de chaque espace.
 
 ## Où c'est appliqué
 
-- Pages de connexion des trois espaces, et page d'accueil des e-commerçants.
-- Applications e-commerçant et livreur : barre du haut (avec le logo), boutons, onglets, couleur de la barre du
+- Pages de connexion des trois espaces, et page d'accueil des clients.
+- Applications client et livreur : barre du haut (avec le logo), boutons, onglets, couleur de la barre du
   téléphone.
 - Espace équipe : barre latérale et boutons principaux.
 - Applications installables : nom, couleur et icônes du manifeste, icône Apple, icône de l'onglet.

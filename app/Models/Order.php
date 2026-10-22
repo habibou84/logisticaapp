@@ -293,7 +293,7 @@ class Order extends Model
     }
 
     /**
-     * Dernière décision prise par le marchand sur un colis non livré : report ou retour demandé.
+     * Dernière décision prise par le client sur un colis non livré : report ou retour demandé.
      */
     public function merchantDecision(): HasOne
     {
@@ -305,7 +305,7 @@ class Order extends Model
 
     /**
      * Une décision est-elle attendue ? Échec de livraison sans retour demandé, sans report
-     * et sans livreur reparti : la file « À décider » de l'agence et « À régler » du marchand.
+     * et sans livreur reparti : la file « À décider » de l'agence et « À régler » du client.
      */
     public function needsDecision(): bool
     {
@@ -374,7 +374,7 @@ class Order extends Model
 
     /**
      * Courses visibles par un utilisateur : toute l'entreprise pour le personnel,
-     * celles du marchand pour ses comptes, celles qui lui ont été assignées pour un livreur.
+     * celles du client pour ses comptes, celles qui lui ont été assignées pour un livreur.
      */
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
@@ -412,7 +412,7 @@ class Order extends Model
     }
 
     /**
-     * Commande préparée dans un entrepôt de l'entreprise : pas de ramassage chez le marchand.
+     * Commande préparée dans un entrepôt de l'entreprise : pas de ramassage chez le client.
      */
     public function fromWarehouse(): bool
     {

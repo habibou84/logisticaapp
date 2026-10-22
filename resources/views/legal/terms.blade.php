@@ -33,7 +33,7 @@
     <div class="card">
         <p>
             Ces conditions s'appliquent à l'application de livraison de <strong>{{ $legal['name'] }}</strong> : l'espace de son
-            équipe, l'application des livreurs, l'application des e-commerçants et les pages publiques (suivi de colis, boutiques
+            équipe, l'application des livreurs, l'application des clients et les pages publiques (suivi de colis, boutiques
             en ligne). Elles s'appliquent à toute personne qui l'utilise.
         </p>
     </div>
@@ -61,21 +61,21 @@
 
     <h2 id="definitions">2. Définitions</h2>
     <ul>
-        <li><strong>Application</strong> : l'espace de l'équipe, les applications des livreurs et des e-commerçants, et les pages publiques.</li>
-        <li><strong>Utilisateurs</strong> : les personnes qui ont un compte : l'équipe de {{ $legal['name'] }} (administrateurs, dispatch, caisse), ses livreurs et ses e-commerçants.</li>
+        <li><strong>Application</strong> : l'espace de l'équipe, les applications des livreurs et des clients, et les pages publiques.</li>
+        <li><strong>Utilisateurs</strong> : les personnes qui ont un compte : l'équipe de {{ $legal['name'] }} (administrateurs, dispatch, caisse), ses livreurs et ses clients.</li>
         <li><strong>Destinataires</strong> : les clients finaux qui reçoivent les colis.</li>
     </ul>
 
     <h2 id="compte">3. Compte et accès</h2>
     <ul>
         <li>Chaque utilisateur se connecte avec son numéro de téléphone (ou son e-mail) et son mot de passe. Il garde ses identifiants secrets et prévient {{ $legal['name'] }} en cas d'usage suspect.</li>
-        <li>{{ $legal['name'] }} crée, modifie et suspend les comptes de son équipe et de ses livreurs. Un e-commerçant peut créer son compte en ligne quand l'inscription est ouverte ; il fournit des informations exactes et les tient à jour.</li>
+        <li>{{ $legal['name'] }} crée, modifie et suspend les comptes de son équipe et de ses livreurs. Un client peut créer son compte en ligne quand l'inscription est ouverte ; il fournit des informations exactes et les tient à jour.</li>
     </ul>
 
     <h2 id="services">4. Services</h2>
     <p>
         L'application permet notamment de créer et suivre les courses, de gérer le dispatch, la caisse, les reversements aux
-        e-commerçants, la paie des livreurs, les notifications et les statistiques.
+        clients, la paie des livreurs, les notifications et les statistiques.
     </p>
     <p>
         {{ $legal['name'] }} fait ses meilleurs efforts pour que l'application soit disponible en permanence, mais elle peut être
@@ -93,14 +93,14 @@
 
     <h2 id="donnees">6. Données</h2>
     <ul>
-        <li>{{ $legal['name'] }} traite les données saisies dans l'application (courses, e-commerçants, livreurs, montants) pour fournir le service de livraison.</li>
+        <li>{{ $legal['name'] }} traite les données saisies dans l'application (courses, clients, livreurs, montants) pour fournir le service de livraison.</li>
         <li>Le détail des données traitées, des prestataires et des droits des personnes figure dans la <a href="/confidentialite">politique de confidentialité</a>.</li>
     </ul>
 
     <h2 id="responsabilite">7. Responsabilité</h2>
     <ul>
         <li>{{ $legal['name'] }} n'est pas responsable des interruptions dues à des tiers (opérateurs, WhatsApp, coupures de réseau ou d'électricité) ni d'un usage non conforme de l'application.</li>
-        <li>Les conditions de livraison (prix, délais, colis perdus ou endommagés, reversements) sont celles convenues entre {{ $legal['name'] }} et chaque e-commerçant.</li>
+        <li>Les conditions de livraison (prix, délais, colis perdus ou endommagés, reversements) sont celles convenues entre {{ $legal['name'] }} et chaque client.</li>
     </ul>
 
     <h2 id="suspension">8. Suspension d'un compte</h2>

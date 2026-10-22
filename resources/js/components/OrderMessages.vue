@@ -4,7 +4,7 @@
     <ul class="space-y-3">
       <li v-for="m in messages" :key="m.id" class="space-y-1">
         <div class="flex justify-between gap-2">
-          <span class="font-medium">{{ m.recipient_type === 'recipient' ? 'Destinataire' : 'Marchand' }} · {{ m.to }}</span>
+          <span class="font-medium">{{ m.recipient_type === 'recipient' ? 'Destinataire' : 'Client' }} · {{ m.to }}</span>
           <MessageStatus :message="m" />
         </div>
         <p class="text-gray-600">{{ m.body }}</p>

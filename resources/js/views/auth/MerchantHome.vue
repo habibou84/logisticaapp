@@ -13,7 +13,7 @@
     <section :class="['text-white', { 'min-h-screen': nativeApp }]" :style="{ paddingTop: nativeApp ? 'env(safe-area-inset-top)' : null, background: `linear-gradient(135deg, rgba(0,0,0,.12), rgba(255,255,255,.08)), ${spaceColor('marchand')}` }">
       <div class="max-w-6xl mx-auto px-4 py-10 md:py-16 grid md:grid-cols-2 gap-10 items-center">
         <div v-if="!nativeApp" class="space-y-6">
-          <p class="inline-block rounded-full bg-white/15 px-3 py-1 text-sm font-medium">Espace e-commerçants</p>
+          <p class="inline-block rounded-full bg-white/15 px-3 py-1 text-sm font-medium">Espace clients</p>
           <h1 class="text-3xl md:text-5xl font-extrabold leading-tight">
             {{ branding.tagline || 'Vos colis livrés vite, vos clients satisfaits.' }}
           </h1>
@@ -128,7 +128,7 @@ const steps = [
   { title: 'Vous êtes payé', text: 'Suivez vos encaissements et recevez vos reversements avec leur relevé.' },
 ]
 
-const contactLink = computed(() => whatsappLink(branding.phone, `Bonjour, je souhaite ouvrir un compte e-commerçant chez ${branding.name}.`))
+const contactLink = computed(() => whatsappLink(branding.phone, `Bonjour, je souhaite ouvrir un compte client chez ${branding.name}.`))
 
 function track() {
   router.push(`/suivi/${trackingCode.value.toUpperCase()}`)

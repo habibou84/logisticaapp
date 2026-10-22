@@ -8,7 +8,7 @@ use App\Models\OrderEvent;
 use Illuminate\Support\Collection;
 
 /**
- * Position de ramassage des marchands. Elle vient du marchand (sur place, GPS de son
+ * Position de ramassage des clients. Elle vient du client (sur place, GPS de son
  * téléphone), de l'agence (carte ou lien Google Maps), ou, à défaut, des ramassages :
  * là où les livreurs ont marqué ses colis « Récupéré ». Une position donnée par le
  * marchand ou l'agence n'est jamais remplacée par celle des livreurs.
@@ -38,7 +38,7 @@ class MerchantLocation
     }
 
     /**
-     * Estime la position d'après les ramassages des livreurs, si le marchand n'en a pas
+     * Estime la position d'après les ramassages des livreurs, si le client n'en a pas
      * (ou seulement une estimation). Renvoie vrai si la position a été remplie ou mise à jour.
      */
     public function learn(Merchant $merchant): bool
@@ -58,7 +58,7 @@ class MerchantLocation
     }
 
     /**
-     * Rattrapage : estime la position de tous les marchands qui n'en ont pas.
+     * Rattrapage : estime la position de tous les clients qui n'en ont pas.
      *
      * @return int marchands localisés
      */
@@ -75,7 +75,7 @@ class MerchantLocation
     }
 
     /**
-     * Positions GPS des livreurs au moment du ramassage des colis du marchand
+     * Positions GPS des livreurs au moment du ramassage des colis du client
      * (hors courses à ramasser ailleurs qu'à son adresse habituelle).
      *
      * @return Collection<int, array{0: float, 1: float}>

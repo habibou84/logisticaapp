@@ -68,7 +68,7 @@ class FieldReportReminders
             }
 
             $recipients = User::forCompany($company->id)->where('status', 'active')
-                ->role($level === 1 ? [Role::Admin->value, Role::Dispatcher->value] : [Role::Admin->value])
+                ->role($level === 1 ? [Role::Admin->value, Role::ActivityManager->value, Role::Dispatcher->value] : [Role::Admin->value])
                 ->get();
 
             if ($recipients->isNotEmpty()) {

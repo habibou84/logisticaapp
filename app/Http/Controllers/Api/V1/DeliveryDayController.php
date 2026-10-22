@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Gate;
 
 /**
  * Journée de livraison (mode « validation automatique avec règles ») : état pour le dispatch
- * et l'application marchand, fermeture et réouverture par le dispatch.
+ * et l'application client, fermeture et réouverture par le dispatch.
  */
 class DeliveryDayController extends Controller
 {

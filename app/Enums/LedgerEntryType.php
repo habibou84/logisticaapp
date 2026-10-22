@@ -4,7 +4,7 @@ namespace App\Enums;
 
 enum LedgerEntryType: string
 {
-    // Montant encaissé auprès du destinataire, dû au marchand
+    // Montant encaissé auprès du destinataire, dû au client
     case CodCredit = 'cod_credit';
     // Frais de livraison retenus
     case DeliveryFee = 'delivery_fee';
@@ -16,7 +16,7 @@ enum LedgerEntryType: string
     case OtherFee = 'other_fee';
     // Stockage des produits dans un entrepôt de l'entreprise (facturé chaque mois)
     case StorageFee = 'storage_fee';
-    // Indemnité versée au marchand pour un colis perdu
+    // Indemnité versée au client pour un colis perdu
     case LostCompensation = 'lost_compensation';
     case Adjustment = 'adjustment';
     // Reversement effectué : solde les écritures du relevé

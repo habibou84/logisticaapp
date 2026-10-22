@@ -12,7 +12,7 @@ use Tests\TestCase;
 
 /**
  * Validation automatique avec règles : passé l'heure limite, ou journée fermée par le dispatch,
- * les courses du jour sont validées pour le lendemain et le marchand est prévenu.
+ * les courses du jour sont validées pour le lendemain et le client est prévenu.
  */
 class DeliveryDayTest extends TestCase
 {

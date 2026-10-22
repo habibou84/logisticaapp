@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * Demande d'ouverture de compte d'un e-commerçant (inscriptions fermées) : validée ou refusée par l'agence.
+ * Demande d'ouverture de compte d'un client (inscriptions fermées) : validée ou refusée par l'agence.
  */
 class ConnectRequest extends Model
 {

@@ -35,7 +35,7 @@ class OrderDraftController extends Controller
         $zones = Zone::forCompany($user->company_id)->active()->with('parent')->get();
         $fields = $parser->parse($data['text'], $zones);
 
-        // « De Cocody à Yopougon » : la commune de ramassage du marchand n'est pas la destination
+        // « De Cocody à Yopougon » : la commune de ramassage du client n'est pas la destination
         $merchant = Merchant::find($user->merchant_id ?? $data['merchant_id'] ?? null);
         $candidates = $fields['zones'] ?? [];
         if (count($candidates) > 1 && $merchant?->pickup_zone_id) {
@@ -54,7 +54,7 @@ class OrderDraftController extends Controller
     }
 
     /**
-     * Courses du même client chez ce marchand ces dernières 24 heures (hors annulées et refusées).
+     * Courses du même client chez ce client ces dernières 24 heures (hors annulées et refusées).
      */
     public function duplicates(Request $request): JsonResponse
     {

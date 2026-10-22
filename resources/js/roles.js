@@ -1,6 +1,6 @@
 // Espaces de l'application et rôles autorisés (miroir de App\Enums\Role)
 export const SPACES = {
-  admin: ['admin', 'dispatcher', 'cashier', 'hub_agent'],
+  admin: ['admin', 'activity_manager', 'dispatcher', 'cashier', 'hub_agent'],
   livreur: ['courier'],
   marchand: ['merchant_owner', 'merchant_staff'],
 }

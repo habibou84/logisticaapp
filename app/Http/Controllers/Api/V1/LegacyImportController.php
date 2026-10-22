@@ -13,7 +13,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 /**
  * Reprise depuis l'ancienne application (Laravel 5.8) par un bouton : l'administrateur crée une clé
  * (Paramètres), la colle dans la page « Migration vers Jibiat » de l'ancienne application, qui envoie
- * ses comptes par paquets : e-commerçants, puis livreurs. Les comptes de l'équipe se recréent.
+ * ses comptes par paquets : clients, puis livreurs. Les comptes de l'équipe se recréent.
  */
 class LegacyImportController extends Controller
 {

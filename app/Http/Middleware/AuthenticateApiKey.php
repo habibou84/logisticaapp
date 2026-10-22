@@ -11,7 +11,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Authentifie l'API publique par clé (Authorization: Bearer lv_… ou X-Api-Key) ; la
- * requête agit ensuite au nom d'un compte du marchand,
+ * requête agit ensuite au nom d'un compte du client,
  * avec exactement les mêmes règles que son application.
  */
 class AuthenticateApiKey
@@ -28,7 +28,7 @@ class AuthenticateApiKey
         $actor = $key->merchant?->isActive() ? $key->actor() : null;
 
         if ($actor === null || ! $actor->isActive()) {
-            return $this->error('Le compte de ce marchand est suspendu ou n\'a plus d\'utilisateur actif.', 403);
+            return $this->error('Le compte de ce client est suspendu ou n\'a plus d\'utilisateur actif.', 403);
         }
 
         Auth::setUser($actor);

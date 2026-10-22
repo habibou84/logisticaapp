@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * Frais engagés pour une course (gare, transport, emballage…), payés par le livreur
- * ou l'agence, et facturés au marchand ou supportés par l'agence.
+ * ou l'agence, et facturés au client ou supportés par l'agence.
  */
 class OrderExpense extends Model
 {

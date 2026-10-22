@@ -81,7 +81,7 @@ class ParcelCustodyTest extends TestCase
         $order = $this->failDelivery($order);
         $this->assertSame($this->courierB->id, $order->held_by_courier_id, 'Après un échec, le colis reste chez le livreur');
 
-        // Visible du personnel, pas du marchand
+        // Visible du personnel, pas du client
         Sanctum::actingAs($this->dispatcher);
         $this->getJson("/api/v1/orders/{$order->id}")->assertJsonPath('data.held_by.id', $this->courierB->id);
         Sanctum::actingAs($this->merchantUser);

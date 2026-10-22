@@ -105,7 +105,7 @@ class SendWebhook implements ShouldQueue
         } elseif ($this->retry && ($subscription = $delivery->subscription)) {
             $subscription->increment('consecutive_failures');
 
-            // Adresse morte : coupée (les envois s'empilaient en échec), le marchand est prévenu
+            // Adresse morte : coupée (les envois s'empilaient en échec), le client est prévenu
             if ($subscription->is_active && $subscription->consecutive_failures >= self::DISABLE_AFTER) {
                 $subscription->forceFill(['is_active' => false])->saveQuietly();
                 Notification::send(

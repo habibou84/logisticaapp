@@ -16,19 +16,19 @@ use App\Services\Push\WebPush;
 use App\Support\PhoneNumber;
 
 /**
- * Point d'entrée unique des messages WhatsApp, SMS et notifications push aux marchands :
+ * Point d'entrée unique des messages WhatsApp, SMS et notifications push aux clients :
  * enregistre le message dans le journal puis le confie à la file d'attente.
  */
 class Messenger
 {
     /**
-     * Message au marchand, selon ses préférences.
+     * Message au client, selon ses préférences.
      *
      * @param  list<string|int>  $params
      */
     public function toMerchant(Merchant $merchant, NotificationEvent $event, WhatsAppTemplate $template, array $params, ?Order $order = null): ?OutboundMessage
     {
-        // Course envoyée par une application qui prévient elle-même le marchand (Jibiat Marchand) : pas de doublon
+        // Course envoyée par une application qui prévient elle-même le client (Jibiat Marchand) : pas de doublon
         if (! $merchant->wantsNotification($event) || $order?->merchant_alerts_muted) {
             return null;
         }
@@ -37,7 +37,7 @@ class Messenger
     }
 
     /**
-     * Message au marchand : notification sur son téléphone quand il l'a activée dans
+     * Message au client : notification sur son téléphone quand il l'a activée dans
      * l'application (gratuit), sinon WhatsApp. Une notification qu'aucun appareil
      * n'a reçue repart par WhatsApp (voir fallbackToWhatsApp).
      *
@@ -79,7 +79,7 @@ class Messenger
     }
 
     /**
-     * Contenu de la notification push d'un message au marchand.
+     * Contenu de la notification push d'un message au client.
      *
      * @return array{title: string, body: string, url: string, tag: string}
      */
@@ -107,7 +107,7 @@ class Messenger
     }
 
     /**
-     * WhatsApp de repli quand la notification n'est arrivée sur aucun appareil du marchand.
+     * WhatsApp de repli quand la notification n'est arrivée sur aucun appareil du client.
      */
     public function fallbackToWhatsApp(OutboundMessage $message): ?OutboundMessage
     {

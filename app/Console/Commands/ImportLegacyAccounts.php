@@ -14,7 +14,7 @@ class ImportLegacyAccounts extends Command
         {file : Export SQL de l\'ancienne application (mysqldump ou phpMyAdmin : tables clients, livreurs et users, .sql ou .sql.gz)}
         {--dry-run : Simule l\'import et affiche le rapport, sans rien enregistrer}';
 
-    protected $description = 'Reprend les e-commerçants et les livreurs de l\'ancienne application (mêmes numéros, mêmes mots de passe)';
+    protected $description = 'Reprend les clients et les livreurs de l\'ancienne application (mêmes numéros, mêmes mots de passe)';
 
     public function handle(LegacyAccountsImporter $importer): int
     {
@@ -47,8 +47,8 @@ class ImportLegacyAccounts extends Command
 
         $c = $report['counts'];
         $this->table(['', 'Nombre'], [
-            ['E-commerçants importés', $c['merchants']],
-            ['Autres comptes des e-commerçants', $c['merchant_users']],
+            ['Clients importés', $c['merchants']],
+            ['Autres comptes des clients', $c['merchant_users']],
             ['Livreurs importés', $c['couriers'].($c['couriers_suspended'] ? " (dont {$c['couriers_suspended']} suspendu(s))" : '')],
             ['Lignes non importées', count($report['skipped'])],
             ['Points à vérifier', count($report['warnings'])],

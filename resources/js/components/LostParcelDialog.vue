@@ -2,7 +2,7 @@
   <Modal :open="open" :title="`Déclarer perdu · ${order?.tracking_code || ''}`" @close="$emit('close')">
     <form v-if="order" class="space-y-3" @submit.prevent="submit">
       <p class="rounded bg-red-50 p-3 text-sm text-red-800">
-        La course passe « Perdu » (définitif). L'indemnité est portée au compte du marchand et lui est
+        La course passe « Perdu » (définitif). L'indemnité est portée au compte du client et lui est
         versée avec son prochain reversement ; la retenue éventuelle s'applique à la prochaine paie du livreur.
       </p>
       <div>
@@ -11,7 +11,7 @@
       </div>
       <div class="grid grid-cols-2 gap-3">
         <div>
-          <label class="label" for="lost-comp">Indemnité au marchand (F) *</label>
+          <label class="label" for="lost-comp">Indemnité au client (F) *</label>
           <input id="lost-comp" v-model.number="form.compensation" type="number" min="0" class="input" required>
           <p class="text-xs text-gray-500 mt-1">Valeur déclarée des articles : {{ money(order.amounts.items_amount) }}</p>
         </div>

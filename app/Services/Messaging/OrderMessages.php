@@ -16,7 +16,7 @@ use App\Support\Money;
 use Carbon\CarbonImmutable;
 
 /**
- * Messages WhatsApp déclenchés par le journal d'une course : au marchand
+ * Messages WhatsApp déclenchés par le journal d'une course : au client
  * (selon ses préférences) et au destinataire (colis en route, code de livraison).
  */
 class OrderMessages
@@ -25,7 +25,7 @@ class OrderMessages
 
     public function handle(Order $order, OrderEvent $event, ?User $actor): void
     {
-        // Retour décidé par l'agence : le marchand est prévenu que son colis lui revient
+        // Retour décidé par l'agence : le client est prévenu que son colis lui revient
         if ($event->type === OrderEventType::ReturnRequested && $actor?->merchant_id === null) {
             $order->loadMissing(['merchant', 'deliveryZone']);
             $this->incident($order, $event, $this->recipientLabel($order), 'le colis vous sera retourné');
@@ -151,7 +151,7 @@ class OrderMessages
         $order->loadMissing(['merchant', 'deliveryZone']);
         $merchant = $order->merchant;
 
-        // Date décalée par l'agence : le marchand est prévenu comme pour un report (actif par défaut),
+        // Date décalée par l'agence : le client est prévenu comme pour un report (actif par défaut),
         // la simple validation reste un message de routine (désactivé par défaut)
         $event = $postponed ? NotificationEvent::OrderIncident : NotificationEvent::OrderConfirmed;
 

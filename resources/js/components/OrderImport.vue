@@ -8,7 +8,7 @@
       <button type="button" class="btn-secondary" @click="downloadTemplate">⬇️ Télécharger le modèle</button>
 
       <div v-if="staff">
-        <label class="label" for="imp-merchant">E-commerçant *</label>
+        <label class="label" for="imp-merchant">Client *</label>
         <select id="imp-merchant" v-model="merchantId" class="input" @change="reset">
           <option :value="null" disabled>Choisir…</option>
           <option v-for="m in merchants" :key="m.id" :value="m.id">{{ m.business_name }}</option>
@@ -106,7 +106,7 @@ async function pick(event) {
   error.value = ''
   if (!file.value) return
   if (staff.value && !merchantId.value) {
-    error.value = 'Choisissez d\'abord l\'e-commerçant.'
+    error.value = 'Choisissez d\'abord le client.'
     return
   }
   busy.value = true

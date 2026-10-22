@@ -188,7 +188,7 @@ class Merchant extends Model
     }
 
     /**
-     * Le marchand veut-il être prévenu de cet événement (notification ou WhatsApp) ?
+     * Le client veut-il être prévenu de cet événement (notification ou WhatsApp) ?
      */
     public function wantsNotification(NotificationEvent $event): bool
     {
@@ -198,7 +198,7 @@ class Merchant extends Model
     }
 
     /**
-     * Appareils (téléphones, navigateurs) des comptes du marchand abonnés aux notifications push.
+     * Appareils (téléphones, navigateurs) des comptes du client abonnés aux notifications push.
      */
     public function pushSubscriptions(): Builder
     {
@@ -206,7 +206,7 @@ class Merchant extends Model
     }
 
     /**
-     * Numéro qui reçoit les messages WhatsApp du marchand.
+     * Numéro qui reçoit les messages WhatsApp du client.
      */
     public function messagingPhone(): ?string
     {

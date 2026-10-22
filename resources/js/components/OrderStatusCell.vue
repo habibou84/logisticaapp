@@ -22,9 +22,9 @@
     <div v-if="order.last_incident && ['delivery_failed', 'rescheduled'].includes(order.status)" class="text-xs text-red-600 mt-0.5">{{ order.last_incident.label }}</div>
     <div v-if="order.return_requested && !['returned', 'return_assigned', 'returning'].includes(order.status)" class="text-xs text-rose-600">Retour demandé</div>
     <div v-if="order.delivery.scheduled_date && (order.status === 'rescheduled' || (order.delivery.scheduled_date > todayIso && !['delivered', 'cancelled', 'rejected', 'returned', 'lost'].includes(order.status)))" :class="['text-xs', order.delivery.scheduled_date <= todayIso ? 'text-emerald-700 font-medium' : 'text-gray-600']">📅 {{ order.delivery.scheduled_date <= todayIso ? 'Prévue aujourd\'hui' : date(order.delivery.scheduled_date) }}</div>
-    <!-- Décision du marchand encore d'actualité -->
+    <!-- Décision du client encore d'actualité -->
     <div v-if="order.merchant_decision" class="mt-1 inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-800 whitespace-nowrap">
-      🧑‍💼 Le marchand a décidé : {{ order.merchant_decision.kind === 'redeliver' ? `relivrer le ${date(order.merchant_decision.date)}` : 'retour demandé' }}
+      🧑‍💼 Le client a décidé : {{ order.merchant_decision.kind === 'redeliver' ? `relivrer le ${date(order.merchant_decision.date)}` : 'retour demandé' }}
     </div>
     <button v-if="canDecide(order)" type="button" class="mt-1 block text-xs rounded bg-blue-600 text-white px-2 py-0.5" @click.stop="$emit('decide', order)">Décider</button>
     <button v-else-if="canRevise(order)" type="button" class="mt-1 block text-xs text-blue-700 underline" @click.stop="$emit('decide', order)">Modifier</button>

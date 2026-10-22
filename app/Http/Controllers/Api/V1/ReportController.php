@@ -14,7 +14,7 @@ class ReportController extends Controller
 {
     /**
      * Point détaillé sur une période : volumes par état et montants.
-     * Un marchand ne voit que ses courses ; le personnel peut filtrer par marchand.
+     * Un client ne voit que ses courses ; le personnel peut filtrer par marchand.
      */
     public function summary(Request $request, OrderSummary $summary): JsonResponse
     {

@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Http;
 use Throwable;
 
 /**
- * Coordonnées d'un lien de carte collé par l'agence ou le marchand : lien Google Maps
+ * Coordonnées d'un lien de carte collé par l'agence ou le client : lien Google Maps
  * (long, ou court « maps.app.goo.gl » partagé depuis le téléphone, dont on suit les
  * redirections), lien OpenStreetMap, ou coordonnées écrites « 5.3600, -3.9700 ».
  */

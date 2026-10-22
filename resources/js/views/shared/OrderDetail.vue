@@ -4,6 +4,7 @@
       <button class="btn-secondary" @click="router.back()">← Retour</button>
       <h1 class="text-xl font-bold font-mono">{{ order.tracking_code }}</h1>
       <StatusBadge :status="order.status" :label="order.status_label" />
+      <span v-if="order.activity" :class="['text-xs rounded-full px-2 py-0.5 font-medium', activityBadge(order.activity)]">{{ order.activity_label }}</span>
       <span v-if="order.return_requested && !['returned', 'return_assigned', 'returning'].includes(order.status)" class="text-xs rounded-full bg-rose-100 text-rose-700 px-2 py-0.5">Retour demandé</span>
       <div class="ml-auto flex gap-2">
         <RouterLink :to="`/etiquette/${order.id}`" target="_blank" class="btn-secondary">🖨️ Étiquette</RouterLink>
@@ -18,7 +19,7 @@
             <p>{{ order.pickup.zone_name }} · {{ order.pickup.address || '—' }}</p>
             <p v-if="order.pickup.landmark" class="text-gray-600">Repère : {{ order.pickup.landmark }}</p>
             <p :class="order.prepared_at ? 'text-emerald-700' : 'text-amber-700'">
-              {{ order.prepared_at ? `Préparée le ${dateTime(order.prepared_at)}` : 'À préparer : pas de ramassage chez le marchand' }}
+              {{ order.prepared_at ? `Préparée le ${dateTime(order.prepared_at)}` : 'À préparer : pas de ramassage chez le client' }}
             </p>
           </div>
           <div v-else class="card p-4 text-sm space-y-1">
@@ -76,9 +77,9 @@
             🚌 <strong>Expédition</strong> ·
             <template v-if="order.shipping.carrier">
               déposé chez {{ order.shipping.carrier }}<span v-if="order.shipping.reference"> (ticket {{ order.shipping.reference }})</span>,
-              frais {{ money(order.shipping.fee) }} facturés au marchand
+              frais {{ money(order.shipping.fee) }} facturés au client
             </template>
-            <template v-else>frais du transporteur facturés au marchand au réel<span v-if="order.shipping.fee_estimate"> (≈ {{ money(order.shipping.fee_estimate) }})</span></template>
+            <template v-else>frais du transporteur facturés au client au réel<span v-if="order.shipping.fee_estimate"> (≈ {{ money(order.shipping.fee_estimate) }})</span></template>
           </div>
           <div v-if="order.delivery_code" class="sm:col-span-2">
             <p class="text-gray-500">Code de livraison (à transmettre au client)</p>
@@ -90,7 +91,7 @@
             <p v-if="order.package.merchant_note" class="text-gray-600">Instruction : {{ order.package.merchant_note }}</p>
           </div>
           <div><p class="text-gray-500">Tentatives</p><p>{{ order.attempts_count }} / {{ order.max_attempts }}</p></div>
-          <div v-if="order.merchant"><p class="text-gray-500">Marchand</p><p>{{ order.merchant.business_name }}</p></div>
+          <div v-if="order.merchant"><p class="text-gray-500">Client</p><p>{{ order.merchant.business_name }}</p></div>
         </div>
 
         <div v-if="order.items?.length" class="card p-4 text-sm">
@@ -117,7 +118,7 @@
         <div v-if="isDispatcher && !isFinal" class="card p-4 space-y-3">
           <h2 class="font-semibold">Dispatch</h2>
           <p v-if="order.merchant_decision" class="rounded-lg bg-indigo-50 px-3 py-2 text-sm text-indigo-900">
-            🧑‍💼 {{ order.merchant_decision.by || 'Le marchand' }} a décidé : {{ order.merchant_decision.kind === 'redeliver' ? `relivrer le ${date(order.merchant_decision.date)}` : 'faire revenir le colis' }}
+            🧑‍💼 {{ order.merchant_decision.by || 'Le client' }} a décidé : {{ order.merchant_decision.kind === 'redeliver' ? `relivrer le ${date(order.merchant_decision.date)}` : 'faire revenir le colis' }}
           </p>
           <button v-if="order.needs_decision" class="btn-primary w-full" @click="deciding = true">🧭 Décider de la suite</button>
           <button v-else-if="order.decision_editable" class="btn-secondary w-full" @click="deciding = true">🧭 Modifier la décision</button>
@@ -162,7 +163,7 @@
         <div class="card p-4 space-y-2">
           <h2 class="font-semibold">Ajouter une note</h2>
           <textarea v-model="note.text" rows="3" class="input" placeholder="Ex. : le client sera disponible après 17h" />
-          <label v-if="isStaff" class="flex items-center gap-2 text-sm"><input v-model="note.internal" type="checkbox"> Note interne (invisible pour le marchand)</label>
+          <label v-if="isStaff" class="flex items-center gap-2 text-sm"><input v-model="note.internal" type="checkbox"> Note interne (invisible pour le client)</label>
           <button class="btn-primary w-full" :disabled="!note.text.trim()" @click="addNote">Envoyer</button>
         </div>
 
@@ -232,6 +233,7 @@ import { useAuthStore } from '../../stores/auth'
 import { useToastStore } from '../../stores/toasts'
 import { orderChanges, lastOrderChange } from '../../composables/useRealtime'
 import { date, dateTime, money, telLink } from '../../utils/format'
+import { activityBadge } from '../../utils/activities'
 import { ASSIGNABLE, ASSIGNMENT_LABELS, BEFORE_PICKUP, FINAL, TRANSITIONS, isWarehouseStep } from '../../utils/workflow'
 
 const STOCK_STATES = {
@@ -258,7 +260,7 @@ const losing = ref(false)
 const canDeclareLost = computed(() => auth.can('orders.dispatch') && auth.can('finance.manage') && !BEFORE_PICKUP.includes(order.value?.status))
 function declaredLost() {
   losing.value = false
-  toasts.success('Colis déclaré perdu. Le marchand est prévenu.')
+  toasts.success('Colis déclaré perdu. Le client est prévenu.')
   load()
 }
 
@@ -286,7 +288,7 @@ const isFinal = computed(() => FINAL.includes(order.value?.status))
 const canEditDelivery = computed(() => !isFinal.value && order.value?.status !== 'out_for_delivery' && (isMerchant.value || isDispatcher.value))
 const assignableTypes = computed(() => Object.keys(ASSIGNABLE).filter((type) => {
   if (!ASSIGNABLE[type].includes(order.value.status)) return false
-  // Commande d'entrepôt : ni ramassage ni retour au marchand ; livraison une fois préparée
+  // Commande d'entrepôt : ni ramassage ni retour au client ; livraison une fois préparée
   if (order.value.from_warehouse && type !== 'delivery') return false
   if (order.value.from_warehouse && !order.value.prepared_at) return false
   // Le retour n'est proposé qu'après un incident ou sur demande

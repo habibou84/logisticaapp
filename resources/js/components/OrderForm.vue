@@ -3,7 +3,7 @@
     <div v-if="error" class="rounded bg-red-50 border border-red-200 text-red-700 text-sm px-3 py-2">{{ error }}</div>
 
     <section v-if="!isMerchant" class="card p-4">
-      <label class="label" for="merchant">E-commerçant *</label>
+      <label class="label" for="merchant">Client *</label>
       <select id="merchant" v-model="form.merchant_id" class="input" required>
         <option :value="null" disabled>Choisir…</option>
         <option v-for="m in merchants" :key="m.id" :value="m.id">{{ m.business_name }}</option>
@@ -11,10 +11,25 @@
       <p v-if="errors.merchant_id" class="field-error">{{ errors.merchant_id[0] }}</p>
     </section>
 
+    <!-- Client à plusieurs activités : la course en choisit une (facturation, suivi et équipes à part) -->
+    <section v-if="activityChoices.length > 1" class="card p-4">
+      <p class="label">Activité *</p>
+      <div class="flex flex-wrap gap-2" role="radiogroup" aria-label="Activité">
+        <button
+          v-for="a in activityChoices" :key="a.value" type="button" role="radio" :aria-checked="form.activity === a.value"
+          :class="['rounded-full px-3 py-1 text-sm ring-1', form.activity === a.value ? 'bg-slate-900 text-white ring-slate-900' : 'bg-white ring-slate-300']"
+          @click="form.activity = a.value"
+        >
+          {{ a.label }}
+        </button>
+      </div>
+      <p v-if="errors.activity" class="field-error">{{ errors.activity[0] }}</p>
+    </section>
+
     <PasteMessage :merchant-id="merchantId" @parsed="applyParsed" />
 
     <section class="card p-4 space-y-3">
-      <h3 class="font-semibold">Client et livraison</h3>
+      <h3 class="font-semibold">Destinataire et livraison</h3>
       <div class="grid sm:grid-cols-2 gap-3">
         <div class="relative">
           <label class="label" for="phone">Téléphone * <span v-if="parsed.recipient_phone" class="check">à vérifier</span></label>
@@ -35,7 +50,7 @@
           <input id="name" v-model="form.recipient_name" :class="['input', mark('recipient_name')]" @input="touched('recipient_name')">
         </div>
         <div v-if="duplicates.length" class="sm:col-span-2 rounded bg-amber-50 border border-amber-200 text-amber-900 text-sm px-3 py-2">
-          ⚠️ Déjà {{ duplicates.length }} course(s) pour ce client chez cet e-commerçant ces dernières 24 h :
+          ⚠️ Déjà {{ duplicates.length }} course(s) pour ce destinataire chez ce client ces dernières 24 h :
           <RouterLink v-for="d in duplicates" :key="d.id" :to="`${auth.homeRoute}/courses/${d.id}`" target="_blank" class="underline ml-1">
             {{ d.tracking_code }} ({{ d.status_label }}, {{ d.delivery_zone_name }}, {{ money(d.cod_amount) }})
           </RouterLink>
@@ -133,7 +148,7 @@
           <label class="label" for="payer">Frais de livraison payés par <span class="text-red-600">*</span> <span v-if="parsed.fee_payer" class="check">à vérifier</span></label>
           <select id="payer" v-model="form.fee_payer" :class="['input', errors.fee_payer ? 'border-red-500 ring-1 ring-red-500' : mark('fee_payer')]" required @change="touched('fee_payer')">
             <option :value="null" disabled>Choisissez…</option>
-            <option value="merchant">{{ isMerchant ? 'Moi (déduits du reversement)' : 'Le marchand (déduits du reversement)' }}</option>
+            <option value="merchant">{{ isMerchant ? 'Moi (déduits du reversement)' : 'Le client (déduits du reversement)' }}</option>
             <option value="recipient">Le destinataire (ajoutés à l'encaissement)</option>
           </select>
           <p v-if="errors.fee_payer" class="field-error">{{ errors.fee_payer[0] }}</p>
@@ -170,12 +185,12 @@
           <div class="flex flex-wrap items-center justify-between gap-2">
             <h4 class="font-semibold">Articles du stock</h4>
             <select v-model="form.pickup_hub_id" class="input w-auto" aria-label="Provenance des articles">
-              <option :value="null">Chez le marchand (ramassage)</option>
+              <option :value="null">Chez le client (ramassage)</option>
               <option v-for="h in hubs" :key="h.id" :value="h.id">🏬 {{ h.name }} (préparée à l'entrepôt)</option>
             </select>
           </div>
           <p v-if="form.pickup_hub_id" class="text-sm rounded bg-sky-50 text-sky-900 p-2">
-            La commande sera préparée à l'entrepôt puis livrée : pas de ramassage chez le marchand.
+            La commande sera préparée à l'entrepôt puis livrée : pas de ramassage chez le client.
           </p>
           <div v-for="(item, i) in items" :key="i" class="grid grid-cols-[1fr_6rem_7rem_auto] gap-2 items-center">
             <select v-if="item.product_id !== undefined" v-model="item.product_id" class="input" :aria-label="`Produit ${i + 1}`" @change="pickProduct(item)">
@@ -198,7 +213,7 @@
         </div>
 
         <div v-if="!form.pickup_hub_id" class="grid sm:grid-cols-2 gap-3 border-t pt-3">
-          <p class="sm:col-span-2 text-sm text-gray-600">Lieu de ramassage, s'il diffère de l'adresse habituelle du marchand :</p>
+          <p class="sm:col-span-2 text-sm text-gray-600">Lieu de ramassage, s'il diffère de l'adresse habituelle du client :</p>
           <div>
             <label class="label" for="pzone">Zone de ramassage</label>
             <select id="pzone" v-model="form.pickup_zone_id" class="input">
@@ -219,16 +234,16 @@
         <p v-if="quoteError" class="text-red-600">{{ quoteError }}</p>
         <template v-else-if="quote?.billing">
           <p>Facture du mois : <strong>{{ quote.billing.label }}</strong><template v-if="quote.billing.amount"> · {{ money(quote.billing.amount) }}</template></p>
-          <p class="text-gray-600">À encaisser auprès du client : <strong>{{ money(codAmount) }}</strong></p>
+          <p class="text-gray-600">À encaisser auprès du destinataire : <strong>{{ money(codAmount) }}</strong></p>
         </template>
         <template v-else-if="quote">
           <p>Frais de livraison : <strong>{{ money(quote.total) }}</strong></p>
-          <p class="text-gray-600">À encaisser auprès du client : <strong>{{ money(codAmount) }}</strong></p>
+          <p class="text-gray-600">À encaisser auprès du destinataire : <strong>{{ money(codAmount) }}</strong></p>
         </template>
         <p v-else class="text-gray-500">Choisissez la zone pour voir le tarif.</p>
       </div>
       <div class="flex flex-wrap gap-2">
-        <button type="button" class="btn-secondary" :disabled="saving" title="Garde l'e-commerçant pour enchaîner les saisies" @click="submit(true)">Enregistrer et nouvelle</button>
+        <button type="button" class="btn-secondary" :disabled="saving" title="Gardu client pour enchaîner les saisies" @click="submit(true)">Enregistrer et nouvelle</button>
         <button type="submit" class="btn-primary" :disabled="saving" title="Ctrl + Entrée">{{ saving ? 'Enregistrement…' : submitLabel }}</button>
       </div>
     </div>
@@ -240,6 +255,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue'
 import http, { apiErrorMessage } from '../bootstrap/axios'
 import { useAuthStore } from '../stores/auth'
 import { money } from '../utils/format'
+import { myActivities } from '../utils/activities'
 import PasteMessage from './PasteMessage.vue'
 import ZoneSelect from './ZoneSelect.vue'
 import { useDeliveryDate } from '../composables/useDeliveryDate'
@@ -254,6 +270,8 @@ const isMerchant = computed(() => !!auth.user?.merchant_id)
 
 const form = reactive({
   merchant_id: null,
+  // E-commerce, distribution ou MAD (parmi celles du client et du périmètre de ce compte)
+  activity: null,
   recipient_name: '',
   recipient_phone: '',
   recipient_phone2: '',
@@ -336,7 +354,7 @@ function applyParsed(data) {
   checkDuplicates()
 }
 
-// Même client chez le même marchand ces dernières 24 h : risque de doublon
+// Même destinataire chez le même client ces dernières 24 h : risque de doublon
 async function checkDuplicates() {
   duplicates.value = []
   if (form.recipient_phone.replace(/\D/g, '').length < 8 || !merchantId.value) return
@@ -350,10 +368,20 @@ async function checkDuplicates() {
 
 const itemsTotal = computed(() => items.value.reduce((sum, i) => sum + (i.quantity || 0) * (i.unit_price || 0), 0))
 const merchantId = computed(() => (isMerchant.value ? auth.user.merchant_id : form.merchant_id))
-// Formule de facturation du client (distribution, MAD) : null pour les courses ordinaires
-const billingPlan = computed(() => (isMerchant.value
-  ? auth.user?.merchant?.billing_plan
-  : merchants.value.find((m) => m.id === form.merchant_id)?.billing_plan) || null)
+const client = computed(() => (isMerchant.value ? auth.user?.merchant : merchants.value.find((m) => m.id === form.merchant_id)) || null)
+const activityChoices = computed(() => {
+  const own = client.value?.activities || []
+  return myActivities(auth.user).filter((a) => own.includes(a.value))
+})
+watch(activityChoices, (choices) => {
+  if (!choices.some((a) => a.value === form.activity)) {
+    form.activity = (choices.find((a) => a.value === 'ecommerce') || choices[0])?.value ?? null
+  }
+}, { immediate: true })
+// Formule de facturation de l'activité choisie (distribution, MAD) : null pour l'e-commerce
+const billingPlan = computed(() => (form.activity && form.activity !== 'ecommerce'
+  ? client.value?.billing_plans?.find((p) => p.activity === form.activity)
+  : null) || null)
 watch(billingPlan, (plan) => {
   form.shipment_type = plan ? (form.shipment_type || 'colis') : null
   form.delivery_delay = plan && !plan.has_forfait ? (form.delivery_delay || plan.delivery_delay) : null
@@ -362,7 +390,7 @@ watch(billingPlan, (plan) => {
 }, { immediate: true })
 const hubZoneId = computed(() => hubs.value.find((h) => h.id === form.pickup_hub_id)?.zone_id)
 
-// Disponible du produit à l'emplacement choisi (chez le marchand ou à l'entrepôt)
+// Disponible du produit à l'emplacement choisi (chez le client ou à l'entrepôt)
 function availableAt(product) {
   return product.levels?.find((l) => (l.hub_id ?? null) === (form.pickup_hub_id ?? null))?.available ?? 0
 }
@@ -408,7 +436,7 @@ watch(() => form.merchant_id, () => {
 // Devis en direct
 let quoteTimer
 watch(
-  () => [form.merchant_id, form.delivery_zone_id, form.pickup_zone_id, form.pickup_hub_id, form.is_express, form.is_fragile, form.shipment_type, form.delivery_delay, form.weight_kg],
+  () => [form.merchant_id, form.activity, form.delivery_zone_id, form.pickup_zone_id, form.pickup_hub_id, form.is_express, form.is_fragile, form.shipment_type, form.delivery_delay, form.weight_kg],
   () => {
     clearTimeout(quoteTimer)
     quoteTimer = setTimeout(fetchQuote, 250)
@@ -422,6 +450,7 @@ async function fetchQuote() {
   try {
     const { data } = await http.post('/quotes', {
       merchant_id: isMerchant.value ? undefined : form.merchant_id,
+      activity: form.activity || undefined,
       delivery_zone_id: form.delivery_zone_id,
       pickup_zone_id: hubZoneId.value || form.pickup_zone_id || undefined,
       is_express: form.is_express,
@@ -464,10 +493,10 @@ function pickRecipient(r) {
   checkDuplicates()
 }
 
-// Après « Enregistrer et nouvelle » : formulaire vidé, e-commerçant gardé
+// Après « Enregistrer et nouvelle » : formulaire vidé, client gardé
 const blank = { ...form }
 function reset() {
-  Object.assign(form, { ...blank, merchant_id: form.merchant_id, shipment_type: form.shipment_type, delivery_delay: form.delivery_delay, fee_payer: billingPlan.value ? 'merchant' : null })
+  Object.assign(form, { ...blank, merchant_id: form.merchant_id, activity: form.activity, shipment_type: form.shipment_type, delivery_delay: form.delivery_delay, fee_payer: billingPlan.value ? 'merchant' : null })
   items.value = []
   zoneChoices.value = []
   duplicates.value = []
@@ -491,7 +520,7 @@ async function submit(again = false) {
     return
   }
   if (!form.fee_payer) {
-    errors.value = { fee_payer: ['Indiquez qui paie la livraison : le marchand ou le client.'] }
+    errors.value = { fee_payer: ['Indiquez qui paie la livraison : le client ou le destinataire.'] }
     error.value = errors.value.fee_payer[0]
     saving.value = false
     document.getElementById('payer')?.focus()

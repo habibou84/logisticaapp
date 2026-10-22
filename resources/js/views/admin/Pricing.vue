@@ -12,7 +12,7 @@
 
     <div v-if="grid" class="flex flex-wrap items-center gap-3 text-sm">
       <span class="text-gray-600">
-        Grille « {{ grid.name }} »{{ grid.is_default ? ' : appliquée à tous les e-commerçants sans grille négociée' : ` : ${grid.merchants_count ?? 0} e-commerçant(s)` }}
+        Grille « {{ grid.name }} »{{ grid.is_default ? ' : appliquée à tous les clients sans grille négociée' : ` : ${grid.merchants_count ?? 0} client(s)` }}
       </span>
       <button class="text-blue-600" @click="renameGrid">Renommer</button>
       <button v-if="!grid.is_default" class="text-red-600" @click="deleteGrid">Supprimer la grille</button>
@@ -87,8 +87,11 @@
     </div>
     <ReturnFeeSettings />
 
-    <!-- Clients sous formule (distribution, MAD) -->
-    <ClientRates />
+    <!-- Clients sous formule (distribution, MAD) : page à part (droit « formules et tarifs ») -->
+    <p class="text-sm text-gray-600">
+      Tarifs de la distribution à l'unité et des villes de l'intérieur :
+      <RouterLink to="/admin/formules" class="text-blue-600 underline">Formules et tarifs des clients</RouterLink>.
+    </p>
   </div>
 </template>
 
@@ -97,7 +100,6 @@ import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import { useToastStore } from '../../stores/toasts'
-import ClientRates from '../../components/ClientRates.vue'
 import ReturnFeeSettings from '../../components/settings/ReturnFeeSettings.vue'
 
 const toasts = useToastStore()
@@ -174,7 +176,7 @@ async function renameGrid() {
 
 async function deleteGrid() {
   const count = grid.value.merchants_count ?? 0
-  const consequence = count ? ` Ses ${count} e-commerçant(s) passeront sur la grille par défaut.` : ''
+  const consequence = count ? ` Ses ${count} client(s) passeront sur la grille par défaut.` : ''
   if (!window.confirm(`Supprimer la grille « ${grid.value.name} » et tous ses tarifs ?${consequence}`)) return
   try {
     await http.delete(`/pricing-grids/${gridId.value}`)

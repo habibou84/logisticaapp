@@ -16,7 +16,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 /**
- * Adresses webhook d'un marchand : création (secret montré une fois), test, journal des envois et renvoi.
+ * Adresses webhook d'un client : création (secret montré une fois), test, journal des envois et renvoi.
  */
 class WebhookController extends Controller
 {

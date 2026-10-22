@@ -49,7 +49,7 @@
       </div>
       <div>
         <label class="label" for="fr-search">Recherche</label>
-        <input id="fr-search" v-model="filters.search" type="search" class="input" placeholder="Code, client, texte…" @input="debouncedLoad">
+        <input id="fr-search" v-model="filters.search" type="search" class="input" placeholder="Code, client, destinataire, texte…" @input="debouncedLoad">
       </div>
     </div>
 
@@ -76,7 +76,7 @@
             </p>
             <p v-if="r.order" class="text-sm text-gray-600">
               📦 <RouterLink :to="`/admin/courses/${r.order.id}`" class="font-mono text-blue-700">{{ r.order.tracking_code }}</RouterLink>
-              · {{ r.order.merchant }} → {{ r.order.zone }} · {{ r.order.recipient_name || 'Client' }}
+              · {{ r.order.merchant }} → {{ r.order.zone }} · {{ r.order.recipient_name || 'Destinataire' }}
               <a :href="telLink(r.order.recipient_phone)" class="text-blue-600">{{ r.order.recipient_phone }}</a>
               · <span class="text-gray-500">{{ r.order.status_label }}</span>
             </p>

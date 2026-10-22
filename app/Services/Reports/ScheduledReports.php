@@ -12,7 +12,7 @@ use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 
 /**
- * Envoie les points d'activité programmés (quotidiens ou hebdomadaires) aux marchands.
+ * Envoie les points d'activité programmés (quotidiens ou hebdomadaires) aux clients.
  */
 class ScheduledReports
 {

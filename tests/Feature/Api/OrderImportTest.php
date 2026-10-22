@@ -110,7 +110,7 @@ class OrderImportTest extends TestCase
         $this->post('/api/v1/orders/import', ['file' => UploadedFile::fake()->create('courses.pdf', 10, 'application/pdf')])
             ->assertJsonValidationErrors('file');
 
-        // Le personnel importe pour un marchand
+        // Le personnel importe pour un client
         Sanctum::actingAs($this->dispatcher);
         $file = $this->csv("Téléphone;Commune;Montant\n0707070707;Yopougon;5000\n");
         $this->post('/api/v1/orders/import', ['file' => $file])->assertJsonValidationErrors('merchant_id');

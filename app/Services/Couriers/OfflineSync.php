@@ -131,7 +131,7 @@ class OfflineSync
     }
 
     /**
-     * Refus noté sur la course (dispatch), sans prévenir le marchand.
+     * Refus noté sur la course (dispatch), sans prévenir le client.
      */
     private function noteRejection(User $courier, Order $order, string $message): void
     {
@@ -145,7 +145,7 @@ class OfflineSync
     private function alertCodeToVerify(Order $order, User $courier): void
     {
         $users = User::forCompany($order->company_id)->where('status', 'active')
-            ->role([Role::Admin->value, Role::Dispatcher->value])->get();
+            ->role([Role::Admin->value, Role::ActivityManager->value, Role::Dispatcher->value])->get();
 
         if ($users->isNotEmpty()) {
             Notification::send($users, new OrderAlert(

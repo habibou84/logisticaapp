@@ -146,7 +146,7 @@ import http, { apiErrorMessage } from '../bootstrap/axios'
 import { useToastStore } from '../stores/toasts'
 import { date, dateTime } from '../utils/format'
 
-// merchantId : marchand choisi par l'administration (null pour le marchand lui-même)
+// merchantId : marchand choisi par l'administration (null pour le client lui-même)
 const props = defineProps({ merchantId: { type: Number, default: null }, staff: { type: Boolean, default: false } })
 
 const DELIVERY_STATUS = {
@@ -165,7 +165,7 @@ const keyForm = reactive({ open: false, name: '', scopes: ['orders:read', 'order
 const hookForm = reactive({ open: false, id: null, url: '', events: [], description: '', error: '' })
 const log = reactive({ id: null, items: [], open: null })
 
-// L'administration doit d'abord choisir un marchand
+// L'administration doit d'abord choisir un client
 const ready = computed(() => !props.staff || !!props.merchantId)
 const params = computed(() => (props.merchantId ? { merchant_id: props.merchantId } : {}))
 const tomorrow = computed(() => new Date(Date.now() + 86400000).toISOString().slice(0, 10))

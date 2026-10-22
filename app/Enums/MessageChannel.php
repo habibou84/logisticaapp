@@ -6,7 +6,7 @@ enum MessageChannel: string
 {
     case WhatsApp = 'whatsapp';
     case Sms = 'sms';
-    // Notification sur le téléphone de l'e-commerçant (application installée) : gratuite
+    // Notification sur le téléphone du client (application installée) : gratuite
     case Push = 'push';
 
     public function label(): string

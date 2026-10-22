@@ -7,7 +7,7 @@ use App\Models\Company;
 
 /**
  * Identité visuelle affichée sur les pages publiques (connexion, accueil des
- * e-commerçants) : l'entreprise de livraison qui exploite ce site.
+ * clients) : l'entreprise de livraison qui exploite ce site.
  * BRANDING_COMPANY (slug ou identifiant) la désigne si besoin ; sinon, la
  * première entreprise active.
  */
@@ -51,7 +51,7 @@ class Branding
             'email' => $company?->email,
             'address' => $company?->address,
             'logo_url' => self::logoUrl($company),
-            // Inscription en ligne des e-commerçants ouverte
+            // Inscription en ligne des clients ouverte
             'signup_open' => (bool) $company?->merchant_signup,
             // Couleurs des espaces, noms et icônes des applications
             'appearance' => Appearance::for($company),

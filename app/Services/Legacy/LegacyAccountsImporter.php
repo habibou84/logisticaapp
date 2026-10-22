@@ -19,7 +19,7 @@ use Throwable;
 
 /**
  * Reprise des comptes de l'ancienne application (Laravel 5.8, une base par entreprise) :
- * e-commerçants (table « clients ») et livreurs (« livreurs »), avec leur compte de
+ * clients (table « clients ») et livreurs (« livreurs »), avec leur compte de
  * connexion (« users » de type « client » ou « livreur ») et les autres comptes « client »
  * d'une boutique (ses employés). Les comptes de l'équipe (autres types) ne sont pas repris :
  * ils se recréent dans la nouvelle application, et une fiche client rattachée à un compte de
@@ -104,7 +104,7 @@ class LegacyAccountsImporter
             foreach ($clients as $client) {
                 $user = $this->accountOf($users, $client['user_id'], 'client_id', $client['id']);
                 if ($user !== null && ! $this->isType($user, self::CLIENT_TYPE)) {
-                    $this->skip('e-commerçant', $client['id'], $this->clean($client['nom']), 'rattaché à un compte de l\'équipe (type « '.($this->clean($user['usertype']) ?? 'aucun').' ») : non repris');
+                    $this->skip('client', $client['id'], $this->clean($client['nom']), 'rattaché à un compte de l\'équipe (type « '.($this->clean($user['usertype']) ?? 'aucun').' ») : non repris');
 
                     continue;
                 }
@@ -144,13 +144,13 @@ class LegacyAccountsImporter
         $phone = PhoneNumber::normalize($user['phone'] ?? null) ?? PhoneNumber::normalize($client['phone']);
 
         if ($phone === null) {
-            $this->skip('e-commerçant', $client['id'], $name, 'numéro absent ou invalide : « '.($client['phone'] ?? '').' »');
+            $this->skip('client', $client['id'], $name, 'numéro absent ou invalide : « '.($client['phone'] ?? '').' »');
 
             return;
         }
 
         if (User::takenIn($company->id, 'phone', $phone) || Merchant::forCompany($company->id)->where('phone', $phone)->exists()) {
-            $this->skip('e-commerçant', $client['id'], $name, 'numéro '.PhoneNumber::display($phone).' déjà présent (déjà importé ou déjà inscrit)');
+            $this->skip('client', $client['id'], $name, 'numéro '.PhoneNumber::display($phone).' déjà présent (déjà importé ou déjà inscrit)');
 
             return;
         }
@@ -160,7 +160,7 @@ class LegacyAccountsImporter
         [$lat, $lng] = $this->position($client['latitude'], $client['longitude']);
 
         if ($zone === null) {
-            $this->warn('e-commerçant', $client['id'], $name, 'commune « '.($client['city'] ?: $client['adresse']).' » non reconnue : zone de ramassage à choisir');
+            $this->warn('client', $client['id'], $name, 'commune « '.($client['city'] ?: $client['adresse']).' » non reconnue : zone de ramassage à choisir');
         }
 
         $merchant = new Merchant([
@@ -189,7 +189,7 @@ class LegacyAccountsImporter
             'phone' => $phone,
             'email' => $email,
             'status' => UserStatus::Active,
-        ], Role::MerchantOwner, 'e-commerçant', $client['id'], $merchant->business_name);
+        ], Role::MerchantOwner, 'client', $client['id'], $merchant->business_name);
 
         $this->counts['merchants']++;
 
@@ -199,7 +199,7 @@ class LegacyAccountsImporter
     }
 
     /**
-     * Autre compte de la boutique (employé) : même accès à l'espace e-commerçant que dans l'ancienne application.
+     * Autre compte de la boutique (employé) : même accès à l'espace client que dans l'ancienne application.
      *
      * @param  array<string, string|null>  $user
      */
@@ -209,12 +209,12 @@ class LegacyAccountsImporter
         $phone = PhoneNumber::normalize($user['phone'] ?? null);
 
         if ($phone === null) {
-            $this->skip('compte e-commerçant', $user['id'], $name, 'numéro absent ou invalide : « '.($user['phone'] ?? '').' »');
+            $this->skip('compte client', $user['id'], $name, 'numéro absent ou invalide : « '.($user['phone'] ?? '').' »');
 
             return;
         }
         if (User::takenIn($company->id, 'phone', $phone)) {
-            $this->skip('compte e-commerçant', $user['id'], $name, 'numéro '.PhoneNumber::display($phone).' déjà présent (déjà importé ou compte existant)');
+            $this->skip('compte client', $user['id'], $name, 'numéro '.PhoneNumber::display($phone).' déjà présent (déjà importé ou compte existant)');
 
             return;
         }
@@ -225,7 +225,7 @@ class LegacyAccountsImporter
             'phone' => $phone,
             'email' => $this->email($company, $user['email'] ?? null),
             'status' => UserStatus::Active,
-        ], Role::MerchantStaff, 'compte e-commerçant', $user['id'], $name);
+        ], Role::MerchantStaff, 'compte client', $user['id'], $name);
 
         $this->counts['merchant_users']++;
     }

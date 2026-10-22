@@ -18,7 +18,7 @@
       <button v-for="f in filters" :key="f.value" :class="['btn whitespace-nowrap', overdueOnly === f.value ? 'bg-slate-900 text-white' : 'bg-white border border-slate-300']" @click="overdueOnly = f.value; load()">
         {{ f.label }}
       </button>
-      <input v-model="search" type="search" class="input sm:w-64 ml-auto" placeholder="Livreur, code, client…" aria-label="Rechercher">
+      <input v-model="search" type="search" class="input sm:w-64 ml-auto" placeholder="Livreur, code, destinataire…" aria-label="Rechercher">
     </div>
 
     <section v-for="c in visible" :key="c.courier_id" class="card">
@@ -52,12 +52,12 @@
                 <RouterLink :to="`/admin/courses/${p.id}`" class="font-mono text-blue-700">{{ p.tracking_code }}</RouterLink>
                 <div class="text-xs text-gray-500">{{ p.merchant }}</div>
               </td>
-              <td class="p-2">{{ p.recipient_name || 'Client' }} <a :href="telLink(p.recipient_phone)" class="text-blue-600 text-xs">{{ p.recipient_phone }}</a><div class="text-xs text-gray-500">{{ p.zone }}</div></td>
+              <td class="p-2">{{ p.recipient_name || 'Destinataire' }} <a :href="telLink(p.recipient_phone)" class="text-blue-600 text-xs">{{ p.recipient_phone }}</a><div class="text-xs text-gray-500">{{ p.zone }}</div></td>
               <td class="p-2">
                 <span :class="['rounded-full px-2 py-0.5 text-xs font-medium', p.on_the_road ? 'bg-sky-100 text-sky-800' : 'bg-amber-100 text-amber-900']">{{ p.status_label }}</span>
                 <div v-if="p.incident" class="text-xs text-gray-600 mt-0.5">{{ p.incident }}</div>
                 <div v-if="p.rescheduled_to" class="text-xs text-gray-600">📅 {{ date(p.rescheduled_to) }}</div>
-                <div v-if="p.return_requested" class="text-xs text-rose-700 font-medium">↩️ Retour au marchand à organiser</div>
+                <div v-if="p.return_requested" class="text-xs text-rose-700 font-medium">↩️ Retour au client à organiser</div>
                 <div v-if="p.kept_for" class="text-xs text-indigo-700 font-medium">🌙 Gardé pour sa livraison du {{ date(p.kept_for) }}</div>
                 <div v-else-if="p.custody_plan === 'depot' && p.status === 'picked_up'" class="text-xs text-slate-700 font-medium">🏢 À rapporter au dépôt (mission ramassage)</div>
               </td>

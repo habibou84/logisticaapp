@@ -16,7 +16,7 @@ use Tests\TestCase;
 
 /**
  * Zones d'expédition : le livreur dépose le colis à une gare et paie le transporteur ;
- * les frais sont facturés au marchand et remboursés au livreur sur son versement.
+ * les frais sont facturés au client et remboursés au livreur sur son versement.
  */
 class ShippingTest extends TestCase
 {

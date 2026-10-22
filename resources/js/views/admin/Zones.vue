@@ -27,7 +27,7 @@
         <span>Zone d'expédition
           <span class="block text-gray-500">
             Le livreur dépose le colis à une gare ou chez un transporteur et paie l'envoi. Ces frais, saisis au réel par le livreur,
-            sont facturés au marchand et déduits de son point. Fixez le prix de la course jusqu'à la gare dans Tarifs.
+            sont facturés au client et déduits de son point. Fixez le prix de la course jusqu'à la gare dans Tarifs.
           </span>
         </span>
       </label>
@@ -93,7 +93,7 @@
     </div>
 
     <p class="text-xs text-gray-500">
-      Supprimer n'est possible que pour une zone jamais utilisée (ni course, ni e-commerçant, ni entrepôt, ni quartier) :
+      Supprimer n'est possible que pour une zone jamais utilisée (ni course, ni client, ni entrepôt, ni quartier) :
       ses tarifs sont supprimés avec elle. Une zone déjà utilisée se désactive : elle n'est plus proposée, l'historique est conservé.
     </p>
   </div>

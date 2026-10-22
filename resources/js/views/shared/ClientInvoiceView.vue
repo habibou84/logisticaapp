@@ -25,7 +25,7 @@
           <p v-if="company?.address" class="text-sm text-gray-600">{{ company.address }}</p>
           <p v-if="company?.phone || company?.email" class="text-sm text-gray-600">{{ [company.phone, company.email].filter(Boolean).join(' · ') }}</p>
           <h1 class="text-xl font-bold mt-3">Facture {{ invoice.number || '(brouillon)' }}</h1>
-          <p class="text-sm">{{ invoice.period_label }}</p>
+          <p class="text-sm">{{ invoice.activity_label }} · {{ invoice.period_label }}</p>
         </div>
         <div class="text-right text-sm">
           <p class="font-semibold text-base">{{ invoice.client.business_name }}</p>
@@ -137,7 +137,7 @@ const invoice = ref(null)
 const busy = ref(false)
 const printingAnnex = ref(false)
 const company = computed(() => auth.user?.company)
-const canManage = computed(() => !auth.user?.merchant_id && auth.can('finance.manage'))
+const canManage = computed(() => !auth.user?.merchant_id && auth.can('invoices.manage'))
 const line = reactive({ label: '', quantity: 1, unit_price: 0 })
 const payment = reactive({ amount: null, method: 'bank_transfer', reference: '', paid_on: today() })
 

@@ -28,10 +28,10 @@
       </div>
     </div>
 
-    <!-- Bons de retour à remettre aux marchands -->
+    <!-- Bons de retour à remettre aux clients -->
     <RouterLink v-for="s in returnSlips" :key="s.id" :to="`/livreur/retours/${s.id}`" class="tap block rounded-2xl bg-rose-600 text-white p-4 active:bg-rose-700">
       <span class="block font-semibold">📮 {{ s.orders_count }} colis à rendre à {{ s.merchant.business_name }}</span>
-      <span class="block text-sm text-white/80">Bon {{ s.reference }} · faites signer le marchand à la remise →</span>
+      <span class="block text-sm text-white/80">Bon {{ s.reference }} · faites signer le client à la remise →</span>
     </RouterLink>
 
     <!-- Consignes de l'agence non lues -->

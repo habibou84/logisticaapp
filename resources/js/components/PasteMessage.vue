@@ -4,7 +4,7 @@
       📋 Coller un message (WhatsApp, SMS…) pour remplir la course
     </button>
     <template v-else>
-      <label :class="mobile ? 'm-label' : 'label'" for="paste-message">{{ mobile ? 'Collez ici le message de votre client' : 'Message du client ou de l\'e-commerçant' }}</label>
+      <label :class="mobile ? 'm-label' : 'label'" for="paste-message">{{ mobile ? 'Collez ici le message de votre client' : 'Message du client ou du destinataire' }}</label>
       <textarea
         id="paste-message"
         ref="area"

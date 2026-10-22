@@ -15,7 +15,7 @@ use Illuminate\Http\Response;
 
 /**
  * Webhook de l'application Meta : accusés de remise des messages envoyés et
- * messages reçus des marchands (création de course par WhatsApp).
+ * messages reçus des clients (création de course par WhatsApp).
  */
 class WhatsAppWebhookController extends Controller
 {

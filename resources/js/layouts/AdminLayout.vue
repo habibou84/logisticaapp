@@ -241,7 +241,7 @@ const menu = computed(() => {
         { to: '/admin/planning', icon: '📅', label: 'Planning des livreurs', permission: 'orders.dispatch' },
         { to: '/admin/terrain', icon: '📣', label: 'Remontées terrain', permission: 'orders.dispatch', badge: fieldReports.open.total },
         { to: '/admin/colis-livreurs', icon: '🎒', label: 'Colis chez les livreurs', permission: 'orders.dispatch', badge: heldParcels.counts.overdue },
-        { to: '/admin/retours', icon: '📮', label: 'Retours marchands', permission: 'orders.dispatch' },
+        { to: '/admin/retours', icon: '📮', label: 'Retours clients', permission: 'orders.dispatch' },
       ],
     },
     {
@@ -249,7 +249,8 @@ const menu = computed(() => {
       label: 'Finances',
       items: [
         { to: '/admin/caisse', icon: '💰', label: 'Caisse', permission: 'finance.view' },
-        { to: '/admin/factures', icon: '📄', label: 'Factures clients', permission: 'finance.view' },
+        { to: '/admin/chiffre-affaires', icon: '📈', label: 'Chiffre d\'affaires', permission: 'revenue.view' },
+        { to: '/admin/factures', icon: '📄', label: 'Factures clients', permission: 'invoices.view' },
         { to: '/admin/paie-livreurs', icon: '🧾', label: 'Paie des livreurs', permission: 'settings.manage' },
       ],
     },
@@ -257,7 +258,8 @@ const menu = computed(() => {
       id: 'clients',
       label: 'Clients',
       items: [
-        { to: '/admin/marchands', icon: '🏪', label: 'E-commerçants', permission: 'merchants.view' },
+        { to: '/admin/marchands', icon: '🏪', label: 'Clients', permission: 'merchants.view' },
+        { to: '/admin/formules', icon: '🧮', label: 'Formules et tarifs', permission: 'rates.manage' },
         { to: '/admin/stock', icon: '🏬', label: 'Stock', permission: 'stock.manage' },
         { to: '/admin/messages', icon: '💬', label: 'Messages', permission: 'orders.dispatch' },
       ],

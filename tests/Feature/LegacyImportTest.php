@@ -14,7 +14,7 @@ use Tests\TestCase;
 
 /**
  * Reprise des comptes de l'ancienne application (Laravel 5.8) depuis un export phpMyAdmin :
- * e-commerçants et livreurs gardent leur numéro et leur mot de passe.
+ * clients et livreurs gardent leur numéro et leur mot de passe.
  */
 class LegacyImportTest extends TestCase
 {
@@ -61,7 +61,7 @@ class LegacyImportTest extends TestCase
     {
         $this->import()->assertSuccessful();
 
-        // E-commerçant avec son compte : zone reconnue, position, e-mail, mot de passe d'origine
+        // Client avec son compte : zone reconnue, position, e-mail, mot de passe d'origine
         $chic = Merchant::where('business_name', 'Boutique Chic')->sole();
         $this->assertSame('+2250711223344', $chic->phone);
         $this->assertSame($this->cocody->id, $chic->pickup_zone_id);
@@ -85,7 +85,7 @@ class LegacyImportTest extends TestCase
         $this->assertNull($jean->pickup_lat);
         $this->assertNull(User::where('phone', '+2250511223344')->value('email'));
 
-        // Fiche sans compte : e-commerçant créé, zone par la commune
+        // Fiche sans compte : client créé, zone par la commune
         $this->assertSame($this->yopougon->id, Merchant::where('phone', '+2250102030405')->value('pickup_zone_id'));
         $this->assertSame(1, User::where('phone', '+2250102030405')->count());
 
@@ -109,8 +109,8 @@ class LegacyImportTest extends TestCase
     {
         $this->import()
             ->expectsTable(['', 'Nombre'], [
-                ['E-commerçants importés', 3],
-                ['Autres comptes des e-commerçants', 0],
+                ['Clients importés', 3],
+                ['Autres comptes des clients', 0],
                 ['Livreurs importés', '2 (dont 1 suspendu(s))'],
                 ['Lignes non importées', 2],
                 ['Points à vérifier', 4],
@@ -134,8 +134,8 @@ class LegacyImportTest extends TestCase
         // Deuxième passage : tout est déjà là, aucun doublon
         $this->import()
             ->expectsTable(['', 'Nombre'], [
-                ['E-commerçants importés', 0],
-                ['Autres comptes des e-commerçants', 0],
+                ['Clients importés', 0],
+                ['Autres comptes des clients', 0],
                 ['Livreurs importés', 0],
                 ['Lignes non importées', 7],
                 ['Points à vérifier', 0],

@@ -15,7 +15,7 @@ use Tests\TestCase;
 
 /**
  * Suite donnée aux colis non livrés : files « À décider » et « Reportées »,
- * relivraison datée, retour au marchand, message au marchand.
+ * relivraison datée, retour au client, message au client.
  */
 class OrderDecisionTest extends TestCase
 {
@@ -77,7 +77,7 @@ class OrderDecisionTest extends TestCase
         $this->assertSame([$order->id], $this->queue('scheduled'));
         $this->assertNotContains($order->id, $this->queue('to_deliver'), 'Pas avant la date prévue');
 
-        // Le marchand est prévenu de la nouvelle date
+        // Le client est prévenu de la nouvelle date
         $message = OutboundMessage::where('template_name', 'incident_livraison')->latest('id')->first();
         $this->assertStringContainsString(today()->addDays(2)->format('d/m/Y'), $message->body);
 
@@ -184,7 +184,7 @@ class OrderDecisionTest extends TestCase
         $this->getJson("/api/v1/orders/{$failed->id}")->assertJsonPath('data.needs_decision', true)->assertJsonPath('data.merchant_decision', null);
         $this->assertSame([$failed->id], array_column($this->getJson('/api/v1/orders?queue=to_decide')->assertOk()->json('data'), 'id'));
 
-        // Le marchand reporte : plus à décider, et l'agence voit sa décision
+        // Le client reporte : plus à décider, et l'agence voit sa décision
         $this->move($failed, $this->merchantUser, 'rescheduled', ['rescheduled_to' => $tomorrow])->assertOk()
             ->assertJsonPath('data.needs_decision', false);
         $this->assertSame([], $this->queue('to_decide'));
@@ -202,7 +202,7 @@ class OrderDecisionTest extends TestCase
         $this->postJson("/api/v1/orders/{$failed->id}/assign", ['type' => 'delivery', 'courier_id' => $this->courierA->id])->assertOk();
         $this->move($failed, $this->merchantUser, 'rescheduled', ['rescheduled_to' => $tomorrow])->assertUnprocessable();
 
-        // Retour demandé par le marchand : plus à décider, mais l'agence le voit
+        // Retour demandé par le client : plus à décider, mais l'agence le voit
         $other = $this->failed();
         Sanctum::actingAs($this->merchantUser);
         $this->postJson("/api/v1/orders/{$other->id}/return-request")->assertSuccessful();

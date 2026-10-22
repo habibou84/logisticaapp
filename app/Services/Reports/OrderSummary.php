@@ -30,7 +30,7 @@ class OrderSummary
 
         $collected = $delivered->sum('collected_amount');
 
-        // Frais retenus, tels qu'inscrits au grand livre du marchand
+        // Frais retenus, tels qu'inscrits au grand livre du client
         $ledger = MerchantLedgerEntry::query()
             ->whereIn('order_id', $orders->pluck('id'))
             ->whereIn('type', [LedgerEntryType::DeliveryFee->value, LedgerEntryType::ReturnFee->value, LedgerEntryType::ShippingFee->value, LedgerEntryType::OtherFee->value])

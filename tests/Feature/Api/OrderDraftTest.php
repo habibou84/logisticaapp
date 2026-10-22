@@ -33,7 +33,7 @@ class OrderDraftTest extends TestCase
             ->assertJsonPath('data.items_amount', 15000)
             ->assertJsonPath('data.zones.0.id', $this->yopougon->id);
 
-        // L'e-commerçant aussi, depuis son application
+        // Le client aussi, depuis son application
         Sanctum::actingAs($this->merchantUser);
         $this->postJson('/api/v1/orders/parse-message', ['text' => 'Client 0505050505 Cocody'])
             ->assertOk()->assertJsonPath('data.zones.0.id', $this->cocody->id);

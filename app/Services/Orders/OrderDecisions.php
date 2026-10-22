@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Suite donnée à un colis non livré : relivrer à une date, le retourner au
- * marchand ou, pour une commande d'entrepôt, le remettre en stock. Le marchand
+ * marchand ou, pour une commande d'entrepôt, le remettre en stock. Le client
  * est prévenu par les messages liés aux événements de la course.
  */
 class OrderDecisions
@@ -84,7 +84,7 @@ class OrderDecisions
         }
 
         if (! $order->return_requested) {
-            $this->orders->requestReturn($actor, $order, $note ?? 'Retour au marchand décidé par l\'agence');
+            $this->orders->requestReturn($actor, $order, $note ?? 'Retour au client décidé par l\'agence');
         }
 
         if ($courier) {

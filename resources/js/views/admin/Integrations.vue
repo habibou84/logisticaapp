@@ -2,12 +2,12 @@
   <div class="max-w-4xl space-y-4">
     <h1 class="text-xl font-bold">Intégrations</h1>
     <div class="card p-4">
-      <label class="label" for="int-merchant">E-commerçant</label>
+      <label class="label" for="int-merchant">Client</label>
       <select id="int-merchant" v-model="merchantId" class="input">
         <option :value="null">Tous (consultation)</option>
         <option v-for="m in merchants" :key="m.id" :value="m.id">{{ m.business_name }}</option>
       </select>
-      <p class="text-xs text-gray-500 mt-1">Choisissez un e-commerçant pour lui créer une clé API ou une adresse webhook.</p>
+      <p class="text-xs text-gray-500 mt-1">Choisissez un client pour lui créer une clé API ou une adresse webhook.</p>
     </div>
     <Integrations :merchant-id="merchantId" staff />
   </div>

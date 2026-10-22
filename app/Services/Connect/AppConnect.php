@@ -18,9 +18,9 @@ use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 
 /**
- * Connexion en un clic d'une application (Jibiat Marchand) au compte d'un e-commerçant, sur le modèle
- * d'OAuth 2 avec PKCE : l'e-commerçant autorise l'accès, l'application reçoit un code à usage unique
- * qu'elle échange, avec son code_verifier, contre une clé d'API. Le marchand ne copie jamais de clé.
+ * Connexion en un clic d'une application (Jibiat Marchand) au compte d'un client, sur le modèle
+ * d'OAuth 2 avec PKCE : le client autorise l'accès, l'application reçoit un code à usage unique
+ * qu'elle échange, avec son code_verifier, contre une clé d'API. Le client ne copie jamais de clé.
  */
 class AppConnect
 {
@@ -70,7 +70,7 @@ class AppConnect
     }
 
     /**
-     * L'e-commerçant (gérant) autorise l'application : adresse de retour avec le code.
+     * Le client (gérant) autorise l'application : adresse de retour avec le code.
      */
     public function authorize(User $user, string $clientId, string $redirectUri, string $state, string $challenge, string $method = 'S256'): string
     {
@@ -130,7 +130,7 @@ class AppConnect
             $grant->forceFill(['used_at' => now()])->save();
             $merchant = $grant->merchant;
             if ($merchant === null || $merchant->status !== MerchantStatus::Active) {
-                throw new ConnectException('invalid_grant', 'Compte de l\'e-commerçant indisponible.');
+                throw new ConnectException('invalid_grant', 'Compte de le client indisponible.');
             }
 
             $client = config("connect.clients.{$clientId}");

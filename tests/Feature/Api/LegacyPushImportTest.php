@@ -13,7 +13,7 @@ use Tests\TestCase;
 
 /**
  * Reprise par le bouton de l'ancienne application : clé créée dans Paramètres, comptes envoyés
- * par paquets (e-commerçants, livreurs), mêmes numéros et mêmes mots de passe. L'équipe se recrée.
+ * par paquets (clients, livreurs), mêmes numéros et mêmes mots de passe. L'équipe se recrée.
  */
 class LegacyPushImportTest extends TestCase
 {
@@ -50,7 +50,7 @@ class LegacyPushImportTest extends TestCase
     {
         $key = $this->key();
 
-        // Paquet des e-commerçants : la boutique, son compte et un employé (users.client_id)
+        // Paquet des clients : la boutique, son compte et un employé (users.client_id)
         $this->send($key, [
             'step' => 'clients',
             'clients' => [['id' => 5, 'nom' => 'Boutique Chic', 'phone' => '0711223344', 'city' => 'cocody', 'adresse' => 'Riviera 3',

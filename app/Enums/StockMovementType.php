@@ -4,9 +4,9 @@ namespace App\Enums;
 
 enum StockMovementType: string
 {
-    // Marchandise déposée (à l'entrepôt ou déclarée chez le marchand)
+    // Marchandise déposée (à l'entrepôt ou déclarée chez le client)
     case Receipt = 'receipt';
-    // Marchandise reprise par le marchand ou sortie hors course
+    // Marchandise reprise par le client ou sortie hors course
     case Withdrawal = 'withdrawal';
     // Correction après inventaire
     case Adjustment = 'adjustment';

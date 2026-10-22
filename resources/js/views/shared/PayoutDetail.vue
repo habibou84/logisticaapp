@@ -29,7 +29,7 @@
         <div v-if="payout.total_storage_fees"><p class="text-gray-500">Stockage</p><p class="font-semibold">− {{ money(payout.total_storage_fees) }}</p></div>
         <div><p class="text-gray-500">Ajustements</p><p class="font-semibold">{{ money(payout.total_adjustments) }}</p></div>
         <div>
-          <p class="text-gray-500">{{ payout.net_amount >= 0 ? 'Net à reverser' : 'Net dû par le marchand' }}</p>
+          <p class="text-gray-500">{{ payout.net_amount >= 0 ? 'Net à reverser' : 'Net dû par le client' }}</p>
           <p :class="['font-bold text-lg', signedClass(payout.net_amount)]">{{ money(Math.abs(payout.net_amount)) }}</p>
         </div>
       </div>

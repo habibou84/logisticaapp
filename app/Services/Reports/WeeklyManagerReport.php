@@ -103,7 +103,7 @@ class WeeklyManagerReport
     }
 
     /**
-     * E-commerçants actifs qui n'ont plus créé de course depuis INACTIVE_DAYS jours.
+     * Clients actifs qui n'ont plus créé de course depuis INACTIVE_DAYS jours.
      */
     private function merchantsToRelaunch(Company $company): int
     {

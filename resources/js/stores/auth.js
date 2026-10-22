@@ -35,7 +35,7 @@ export const useAuthStore = defineStore('auth', {
         space: SERVER_SPACES[currentSpace()],
       })
 
-      // Application livreur ou e-commerçant (installée ou Android) : seuls les comptes de son espace
+      // Application livreur ou client (installée ou Android) : seuls les comptes de son espace
       const lock = appLock()
       if (lock && !lock.roles.includes(data.user?.role)) {
         await http.post('/auth/logout', null, { headers: { Authorization: `Bearer ${data.token}` } }).catch(() => {})
@@ -56,7 +56,7 @@ export const useAuthStore = defineStore('auth', {
     },
 
     /**
-     * Page d'un autre espace (ex. espace livreur ouvert après l'espace e-commerçant) : on reprend la
+     * Page d'un autre espace (ex. espace livreur ouvert après l'espace client) : on reprend la
      * session de cet espace, jamais celle de l'autre.
      */
     useSpace(space) {

@@ -5,7 +5,7 @@ Deux applications, publiées au nom de Jibiat et communes à toutes les entrepri
 | Application | Identifiant | Comptes acceptés |
 |---|---|---|
 | **Jibiat Livreur** | `com.jibiat.livreur` | livreurs |
-| **Jibiat E-commerçant** | `com.jibiat.ecommercant` | e-commerçants (propriétaire et employés) |
+| **Jibiat Client** | `com.jibiat.ecommercant` | clients (propriétaire et employés) |
 
 Elles reprennent les écrans du site (`resources/js`) avec [Capacitor](https://capacitorjs.com) : une évolution
 des écrans profite au site et aux applications.
@@ -18,7 +18,7 @@ des écrans profite au site et aux applications.
    logo et l'adresse du site de l'entreprise (domaine personnalisé s'il est actif).
 2. **Ensuite, tout passe par le site de l'entreprise** : connexion, API (`/api/v1`), temps réel, liens de suivi.
    Le code est gardé sur le téléphone ; « Changer d'entreprise » sur la page de connexion permet d'en choisir une autre.
-3. **Chaque application n'ouvre que son espace** : un e-commerçant qui se connecte à l'application livreur
+3. **Chaque application n'ouvre que son espace** : un client qui se connecte à l'application livreur
    (ou l'inverse) est renvoyé vers la bonne application ; les pages de l'administration ne s'y ouvrent pas.
 
 Côté serveur : origines des applications autorisées par CORS (`https://localhost` pour Android,
@@ -66,7 +66,7 @@ Les deux applications s'installent aussi depuis Chrome, chacune limitée à son 
 | Application | Lien d'installation | Portée (`scope`) | Connexion |
 |---|---|---|---|
 | Livreur | `/livreur` | `/livreur` | `/livreur/connexion` |
-| E-commerçant | `/marchand` (ou `/`) | `/marchand` | `/marchand/connexion` (même écran que `/`) |
+| Client | `/marchand` (ou `/`) | `/marchand` | `/marchand/connexion` (même écran que `/`) |
 
 Les portées ne doivent jamais se recouvrir : une application dont la portée est `/` couvre aussi
 `/livreur`, et Chrome affiche alors « application déjà installée » sur le lien de l'autre application.

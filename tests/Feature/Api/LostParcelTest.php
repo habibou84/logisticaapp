@@ -17,7 +17,7 @@ use Tests\Concerns\BuildsDeliveryWorld;
 use Tests\TestCase;
 
 /**
- * Colis perdu : déclaration par un administrateur, indemnité au marchand,
+ * Colis perdu : déclaration par un administrateur, indemnité au client,
  * retenue sur la paie du livreur, alerte « peut-être perdu ».
  */
 class LostParcelTest extends TestCase

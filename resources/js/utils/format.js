@@ -89,12 +89,13 @@ export const EVENT_LABELS = {
 
 export const ROLE_LABELS = {
   admin: 'Administrateur',
+  activity_manager: 'Responsable d\'activité',
   dispatcher: 'Dispatcher',
   cashier: 'Caissier',
   hub_agent: 'Agent de dépôt',
   courier: 'Livreur',
-  merchant_owner: 'E-commerçant',
-  merchant_staff: 'Employé e-commerçant',
+  merchant_owner: 'Client',
+  merchant_staff: 'Employé du client',
 }
 
 /** Numéro ivoirien tel qu'on le tape : +2250700000001 → 07 00 00 00 01 */

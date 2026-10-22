@@ -24,7 +24,7 @@ use Illuminate\Support\Facades\Notification;
 /**
  * Livreurs qui ont fini (ou presque) leur tournée, et ce qu'il y a à faire près d'eux.
  *  - charge : missions encore en cours (ramassage, livraison, retour) ;
- *  - « zone d'arrivée » : zone du dernier arrêt de la journée (ramassage chez le marchand,
+ *  - « zone d'arrivée » : zone du dernier arrêt de la journée (ramassage chez le client,
  *    livraison chez le client), avec la dernière position GPS si elle est récente ;
  *  - ramassages possibles près de lui : colis validés que personne ne va chercher, dans sa
  *    zone d'arrivée, dans ses zones habituelles ou à moins de RADIUS_KM de sa position.
@@ -105,7 +105,7 @@ class CourierAvailability
             ->get(['id', 'order_id', 'type', 'status', 'completed_at']);
         $last = $done->first();
 
-        // Zone du dernier arrêt : chez le marchand (ramassage, retour) ou chez le client (livraison)
+        // Zone du dernier arrêt : chez le client (ramassage, retour) ou chez le client (livraison)
         $arrivalZoneId = $last ? ($last->type === AssignmentType::Delivery ? $last->order?->delivery_zone_id : $last->order?->pickup_zone_id) : null;
 
         $fresh = $courier->current_lat !== null && $courier->last_location_at?->gt(now()->subMinutes(self::FRESH_POSITION_MINUTES));
@@ -147,7 +147,7 @@ class CourierAvailability
     }
 
     /**
-     * Colis validés que personne ne va chercher chez le marchand (même règle que les ramassages par client).
+     * Colis validés que personne ne va chercher chez le client (même règle que les ramassages par client).
      *
      * @return Collection<int, Order>
      */
@@ -296,7 +296,7 @@ class CourierAvailability
                     continue;
                 }
 
-                $users ??= User::forCompany($company->id)->where('status', 'active')->role([Role::Admin->value, Role::Dispatcher->value])->get();
+                $users ??= User::forCompany($company->id)->where('status', 'active')->role([Role::Admin->value, Role::ActivityManager->value, Role::Dispatcher->value])->get();
                 if ($users->isEmpty()) {
                     return;
                 }

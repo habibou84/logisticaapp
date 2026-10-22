@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 
 /**
- * Inscription en ligne d'un e-commerçant : une fois son numéro vérifié, la boutique
+ * Inscription en ligne d'un client : une fois son numéro vérifié, la boutique
  * et le compte du gérant sont créés et actifs aussitôt ; l'équipe est prévenue.
  */
 class MerchantSignup

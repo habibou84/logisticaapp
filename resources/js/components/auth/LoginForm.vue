@@ -73,7 +73,7 @@ const showPassword = ref(false)
 const error = ref('')
 const otherSpace = ref(null)
 const loading = ref(false)
-const SPACE_LABELS = { marchand: 'Aller à l\'espace e-commerçant', livreur: 'Aller à l\'espace livreur', admin: 'Aller à l\'espace équipe' }
+const SPACE_LABELS = { marchand: 'Aller à l\'espace client', livreur: 'Aller à l\'espace livreur', admin: 'Aller à l\'espace équipe' }
 
 const auth = useAuthStore()
 const router = useRouter()

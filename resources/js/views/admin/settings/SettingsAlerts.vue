@@ -38,7 +38,7 @@
         <h2 class="font-semibold">Point de la semaine</h2>
         <label class="flex items-start gap-2 text-sm">
           <input v-model="form.weekly_report" type="checkbox" class="mt-1">
-          <span>Envoyer le point de la semaine aux administrateurs<span class="block text-gray-500">Chaque lundi vers 7 h 30, par WhatsApp et dans la cloche : courses, taux de livraison, chiffre d'affaires, e-commerçants à relancer.</span></span>
+          <span>Envoyer le point de la semaine aux administrateurs<span class="block text-gray-500">Chaque lundi vers 7 h 30, par WhatsApp et dans la cloche : courses, taux de livraison, chiffre d'affaires, clients à relancer.</span></span>
         </label>
       </section>
 

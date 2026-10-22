@@ -18,7 +18,7 @@
         <!-- Étape 1 : informations de la boutique -->
         <form v-else class="space-y-4" novalidate @submit.prevent="submit">
           <div class="text-center space-y-1">
-            <h1 class="text-2xl font-bold">Créer mon compte e-commerçant</h1>
+            <h1 class="text-2xl font-bold">Créer mon compte client</h1>
             <p class="text-sm text-slate-500">Gratuit, en 2 minutes. Votre numéro sera vérifié par WhatsApp ou SMS.</p>
           </div>
 
@@ -115,7 +115,7 @@ const form = reactive({
   password: '', password_confirmation: '',
 })
 
-const contactLink = computed(() => whatsappLink(branding.phone, `Bonjour, je souhaite ouvrir un compte e-commerçant chez ${branding.name}.`))
+const contactLink = computed(() => whatsappLink(branding.phone, `Bonjour, je souhaite ouvrir un compte client chez ${branding.name}.`))
 
 async function submit() {
   busy.value = true

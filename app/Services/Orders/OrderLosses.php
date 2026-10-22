@@ -8,7 +8,7 @@ use App\Models\Order;
 use App\Models\User;
 
 /**
- * Déclaration d'un colis perdu : la course passe « Perdu », le marchand est
+ * Déclaration d'un colis perdu : la course passe « Perdu », le client est
  * indemnisé (écriture à son grand livre) et une retenue peut être faite sur la
  * paie du livreur responsable.
  */

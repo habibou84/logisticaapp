@@ -221,7 +221,7 @@ class OrderController extends Controller
                 ->with(['incidentReason', 'attachments'])
                 ->orderBy('id'),
             'assignments' => fn ($q) => $q->with(['courier.user', 'assignedBy'])->orderBy('id'),
-            // Le marchand ne voit que les frais qui lui sont facturés
+            // Le client ne voit que les frais qui lui sont facturés
             'expenses' => fn ($q) => $q->when($isMerchant, fn ($q) => $q->where('billed_to', 'merchant'))
                 ->with('courier.user')->orderBy('id'),
         ];

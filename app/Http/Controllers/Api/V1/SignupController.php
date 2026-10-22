@@ -20,7 +20,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 
 /**
- * Inscription en ligne d'un e-commerçant (page d'accueil du site). Le compte n'est
+ * Inscription en ligne d'un client (page d'accueil du site). Le compte n'est
  * créé qu'une fois le numéro vérifié (voir VerificationController), puis il est
  * actif aussitôt.
  */

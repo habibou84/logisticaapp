@@ -15,7 +15,7 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Validation\Rule;
 
 /**
- * Contrats de stockage : le marchand consulte les siens, l'administration les gère.
+ * Contrats de stockage : le client consulte les siens, l'administration les gère.
  */
 class StorageContractController extends Controller
 {

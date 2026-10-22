@@ -19,12 +19,12 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 
 /**
- * Commande passée sur la page du marchand (/b/{lien}) : le client choisit des produits,
+ * Commande passée sur la page du client (/b/{lien}) : le client choisit des produits,
  * sa commune, et paie à la livraison. La commande devient une course ordinaire.
  *
- * Stock : un produit dont le stock est suivi (chez le marchand ou dans un entrepôt) est
+ * Stock : un produit dont le stock est suivi (chez le client ou dans un entrepôt) est
  * réservé, et le colis part de l'emplacement qui a tout le nécessaire (l'entrepôt en
- * priorité) ; un produit sans stock suivi est un simple article, ramassé chez le marchand.
+ * priorité) ; un produit sans stock suivi est un simple article, ramassé chez le client.
  */
 class ShopCheckout
 {
@@ -88,7 +88,7 @@ class ShopCheckout
     }
 
     /**
-     * Crée la course et prévient le marchand.
+     * Crée la course et prévient le client.
      *
      * @param  array{name: string, phone: string, zone_id: int, address: string, landmark?: ?string, note?: ?string, items: list<array{product_id: int, quantity: int}>}  $data
      */
@@ -160,7 +160,7 @@ class ShopCheckout
 
     /**
      * Emplacement qui a tous les produits suivis en quantité suffisante : un entrepôt
-     * d'abord ; seulement chez le marchand s'il y a aussi des articles sans stock suivi.
+     * d'abord ; seulement chez le client s'il y a aussi des articles sans stock suivi.
      *
      * @param  Collection<int, Product>  $tracked
      * @param  array<int, int>  $quantities

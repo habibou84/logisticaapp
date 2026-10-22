@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * Entrepôt de l'entreprise : les marchands y déposent leurs produits, les commandes
+ * Entrepôt de l'entreprise : les clients y déposent leurs produits, les commandes
  * y sont préparées puis partent en livraison sans ramassage.
  */
 class Hub extends Model

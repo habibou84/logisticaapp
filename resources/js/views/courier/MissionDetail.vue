@@ -109,7 +109,7 @@
               <input id="shipfee" v-model.number="delivery.shipping_fee" type="number" min="0" inputmode="numeric" class="m-input text-2xl font-bold pr-12">
               <span class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-semibold">F</span>
             </div>
-            <p class="text-sm text-slate-500 mt-1">Facturés au marchand et déduits de ce que vous versez à la caisse.</p>
+            <p class="text-sm text-slate-500 mt-1">Facturés au client et déduits de ce que vous versez à la caisse.</p>
           </div>
           <div>
             <label class="m-label" for="ticket">Numéro du ticket</label>
@@ -163,7 +163,7 @@
           <input v-if="incident.when === 'other'" v-model="incident.date" type="date" :min="today()" class="m-input mt-2" aria-label="Date">
         </div>
         <textarea v-model="incident.note" rows="2" class="m-input" placeholder="Précisez (facultatif) : ex. téléphone éteint, 3 appels" />
-        <p class="text-xs text-slate-500">L'agence et le marchand sont prévenus immédiatement.</p>
+        <p class="text-xs text-slate-500">L'agence et le client sont prévenus immédiatement.</p>
         <p v-if="sheetError" class="text-red-600 text-sm">{{ sheetError }}</p>
         <button class="m-btn-danger" :disabled="busy || !incident.reason" @click="confirmIncident">Envoyer</button>
       </div>
@@ -181,7 +181,7 @@
             <span class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-semibold">F</span>
           </div>
         </div>
-        <p class="text-sm text-slate-500">Payé de votre poche ou avec une avance de la caisse : le montant est déduit de votre prochain versement et facturé au marchand.</p>
+        <p class="text-sm text-slate-500">Payé de votre poche ou avec une avance de la caisse : le montant est déduit de votre prochain versement et facturé au client.</p>
         <label class="m-btn-secondary cursor-pointer">
           📷 Photographier le reçu
           <input type="file" accept="image/*" capture="environment" class="hidden" @change="uploadPhoto">
@@ -201,7 +201,7 @@
     </BottomSheet>
 
     <!-- Note -->
-    <BottomSheet :open="sheet === 'note'" title="Note pour l'agence et le marchand" @close="sheet = null">
+    <BottomSheet :open="sheet === 'note'" title="Note pour l'agence et le client" @close="sheet = null">
       <div class="space-y-3">
         <textarea v-model="noteText" rows="3" class="m-input" placeholder="Ex. : le client demande de rappeler après 17h" />
         <button class="m-btn-primary" :disabled="busy || !noteText.trim()" @click="sendNote">Envoyer</button>
@@ -271,7 +271,7 @@ const active = computed(() => ['accepted', 'in_progress'].includes(mission.value
 const offlineEnabled = computed(() => !!auth.user?.company?.offline_courier_actions)
 const canReportIncident = computed(() => ['pickup_assigned', 'pickup_in_progress', 'out_for_delivery'].includes(order.value?.status))
 
-// Coordonnées utiles selon le type de mission : marchand (ramassage) ou client (livraison, retour au marchand)
+// Coordonnées utiles selon le type de mission : marchand (ramassage) ou client (livraison, retour au client)
 const target = computed(() => {
   const o = order.value
   const toMerchant = mission.value.type !== 'delivery'
@@ -289,7 +289,7 @@ const primary = computed(() => {
   if (t === 'delivery' && ['delivery_assigned', 'picked_up', 'at_hub', 'delivery_failed', 'rescheduled'].includes(s)) return { label: shipping.value ? '🚌 Je pars à la gare' : '🛵 Je pars livrer', class: 'm-btn-primary', action: () => move('out_for_delivery') }
   if (t === 'delivery' && s === 'out_for_delivery') return { label: shipping.value ? '✓ Colis expédié' : '✓ Colis livré', class: 'm-btn-success', action: openDelivered }
   if (t === 'return' && s === 'return_assigned') return { label: '🛵 Je rapporte le colis', class: 'm-btn-primary', action: () => move('returning') }
-  if (t === 'return' && ['return_assigned', 'returning'].includes(s)) return { label: '✓ Colis rendu au marchand', class: 'm-btn-success', action: () => move('returned') }
+  if (t === 'return' && ['return_assigned', 'returning'].includes(s)) return { label: '✓ Colis rendu au client', class: 'm-btn-success', action: () => move('returned') }
   return null
 })
 
@@ -451,7 +451,7 @@ async function confirmIncident() {
     }
     const result = await post(status, extra)
     sheet.value = null
-    toasts.success(result.offline ? OFFLINE_SAVED : 'Problème signalé à l\'agence et au marchand.')
+    toasts.success(result.offline ? OFFLINE_SAVED : 'Problème signalé à l\'agence et au client.')
     if (!result.offline) await load()
   } catch (e) {
     sheetError.value = apiErrorMessage(e)

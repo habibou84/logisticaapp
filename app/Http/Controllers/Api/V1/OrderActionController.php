@@ -53,7 +53,7 @@ class OrderActionController extends Controller
     }
 
     /**
-     * Suite donnée à un colis non livré : relivrer, retourner au marchand, remettre en stock.
+     * Suite donnée à un colis non livré : relivrer, retourner au client, remettre en stock.
      */
     public function decide(Request $request, Order $order): OrderResource
     {
@@ -70,7 +70,7 @@ class OrderActionController extends Controller
     }
 
     /**
-     * Colis perdu : indemnité au marchand, retenue éventuelle sur la paie du livreur.
+     * Colis perdu : indemnité au client, retenue éventuelle sur la paie du livreur.
      */
     public function declareLost(Request $request, Order $order): OrderResource
     {

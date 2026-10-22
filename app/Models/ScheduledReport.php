@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * Point d'activité envoyé automatiquement au marchand sur WhatsApp.
+ * Point d'activité envoyé automatiquement au client sur WhatsApp.
  */
 class ScheduledReport extends Model
 {

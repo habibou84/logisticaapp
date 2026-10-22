@@ -14,7 +14,7 @@ use Illuminate\Validation\ValidationException;
 
 /**
  * Statistiques de l'entreprise (back-office) : vue d'ensemble, livraisons, livreurs,
- * e-commerçants, zones, finances.
+ * clients, zones, finances.
  * Les montants (chiffre d'affaires, encaissements, gains) sont réservés aux comptes
  * qui voient la caisse.
  */
@@ -68,7 +68,7 @@ class StatisticsController extends Controller
     }
 
     /**
-     * Application de l'e-commerçant : ses propres courses (vue d'ensemble, qualité des
+     * Application du client : ses propres courses (vue d'ensemble, qualité des
      * livraisons, communes de livraison). Montants pour les comptes qui voient ses paiements.
      */
     public function merchant(Request $request): JsonResponse
@@ -100,7 +100,7 @@ class StatisticsController extends Controller
 
     private function stats(Request $request): Statistics
     {
-        // Personnel de l'entreprise seulement (pas les e-commerçants)
+        // Personnel de l'entreprise seulement (pas les clients)
         abort_if($request->user()->merchant_id !== null || $request->user()->company === null, 403);
 
         // Une activité choisie (dans le périmètre de l'utilisateur, filtré par ailleurs)

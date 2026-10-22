@@ -52,7 +52,7 @@ class StoreOrderRequest extends FormRequest
         $zone = Rule::exists('zones', 'id')->where('company_id', $companyId)->where('is_active', true);
 
         return [
-            // Le personnel choisit le marchand ; un marchand crée pour lui-même
+            // Le personnel choisit le client ; un client crée pour lui-même
             'merchant_id' => [
                 Rule::requiredIf($this->user()->merchant_id === null),
                 Rule::prohibitedIf($this->user()->merchant_id !== null),
@@ -95,13 +95,13 @@ class StoreOrderRequest extends FormRequest
             'delivery_delay' => ['nullable', Rule::enum(DeliveryDelay::class)],
             'is_fragile' => ['boolean'],
             'is_express' => ['boolean'],
-            // API : false quand l'application appelante prévient elle-même l'équipe du marchand
+            // API : false quand l'application appelante prévient elle-même l'équipe du client
             'notify_merchant' => ['sometimes', 'boolean'],
             'merchant_note' => ['nullable', 'string', 'max:1000'],
 
             'items_amount' => ['nullable', 'integer', 'min:0', 'max:100000000'],
             // Saisie dans l'application ou le back-office : choix explicite, jamais par défaut
-            // (API publique : réglage habituel du marchand si absent)
+            // (API publique : réglage habituel du client si absent)
             'fee_payer' => [Rule::requiredIf(! $this->is('api/public/*')), 'nullable', Rule::enum(FeePayer::class)],
 
             // Articles : produits du stock (réservés) ou articles libres
@@ -115,7 +115,7 @@ class StoreOrderRequest extends FormRequest
 
     public function messages(): array
     {
-        return ['fee_payer.required' => 'Indiquez qui paie la livraison : le marchand ou le client.'];
+        return ['fee_payer.required' => 'Indiquez qui paie la livraison : le client ou le client.'];
     }
 
     public function attributes(): array

@@ -15,7 +15,7 @@ class OrderEventResource extends JsonResource
     {
         $meta = $this->meta ?? [];
 
-        // Le marchand ne voit pas les identifiants internes
+        // Le client ne voit pas les identifiants internes
         if ($request->user()?->merchant_id !== null) {
             $meta = array_intersect_key($meta, array_flip(['type', 'type_label', 'courier_name', 'changes', 'collected_amount', 'source', 'shipping_fee', 'shipping_carrier', 'shipping_reference', 'channel']));
         }

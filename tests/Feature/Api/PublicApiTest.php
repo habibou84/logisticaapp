@@ -12,7 +12,7 @@ use Tests\Concerns\BuildsDeliveryWorld;
 use Tests\TestCase;
 
 /**
- * API publique des marchands : clés et portées, idempotence, quota, contrat des courses.
+ * API publique des clients : clés et portées, idempotence, quota, contrat des courses.
  */
 class PublicApiTest extends TestCase
 {
@@ -61,7 +61,7 @@ class PublicApiTest extends TestCase
         $this->deleteJson('/api/v1/api-keys/'.$response->json('data.id'))->assertOk()->assertJsonPath('data.is_active', false);
         $this->api('GET', 'orders', key: $plain)->assertUnauthorized();
 
-        // Un employé du marchand ne gère pas les clés ; l'administration le fait pour un marchand
+        // Un employé du client ne gère pas les clés ; l'administration le fait pour un client
         Sanctum::actingAs($this->userWithRole(Role::MerchantStaff, ['merchant_id' => $this->merchant->id]));
         $this->getJson('/api/v1/api-keys')->assertForbidden();
 

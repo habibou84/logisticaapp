@@ -16,8 +16,8 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 /**
- * API publique, compte du marchand : identité (/me), adresses webhook et reversements. Sert notamment aux
- * applications qui se connectent pour le marchand (Jibiat Marchand) : elles créent elles-mêmes leur adresse
+ * API publique, compte du client : identité (/me), adresses webhook et reversements. Sert notamment aux
+ * applications qui se connectent pour le client (Jibiat Marchand) : elles créent elles-mêmes leur adresse
  * webhook et rapprochent les reversements des courses.
  */
 class PublicAccountController extends Controller
@@ -124,7 +124,7 @@ class PublicAccountController extends Controller
     }
 
     /**
-     * Détail d'un reversement : les écritures, avec la course concernée (code de suivi, référence du marchand).
+     * Détail d'un reversement : les écritures, avec la course concernée (code de suivi, référence du client).
      */
     public function payout(Request $request, string $reference): JsonResponse
     {

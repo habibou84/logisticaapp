@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Facturation mensuelle du stockage : une écriture « Frais de stockage » au grand
- * livre de chaque marchand, déduite de son prochain reversement. Une seule
+ * livre de chaque client, déduite de son prochain reversement. Une seule
  * facturation par contrat et par mois : relancer la commande ne double rien.
  */
 class StorageBilling

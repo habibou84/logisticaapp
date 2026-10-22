@@ -1,5 +1,5 @@
 <template>
-  <!-- Connexion en un clic d'une application (Jibiat Marchand) au compte de l'e-commerçant -->
+  <!-- Connexion en un clic d'une application (Jibiat Marchand) au compte du client -->
   <div class="min-h-screen bg-slate-50 text-slate-900 px-4 py-8" :style="{ '--app-color': spaceColor('marchand') }">
     <div class="mx-auto w-full max-w-md space-y-5">
       <div class="flex justify-center"><BrandLogo size="md" /></div>

@@ -11,6 +11,13 @@
             <option value="custom">Dates au choix</option>
           </select>
         </div>
+        <div v-if="activities.length > 1">
+          <label class="label" for="st-activity">Activité</label>
+          <select id="st-activity" v-model="activity" class="input w-auto" @change="reloadAll">
+            <option value="">Toutes</option>
+            <option v-for="a in activities" :key="a.value" :value="a.value">{{ a.label }}</option>
+          </select>
+        </div>
         <div><label class="label" for="st-from">Du</label><input id="st-from" v-model="from" type="date" class="input w-auto" :max="to" @change="custom"></div>
         <div><label class="label" for="st-to">Au</label><input id="st-to" v-model="to" type="date" class="input w-auto" :min="from" :max="today()" @change="custom"></div>
       </div>
@@ -38,7 +45,7 @@
         <KpiTile title="Échecs de livraison" :value="ov.kpis.failed_attempts" :previous="ov.previous_kpis.failed_attempts" :higher-is-better="false" />
         <template v-if="ov.kpis.revenue !== null">
           <KpiTile title="Chiffre d'affaires (frais de livraison)" kind="money" :value="ov.kpis.revenue" :previous="ov.previous_kpis.revenue" />
-          <KpiTile title="Encaissé pour les marchands" kind="money" :value="ov.kpis.collected" :previous="ov.previous_kpis.collected" />
+          <KpiTile title="Encaissé pour les clients" kind="money" :value="ov.kpis.collected" :previous="ov.previous_kpis.collected" />
           <KpiTile title="Frais moyen par course" kind="money" :value="ov.kpis.average_fee" :previous="ov.previous_kpis.average_fee" />
         </template>
         <KpiTile title="Retours et annulations" :value="ov.kpis.returned + ov.kpis.cancelled" :previous="ov.previous_kpis.returned + ov.previous_kpis.cancelled" :higher-is-better="false" />
@@ -187,6 +194,7 @@ import ZonesTab from '../../components/stats/ZonesTab.vue'
 import { SERIES, compact, downloadCsv, shortDate } from '../../components/stats/chart'
 import { useAuthStore } from '../../stores/auth'
 import { date, money, today, waitDuration } from '../../utils/format'
+import { myActivities } from '../../utils/activities'
 
 const auth = useAuthStore()
 const route = useRoute()
@@ -229,7 +237,7 @@ const tabs = computed(() => [
   { key: 'overview', label: 'Vue d\'ensemble' },
   { key: 'deliveries', label: 'Livraisons' },
   ...(auth.can('orders.dispatch') ? [{ key: 'couriers', label: 'Livreurs' }] : []),
-  ...(auth.can('merchants.view') ? [{ key: 'merchants', label: 'E-commerçants' }] : []),
+  ...(auth.can('merchants.view') ? [{ key: 'merchants', label: 'Clients' }] : []),
   { key: 'zones', label: 'Zones' },
   ...(auth.can('finance.view') ? [{ key: 'finances', label: 'Finances' }] : []),
 ])
@@ -243,6 +251,9 @@ const tab = ref(tabs.value.some((t) => t.key === route.query.onglet) ? route.que
 const data = reactive(Object.fromEntries(Object.keys(ENDPOINTS).map((k) => [k, null])))
 const loading = ref(false)
 const error = ref('')
+// Statistiques d'une seule activité (vide : toutes celles de son périmètre)
+const activities = computed(() => myActivities(auth.user))
+const activity = ref('')
 const showTable = ref(false)
 
 const ov = computed(() => data.overview)
@@ -255,7 +266,7 @@ async function load() {
   error.value = ''
   const wanted = tab.value
   try {
-    const { data: res } = await http.get(ENDPOINTS[wanted], { params: { from: from.value, to: to.value } })
+    const { data: res } = await http.get(ENDPOINTS[wanted], { params: { from: from.value, to: to.value, activity: activity.value || undefined } })
     data[wanted] = res.data
   } catch (e) {
     error.value = apiErrorMessage(e)

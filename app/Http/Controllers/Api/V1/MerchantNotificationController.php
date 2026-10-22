@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 
 /**
- * Messages reçus par un marchand (notification sur son téléphone ou WhatsApp) :
+ * Messages reçus par un client (notification sur son téléphone ou WhatsApp) :
  * événements et points d'activité programmés.
  */
 class MerchantNotificationController extends Controller

@@ -26,8 +26,8 @@ enum Role: string
             self::Cashier => 'Caissier',
             self::HubAgent => 'Agent de dépôt',
             self::Courier => 'Livreur',
-            self::MerchantOwner => 'E-commerçant',
-            self::MerchantStaff => 'Employé e-commerçant',
+            self::MerchantOwner => 'Client',
+            self::MerchantStaff => 'Employé du client',
         };
     }
 
@@ -104,7 +104,7 @@ enum Role: string
 
     /**
      * Rôles qu'un utilisateur peut attribuer via la gestion des utilisateurs.
-     * Les rôles marchands seront attribués à la création des marchands (phase 1).
+     * Les rôles clients seront attribués à la création des clients (phase 1).
      *
      * @return list<self>
      */

@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 
 /**
- * Clé d'accès à l'API publique d'un marchand. Format : lv_<préfixe>_<secret>.
+ * Clé d'accès à l'API publique d'un client. Format : lv_<préfixe>_<secret>.
  * Seul le hash SHA-256 de la clé complète est conservé ; elle n'est affichée qu'à sa création.
  */
 class ApiKey extends Model
@@ -106,7 +106,7 @@ class ApiKey extends Model
     }
 
     /**
-     * Compte au nom duquel agit la clé : son créateur s'il est encore actif, sinon le gérant du marchand.
+     * Compte au nom duquel agit la clé : son créateur s'il est encore actif, sinon le gérant du client.
      */
     public function actor(): ?User
     {

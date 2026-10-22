@@ -65,7 +65,7 @@ class DeliveryDay
     }
 
     /**
-     * État de la journée pour les écrans (dispatch et application marchand).
+     * État de la journée pour les écrans (dispatch et application client).
      *
      * @return array<string, mixed>
      */

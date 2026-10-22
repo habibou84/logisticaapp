@@ -51,7 +51,7 @@ class AppearanceTest extends TestCase
             ->assertJsonPath('short_name', 'Express Livreur');
         $this->get('/livreur/connexion')->assertSee('<meta name="theme-color" content="#be123c">', false);
 
-        // Même apparence : la couleur de l'espace e-commerçant partout, les noms restent propres à chaque application
+        // Même apparence : la couleur de l'espace client partout, les noms restent propres à chaque application
         $this->putJson('/api/v1/company/appearance', ['same' => true, 'spaces' => $this->spaces()])->assertOk()
             ->assertJsonPath('data.spaces.livreur.color', '#7c3aed')
             ->assertJsonPath('data.spaces.admin.color', '#7c3aed')

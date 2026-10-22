@@ -95,8 +95,8 @@ class SetupGuideTest extends TestCase
         $this->assertTrue($order->is_test);
         $this->assertSame($this->admin->phone, $order->recipient_phone);
         $this->assertSame('Boutique d\'essai', $order->merchant->business_name);
-        // La boutique d'essai ne compte pas pour l'étape des e-commerçants
-        $this->assertStringContainsString('1 e-commerçant(s) actif(s)', $this->step('merchants')['lines'][0]);
+        // La boutique d'essai ne compte pas pour l'étape des clients
+        $this->assertStringContainsString('1 client(s) actif(s)', $this->step('merchants')['lines'][0]);
 
         $step = $this->step('first_delivery');
         $this->assertSame('partial', $step['status']);

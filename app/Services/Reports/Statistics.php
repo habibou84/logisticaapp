@@ -24,7 +24,7 @@ use Illuminate\Support\Collection;
 
 /**
  * Statistiques de l'entreprise sur une période (dates dans son fuseau horaire) :
- * vue d'ensemble, qualité des livraisons, livreurs, e-commerçants, zones, finances.
+ * vue d'ensemble, qualité des livraisons, livreurs, clients, zones, finances.
  *
  * Chaque événement compte à sa date : une course est « créée » le jour de sa création,
  * « livrée » le jour de sa livraison, etc. Les calculs se font en PHP sur les seules
@@ -36,7 +36,7 @@ class Statistics
     // Courses retenues pour le calcul (au-delà, la période est trop longue)
     public const MAX_DAYS = 366;
 
-    // E-commerçant « inactif » : plus de course depuis ce nombre de jours
+    // Client « inactif » : plus de course depuis ce nombre de jours
     public const INACTIVE_DAYS = 30;
 
     // Échecs de livraison : la course quitte « En chemin » avec un motif
@@ -46,7 +46,7 @@ class Statistics
 
     private string $tz;
 
-    // Statistiques d'un seul e-commerçant (son application) ; null = toute l'entreprise
+    // Statistiques d'un seul client (son application) ; null = toute l'entreprise
     private ?int $merchantId = null;
 
     // Une seule activité (e-commerce, distribution, MAD) ; null = toutes celles du périmètre
@@ -75,7 +75,7 @@ class Statistics
     }
 
     /**
-     * Les courses d'un seul e-commerçant (vue d'ensemble, livraisons, zones).
+     * Les courses d'un seul client (vue d'ensemble, livraisons, zones).
      */
     public function forMerchant(Merchant $merchant): self
     {
@@ -255,7 +255,7 @@ class Statistics
     }
 
     /**
-     * E-commerçants : volume, réussite et chiffre d'affaires de chacun ; nouveaux,
+     * Clients : volume, réussite et chiffre d'affaires de chacun ; nouveaux,
      * actifs, et ceux qui ne commandent plus (à relancer).
      *
      * @return array<string, mixed>
@@ -390,7 +390,7 @@ class Statistics
 
     /**
      * Finances : revenus, dépenses et marge de la période ; argent en circulation
-     * aujourd'hui (chez les livreurs, à reverser aux marchands).
+     * aujourd'hui (chez les livreurs, à reverser aux clients).
      *
      * @return array<string, mixed>
      */
@@ -430,7 +430,7 @@ class Statistics
             'margin_rate' => $revenueTotal > 0 ? round(($revenueTotal - $costTotal) / $revenueTotal * 100, 1) : null,
             'margin_per_order' => $delivered ? (int) round(($revenueTotal - $costTotal) / $delivered) : null,
             'delivered' => $delivered,
-            // Frais avancés puis refacturés aux marchands : ni revenu ni dépense
+            // Frais avancés puis refacturés aux clients : ni revenu ni dépense
             'rebilled' => -$entry(LedgerEntryType::ShippingFee) - $entry(LedgerEntryType::OtherFee),
             'months' => $this->monthly($from, $to),
             'circulation' => [
@@ -494,7 +494,7 @@ class Statistics
             'failed_attempts' => $this->failureEvents($from, $to)->count(),
             'returned' => $returned,
             'cancelled' => $this->ordersBetween('cancelled_at', $from, $to, ['id'])->count(),
-            // Courses terminées : livrées, ou revenues chez le marchand / perdues
+            // Courses terminées : livrées, ou revenues chez le client / perdues
             'success_rate' => $this->rate($delivered->count(), $delivered->count() + $returned + $lost),
             'revenue' => $withAmounts ? $revenue : null,
             'collected' => $withAmounts ? (int) $delivered->sum('collected_amount') : null,
@@ -514,7 +514,7 @@ class Statistics
     }
 
     /**
-     * Courses de l'entreprise, ou du seul e-commerçant choisi.
+     * Courses de l'entreprise, ou du seul client choisi.
      */
     private function orders()
     {

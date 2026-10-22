@@ -15,8 +15,8 @@ use Tests\Concerns\BuildsDeliveryWorld;
 use Tests\TestCase;
 
 /**
- * API publique, compte du marchand : /me, adresses webhook, reversements, preuves, origine des courses.
- * Ce que Jibiat Marchand utilise pour se connecter au nom d'un marchand.
+ * API publique, compte du client : /me, adresses webhook, reversements, preuves, origine des courses.
+ * Ce que Jibiat Marchand utilise pour se connecter au nom d'un client.
  */
 class PublicAccountApiTest extends TestCase
 {

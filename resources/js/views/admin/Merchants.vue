@@ -1,9 +1,13 @@
 <template>
   <div class="space-y-4">
     <div class="flex flex-wrap items-center justify-between gap-2">
-      <h1 class="text-xl font-bold">E-commerçants</h1>
+      <h1 class="text-xl font-bold">Clients</h1>
       <div class="flex flex-wrap items-center gap-2">
         <input v-model="search" class="input w-full sm:w-56" placeholder="Rechercher…" @input="debouncedLoad">
+        <select v-if="activities.length > 1" v-model="activity" class="input w-auto" aria-label="Activité" @change="load">
+          <option value="">Toutes les activités</option>
+          <option v-for="a in activities" :key="a.value" :value="a.value">{{ a.label }}</option>
+        </select>
         <label class="flex items-center gap-2 text-sm whitespace-nowrap">
           <input v-model="onlySignups" type="checkbox" @change="load"> Inscrits en ligne
         </label>
@@ -16,7 +20,7 @@
     <div class="card overflow-x-auto">
       <table class="w-full text-sm stack-table">
         <thead class="bg-slate-50 text-left text-gray-600">
-          <tr><th class="p-2">Nom</th><th class="p-2">Contact</th><th class="p-2">Ramassage</th><th class="p-2">Facturation</th><th class="p-2">Courses</th><th class="p-2">Statut</th><th /></tr>
+          <tr><th class="p-2">Nom</th><th class="p-2">Contact</th><th class="p-2">Ramassage</th><th class="p-2">Activités</th><th class="p-2">Facturation</th><th class="p-2">Courses</th><th class="p-2">Statut</th><th /></tr>
         </thead>
         <tbody class="divide-y">
           <tr v-for="m in merchants" :key="m.id">
@@ -33,15 +37,24 @@
                 {{ m.pickup_lat == null ? '⚠ sans position' : `📍 ${SOURCES[m.pickup_location_source] || 'localisé'}` }}
               </div>
             </td>
+            <td data-label="Activités" class="p-2">
+              <div class="flex flex-wrap gap-1">
+                <span v-for="a in m.activities" :key="a" :class="['rounded-full px-2 py-0.5 text-xs font-medium', activityBadge(a)]">{{ activityShort(a) }}</span>
+              </div>
+            </td>
             <td data-label="Facturation" class="p-2">
-              <template v-if="m.billing_plan">
-                <span class="rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700">{{ m.billing_plan.formula_label }}</span>
-                <div class="text-xs text-gray-500">Facture du mois</div>
-              </template>
-              <template v-else>
-                Courses ordinaires
-                <div class="text-xs text-gray-500">Frais payés par {{ m.default_fee_payer === 'recipient' ? 'le destinataire' : 'le marchand' }}</div>
-              </template>
+              <!-- Un seul bloc : la ligne devient une carte sur téléphone -->
+              <div class="space-y-0.5">
+                <div v-for="p in m.billing_plans || []" :key="p.id">
+                  <span class="rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700">{{ p.formula_label }}</span>
+                </div>
+                <div v-if="m.billing_plans?.length" class="text-xs text-gray-500">Facture du mois</div>
+                <template v-if="m.activities?.includes('ecommerce')">
+                  <div>E-commerce : courses une à une</div>
+                  <div class="text-xs text-gray-500">Frais payés par {{ m.default_fee_payer === 'recipient' ? 'le destinataire' : 'le client' }}</div>
+                </template>
+                <div v-else-if="!m.billing_plans?.length" class="text-xs text-amber-700">Sans formule en cours</div>
+              </div>
             </td>
             <td data-label="Courses" class="p-2">{{ m.orders_count }}</td>
             <td data-label="Statut" class="p-2"><span :class="m.status === 'active' ? 'text-emerald-700' : 'text-red-600'">{{ m.status === 'active' ? 'Actif' : 'Suspendu' }}</span></td>
@@ -51,17 +64,28 @@
               <button v-if="auth.can('merchants.manage')" class="text-blue-600" @click="openForm(m)">Modifier</button>
             </td>
           </tr>
-          <tr v-if="!merchants.length"><td colspan="7" class="p-6 text-center text-gray-500">Aucun e-commerçant.</td></tr>
+          <tr v-if="!merchants.length"><td colspan="8" class="p-6 text-center text-gray-500">Aucun client.</td></tr>
         </tbody>
       </table>
     </div>
 
     <BillingPlanModal :open="!!billing" :merchant="billing" @close="billing = null" @saved="load" />
 
-    <Modal :open="form.open" :title="form.id ? 'Modifier l\'e-commerçant' : 'Nouvel e-commerçant'" @close="form.open = false">
+    <Modal :open="form.open" :title="form.id ? 'Modifier le client' : 'Nouveau client'" @close="form.open = false">
       <form class="space-y-3" @submit.prevent="save">
         <div v-if="form.error" class="rounded bg-red-50 border border-red-200 text-red-700 text-sm px-3 py-2">{{ form.error }}</div>
         <div><label class="label">Nom commercial *</label><input v-model="form.data.business_name" class="input" required></div>
+        <fieldset class="border rounded p-3">
+          <legend class="text-sm font-medium px-1">Activités du client *</legend>
+          <div class="flex flex-wrap gap-x-4 gap-y-1">
+            <label v-for="a in activities" :key="a.value" class="flex items-center gap-2 text-sm">
+              <input v-model="form.activities" type="checkbox" :value="a.value"> {{ a.label }}
+            </label>
+          </div>
+          <p class="text-xs text-gray-500 mt-1">
+            Distribution et MAD : facture du mois selon la formule (bouton « Formule »). E-commerce : frais retenus sur les reversements.
+          </p>
+        </fieldset>
         <div class="grid grid-cols-2 gap-3">
           <div><label class="label">Contact</label><input v-model="form.data.contact_name" class="input"></div>
           <div><label class="label">Téléphone *</label><input v-model="form.data.phone" class="input" required></div>
@@ -80,9 +104,9 @@
         <fieldset class="border rounded p-3 space-y-2">
           <legend class="text-sm font-medium px-1">Position de ramassage (carte des livreurs)</legend>
           <p v-if="form.source && !locationChanged" class="text-xs text-gray-600">
-            {{ form.source === 'courier' ? 'Estimée d\'après les ramassages des livreurs' : form.source === 'merchant' ? 'Indiquée par le marchand depuis sa boutique' : 'Saisie par l\'agence' }}
+            {{ form.source === 'courier' ? 'Estimée d\'après les ramassages des livreurs' : form.source === 'merchant' ? 'Indiquée par le client depuis sa boutique' : 'Saisie par l\'agence' }}
           </p>
-          <p class="text-xs text-gray-500">Collez le lien Google Maps envoyé par le marchand (« Partager » → « Copier le lien »), ou placez le repère sur la carte.</p>
+          <p class="text-xs text-gray-500">Collez le lien Google Maps envoyé par le client (« Partager » → « Copier le lien »), ou placez le repère sur la carte.</p>
           <LocationPicker v-model="form.location" allow-link height="h-56" gps-label="📍 Ma position (sur place)" />
           <button v-if="form.location" type="button" class="text-xs text-red-600" @click="form.location = null">Retirer la position</button>
         </fieldset>
@@ -97,7 +121,7 @@
           <div>
             <label class="label">Frais payés par</label>
             <select v-model="form.data.default_fee_payer" class="input">
-              <option value="merchant">Marchand</option>
+              <option value="merchant">Client</option>
               <option value="recipient">Destinataire</option>
             </select>
           </div>
@@ -134,6 +158,7 @@ import LocationPicker from '../../components/LocationPicker.vue'
 import Modal from '../../components/Modal.vue'
 import { useAuthStore } from '../../stores/auth'
 import { useToastStore } from '../../stores/toasts'
+import { activityBadge, activityShort, myActivities } from '../../utils/activities'
 
 const auth = useAuthStore()
 const toasts = useToastStore()
@@ -141,13 +166,16 @@ const merchants = ref([])
 const zones = ref([])
 const grids = ref([])
 const search = ref('')
-// E-commerçant dont on ouvre la formule de facturation
+const activity = ref('')
+// Activités du périmètre de ce compte (cases du formulaire, filtre)
+const activities = computed(() => myActivities(auth.user))
+// Client dont on ouvre la formule de facturation
 const billing = ref(null)
 const route = useRoute()
-// Lien de la notification « Nouvel e-commerçant » : ?nouveaux=1
+// Lien de la notification « Nouveau client » : ?nouveaux=1
 const onlySignups = ref(!!route.query.nouveaux)
-const form = reactive({ open: false, id: null, data: {}, owner: {}, error: '', saving: false, location: null, initialLocation: null, source: null })
-const SOURCES = { merchant: 'par le marchand', staff: 'par l\'agence', courier: 'estimée (livreurs)' }
+const form = reactive({ open: false, id: null, data: {}, activities: [], owner: {}, error: '', saving: false, location: null, initialLocation: null, source: null })
+const SOURCES = { merchant: 'par le client', staff: 'par l\'agence', courier: 'estimée (livreurs)' }
 const locationChanged = computed(() => form.location?.lat !== form.initialLocation?.lat || form.location?.lng !== form.initialLocation?.lng)
 
 const FIELDS = ['business_name', 'contact_name', 'phone', 'whatsapp_phone', 'email', 'pickup_zone_id', 'pickup_address',
@@ -155,7 +183,7 @@ const FIELDS = ['business_name', 'contact_name', 'phone', 'whatsapp_phone', 'ema
 
 async function load() {
   merchants.value = (await http.get('/merchants', {
-    params: { search: search.value || undefined, source: onlySignups.value ? 'signup' : undefined, per_page: 200 },
+    params: { search: search.value || undefined, activity: activity.value || undefined, source: onlySignups.value ? 'signup' : undefined, per_page: 200 },
   })).data.data
 }
 
@@ -175,6 +203,9 @@ function openForm(merchant = null) {
   form.data = Object.fromEntries(FIELDS.map((f) => [f, merchant?.[f] ?? null]))
   form.data.default_fee_payer ??= 'merchant'
   form.data.status ??= 'active'
+  // Seules les activités de son périmètre se cochent ; les autres restent telles quelles (serveur)
+  const mine = activities.value.map((a) => a.value)
+  form.activities = merchant ? (merchant.activities || []).filter((a) => mine.includes(a)) : [mine[0]]
   form.owner = { name: '', phone: '', password: '' }
   form.location = merchant?.pickup_lat != null ? { lat: merchant.pickup_lat, lng: merchant.pickup_lng, accuracy: null } : null
   form.initialLocation = form.location ? { ...form.location } : null
@@ -188,6 +219,11 @@ async function save() {
   form.error = ''
   try {
     const payload = Object.fromEntries(Object.entries(form.data).filter(([k, v]) => v !== '' && (v !== null || form.id) && !(k === 'status' && !form.id)))
+    if (!form.activities.length) {
+      form.error = 'Cochez au moins une activité.'
+      return
+    }
+    payload.activities = [...form.activities]
     if (!form.id && form.owner.phone) payload.owner = { ...form.owner, name: form.owner.name || form.data.contact_name || form.data.business_name }
     const { data } = form.id ? await http.patch(`/merchants/${form.id}`, payload) : await http.post('/merchants', payload)
     // Position : seulement si elle a changé (garde la source « marchand » ou « livreurs » sinon)
@@ -195,7 +231,7 @@ async function save() {
       await http.put(`/merchants/${data.data.id}/pickup-location`, { lat: form.location?.lat ?? null, lng: form.location?.lng ?? null })
     }
     form.open = false
-    toasts.success('E-commerçant enregistré.')
+    toasts.success('Client enregistré.')
     load()
   } catch (e) {
     form.error = apiErrorMessage(e)

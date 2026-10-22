@@ -12,8 +12,8 @@ use Tests\Concerns\BuildsDeliveryWorld;
 use Tests\TestCase;
 
 /**
- * Actions du marchand par l'API publique (Jibiat Marchand) : modifier une course, décider après un échec,
- * demander le retour, laisser une note. Mêmes règles que dans l'application du marchand.
+ * Actions du client par l'API publique (Jibiat Marchand) : modifier une course, décider après un échec,
+ * demander le retour, laisser une note. Mêmes règles que dans l'application du client.
  */
 class PublicMerchantActionsTest extends TestCase
 {
@@ -95,7 +95,7 @@ class PublicMerchantActionsTest extends TestCase
         // Plus de décision attendue
         $this->api('POST', "orders/{$failed->tracking_code}/decision", ['decision' => 'return'])->assertStatus(422);
 
-        // Colis à faire revenir : visible par le dispatch comme une décision du marchand, via Jibiat Marchand
+        // Colis à faire revenir : visible par le dispatch comme une décision du client, via Jibiat Marchand
         $other = $this->failed();
         $this->api('POST', "orders/{$other->tracking_code}/decision", ['decision' => 'return', 'note' => 'Client injoignable'])
             ->assertOk()->assertJsonPath('data.return_requested', true);

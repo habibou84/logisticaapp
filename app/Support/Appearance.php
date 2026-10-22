@@ -6,9 +6,9 @@ use App\Models\Company;
 use Illuminate\Support\Facades\Storage;
 
 /**
- * Apparence des espaces de l'entreprise : couleur de l'espace e-commerçant, de l'espace livreur et de
+ * Apparence des espaces de l'entreprise : couleur de l'espace client, de l'espace livreur et de
  * l'espace équipe, nom et icône des deux applications installables. « Même apparence » : l'espace
- * livreur et l'espace équipe reprennent la couleur (et l'icône) de l'espace e-commerçant.
+ * livreur et l'espace équipe reprennent la couleur (et l'icône) de l'espace client.
  */
 class Appearance
 {
@@ -44,7 +44,7 @@ class Appearance
 
         foreach (self::SPACES as $space) {
             $own = $saved['spaces'][$space] ?? [];
-            // Même apparence : la couleur et l'icône de l'espace e-commerçant partout
+            // Même apparence : la couleur et l'icône de l'espace client partout
             $source = $same ? ($saved['spaces']['marchand'] ?? []) : $own;
             $spaces[$space] = ['color' => self::spaceColor($company, $space)];
             if (in_array($space, self::APPS, true)) {
@@ -62,8 +62,8 @@ class Appearance
     }
 
     /**
-     * Nom sous l'icône sans réglage : le nom de l'entreprise pour l'application e-commerçant
-     * (c'est elle que les e-commerçants reconnaissent), « Livreur » pour l'application livreur.
+     * Nom sous l'icône sans réglage : le nom de l'entreprise pour l'application client
+     * (c'est elle que les clients reconnaissent), « Livreur » pour l'application livreur.
      */
     public static function defaultAppName(?Company $company, string $app): string
     {
@@ -74,7 +74,7 @@ class Appearance
         return self::DEFAULTS[$app]['app_name'];
     }
 
-    /** Couleur d'un espace (celle de l'espace e-commerçant avec « même apparence ») */
+    /** Couleur d'un espace (celle de l'espace client avec « même apparence ») */
     public static function spaceColor(?Company $company, string $space): string
     {
         $saved = $company?->appearance ?? [];
@@ -88,7 +88,7 @@ class Appearance
         return is_string($value) && preg_match('/^#[0-9a-fA-F]{6}$/', $value) ? strtolower($value) : null;
     }
 
-    /** Fichier de l'icône envoyée pour cet espace (ou celle de l'e-commerçant avec « même apparence ») */
+    /** Fichier de l'icône envoyée pour cet espace (ou celle du client avec « même apparence ») */
     public static function iconPath(?Company $company, string $app): ?string
     {
         $saved = $company?->appearance ?? [];

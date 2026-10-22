@@ -3,7 +3,7 @@
     <div class="no-print mb-4 flex flex-wrap gap-2 items-center">
       <button class="btn-primary" @click="print">🖨️ Imprimer</button>
       <button class="btn-secondary" @click="$router.back()">← Retour</button>
-      <span class="text-sm text-gray-500">Format A4 · à faire signer par le marchand à la remise</span>
+      <span class="text-sm text-gray-500">Format A4 · à faire signer par le client à la remise</span>
     </div>
 
     <div class="bg-white text-black border border-black p-6 space-y-4">
@@ -22,7 +22,7 @@
 
       <section class="grid grid-cols-2 gap-4 text-sm border-t border-black pt-3">
         <div>
-          <p class="text-xs uppercase">Marchand</p>
+          <p class="text-xs uppercase">Client</p>
           <p class="font-semibold">{{ slip.merchant.business_name }}</p>
           <p>{{ slip.merchant.phone }}</p>
           <p>{{ [slip.merchant.zone, slip.merchant.address].filter(Boolean).join(' · ') }}</p>
@@ -67,8 +67,8 @@
           <p v-else class="border-b border-black h-8" />
         </div>
         <div>
-          <p class="text-xs uppercase">Signature du marchand</p>
-          <img v-if="signature" :src="signature" alt="Signature du marchand" class="h-28 object-contain">
+          <p class="text-xs uppercase">Signature du client</p>
+          <img v-if="signature" :src="signature" alt="Signature du client" class="h-28 object-contain">
           <div v-else class="border border-black h-28" />
         </div>
       </section>

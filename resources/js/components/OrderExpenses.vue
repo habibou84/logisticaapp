@@ -11,7 +11,7 @@
           {{ e.description }}
           <span class="block text-xs text-gray-500">
             {{ e.paid_by === 'courier' ? `Payé par ${e.courier_name || 'le livreur'}${e.refunded ? ' (remboursé)' : ''}` : 'Payé par l\'agence' }}
-            · {{ e.billed_to === 'merchant' ? 'facturé au marchand' : 'à la charge de l\'agence' }}
+            · {{ e.billed_to === 'merchant' ? 'facturé au client' : 'à la charge de l\'agence' }}
           </span>
         </span>
         <span class="flex items-start gap-2">
@@ -44,7 +44,7 @@
         <div>
           <label class="label" for="exp-billed">À la charge de</label>
           <select id="exp-billed" v-model="form.billed_to" class="input">
-            <option value="merchant">Marchand (déduit de son point)</option>
+            <option value="merchant">Client (déduit de son point)</option>
             <option value="company">Agence</option>
           </select>
         </div>

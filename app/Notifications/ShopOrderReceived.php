@@ -10,7 +10,7 @@ use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Notifications\Notification;
 
 /**
- * Commande reçue sur la page du marchand : cloche et temps réel de l'application marchand.
+ * Commande reçue sur la page du client : cloche et temps réel de l'application client.
  */
 class ShopOrderReceived extends Notification implements ShouldQueue
 {

@@ -11,7 +11,7 @@ use App\Models\Zone;
 
 /**
  * Calcule le tarif d'une course :
- * 1. grille négociée du marchand, sinon grille par défaut de l'entreprise ;
+ * 1. grille négociée du client, sinon grille par défaut de l'entreprise ;
  * 2. règle exacte (quartier -> quartier), puis zones parentes (communes),
  *    dans les deux sens si la règle est symétrique ;
  * 3. suppléments (express, fragile, poids).

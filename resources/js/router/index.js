@@ -21,18 +21,18 @@ const mobile = {
 const routes = [
   // Bouton « Connecter WhatsApp » : fenêtre de Meta ouverte depuis l'adresse de l'application (ticket)
   { path: '/connecter-whatsapp', name: 'whatsapp-connect', component: () => import('../views/auth/WhatsAppConnect.vue'), meta: { public: true } },
-  // Connexion en un clic d'une application (Jibiat Marchand) au compte de l'e-commerçant : la page gère
-  // elle-même la session de l'espace e-commerçant (connexion, ouverture de compte ou demande, autorisation)
+  // Connexion en un clic d'une application (Jibiat Marchand) au compte du client : la page gère
+  // elle-même la session de l'espace client (connexion, ouverture de compte ou demande, autorisation)
   { path: '/marchand/connecter', name: 'app-connect', component: () => import('../views/auth/AppConnect.vue'), meta: { public: true } },
-  // Pages de connexion : e-commerçants à la racine (page d'accueil du site), équipe et livreurs dans leur espace.
+  // Pages de connexion : clients à la racine (page d'accueil du site), équipe et livreurs dans leur espace.
   // Une fois connecté, chacun est renvoyé vers son espace, quelle que soit la page utilisée.
   { path: '/', name: 'home', component: () => import('../views/auth/MerchantHome.vue'), meta: { guest: true } },
   { path: '/admin/connexion', name: 'login-staff', component: () => import('../views/auth/StaffLogin.vue'), meta: { guest: true } },
-  // Application e-commerçant installée : sa connexion reste dans son espace (/marchand), sinon
+  // Application client installée : sa connexion reste dans son espace (/marchand), sinon
   // Chrome la confond avec l'application livreur (une application couvrant « / » couvre aussi /livreur)
   { path: '/marchand/connexion', name: 'login-merchant-app', component: () => import('../views/auth/MerchantHome.vue'), meta: { guest: true } },
   { path: '/livreur/connexion', name: 'login-courier', component: () => import('../views/auth/CourierLogin.vue'), meta: { guest: true } },
-  // Inscription des e-commerçants et mot de passe oublié (numéro vérifié par WhatsApp ou SMS)
+  // Inscription des clients et mot de passe oublié (numéro vérifié par WhatsApp ou SMS)
   { path: '/inscription', name: 'signup', component: () => import('../views/auth/Signup.vue'), meta: { guest: true } },
   { path: '/mot-de-passe-oublie', name: 'forgot-password', component: () => import('../views/auth/ForgotPassword.vue'), meta: { guest: true } },
   // Ancienne adresse de connexion
@@ -79,8 +79,11 @@ const routes = [
       { path: 'caisse', component: () => import('../views/admin/Finance.vue'), meta: { permission: 'finance.view' } },
       { path: 'caisse/reversements/:id(\\d+)', component: shared.payoutDetail, meta: { permission: 'finance.view' } },
       // Factures du mois des clients sous formule (distribution, MAD)
-      { path: 'factures', component: () => import('../views/admin/ClientInvoices.vue'), meta: { permission: 'finance.view' } },
-      { path: 'factures/:id(\\d+)', component: shared.clientInvoice, meta: { permission: 'finance.view' } },
+      { path: 'factures', component: () => import('../views/admin/ClientInvoices.vue'), meta: { permission: 'invoices.view' } },
+      { path: 'factures/:id(\\d+)', component: shared.clientInvoice, meta: { permission: 'invoices.view' } },
+      // Chiffre d'affaires par activité (e-commerce, distribution, MAD)
+      { path: 'chiffre-affaires', component: () => import('../views/admin/Revenue.vue'), meta: { permission: 'revenue.view' } },
+      { path: 'formules', component: () => import('../views/admin/ClientFormulas.vue'), meta: { permission: ['settings.manage', 'rates.manage'] } },
       // Réglages par thèmes (l'ancienne page « Paramètres » y mène)
       { path: 'mise-en-route', component: () => import('../views/admin/SetupGuide.vue'), meta: { permission: 'settings.manage' } },
       { path: 'reglages', component: () => import('../views/admin/settings/SettingsHub.vue'), meta: { permission: ['settings.manage', 'integrations.manage', 'users.view'] } },
@@ -108,14 +111,14 @@ const routes = [
       { path: 'stock', component: () => import('../views/admin/Stock.vue'), meta: { permission: 'stock.manage' } },
       { path: 'caisse', component: () => import('../views/courier/Wallet.vue'), meta: { title: 'Ma caisse' } },
       { path: 'messages', component: () => import('../views/courier/Messages.vue'), meta: { title: 'Consignes de l\'agence', back: true } },
-      { path: 'retours/:id(\\d+)', component: () => import('../views/courier/ReturnHandOver.vue'), meta: { title: 'Remise au marchand', back: true } },
+      { path: 'retours/:id(\\d+)', component: () => import('../views/courier/ReturnHandOver.vue'), meta: { title: 'Remise au client', back: true } },
       { path: 'notifications', component: mobile.notifications, meta: { title: 'Notifications', back: true } },
       { path: 'profil', component: mobile.profile, meta: { title: 'Mon profil' } },
       // Les notifications pointent vers /livreur/courses/:id : on renvoie vers la liste des missions
       { path: 'courses/:id', redirect: '/livreur' },
     ],
   },
-  // Application e-commerçant (PWA mobile)
+  // Application client (PWA mobile)
   {
     path: '/marchand',
     component: () => import('../views/merchant/MerchantApp.vue'),
@@ -163,7 +166,7 @@ router.beforeEach(async (to) => {
     if (to.path === '/' && lock.login !== '/') return auth.isAuthenticated ? lock.home : lock.login
   }
 
-  // Chaque espace a sa propre session (e-commerçant, livreur, équipe)
+  // Chaque espace a sa propre session (client, livreur, équipe)
   auth.useSpace(spaceForPath(to.path))
 
   if (to.meta.public) return true

@@ -19,14 +19,14 @@
     </div>
 
     <p v-if="!hubs.length && tab !== 'hubs'" class="rounded bg-amber-50 text-amber-900 text-sm p-3">
-      Aucun entrepôt : créez-en un dans l'onglet « Entrepôts » pour recevoir les produits des marchands.
+      Aucun entrepôt : créez-en un dans l'onglet « Entrepôts » pour recevoir les produits des clients.
     </p>
 
     <!-- Produits et niveaux -->
     <template v-if="tab === 'products'">
       <div class="card p-3 flex flex-wrap gap-2 items-end">
         <div>
-          <label class="label" for="f-merchant">E-commerçant</label>
+          <label class="label" for="f-merchant">Client</label>
           <select id="f-merchant" v-model="filters.merchant_id" class="input" @change="loadProducts(1)">
             <option :value="null">Tous</option>
             <option v-for="m in merchants" :key="m.id" :value="m.id">{{ m.business_name }}</option>
@@ -43,9 +43,9 @@
         <table class="w-full text-sm">
           <thead class="bg-slate-50 text-left text-gray-600">
             <tr>
-              <th class="p-2">Produit</th><th class="p-2">E-commerçant</th>
+              <th class="p-2">Produit</th><th class="p-2">Client</th>
               <th v-for="h in hubs" :key="h.id" class="p-2 text-right">{{ h.name }}</th>
-              <th class="p-2 text-right">Chez le marchand</th>
+              <th class="p-2 text-right">Chez le client</th>
               <th class="p-2 text-right">Disponible</th><th />
             </tr>
           </thead>
@@ -82,7 +82,7 @@
     <template v-if="tab === 'movements'">
       <div class="card p-3 flex flex-wrap gap-2 items-end">
         <div>
-          <label class="label" for="m-merchant">E-commerçant</label>
+          <label class="label" for="m-merchant">Client</label>
           <select id="m-merchant" v-model="moveFilters.merchant_id" class="input" @change="loadMovements(1)">
             <option :value="null">Tous</option>
             <option v-for="m in merchants" :key="m.id" :value="m.id">{{ m.business_name }}</option>
@@ -179,7 +179,7 @@
       <div class="card overflow-x-auto">
         <table class="w-full text-sm">
           <thead class="bg-slate-50 text-left text-gray-600">
-            <tr><th class="p-2">E-commerçant</th><th class="p-2">Entrepôt</th><th class="p-2">Tarif</th><th class="p-2">Période</th><th class="p-2">Dernières facturations</th><th /></tr>
+            <tr><th class="p-2">Client</th><th class="p-2">Entrepôt</th><th class="p-2">Tarif</th><th class="p-2">Période</th><th class="p-2">Dernières facturations</th><th /></tr>
           </thead>
           <tbody class="divide-y">
             <tr v-for="c in contracts" :key="c.id" :class="c.is_active ? '' : 'text-gray-400'">
@@ -217,7 +217,7 @@
         </div>
         <div>
           <label class="label" for="mv-note">Note</label>
-          <input id="mv-note" v-model="move.note" class="input" :placeholder="move.action === 'receipt' ? 'Ex. : dépôt du marchand, bon n° 12' : 'Ex. : repris par le marchand'">
+          <input id="mv-note" v-model="move.note" class="input" :placeholder="move.action === 'receipt' ? 'Ex. : dépôt du client, bon n° 12' : 'Ex. : repris par le client'">
         </div>
         <p v-if="move.error" class="field-error">{{ move.error }}</p>
         <button class="btn-primary w-full" :disabled="move.saving">Enregistrer</button>
@@ -228,7 +228,7 @@
     <Modal :open="product.open" :title="product.id ? 'Modifier le produit' : 'Nouveau produit'" @close="product.open = false">
       <form class="space-y-3" @submit.prevent="saveProduct">
         <div v-if="!product.id">
-          <label class="label" for="p-merchant">E-commerçant *</label>
+          <label class="label" for="p-merchant">Client *</label>
           <select id="p-merchant" v-model="product.form.merchant_id" class="input" required>
             <option v-for="m in merchants" :key="m.id" :value="m.id">{{ m.business_name }}</option>
           </select>
@@ -274,7 +274,7 @@
         <p v-if="contract.charged" class="text-sm rounded bg-slate-50 p-2">Contrat déjà facturé : seules la date de fin et la note peuvent changer.</p>
         <template v-if="!contract.charged">
           <div>
-            <label class="label" for="c-merchant">E-commerçant *</label>
+            <label class="label" for="c-merchant">Client *</label>
             <select id="c-merchant" v-model="contract.form.merchant_id" class="input" required>
               <option v-for="m in merchants" :key="m.id" :value="m.id">{{ m.business_name }}</option>
             </select>

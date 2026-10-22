@@ -16,7 +16,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
 
 /**
- * Page de commande publique d'un marchand (/b/{lien}) : catalogue, devis, commande
+ * Page de commande publique d'un client (/b/{lien}) : catalogue, devis, commande
  * en paiement à la livraison. Sans compte client.
  */
 class ShopController extends Controller

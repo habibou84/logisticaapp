@@ -2,12 +2,12 @@
   <section v-if="look" class="card p-4 space-y-4">
     <div>
       <h2 class="font-semibold">Apparence des espaces</h2>
-      <p class="text-sm text-gray-600">Couleurs de l'espace e-commerçant, de l'espace livreur et de l'espace équipe, nom et icône des applications installées sur les téléphones. Le logo ci-dessus s'affiche dans chaque espace.</p>
+      <p class="text-sm text-gray-600">Couleurs de l'espace client, de l'espace livreur et de l'espace équipe, nom et icône des applications installées sur les téléphones. Le logo ci-dessus s'affiche dans chaque espace.</p>
     </div>
 
     <label class="flex items-center gap-2 text-sm font-medium">
       <input v-model="look.same" type="checkbox">
-      Même apparence pour tous les espaces (couleur et icône de l'espace e-commerçant partout)
+      Même apparence pour tous les espaces (couleur et icône de l'espace client partout)
     </label>
 
     <div class="grid gap-4 md:grid-cols-3">
@@ -85,7 +85,7 @@ import { useToastStore } from '../stores/toasts'
  * Paramètres › Apparence : couleur de chaque espace, nom et icône des applications installables.
  */
 const SPACES = [
-  { key: 'marchand', label: 'Espace e-commerçant', preview: 'Mes livraisons', app: true, defaultName: 'Nom de l\'entreprise', emoji: '📦' },
+  { key: 'marchand', label: 'Espace client', preview: 'Mes livraisons', app: true, defaultName: 'Nom de l\'entreprise', emoji: '📦' },
   { key: 'livreur', label: 'Espace livreur', preview: 'Mes missions', app: true, defaultName: 'Livreur', emoji: '🛵' },
   { key: 'admin', label: 'Espace équipe', preview: 'Administration', app: false },
 ]
@@ -108,7 +108,7 @@ function tooLight(hex) {
 }
 
 function apply(data) {
-  // Champ vide quand le nom par défaut s'applique (nom de l'entreprise pour l'e-commerçant) : il suit
+  // Champ vide quand le nom par défaut s'applique (nom de l'entreprise pour le client) : il suit
   // alors un changement de nom de l'entreprise au lieu d'être enregistré tel quel
   for (const s of SPACES.filter((x) => x.app)) {
     const space = data.spaces[s.key]

@@ -6,7 +6,7 @@
         <button v-if="route.meta.back" class="h-11 w-11 grid place-items-center rounded-full active:bg-white/15" aria-label="Retour" @click="goBack">
           <svg viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M15 5l-7 7 7 7" /></svg>
         </button>
-        <!-- Initiales de la boutique (application marchand), sinon logo de l'entreprise (Paramètres › Logo) -->
+        <!-- Initiales de la boutique (application client), sinon logo de l'entreprise (Paramètres › Logo) -->
         <span v-if="!route.meta.back && initials" class="ml-1 h-8 w-8 shrink-0 rounded-lg bg-white grid place-items-center text-sm font-extrabold" :style="{ color }" aria-hidden="true">{{ initials }}</span>
         <img v-else-if="!route.meta.back && branding.logo_url" :src="branding.logo_url" alt="" class="ml-1 h-8 w-8 shrink-0 rounded-lg bg-white object-contain p-0.5">
         <h1 :class="['flex-1 truncate text-lg font-semibold', route.meta.back ? '' : 'pl-2']">{{ title }}</h1>
@@ -49,7 +49,7 @@
             :class="isActive(tab) ? '' : 'text-slate-500'"
           >
             <span class="relative">
-              <!-- Icône en couleur (application marchand), plus pâle quand l'onglet n'est pas ouvert -->
+              <!-- Icône en couleur (application client), plus pâle quand l'onglet n'est pas ouvert -->
               <span v-if="tab.emoji" :class="['block text-2xl leading-6 transition', isActive(tab) ? 'scale-110' : 'opacity-70 grayscale-[35%]']" aria-hidden="true">{{ tab.emoji }}</span>
               <component :is="tab.icon" v-else class="h-6 w-6" />
               <span v-if="tab.badge" class="absolute -top-1 -right-2 min-w-4 h-4 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold grid place-items-center">{{ tab.badge }}</span>

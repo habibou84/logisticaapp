@@ -63,7 +63,7 @@ class StoreMerchantRequest extends FormRequest
             'default_fee_payer' => ['nullable', Rule::enum(FeePayer::class)],
             'notes' => ['nullable', 'string', 'max:2000'],
 
-            // Compte de connexion du marchand (facultatif)
+            // Compte de connexion du client (facultatif)
             'owner' => ['nullable', 'array'],
             'owner.name' => ['required_with:owner', 'string', 'max:255'],
             'owner.phone' => ['required_with:owner', 'string', new PhoneNumber, User::uniqueIn($this->user()->company_id, 'phone')],

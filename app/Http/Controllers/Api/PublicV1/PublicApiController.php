@@ -34,8 +34,8 @@ use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
- * API publique d'un marchand (/api/public/v1), authentifiée par clé API.
- * Mêmes règles que l'application du marchand : la clé agit au nom d'un de ses comptes.
+ * API publique d'un client (/api/public/v1), authentifiée par clé API.
+ * Mêmes règles que l'application du client : la clé agit au nom d'un de ses comptes.
  */
 class PublicApiController extends Controller
 {
@@ -54,7 +54,7 @@ class PublicApiController extends Controller
 
     /**
      * Journée de livraison de l'entreprise : ouverte ou fermée (heure limite passée, fermée par l'agence),
-     * et premier jour de livraison possible. L'application du marchand l'affiche avant d'envoyer une course.
+     * et premier jour de livraison possible. L'application du client l'affiche avant d'envoyer une course.
      */
     public function deliveryDay(Request $request, DeliveryDay $day): JsonResponse
     {
@@ -137,7 +137,7 @@ class PublicApiController extends Controller
     }
 
     /**
-     * Modification par le marchand : tout avant le ramassage (le prix est recalculé), seulement la livraison
+     * Modification par le client : tout avant le ramassage (le prix est recalculé), seulement la livraison
      * ensuite, rien une fois le colis en route ou livré (règles de OrderService::update).
      */
     public function update(UpdatePublicOrderRequest $request, string $trackingCode, OrderService $service): PublicOrderResource
@@ -150,7 +150,7 @@ class PublicApiController extends Controller
     }
 
     /**
-     * Suite d'une livraison échouée, choisie par le marchand : relivrer à une date, ou faire revenir le colis.
+     * Suite d'une livraison échouée, choisie par le client : relivrer à une date, ou faire revenir le colis.
      */
     public function decision(Request $request, string $trackingCode, OrderWorkflow $workflow, OrderService $service): PublicOrderResource
     {
@@ -178,7 +178,7 @@ class PublicApiController extends Controller
     }
 
     /**
-     * Retour du colis demandé par le marchand (colis déjà ramassé : avant, il annule la course).
+     * Retour du colis demandé par le client (colis déjà ramassé : avant, il annule la course).
      */
     public function returnRequest(Request $request, string $trackingCode, OrderService $service): PublicOrderResource
     {
@@ -193,7 +193,7 @@ class PublicApiController extends Controller
     }
 
     /**
-     * Note du marchand pour l'agence et le livreur (« appeler avant », « portail bleu »…).
+     * Note du client pour l'agence et le livreur (« appeler avant », « portail bleu »…).
      */
     public function note(Request $request, string $trackingCode, OrderService $service): JsonResponse
     {

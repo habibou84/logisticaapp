@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * Reversement (relevé) au marchand : regroupe des écritures du grand livre.
+ * Reversement (relevé) au client : regroupe des écritures du grand livre.
  */
 class MerchantPayout extends Model
 {

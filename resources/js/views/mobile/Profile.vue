@@ -13,7 +13,7 @@
 
     <InstallBanner :app="app" />
 
-    <!-- E-commerçant : sa boutique, ses notifications, puis les outils avancés (usage rare) -->
+    <!-- Client : sa boutique, ses notifications, puis les outils avancés (usage rare) -->
     <h2 v-if="auth.user?.merchant_id" class="px-1 text-sm font-semibold text-slate-500 uppercase tracking-wide">Ma boutique</h2>
     <RouterLink v-if="auth.user?.merchant_id && auth.can('integrations.manage')" to="/marchand/boutique" class="tap m-card p-4 flex justify-between items-center active:bg-slate-50">
       <span class="font-medium">🛍️ Ma boutique en ligne<span class="block text-sm font-normal text-slate-500">Un lien de commande à partager sur WhatsApp et les réseaux</span></span><span class="text-slate-400">›</span>
@@ -25,8 +25,8 @@
         </span>
       </span><span class="text-slate-400">›</span>
     </RouterLink>
-    <RouterLink v-if="auth.user?.merchant?.billing_plan && auth.can('finance.view')" to="/marchand/factures" class="tap m-card p-4 flex justify-between items-center active:bg-slate-50">
-      <span class="font-medium">📄 Mes factures<span class="block text-sm font-normal text-slate-500">{{ auth.user.merchant.billing_plan.formula_label }} · facture du mois</span></span><span class="text-slate-400">›</span>
+    <RouterLink v-if="auth.user?.merchant?.billing_plans?.length && auth.can('finance.view')" to="/marchand/factures" class="tap m-card p-4 flex justify-between items-center active:bg-slate-50">
+      <span class="font-medium">📄 Mes factures<span class="block text-sm font-normal text-slate-500">{{ auth.user.merchant.billing_plans.map((p) => p.formula_label).join(', ') }} · facture du mois</span></span><span class="text-slate-400">›</span>
     </RouterLink>
     <RouterLink v-if="auth.user?.merchant_id" to="/marchand/stock" class="tap m-card p-4 flex justify-between items-center active:bg-slate-50">
       <span class="font-medium">📦 Mon stock</span><span class="text-slate-400">›</span>
@@ -86,7 +86,7 @@ async function logout() {
   // Actions faites hors connexion pas encore envoyées : elles attendraient la prochaine connexion
   if (offlineQueue.pending.length && !window.confirm(`${offlineQueue.pending.length} action(s) faite(s) hors connexion ne sont pas encore envoyées. Déconnecté, elles ne partiront que lorsque vous vous reconnecterez sur ce téléphone. Se déconnecter quand même ?`)) return
   await forgetPushDevice()
-  // Application installée : sa propre page de connexion (l'e-commerçant reste dans /marchand)
+  // Application installée : sa propre page de connexion (le client reste dans /marchand)
   const login = appLock()?.login || (auth.role === 'courier' ? '/livreur/connexion' : '/')
   await auth.logout()
   router.push(login)

@@ -1,4 +1,4 @@
-# Plan d'exécution : plateforme de gestion de livraison pour e-commerçants
+# Plan d'exécution : plateforme de gestion de livraison pour clients
 
 > Base existante : Laravel 12 (API + Sanctum) et SPA Vue 3 / Pinia / Tailwind.
 > Schéma complet de la base de données : [`database.dbml`](./database.dbml), importable tel quel sur https://dbdiagram.io.
@@ -9,7 +9,7 @@
 
 | Acteur | Ce qu'il fait |
 |---|---|
-| **E-commerçant** (marchand) | Crée des courses (dashboard, mobile, WhatsApp, API), suit leurs statuts, reçoit les alertes, consulte ses points (livrés / non livrés / reportés…), gère son stock. |
+| **Client** (marchand) | Crée des courses (dashboard, mobile, WhatsApp, API), suit leurs statuts, reçoit les alertes, consulte ses points (livrés / non livrés / reportés…), gère son stock. |
 | **Administrateur / dispatcher** | Reçoit les nouvelles courses en temps réel, assigne le **ramassage** puis la **livraison** (à deux livreurs différents si besoin), suit les incidents et gère la finance. |
 | **Livreur** | Reçoit ses ramassages et ses livraisons dans son application, met à jour les statuts, ajoute des notes et des preuves de livraison, encaisse. |
 | **Destinataire** *(acteur ajouté)* | Reçoit un lien de suivi et un code de livraison, et peut confirmer sa disponibilité. |
@@ -341,7 +341,7 @@ Hypothèse d'équipe : 2 développeurs full-stack, 1 développeur mobile et 1 ch
 
 Choix faits pendant la phase 0 :
 - **Un compte = une entreprise** : téléphone et e-mail sont uniques sur toute la plateforme, ce qui permet de se connecter sans choisir d'entreprise. Une personne travaillant pour deux entreprises aura deux comptes (deux numéros).
-- **Plus d'inscription publique** : les comptes du personnel et des livreurs sont créés par l'admin. L'inscription des e-commerçants arrivera avec le module marchands (phase 1).
+- **Plus d'inscription publique** : les comptes du personnel et des livreurs sont créés par l'admin. L'inscription des clients arrivera avec le module marchands (phase 1).
 - **Jetons d'API valables 30 jours** (`SANCTUM_EXPIRATION`), pour que les livreurs ne se reconnectent pas chaque jour. La suspension d'un compte ou le changement de mot de passe déconnecte tous ses appareils.
 
 ### Phase 1 : MVP opérationnel (5 à 6 semaines) ✅ *réalisée : premier jalon utilisable*
@@ -364,7 +364,7 @@ Choix faits pendant la phase 1 :
 - **Bon de retour groupé** (ajouté après la phase 7) : `return_slips` (colis d'un marchand rendus ensemble par un livreur), lien WhatsApp au marchand, remise signée à l'écran ou photographiée qui clôture les retours, bon imprimable.
 - **Colis perdu** (ajouté après la phase 7) : statut final `lost`, déclaration réservée à l'administrateur (`POST /orders/{id}/lost`), indemnité marchand (`lost_compensation` au grand livre), retenue livreur (`lost_parcel` sur la paie), alerte « peut-être perdu » aux administrateurs à trois fois le délai de garde.
 - **Notifications push des livreurs** (ajoutées après la phase 7) : Web Push natif (VAPID ES256 + chiffrement `aes128gcm`, sans dépendance), envoyé pour les nouvelles missions et les consignes de l'agence (`push_subscriptions`, un abonnement par appareil, purgé sur 404/410). Clés générées par `php artisan webpush:vapid`.
-- **Notifications des e-commerçants** (ajoutées après la plateforme) : les messages au marchand passent en notification push (canal `push` du journal `outbound_messages`) quand un de ses comptes a un appareil abonné et que l'entreprise l'a gardé activé (`companies.merchant_push_first`) ; une notification reçue par aucun appareil repart sur WhatsApp (`fallback_for_id`), puis SMS. Économise le coût des modèles WhatsApp utilitaires.
+- **Notifications des clients** (ajoutées après la plateforme) : les messages au marchand passent en notification push (canal `push` du journal `outbound_messages`) quand un de ses comptes a un appareil abonné et que l'entreprise l'a gardé activé (`companies.merchant_push_first`) ; une notification reçue par aucun appareil repart sur WhatsApp (`fallback_for_id`), puis SMS. Économise le coût des modèles WhatsApp utilitaires.
 - **Carte des livreurs** (ajoutée après la phase 7) : dernière position et missions en cours, en direct ; position envoyée toutes les 30 s pendant le service. **Historique des trajets** (`courier_locations`, 90 jours) : tracé de la journée, étapes des courses, distance ; points imprécis (> 150 m), à l'arrêt ou aberrants (> 130 km/h) écartés.
 - **Dépôts (hubs)** : le statut « Au dépôt » existe, mais la gestion de plusieurs dépôts est reportée (une seule entreprise = un dépôt implicite).
 - **Adresses** : pas de table `addresses` générique ; l'adresse de ramassage est portée par le marchand et copiée sur chaque course.

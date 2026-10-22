@@ -25,11 +25,11 @@ use Tests\Concerns\BuildsDeliveryWorld;
 use Tests\TestCase;
 
 /**
- * Synchronisation avec l'application du marchand (Jibiat Marchand) : rien ne doit changer sans qu'elle le sache.
+ * Synchronisation avec l'application du client (Jibiat Marchand) : rien ne doit changer sans qu'elle le sache.
  *  - « order.updated » pour un changement sans changement de statut (date, adresse, retour demandé…) ;
  *  - décision attendue et retour demandé dans la course ;
  *  - journée de livraison, rattrapage des reversements ;
- *  - pas d'alerte en double dans la cloche du marchand ; adresse webhook morte coupée.
+ *  - pas d'alerte en double dans la cloche du client ; adresse webhook morte coupée.
  */
 class PublicSyncTest extends TestCase
 {
@@ -75,7 +75,7 @@ class PublicSyncTest extends TestCase
         $order->forceFill(['status' => OrderStatus::Confirmed])->save();
         WebhookDelivery::query()->delete();
 
-        // Date et adresse modifiées par le marchand
+        // Date et adresse modifiées par le client
         $tomorrow = today()->addDay()->toDateString();
         app(OrderService::class)->update($this->merchantUser, $order, ['delivery_scheduled_date' => $tomorrow, 'delivery_address' => 'Siporex, face pharmacie']);
         $this->assertSame([['event' => 'order.updated', 'fields' => ['delivery_address', 'delivery_scheduled_date'], 'date' => $tomorrow]], $this->sentSorted());
@@ -160,7 +160,7 @@ class PublicSyncTest extends TestCase
             app(OrderWorkflow::class)->transition($this->dispatcher, $order, OrderStatus::Rejected, ['note' => 'Zone non desservie']);
         }
 
-        // Seule la course « normale » prévient le marchand ; l'agence est prévenue dans les deux cas
+        // Seule la course « normale » prévient le client ; l'agence est prévenue dans les deux cas
         Notification::assertSentToTimes($this->merchantUser, OrderAlert::class, 1);
         Notification::assertSentTo($this->merchantUser, OrderAlert::class, fn (OrderAlert $n) => $n->order->tracking_code === $normal);
 

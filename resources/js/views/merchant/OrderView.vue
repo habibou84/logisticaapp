@@ -99,7 +99,7 @@
       </div>
     </section>
 
-    <!-- Frais facturés au marchand -->
+    <!-- Frais facturés au client -->
     <section v-if="order.expenses?.length" class="m-card p-4 space-y-2 text-sm">
       <h2 class="font-semibold text-base">Frais de la course</h2>
       <div v-for="e in order.expenses" :key="e.id" :class="['flex justify-between gap-3', e.cancelled_at ? 'line-through text-slate-400' : '']">
@@ -235,7 +235,7 @@ const dayWord = (value) => {
 const hour = (value) => new Date(value).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
 const recipientName = computed(() => order.value.recipient.name || order.value.recipient.phone)
 
-// Phrase en tête : ce qui compte pour l'e-commerçant
+// Phrase en tête : ce qui compte pour le client
 const headline = computed(() => {
   const o = order.value
   if (o.status === 'delivered') return o.is_shipping ? `Expédiée pour ${recipientName.value}` : `Livrée à ${recipientName.value}`
@@ -259,7 +259,7 @@ const plannedDay = computed(() => {
 // Le livreur à joindre : celui de la livraison, sinon celui du ramassage, tant que la course est en cours
 const courier = computed(() => (isFinal.value ? null : order.value.delivery_courier || order.value.pickup_courier || null))
 
-// Ce qui revient à l'e-commerçant : encaissé − livraison − expédition − autres frais
+// Ce qui revient au client : encaissé − livraison − expédition − autres frais
 const collected = computed(() => order.value.amounts.collected_amount)
 const expensesTotal = computed(() => (order.value.expenses || []).filter((e) => !e.cancelled_at).reduce((sum, e) => sum + e.amount, 0))
 const shippingFee = computed(() => (order.value.is_shipping ? (order.value.shipping.fee ?? order.value.shipping.fee_estimate ?? 0) : 0))
@@ -269,7 +269,7 @@ const trackingUrl = computed(() => `${siteOrigin()}/suivi/${order.value.tracking
 const beforePickup = computed(() => BEFORE_PICKUP.includes(order.value?.status))
 const canEdit = computed(() => !isFinal.value && order.value?.status !== 'out_for_delivery')
 
-// Décision prise par le marchand (report sans livreur reparti) : encore modifiable
+// Décision prise par le client (report sans livreur reparti) : encore modifiable
 const canChangeDecision = computed(() => !!order.value.decision_editable)
 
 function openReschedule() {

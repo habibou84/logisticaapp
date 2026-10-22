@@ -3,7 +3,7 @@
     <div>
       <h2 class="font-semibold">Reprise de l'ancienne application</h2>
       <p class="text-sm text-gray-600">
-        Vos e-commerçants et livreurs arrivent depuis l'ancienne application avec un bouton, en gardant leur numéro
+        Vos clients et livreurs arrivent depuis l'ancienne application avec un bouton, en gardant leur numéro
         et leur mot de passe. Les commandes ne sont pas reprises, ni les comptes de l'équipe : recréez-les dans Utilisateurs.
       </p>
     </div>
@@ -42,7 +42,7 @@
     </div>
     <p class="text-xs text-gray-500">
       La clé est valable 7 jours ; une nouvelle clé remplace la précédente. Désactivez-la une fois la reprise terminée.
-      Créez d'abord vos zones : la commune de chaque e-commerçant sert à choisir sa zone de ramassage.
+      Créez d'abord vos zones : la commune de chaque client sert à choisir sa zone de ramassage.
     </p>
   </section>
 </template>

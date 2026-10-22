@@ -80,7 +80,7 @@ class CourierController extends Controller
     }
 
     /**
-     * Ramassages sans livreur, placés chez le marchand (position de la course, sinon celle du
+     * Ramassages sans livreur, placés chez le client (position de la course, sinon celle du
      * marchand), avec les livreurs en service les plus proches à vol d'oiseau.
      *
      * @param  Collection<int, array<string, mixed>>  $couriers

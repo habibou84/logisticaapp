@@ -151,7 +151,7 @@ class MerchantSignupTest extends TestCase
         $this->withToken($session->json('session.token'))->getJson('/api/v1/auth/me')->assertOk()
             ->assertJsonPath('data.phone', self::PHONE);
 
-        // Le marchand est désormais reconnu par le bot
+        // Le client est désormais reconnu par le bot
         $this->assertStringContainsString('Boutique Awa', $this->whatsapp(self::PHONE, 'Bonjour'));
     }
 

@@ -98,7 +98,7 @@ class OverdueParcels
         }
 
         $recipients = User::forCompany($company->id)->where('status', 'active')
-            ->role([Role::Admin->value, Role::Dispatcher->value])
+            ->role([Role::Admin->value, Role::ActivityManager->value, Role::Dispatcher->value])
             ->get();
 
         $sent = 0;

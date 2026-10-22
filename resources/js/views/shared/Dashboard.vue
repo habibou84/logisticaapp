@@ -83,7 +83,7 @@
       <StatCard title="Taux de livraison" :value="summary.delivery_rate === null ? '—' : `${summary.delivery_rate} %`" icon="📈" />
     </div>
 
-    <!-- Nouvelles courses : l'activité des e-commerçants, selon le jour de création -->
+    <!-- Nouvelles courses : l'activité des clients, selon le jour de création -->
     <section v-if="!isMerchant && created" class="card p-4">
       <div class="flex flex-wrap items-center justify-between gap-2">
         <h2 class="font-semibold">🆕 Nouvelles courses {{ isOneDay ? (period.from === today() ? 'du jour' : `du ${date(period.from)}`) : 'de la période' }}</h2>

@@ -140,7 +140,7 @@ class CourierMapTest extends TestCase
         $offDuty->update(['is_available' => false, 'current_lat' => 5.3601, 'current_lng' => -3.9700]);
 
         $order = app(OrderWorkflow::class)->transition($this->dispatcher, $this->createOrder(), OrderStatus::Confirmed);
-        // Sans position (ni sur la course ni chez le marchand) : listée, sans livreur proche
+        // Sans position (ni sur la course ni chez le client) : listée, sans livreur proche
         $otherMerchant = Merchant::factory()->create(['company_id' => $this->company->id, 'pickup_zone_id' => $this->cocody->id]);
         app(OrderWorkflow::class)->transition($this->dispatcher, $this->createOrder([], null, $otherMerchant), OrderStatus::Confirmed);
 

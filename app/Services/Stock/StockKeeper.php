@@ -31,7 +31,7 @@ use Illuminate\Support\Facades\Notification;
 class StockKeeper
 {
     /**
-     * Emplacement du stock d'un marchand : chez lui (hub null) ou dans un entrepôt.
+     * Emplacement du stock d'un client : chez lui (hub null) ou dans un entrepôt.
      */
     public function location(Merchant $merchant, ?Hub $hub = null): StockLocation
     {
@@ -141,7 +141,7 @@ class StockKeeper
             OrderStatus::Delivered => $this->ship($order, $actor),
             OrderStatus::Cancelled => $this->release($order, $actor, 'Course annulée'),
             OrderStatus::Rejected => $this->release($order, $actor, 'Course refusée'),
-            OrderStatus::Returned => $this->release($order, $actor, $order->fromWarehouse() ? 'Colis remis en stock' : 'Colis retourné au marchand'),
+            OrderStatus::Returned => $this->release($order, $actor, $order->fromWarehouse() ? 'Colis remis en stock' : 'Colis retourné au client'),
             OrderStatus::Lost => $this->lose($order, $actor),
             default => null,
         };
@@ -183,7 +183,7 @@ class StockKeeper
         ?callable $check = null,
     ): StockMovement {
         if ($product->merchant_id !== $location->merchant_id) {
-            throw new BusinessRuleException('Ce produit n\'appartient pas à ce marchand.', 'product_id');
+            throw new BusinessRuleException('Ce produit n\'appartient pas à ce client.', 'product_id');
         }
 
         return DB::transaction(function () use ($product, $location, $type, $onHandChange, $reservedChange, $actor, $order, $note, $check) {

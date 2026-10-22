@@ -26,7 +26,7 @@
         <input v-model="postpone" type="checkbox" class="mt-1">
         <span>
           Reporter aussi au {{ longDay(day.next_day) }} les <strong>{{ day.today_open_count }}</strong> course(s) du jour pas encore parties en livraison
-          <span class="block text-xs text-gray-500">Celles en attente sont validées ; chaque marchand reçoit la nouvelle date. Les ramassages prévus restent pour aujourd'hui.</span>
+          <span class="block text-xs text-gray-500">Celles en attente sont validées ; chaque client reçoit la nouvelle date. Les ramassages prévus restent pour aujourd'hui.</span>
         </span>
       </label>
       <div class="flex gap-2">

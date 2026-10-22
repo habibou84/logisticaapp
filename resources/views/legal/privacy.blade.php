@@ -38,7 +38,7 @@
 
     <h2>1. Qui est responsable de vos données ?</h2>
     <p>
-        {{ $operator }} est responsable des données de ses e-commerçants, de ses livreurs et des destinataires des colis :
+        {{ $operator }} est responsable des données de ses clients, de ses livreurs et des destinataires des colis :
         c'est elle qui décide de leur utilisation.
     </p>
 
@@ -47,7 +47,7 @@
         <li><strong>Comptes</strong> : nom, numéro de téléphone, adresse e-mail (facultative), mot de passe chiffré, rôle.</li>
         <li><strong>Courses</strong> : nom, téléphone et adresse du destinataire, repère, montant à encaisser, contenu déclaré,
             historique de la course (étapes, incidents, preuves de livraison et photos).</li>
-        <li><strong>E-commerçants</strong> : nom de la boutique, contact, lieu de ramassage, relevés et reversements.</li>
+        <li><strong>Clients</strong> : nom de la boutique, contact, lieu de ramassage, relevés et reversements.</li>
         <li><strong>Livreurs</strong> : position pendant les missions (pour le suivi et la répartition des courses),
             encaissements, versements et paie.</li>
         <li><strong>Messages</strong> : messages WhatsApp et SMS envoyés ou reçus par l'entreprise de livraison
@@ -57,8 +57,8 @@
 
     <h2>3. Pourquoi ?</h2>
     <ul>
-        <li>Organiser et suivre les livraisons, prévenir les destinataires et les e-commerçants.</li>
-        <li>Tenir la caisse : encaissements, reversements aux e-commerçants, paie des livreurs.</li>
+        <li>Organiser et suivre les livraisons, prévenir les destinataires et les clients.</li>
+        <li>Tenir la caisse : encaissements, reversements aux clients, paie des livreurs.</li>
         <li>Recevoir des commandes par WhatsApp et répondre aux messages.</li>
         <li>Sécuriser les comptes (vérification du numéro, prévention des abus) et respecter nos obligations légales.</li>
     </ul>
@@ -97,7 +97,7 @@
     <h2 id="suppression">8. Supprimer vos données</h2>
     <p>Pour demander la suppression de vos données (y compris celles liées à WhatsApp) :</p>
     <ul>
-        <li>e-commerçant ou livreur : demandez la fermeture de votre compte à {{ $operator }} ;</li>
+        <li>client ou livreur : demandez la fermeture de votre compte à {{ $operator }} ;</li>
         <li>destinataire d'un colis : écrivez-nous
             @if ($email) à <a href="mailto:{{ $email }}?subject=Suppression%20de%20mes%20donn%C3%A9es">{{ $email }}</a>@endif
             en indiquant votre numéro de téléphone.</li>

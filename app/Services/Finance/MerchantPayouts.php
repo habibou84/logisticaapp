@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
- * Reversements aux marchands. Un reversement regroupe les écritures non encore
+ * Reversements aux clients. Un reversement regroupe les écritures non encore
  * reversées, sauf celles des courses dont l'argent est encore chez un livreur :
  * on ne reverse que ce que la caisse a réellement reçu.
  */
@@ -45,7 +45,7 @@ class MerchantPayouts
     }
 
     /**
-     * Solde du marchand : disponible, en attente de versement des livreurs, total.
+     * Solde du client : disponible, en attente de versement des livreurs, total.
      *
      * @return array{available: int, pending_cash: int, unpaid_total: int, balance: int}
      */
@@ -66,7 +66,7 @@ class MerchantPayouts
     }
 
     /**
-     * Soldes de tous les marchands de l'entreprise en deux requêtes groupées.
+     * Soldes de tous les clients de l'entreprise en deux requêtes groupées.
      *
      * @return array<int, array{available: int, pending_cash: int, unpaid_total: int}>
      */
@@ -97,7 +97,7 @@ class MerchantPayouts
             $entries = $this->eligibleEntries($merchant)->lockForUpdate()->get();
 
             if ($entries->isEmpty()) {
-                throw new BusinessRuleException('Rien à reverser pour ce marchand pour le moment.', 'merchant_id');
+                throw new BusinessRuleException('Rien à reverser pour ce client pour le moment.', 'merchant_id');
             }
 
             $sum = fn (array $types) => $entries->filter(fn ($e) => in_array($e->type, $types, true))->sum('amount');

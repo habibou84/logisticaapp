@@ -56,7 +56,7 @@ class OrderDispatcher
 
             if ($order->fromWarehouse()) {
                 match (true) {
-                    $type === AssignmentType::Pickup => throw new BusinessRuleException('Cette commande part de l\'entrepôt : pas de ramassage chez le marchand.', 'type'),
+                    $type === AssignmentType::Pickup => throw new BusinessRuleException('Cette commande part de l\'entrepôt : pas de ramassage chez le client.', 'type'),
                     $type === AssignmentType::Return => throw new BusinessRuleException('Commande d\'entrepôt : remettez le colis en stock à son retour au dépôt.', 'type'),
                     $order->prepared_at === null => throw new BusinessRuleException('Préparez d\'abord la commande à l\'entrepôt.', 'type'),
                     default => null,

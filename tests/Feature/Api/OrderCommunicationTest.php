@@ -151,7 +151,7 @@ class OrderCommunicationTest extends TestCase
         $proof = collect($this->getJson("/api/v1/orders/{$order->id}")->json('data.events'))->firstWhere('type', 'proof_added');
         $this->assertSame('photo_delivery', $proof['attachments'][0]['type']);
 
-        // Le marchand ne dépose pas de preuve ; un autre livreur ne voit pas la photo
+        // Le client ne dépose pas de preuve ; un autre livreur ne voit pas la photo
         $this->postJson("/api/v1/orders/{$order->id}/attachments", [
             'file' => UploadedFile::fake()->image('x.jpg'), 'type' => 'document',
         ])->assertForbidden();

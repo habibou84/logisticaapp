@@ -32,7 +32,7 @@ class PayPlanTemplates
             [
                 'key' => 'percent',
                 'name' => 'Pourcentage des frais',
-                'description' => 'Le livreur touche une part des frais de livraison, avec un minimum par course ; ramassage payé par passage chez le marchand.',
+                'description' => 'Le livreur touche une part des frais de livraison, avec un minimum par course ; ramassage payé par passage chez le client.',
                 'plan' => ['pickup_mode' => PayPlan::PICKUP_PER_VISIT, 'pickup_extra_parcel_amount' => 100, 'min_amount' => 500],
                 'rules' => [
                     self::fixed(PayEvent::Pickup, 500),

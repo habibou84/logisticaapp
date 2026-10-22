@@ -105,14 +105,14 @@ class SendOutboundMessage implements ShouldQueue
     }
 
     /**
-     * Notification sur les appareils du marchand ; si aucun ne l'a reçue, WhatsApp prend le relais.
+     * Notification sur les appareils du client ; si aucun ne l'a reçue, WhatsApp prend le relais.
      */
     private function sendPush(OutboundMessage $message, WebPush $push, Messenger $messenger): void
     {
         $merchant = Merchant::withoutGlobalScopes()->find($message->merchant_id);
         $payload = Messenger::pushPayload($message);
 
-        // Un téléphone partagé par deux comptes du marchand ne reçoit la notification qu'une fois
+        // Un téléphone partagé par deux comptes du client ne reçoit la notification qu'une fois
         $results = WebPush::enabled() && $merchant
             ? $merchant->pushSubscriptions()->get()->unique('endpoint_hash')
                 ->map(fn (PushSubscription $s) => $push->attempt($s, $payload, 86400, 'normal'))

@@ -8,7 +8,7 @@
           <span v-if="order.last_incident" class="ml-2 text-red-700">{{ order.last_incident.label }}</span>
         </p>
         <p class="text-gray-600">
-          {{ order.recipient?.name || 'Client' }} · {{ order.recipient?.phone }} · {{ order.delivery?.zone_name }}
+          {{ order.recipient?.name || 'Destinataire' }} · {{ order.recipient?.phone }} · {{ order.delivery?.zone_name }}
           · tentative{{ order.attempts_count > 1 ? 's' : '' }} {{ order.attempts_count }} / {{ order.max_attempts }}
         </p>
         <p v-if="order.held_by" class="text-amber-800">🎒 Colis encore chez {{ order.held_by.name }}</p>
@@ -51,8 +51,8 @@
       </div>
 
       <div>
-        <label class="label" for="dec-note">Note (journal de la course, message au marchand)</label>
-        <input id="dec-note" v-model="form.note" class="input" maxlength="500" placeholder="Ex. : le client sera disponible samedi">
+        <label class="label" for="dec-note">Note (journal de la course, message au client)</label>
+        <input id="dec-note" v-model="form.note" class="input" maxlength="500" placeholder="Ex. : le destinataire sera disponible samedi">
       </div>
 
       <p class="text-xs text-gray-500">{{ merchantInfo }}</p>
@@ -94,18 +94,18 @@ const choices = computed(() => {
   return [
     {
       value: 'redeliver', icon: '🛵', label: 'Relivrer',
-      help: 'Nouvelle tentative à la date choisie. Le marchand est prévenu de la date.',
+      help: 'Nouvelle tentative à la date choisie. Le client est prévenu de la date.',
       disabled: o.return_requested ? 'Le retour de ce colis est déjà demandé.' : (maxReached ? `Nombre maximal de tentatives atteint (${o.max_attempts}).` : null),
     },
     o.from_warehouse
       ? { value: 'restock', icon: '🏬', label: 'Remettre en stock', help: 'Le colis revient dans le stock de l\'entrepôt.', disabled: o.held_by ? `Le colis est encore chez ${o.held_by.name} : recevez-le d'abord.` : null }
-      : { value: 'return', icon: '↩️', label: 'Retourner au marchand', help: 'Le colis part dans la file « À retourner ». Le marchand est prévenu.' },
+      : { value: 'return', icon: '↩️', label: 'Retourner au client', help: 'Le colis part dans la file « À retourner ». Le client est prévenu.' },
   ]
 })
 
 const merchantInfo = computed(() => ({
-  redeliver: '📱 Le marchand reçoit un WhatsApp avec la nouvelle date.',
-  return: '📱 Le marchand reçoit un WhatsApp : son colis lui sera retourné.',
+  redeliver: '📱 Le client reçoit un WhatsApp avec la nouvelle date.',
+  return: '📱 Le client reçoit un WhatsApp : son colis lui sera retourné.',
   restock: 'Le stock est remis à jour.',
 }[form.decision] || ''))
 

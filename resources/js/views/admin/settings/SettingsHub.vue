@@ -95,14 +95,14 @@ const ALL = computed(() => {
     },
     {
       key: 'messages', icon: '💬', title: 'Messages aux clients', to: '/admin/whatsapp', permission: 'settings.manage',
-      description: 'WhatsApp de l\'entreprise : numéro, envois, modèles, test ; notifications sur téléphone des e-commerçants.',
+      description: 'WhatsApp de l\'entreprise : numéro, envois, modèles, test ; notifications sur téléphone des clients.',
       keywords: 'whatsapp sms messages modèles envois test notifications push téléphone',
     },
     {
-      key: 'merchants', icon: '🏪', title: 'E-commerçants', to: '/admin/reglages/e-commercants', permission: 'settings.manage',
-      description: 'Inscriptions en ligne des e-commerçants.',
+      key: 'merchants', icon: '🏪', title: 'Clients', to: '/admin/reglages/e-commercants', permission: 'settings.manage',
+      description: 'Inscriptions en ligne des clients.',
       summary: c && (c.merchant_signup ? 'Inscriptions en ligne ouvertes' : 'Inscriptions en ligne fermées'),
-      keywords: 'inscription en ligne créer compte e-commerçant marchand',
+      keywords: 'inscription en ligne créer compte client',
     },
     {
       key: 'team', icon: '🛵', title: 'Équipe et paie',

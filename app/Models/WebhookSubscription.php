@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * Adresse à laquelle un marchand reçoit les événements (courses, reversements, stock),
+ * Adresse à laquelle un client reçoit les événements (courses, reversements, stock),
  * signés HMAC-SHA256 avec un secret qui lui est propre.
  */
 class WebhookSubscription extends Model

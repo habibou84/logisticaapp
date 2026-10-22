@@ -116,7 +116,7 @@ class MerchantController extends Controller
         }
         self::trackLocationSource($merchant);
 
-        // Un marchand suspendu ne peut plus se connecter
+        // Un client suspendu ne peut plus se connecter
         if ($merchant->wasChanged('status') && ! $merchant->isActive()) {
             foreach ($merchant->users as $user) {
                 $user->tokens()->delete();
@@ -141,7 +141,7 @@ class MerchantController extends Controller
     }
 
     /**
-     * Ajoute un compte de connexion au marchand (gérant ou employé).
+     * Ajoute un compte de connexion au client (gérant ou employé).
      */
     public function storeUser(Request $request, Merchant $merchant): JsonResponse
     {

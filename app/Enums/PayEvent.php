@@ -19,7 +19,7 @@ enum PayEvent: string
             self::Pickup => 'Ramassage',
             self::Delivery => 'Livraison réussie',
             self::FailedAttempt => 'Tentative de livraison ratée',
-            self::Return => 'Retour au marchand',
+            self::Return => 'Retour au client',
             self::Shipping => 'Remise au transporteur (expédition)',
         };
     }

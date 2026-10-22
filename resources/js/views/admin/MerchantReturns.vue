@@ -1,9 +1,9 @@
 <template>
   <div class="space-y-4 max-w-6xl">
     <div>
-      <h1 class="text-xl font-bold">Retours marchands</h1>
+      <h1 class="text-xl font-bold">Retours clients</h1>
       <p class="text-sm text-gray-600">
-        Regroupez les colis à rendre d'un marchand sur un bon de retour confié à un livreur. Le marchand est prévenu par
+        Regroupez les colis à rendre d'un client sur un bon de retour confié à un livreur. Le client est prévenu par
         WhatsApp ; à la remise, il signe dans l'application du livreur et toutes les courses passent « Retourné ».
       </p>
     </div>
@@ -41,7 +41,7 @@
           </tbody>
         </table>
       </div>
-      <p v-if="loaded && !candidates.length" class="card p-6 text-center text-gray-500">🎉 Aucun colis à rendre aux marchands.</p>
+      <p v-if="loaded && !candidates.length" class="card p-6 text-center text-gray-500">🎉 Aucun colis à rendre aux clients.</p>
     </section>
 
     <!-- Bons -->
@@ -49,7 +49,7 @@
       <h2 class="font-semibold p-4 border-b">Bons de retour (30 derniers jours)</h2>
       <table class="w-full text-sm">
         <thead class="bg-slate-50 text-left text-gray-600">
-          <tr><th class="p-2">Bon</th><th class="p-2">Marchand</th><th class="p-2">Livreur</th><th class="p-2">Colis</th><th class="p-2">État</th><th /></tr>
+          <tr><th class="p-2">Bon</th><th class="p-2">Client</th><th class="p-2">Livreur</th><th class="p-2">Colis</th><th class="p-2">État</th><th /></tr>
         </thead>
         <tbody class="divide-y">
           <tr v-for="s in slips" :key="s.id">
@@ -112,7 +112,7 @@ async function create(g) {
   busy.value = true
   try {
     const { data } = await http.post('/return-slips', { merchant_id: g.merchant.id, courier_id: courierFor[g.merchant.id], order_ids: selectedOf(g) })
-    toasts.success(`Bon ${data.data.reference} créé : ${data.data.orders_count} colis. Le marchand est prévenu.`)
+    toasts.success(`Bon ${data.data.reference} créé : ${data.data.orders_count} colis. Le client est prévenu.`)
     router.push(`/bon-de-retour/${data.data.id}`)
   } catch (e) {
     toasts.error(apiErrorMessage(e))

@@ -34,18 +34,18 @@ enum WhatsAppTemplate: string
             self::OutForDelivery => 'Bonjour {{1}}, votre colis de {{2}} est en route. Montant à payer au livreur : {{3}}. Code de livraison à lui donner : {{4}}. Suivi du colis : {{5}} . Merci de votre confiance.',
             self::OrderDelivered => 'Bonjour {{1}}, le colis {{2}} pour {{3}} a été livré. Montant encaissé : {{4}}. Merci de votre confiance.',
             self::DeliveryIncident => 'Bonjour {{1}}, incident sur le colis {{2}} pour {{3}} : {{4}}. Choisissez la suite depuis votre espace : {{5}} . Merci.',
-            self::PayoutPaid => 'Bonjour {{1}}, votre reversement {{2}} de {{3}} a été effectué par {{4}}. Le détail est dans votre espace marchand. Merci.',
+            self::PayoutPaid => 'Bonjour {{1}}, votre reversement {{2}} de {{3}} a été effectué par {{4}}. Le détail est dans votre espace client. Merci.',
             self::ActivityReport => 'Bonjour {{1}}, voici votre point {{2}} : {{3}} courses, {{4}} livrées ou expédiées, {{5}} non livrées ou reportées, {{6}} retournées. Encaissé : {{7}}. Frais de livraison : {{8}}. Frais d\'expédition et autres frais : {{9}}. Net : {{10}}. Merci de votre confiance.',
             self::Shipped => 'Bonjour {{1}}, le colis {{2}} pour {{3}} a été expédié par {{4}} (ticket {{5}}). Frais d\'expédition : {{6}}, déduits de votre point. Merci.',
             self::ShippedRecipient => 'Bonjour {{1}}, votre colis de {{2}} a été expédié par {{3}} (ticket {{4}}). Récupérez-le à l\'arrivée auprès du transporteur. Merci de votre confiance.',
             self::ReturnSlip => 'Bonjour {{1}}, notre livreur {{2}} vous rapporte {{3}} colis non livré(s) (bon de retour {{4}}). Détail du bon : {{5}} . Merci.',
             self::ReturnHanded => 'Bonjour {{1}}, {{2}} colis vous ont été rendus (bon de retour {{3}}), reçus par {{4}}. Détail du bon : {{5}} . Merci.',
-            self::ManagerReport => 'Bonjour {{1}}, voici le point de la semaine {{2}} pour {{3}} : {{4}} courses créées ({{5}}), {{6}} livrées, taux de livraison {{7}}. Chiffre d\'affaires : {{8}} ({{9}}). E-commerçants à relancer : {{10}}. Toutes les statistiques : {{11}} .',
+            self::ManagerReport => 'Bonjour {{1}}, voici le point de la semaine {{2}} pour {{3}} : {{4}} courses créées ({{5}}), {{6}} livrées, taux de livraison {{7}}. Chiffre d\'affaires : {{8}} ({{9}}). Clients à relancer : {{10}}. Toutes les statistiques : {{11}} .',
         };
     }
 
     /**
-     * Titre de la notification push quand le message part sur le téléphone du marchand.
+     * Titre de la notification push quand le message part sur le téléphone du client.
      */
     public function notificationTitle(): string
     {

@@ -18,7 +18,7 @@ use Database\Seeders\RolesAndPermissionsSeeder;
 
 /**
  * Monde de test : une entreprise avec zones (Cocody, Yopougon, Plateau, Angré),
- * une grille par défaut (Cocody->Cocody 1000, Cocody<->Yopougon 1500), un marchand
+ * une grille par défaut (Cocody->Cocody 1000, Cocody<->Yopougon 1500), un client
  * et son gérant, un admin, un dispatcher et deux livreurs.
  */
 trait BuildsDeliveryWorld

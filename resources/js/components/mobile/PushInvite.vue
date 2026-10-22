@@ -22,7 +22,7 @@ import { computed, onMounted, ref } from 'vue'
 import { enablePush, initPush, needsInstallFirst, push } from '../../composables/usePush'
 import { useToastStore } from '../../stores/toasts'
 
-// Invitation de l'e-commerçant à activer les notifications (elles remplacent WhatsApp)
+// Invitation du client à activer les notifications (elles remplacent WhatsApp)
 const KEY = 'push-invite-dismissed-at'
 const PAUSE_DAYS = 7
 

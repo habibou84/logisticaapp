@@ -21,7 +21,7 @@ export const MISSION_VIBRATION = [500, 200, 500, 200, 500]
 /**
  * Abonne l'utilisateur connecté à ses canaux temps réel :
  * - notifications personnelles (cloche + toast) ;
- * - courses de l'entreprise (personnel) ou du marchand.
+ * - courses de l'entreprise (personnel) ou du client.
  */
 export function useRealtime() {
   const auth = useAuthStore()

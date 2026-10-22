@@ -22,7 +22,7 @@ class PushSubscriptionController extends Controller
             'enabled' => WebPush::enabled(),
             'public_key' => WebPush::enabled() ? config('services.webpush.public_key') : null,
             'devices' => PushSubscription::where('user_id', $request->user()->id)->count(),
-            // E-commerçant : ses messages arrivent en notification plutôt que sur WhatsApp
+            // Client : ses messages arrivent en notification plutôt que sur WhatsApp
             'merchant_messages' => $request->user()->merchant_id !== null && (bool) $request->user()->company?->merchant_push_first,
         ]]);
     }
@@ -41,7 +41,7 @@ class PushSubscriptionController extends Controller
             abort(422, 'Clés d\'abonnement invalides.');
         }
 
-        // Un appareil peut recevoir les notifications de plusieurs comptes (e-commerçant et livreur sur
+        // Un appareil peut recevoir les notifications de plusieurs comptes (client et livreur sur
         // le même téléphone) : chaque compte garde le sien, la déconnexion retire seulement le compte quitté
         $subscription = PushSubscription::updateOrCreate(
             ['endpoint_hash' => PushSubscription::hashEndpoint($data['endpoint']), 'user_id' => $request->user()->id],

@@ -19,7 +19,7 @@ use Tests\TestCase;
 
 /**
  * Annuaire des entreprises de livraison et connexion en un clic de Jibiat Marchand (contrat : directory,
- * connect-token) : l'e-commerçant autorise l'accès, l'application échange le code contre une clé.
+ * connect-token) : le client autorise l'accès, l'application échange le code contre une clé.
  */
 class AppConnectTest extends TestCase
 {
@@ -128,7 +128,7 @@ class AppConnectTest extends TestCase
         $response->assertJsonPath('data.merchant.id', $this->merchant->id)->assertJsonPath('data.company.slug', 'rapide');
         $this->assertContains('webhooks:write', $response->json('data.scopes'));
 
-        // La clé reçue ouvre l'API publique au nom du marchand
+        // La clé reçue ouvre l'API publique au nom du client
         $this->getJson('/api/public/v1/me', ['Authorization' => 'Bearer '.$response->json('data.api_key')])
             ->assertOk()->assertJsonPath('data.merchant.id', $this->merchant->id);
         $this->assertSame('Jibiat Marchand', ApiKey::withoutGlobalScopes()->latest('id')->value('name'));

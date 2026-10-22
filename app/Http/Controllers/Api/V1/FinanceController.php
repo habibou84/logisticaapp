@@ -31,7 +31,7 @@ use Illuminate\Validation\Rule;
 
 /**
  * Caisse de l'entreprise de livraison : versements des livreurs, grand livre et
- * reversements des marchands, paie des livreurs. Les marchands consultent leur
+ * reversements des clients, paie des livreurs. Les marchands consultent leur
  * propre grand livre et leurs reversements.
  */
 class FinanceController extends Controller

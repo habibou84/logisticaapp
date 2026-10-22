@@ -70,9 +70,9 @@ class ReferenceDataTest extends TestCase
         $this->assertNull(Zone::find($unused->id));
         $this->assertSame(0, $this->grid->rules()->where('origin_zone_id', $unused->id)->count());
 
-        // Commune avec quartiers, zone de ramassage d'un marchand, zone de courses
+        // Commune avec quartiers, zone de ramassage d'un client, zone de courses
         $this->deleteJson("/api/v1/zones/{$this->cocody->id}")->assertUnprocessable()
-            ->assertJsonPath('message', fn ($m) => str_contains($m, '1 quartier(s)') && str_contains($m, '1 e-commerçant(s)'));
+            ->assertJsonPath('message', fn ($m) => str_contains($m, '1 quartier(s)') && str_contains($m, '1 client(s)'));
         $this->createOrder();
         $this->deleteJson("/api/v1/zones/{$this->yopougon->id}")->assertUnprocessable()
             ->assertJsonPath('message', fn ($m) => str_contains($m, '1 course(s)') && str_contains($m, 'Désactivez-la'));

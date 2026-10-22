@@ -24,7 +24,7 @@
 
     <template v-if="form.status === 'delivered'">
       <template v-if="order.is_shipping">
-        <p class="text-sm rounded bg-indigo-50 text-indigo-900 p-2">🚌 Expédition : colis déposé à la gare, frais facturés au marchand.</p>
+        <p class="text-sm rounded bg-indigo-50 text-indigo-900 p-2">🚌 Expédition : colis déposé à la gare, frais facturés au client.</p>
         <div class="grid grid-cols-2 gap-2">
           <div><label class="label" for="carrier">Compagnie ou gare *</label><input id="carrier" v-model="form.shipping_carrier" class="input" required></div>
           <div><label class="label" for="shipfee">Frais d'expédition (F) *</label><input id="shipfee" v-model.number="form.shipping_fee" type="number" min="0" class="input" required></div>
@@ -61,7 +61,7 @@
         </div>
       </template>
       <div v-if="askCode && !order.is_shipping">
-        <label class="label" for="code">Code de livraison donné par le client</label>
+        <label class="label" for="code">Code de livraison donné par le destinataire</label>
         <input id="code" v-model="form.delivery_code" class="input" inputmode="numeric" maxlength="4" autocomplete="one-time-code">
       </div>
     </template>

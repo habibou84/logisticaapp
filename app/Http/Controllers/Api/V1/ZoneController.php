@@ -64,7 +64,7 @@ class ZoneController extends Controller
         $blockers = array_filter([
             $zone->children()->count() ? $zone->children()->count().' quartier(s)' : null,
             $orders ? $orders.' course(s)' : null,
-            ($n = Merchant::where('pickup_zone_id', $zone->id)->count()) ? $n.' e-commerçant(s) (zone de ramassage)' : null,
+            ($n = Merchant::where('pickup_zone_id', $zone->id)->count()) ? $n.' client(s) (zone de ramassage)' : null,
             ($n = DB::table('hubs')->where('zone_id', $zone->id)->count()) ? $n.' entrepôt(s)' : null,
         ]);
 

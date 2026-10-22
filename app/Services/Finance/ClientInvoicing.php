@@ -205,7 +205,7 @@ class ClientInvoicing
     }
 
     /**
-     * Émission : numéro (FAC-AAAAMM-0001), date et échéance. La facture ne change plus.
+     * Émission : numéro (DIS-AAAAMM-0001, MAD-AAAAMM-0001 : une série par activité), date et échéance. La facture ne change plus.
      */
     public function issue(ClientInvoice $invoice): ClientInvoice
     {

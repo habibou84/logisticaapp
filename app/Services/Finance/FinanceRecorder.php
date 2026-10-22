@@ -20,11 +20,11 @@ use App\Models\User;
 /**
  * Traduit les étapes d'une course en écritures financières (appelé par
  * OrderWorkflow dans la même transaction) :
- * - livrée : encaissement, crédit du marchand, frais retenus, gain du livreur ;
- * - expédiée (zone d'expédition) : en plus, frais de gare facturés au marchand
+ * - livrée : encaissement, crédit du client, frais retenus, gain du livreur ;
+ * - expédiée (zone d'expédition) : en plus, frais de gare facturés au client
  *   et remboursés au livreur sur son versement s'il les a avancés ;
  * - récupérée : gain du ramasseur ;
- * - retournée : frais de retour facturés au marchand, gain du livreur.
+ * - retournée : frais de retour facturés au client, gain du livreur.
  */
 class FinanceRecorder
 {
@@ -77,7 +77,7 @@ class FinanceRecorder
         // Frais retenus quel que soit le payeur : payés par le client, ils sont inclus dans l'encaissement
         $this->ledger($order, LedgerEntryType::DeliveryFee, -$order->totalFees(), $actor, 'Frais de livraison');
 
-        // Frais de gare : facturés au marchand ; payés par le livreur (de sa poche ou avec une
+        // Frais de gare : facturés au client ; payés par le livreur (de sa poche ou avec une
         // avance de la caisse, déduits de son versement) ou directement par l'agence
         if ($order->is_shipping && $order->shipping_fee > 0) {
             $paidBy = ($context['shipping_paid_by'] ?? 'courier') === 'company' || $courier === null ? 'company' : 'courier';
@@ -106,7 +106,7 @@ class FinanceRecorder
     }
 
     /**
-     * Colis perdu : indemnité au marchand, retenue éventuelle sur la paie du livreur responsable.
+     * Colis perdu : indemnité au client, retenue éventuelle sur la paie du livreur responsable.
      */
     private function lost(Order $order, array $context, User $actor): void
     {

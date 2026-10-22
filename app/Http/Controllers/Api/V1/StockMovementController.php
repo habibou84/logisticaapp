@@ -20,7 +20,7 @@ class StockMovementController extends Controller
     public function __construct(private readonly StockKeeper $stock) {}
 
     /**
-     * Journal des mouvements (le marchand ne voit que ses produits).
+     * Journal des mouvements (le client ne voit que ses produits).
      */
     public function index(Request $request): AnonymousResourceCollection
     {

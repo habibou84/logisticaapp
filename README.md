@@ -1,6 +1,6 @@
-# Logistica : gestion de livraison pour e-commerçants
+# Logistica : gestion de livraison (e-commerce, distribution, MAD)
 
-Back-office (entreprise de livraison), espace e-commerçant et application livreur, pour une seule entreprise de
+Back-office (entreprise de livraison), espace client et application livreur, pour une seule entreprise de
 livraison. Repris de Delivery App (`habibou84/deliverynew`) sans la partie plateforme (plusieurs entreprises,
 abonnements).
 
@@ -61,7 +61,7 @@ Puis ouvrir http://localhost:8000.
 | Application | Adresse | Pour |
 |---|---|---|
 | Back-office | `/admin` | administrateurs, dispatch, caisse (écran d'ordinateur) |
-| Mes livraisons | `/marchand` | e-commerçants (téléphone) |
+| Mes livraisons | `/marchand` | clients (téléphone) |
 | Livreur | `/livreur` | livreurs (téléphone) |
 
 Après connexion, chacun arrive sur son application. Sur Android (Chrome), un bouton « Installer l'application » apparaît ;
@@ -105,7 +105,7 @@ Claude comprend aussi les messages sans format, avec retour automatique aux règ
 
 **Réglages** (menu Configuration, `/admin/reglages`) : une carte par thème, avec l'état actuel en résumé et une
 recherche (« heure limite », « logo »…) — Entreprise et marque, Courses et livraison, Zones et tarifs (frais des
-retours dans Tarifs), Alertes et rappels, Messages aux clients (WhatsApp), E-commerçants, Équipe et paie,
+retours dans Tarifs), Alertes et rappels, Messages aux clients (WhatsApp), Clients, Équipe et paie,
 Intégrations (API, reprise de l'ancienne application), Abonnement. Chaque page est courte ; une barre
 « Enregistrer / Annuler » apparaît dès qu'un réglage change, et quitter sans enregistrer demande confirmation.
 Raccourcis : ⚙️ dans la liste des courses, « Délais d'alerte » sur le tableau de bord. L'ancienne adresse
@@ -114,7 +114,7 @@ Raccourcis : ⚙️ dans la liste des courses, « Délais d'alerte » sur le tab
 **Sur téléphone** (moins de 768 px) : barre d'onglets en bas (Accueil, Courses, Carte, Alertes et Menu pour le
 dispatch ; selon les droits sinon), bouton ＋ « Nouvelle course », recherche par la loupe, déconnexion dans le menu.
 Les courses s'affichent en cartes (appel du destinataire, sélection, barre d'actions fixée en bas), les filtres dans
-un panneau ; les tableaux de la Caisse, des E-commerçants et des Utilisateurs passent en cartes (`stack-table`).
+un panneau ; les tableaux de la Caisse, des Clients et des Utilisateurs passent en cartes (`stack-table`).
 `npm run test:mobile` (et la CI) vérifie qu'aucune page de l'administration ne dépasse un écran de 360 px (petits téléphones).
 
 ### Remontées terrain
@@ -195,9 +195,9 @@ ouvre la mission). Web Push standard (VAPID, chiffrement `aes128gcm`), implémen
 - **iPhone** : iOS 16.4 minimum et application **installée sur l'écran d'accueil** ; l'app le signale au livreur.
 - Les abonnements expirés (réponse 404/410) sont supprimés automatiquement ; la déconnexion retire celui de l'appareil.
 
-### Notifications des e-commerçants (à la place de WhatsApp)
+### Notifications des clients (à la place de WhatsApp)
 
-Un e-commerçant qui active les notifications dans son application (invitation sur l'**Accueil**, ou **Profil** >
+Un client qui active les notifications dans son application (invitation sur l'**Accueil**, ou **Profil** >
 **Mes notifications**) reçoit ses messages en **notification gratuite** au lieu de WhatsApp : course validée, colis
 récupéré, livré ou expédié, incident, reversement, bon de retour, point d'activité. Toucher la notification ouvre la
 course, les paiements ou les statistiques.
@@ -205,7 +205,7 @@ course, les paiements ou les statistiques.
 - Il garde le choix des messages reçus ; le numéro WhatsApp sert **de secours** : une notification qu'aucun de ses
   appareils n'a reçue (application désinstallée, notifications coupées) repart aussitôt par WhatsApp, puis par SMS
   si WhatsApp échoue aussi.
-- Réglage de l'entreprise dans **WhatsApp** > **Envois** (activé par défaut), avec le nombre d'e-commerçants déjà
+- Réglage de l'entreprise dans **WhatsApp** > **Envois** (activé par défaut), avec le nombre de clients déjà
   passés aux notifications. Les destinataires des colis, qui n'ont pas l'application, restent prévenus par WhatsApp.
 - Le journal des messages les affiche avec 📱 (filtre « Notifications »).
 
@@ -230,7 +230,7 @@ est annulée ou le colis remis en stock. Une course qui part d'un entrepôt n'a 
 
 ### API publique, webhooks et import
 
-Un e-commerçant connecte sa boutique en ligne ou son logiciel depuis **Profil › Intégrations** (l'administration
+Un client connecte sa boutique en ligne ou son logiciel depuis **Profil › Intégrations** (l'administration
 le fait aussi depuis **Intégrations (API)**) :
 
 - **Clé API** (`lv_…`, affichée une seule fois) pour l'API `/api/public/v1` : zones, devis, création et suivi des
@@ -270,7 +270,7 @@ Les envois passent par la file `messages` et les points d'activité par le plani
 
 | Adresse | Pour | Aspect |
 |---|---|---|
-| `/` | E-commerçants (page d'accueil du site) | Logo, accroche, avantages, connexion, suivi d'un colis, contact WhatsApp |
+| `/` | Clients (page d'accueil du site) | Logo, accroche, avantages, connexion, suivi d'un colis, contact WhatsApp |
 | `/admin` (→ `/admin/connexion`) | Équipe : administration, dispatch, caisse, entrepôt | Sobre, sombre |
 | `/livreur` (→ `/livreur/connexion`) | Livreurs | Application mobile bleue |
 
@@ -296,20 +296,25 @@ boutiques, statistiques avancées).
 ### Formules des clients : distribution et mise à disposition (MAD)
 
 En dehors des courses ordinaires (frais déduits course par course), un client peut avoir une **formule**
-(fiche e-commerçant › « Formule ») ; ses courses passent alors sur sa **facture du mois**, payée à part.
+(fiche client › « Formule ») ; ses courses passent alors sur sa **facture du mois**, payée à part.
+
+Chaque client a une ou plusieurs **activités** (e-commerce, distribution, MAD), tenues séparément : courses (filtre
+« Activité » côte à côte), factures (une série par activité : `DIS-…`, `MAD-…`), chiffre d'affaires (**Finances ›
+Chiffre d'affaires**). Les comptes de l'équipe peuvent être limités à certaines activités (périmètre), avec le rôle
+« Responsable d'activité » et le réglage fin des permissions (ajoutées ou retirées au rôle, compte par compte).
 Guide : [`docs/FORMULES-CLIENTS.md`](docs/FORMULES-CLIENTS.md).
 
 | Formule | Facturation |
 |---|---|
 | Distribution sous contrat | Forfait mensuel, plis et colis (0-5 kg) inclus sur les communes du forfait, chacun au-delà au prix du contrat ; chèque livré à l'unité ; délai fixé par le contrat (24 h, 48 h, 72 h) |
-| Distribution à l'unité | Chaque pli, colis ou chèque au prix du délai choisi (Tarifs › Distribution à l'unité) |
+| Distribution à l'unité | Chaque pli, colis ou chèque au prix du délai choisi (Clients › Formules et tarifs) |
 | Mise à disposition (MAD) | Forfait mensuel, courses incluses, chacune au-delà au prix du contrat ; livreurs attitrés |
 
 - Villes de l'intérieur : prix d'un pli (0-500 g), d'un colis (0-5 kg) et du kilogramme au-delà de 5 kg, par délai
-  (Tarifs › Villes de l'intérieur, saisis ou importés depuis un fichier CSV ou Excel) ; chaque ville a sa zone.
+  (Clients › Formules et tarifs, saisis ou importés depuis un fichier CSV ou Excel) ; chaque ville a sa zone.
 - Au-delà de 5 kg sur Abidjan : kilogramme au prix de la formule. Hors des communes du forfait (Bingerville…) : tarif ordinaire.
 - `billing:invoice` (le 1er à 01:30) calcule les brouillons du mois écoulé ; **Finances › Factures clients** :
-  vérifier, ajouter une remise, émettre (numéro `FAC-AAAAMM-0001`, échéance `CLIENT_INVOICE_DUE_DAYS`, 15 jours),
+  vérifier, ajouter une remise, émettre (numéro `DIS-AAAAMM-0001` ou `MAD-AAAAMM-0001`, échéance `CLIENT_INVOICE_DUE_DAYS`, 15 jours),
   enregistrer les paiements. Le client voit ses factures émises dans son application (Profil › Mes factures).
 
 ### Statistiques de l'entreprise
@@ -327,7 +332,7 @@ Menu **📊 Statistiques** du back-office (`orders.view`, personnel seulement), 
   délais habituels (médianes : création → ramassage → livraison), issues de la période.
 - **Livreurs** (`orders.dispatch`) : classement triable et exportable — livrées, ramassages, échecs, réussite, délai,
   jours travaillés, courses par jour ; encaissé, écarts de caisse et gains.
-- **E-commerçants** (`merchants.view`, `GET /stats/merchants`) : actifs, nouveaux, **à relancer** (plus de course depuis
+- **Clients** (`merchants.view`, `GET /stats/merchants`) : actifs, nouveaux, **à relancer** (plus de course depuis
   30 jours, bouton WhatsApp), part des 5 premiers ; top et tableau triable (créées, livrées, retournées, réussite,
   chiffre d'affaires, encaissé, reste à reverser).
 - **Zones** (`GET /stats/zones`) : par commune (les quartiers comptent dans leur commune) — créées, livrées, échecs,
@@ -342,9 +347,9 @@ Menu **📊 Statistiques** du back-office (`orders.view`, personnel seulement), 
 - **Point de la semaine** (`reports:weekly`, vérifié toutes les 15 minutes, envoyé le lundi à 7 h 30 heure de
   l'entreprise, une fois par semaine) : aux administrateurs, par WhatsApp (modèle `point_semaine_gerant`, à faire
   approuver par Meta) et dans la cloche — courses créées et livrées, taux de livraison, chiffre d'affaires comparés à la
-  semaine d'avant, e-commerçants à relancer, lien vers les statistiques. Réglage « Point de la semaine » dans Réglages › Alertes et rappels
+  semaine d'avant, clients à relancer, lien vers les statistiques. Réglage « Point de la semaine » dans Réglages › Alertes et rappels
   (activé par défaut) ; rien n'est envoyé une semaine sans activité.
-- **Application e-commerçant** : « 📊 Mes statistiques » (`GET /api/v1/merchant/stats`) — taux de livraison avec
+- **Application client** : « 📊 Mes statistiques » (`GET /api/v1/merchant/stats`) — taux de livraison avec
   l'évolution, réussite au premier passage, passages ratés et leurs motifs, communes de livraison, délais, courbe par
   jour ; montants (encaissé, frais) pour les comptes qui voient les paiements.
 
@@ -412,7 +417,7 @@ fiches prêtes en attente de paiement. Modèles : « Salarié » et « Mixte » 
 étape. Chaque étape se coche toute seule, d'après les vraies données (`App\Services\Onboarding\SetupGuide`) :
 - **essentielles** : entreprise (téléphone, adresse, logo), zones, tarifs (chaque paire de communes a un prix dans
   la grille par défaut), règles des courses (heure limite), livreurs (au moins un connecté à son application et avec
-  des zones), paie (plan par défaut avec des montants), e-commerçants (zone et adresse de ramassage), une première
+  des zones), paie (plan par défaut avec des montants), clients (zone et adresse de ramassage), une première
   course livrée ;
 - **conseillées** (remises à plus tard si on veut) : WhatsApp et modèles approuvés, équipe du bureau, alertes,
   assignation automatique, boutiques en ligne.
@@ -426,7 +431,7 @@ tableau de bord rappelle ce qui reste. API : `GET /setup` (→ `seen`), `POST /s
 **Course d'essai** (étape 8) : « Lancer une course d'essai » crée une vraie course d'une « Boutique d'essai » vers
 l'administrateur lui-même (il reçoit les messages du destinataire). Le parcours coche ses étapes : validée, livreur
 de ramassage, colis récupéré, livreur de livraison, livrée avec le code, argent encaissé. « Effacer la course
-d'essai » supprime la course, son journal, les gains du livreur, les écritures de l'e-commerçant, l'argent encaissé et
+d'essai » supprime la course, son journal, les gains du livreur, les écritures du client, l'argent encaissé et
 la boutique d'essai, sans fausser la caisse ni les statistiques ; l'étape reste faite. L'argent ne doit pas être versé
 à la caisse : une fois versé ou payé, la course ne s'efface plus (`POST|DELETE /setup/test-order`).
 
@@ -556,7 +561,7 @@ vers eux, un autre assigne le ramassage (`GET /couriers/map` → `pickups`).
 
 ### Boutique en ligne du marchand (page de commande)
 
-Chaque e-commerçant ouvre, depuis **Profil › Ma boutique en ligne**, une page de commande à son nom
+Chaque client ouvre, depuis **Profil › Ma boutique en ligne**, une page de commande à son nom
 (`/b/{lien}`, par ex. `/b/awa-mode`) à partager dans ses statuts WhatsApp, sur Facebook, Instagram ou TikTok :
 
 - **Le client** voit les articles (photo, prix, « Épuisé »), choisit sa commune, voit le prix de la livraison
@@ -573,12 +578,12 @@ Chaque e-commerçant ouvre, depuis **Profil › Ma boutique en ligne**, une page
 - **Côté marchand** : ouverture et fermeture, lien personnalisable, présentation, articles (nom, prix, photo PNG,
   JPEG ou WebP, « En boutique »). Limites : 5 commandes par minute et 30 par heure par adresse IP, champ piège à robots.
 
-### Inscription des e-commerçants et mot de passe oublié
+### Inscription des clients et mot de passe oublié
 
 Depuis la page d'accueil, **Créer mon compte** (`/inscription`) : boutique, responsable, téléphone, commune et
 adresse de ramassage, mot de passe. Rien n'est créé avant la vérification du numéro ; ensuite la boutique et le
 compte du gérant sont **actifs aussitôt** (tarif par défaut), la personne est connectée et l'équipe reçoit une
-notification « Nouvel e-commerçant » (filtre **Inscrits en ligne** dans E-commerçants).
+notification « Nouvel client » (filtre **Inscrits en ligne** dans Clients).
 
 Vérification du numéro, valable 30 minutes :
 
@@ -591,7 +596,7 @@ Vérification du numéro, valable 30 minutes :
 Limites : 5 demandes par numéro et par heure, 3 par minute et 10 par heure par adresse IP. Quand les SMS sont simulés
 (`SMS_DRIVER=log`), le code SMS s'affiche sur la page (**mode démonstration**). La vérification par WhatsApp n'est
 proposée que si le numéro de l'entreprise est connecté.
-Les inscriptions se ferment dans **Réglages › E-commerçants** (la page d'accueil propose alors le contact WhatsApp).
+Les inscriptions se ferment dans **Réglages › Clients** (la page d'accueil propose alors le contact WhatsApp).
 
 **Mot de passe oublié ?** (lien sous chaque formulaire de connexion, `/mot-de-passe-oublie`) : même vérification
 du numéro, puis nouveau mot de passe ; les autres appareils sont déconnectés. La réponse est identique que le
@@ -609,7 +614,7 @@ Créés par `DemoSeeder` (environnements `local` et `testing` uniquement). Mot d
 | Agent d'entrepôt (stock, préparation) | 07 00 00 00 06 | entrepot@livraison.test |
 | Livreur | 07 00 00 00 04 | - |
 | Livreuse | 07 00 00 00 05 | - |
-| E-commerçant (Boutique Chic Abidjan) | 05 00 00 00 01 | boutique@livraison.test |
+| Client (Boutique Chic Abidjan) | 05 00 00 00 01 | boutique@livraison.test |
 
 On se connecte avec le **téléphone** (format local `07 xx xx xx xx` ou international `+225…`) **ou** l'e-mail.
 
@@ -666,7 +671,7 @@ Authentification : en-tête `Authorization: Bearer <jeton>`.
 | GET/POST | `/users` | `users.view` / `users.manage` (filtres `role`, `status`, `search`) |
 | GET/PATCH/DELETE | `/users/{id}` | même entreprise + `users.manage` |
 | GET/PATCH | `/companies/{id}` | administrateur de l'entreprise (paramètres hors statut et identifiant) |
-| GET | `/zones` · POST/PATCH/DELETE `/zones/{id}` | tous · `settings.manage` (`is_shipping`, `shipping_fee_estimate` pour une zone d'expédition) ; suppression refusée pour une zone utilisée (courses, e-commerçants, entrepôts, quartiers) : la désactiver |
+| GET | `/zones` · POST/PATCH/DELETE `/zones/{id}` | tous · `settings.manage` (`is_shipping`, `shipping_fee_estimate` pour une zone d'expédition) ; suppression refusée pour une zone utilisée (courses, clients, entrepôts, quartiers) : la désactiver |
 | CRUD | `/pricing-grids`, PUT `/pricing-grids/{id}/rules` et `/surcharges` | `settings.manage` |
 | POST | `/quotes` | devis d'une course (marchand ou personnel) |
 | GET/POST/PATCH | `/merchants`, POST `/merchants/{id}/users` | `merchants.view` / `merchants.manage` |

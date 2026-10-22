@@ -7,14 +7,14 @@ use App\Support\Branding;
 use Illuminate\Http\JsonResponse;
 
 /**
- * Manifestes des deux applications installables (PWA) : l'espace e-commerçant
+ * Manifestes des deux applications installables (PWA) : l'espace client
  * et l'application livreur s'installent comme deux applications distinctes.
  */
 class PwaManifestController extends Controller
 {
     private const APPS = [
         'marchand' => [
-            'suffix' => 'E-commerçant',
+            'suffix' => 'Client',
             'description' => 'Créez et suivez vos livraisons, recevez vos paiements.',
         ],
         'livreur' => [
@@ -35,7 +35,7 @@ class PwaManifestController extends Controller
 
         return response()->json([
             'id' => "/{$app}",
-            // Sur la plateforme : le nom de l'entreprise de l'adresse ; l'application e-commerçant porte
+            // Sur la plateforme : le nom de l'entreprise de l'adresse ; l'application client porte
             // simplement ce nom, l'application livreur le complète (« Entreprise · Livreur »)
             'name' => $app === 'marchand' ? $companyName : $companyName.' · '.$config['suffix'],
             'short_name' => $look['app_name'],

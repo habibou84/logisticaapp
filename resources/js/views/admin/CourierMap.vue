@@ -65,13 +65,13 @@
           <div v-for="p in pickups" :key="p.order_id" :class="['px-3 py-2 border-t border-orange-100', selectedPickup === p.order_id ? 'bg-orange-100' : '']">
             <button type="button" class="w-full text-left" @click="focusPickup(p)">
               <span class="flex items-center justify-between gap-2 text-sm">
-                <span class="font-medium truncate">{{ p.merchant || 'Marchand' }}</span>
+                <span class="font-medium truncate">{{ p.merchant || 'Client' }}</span>
                 <span :class="['text-xs whitespace-nowrap', p.late ? 'text-red-700 font-semibold' : 'text-gray-500']">{{ p.late ? '⏰ ' : '' }}{{ waitDuration(p.minutes) }}</span>
               </span>
               <span class="block text-xs text-gray-600 truncate"><span class="font-mono">{{ p.tracking_code }}</span> · {{ p.zone_name }}<span v-if="p.address"> · {{ p.address }}</span></span>
               <span v-if="p.after_cutoff" class="text-xs text-red-700">🕒 Heure limite du jour passée</span>
             </button>
-            <p v-if="p.lat === null" class="text-xs text-amber-700 mt-1">Position du marchand inconnue : pas de livreur proche calculé.</p>
+            <p v-if="p.lat === null" class="text-xs text-amber-700 mt-1">Position du client inconnue : pas de livreur proche calculé.</p>
             <p v-else-if="!p.nearest.length" class="text-xs text-gray-500 mt-1">Aucun livreur en service localisé.</p>
             <div v-else class="mt-1 flex flex-wrap gap-1">
               <button
@@ -133,7 +133,7 @@ const echo = useEcho()
 
 const mapEl = ref(null)
 const couriers = ref([])
-// Ramassages sans livreur (position chez le marchand, livreurs les plus proches)
+// Ramassages sans livreur (position chez le client, livreurs les plus proches)
 const pickups = ref([])
 const showPickups = ref(true)
 const selectedPickup = ref(null)
@@ -255,7 +255,7 @@ function pickupPopup(p) {
     ? `<br>Plus proches : ${p.nearest.map((n) => `${escape(n.name)} (${escape(formatKm(n.km))})`).join(', ')}`
     : ''
 
-  return `<strong>📦 ${escape(p.merchant || 'Marchand')}</strong> · sans livreur depuis ${escape(waitDuration(p.minutes))}<br>
+  return `<strong>📦 ${escape(p.merchant || 'Client')}</strong> · sans livreur depuis ${escape(waitDuration(p.minutes))}<br>
     <a href="/admin/courses/${p.order_id}" data-order="${p.order_id}">${escape(p.tracking_code)}</a> · ${escape(p.zone_name || '')}${p.address ? ` · ${escape(p.address)}` : ''}${nearest}`
 }
 

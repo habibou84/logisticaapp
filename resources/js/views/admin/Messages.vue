@@ -79,7 +79,7 @@ const FILTERS = [
   { value: 'queued', label: 'En attente' },
   { value: 'read', label: 'Lus' },
 ]
-const WHO = { merchant: 'Marchand', recipient: 'Destinataire', test: 'Test' }
+const WHO = { merchant: 'Client', recipient: 'Destinataire', test: 'Test' }
 
 const auth = useAuthStore()
 const toasts = useToastStore()

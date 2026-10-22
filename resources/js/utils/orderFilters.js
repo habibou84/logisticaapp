@@ -1,5 +1,5 @@
 /**
- * Catégories des courses du marchand, communes à l'accueil (compteurs) et à la liste :
+ * Catégories des courses du client, communes à l'accueil (compteurs) et à la liste :
  * mêmes statuts, même règle « à régler » que la file « À décider » de l'agence.
  */
 export const ACTIVE = ['pending', 'confirmed', 'pickup_assigned', 'pickup_in_progress', 'picked_up', 'at_hub', 'delivery_assigned', 'out_for_delivery', 'rescheduled', 'return_assigned', 'returning']
@@ -13,7 +13,7 @@ export const ORDER_FILTERS = [
 ]
 
 /**
- * Paramètres de l'API pour une catégorie et une période. L'e-commerçant voit ses courses au jour où
+ * Paramètres de l'API pour une catégorie et une période. Le client voit ses courses au jour où
  * elles doivent être livrées (date prévue, sinon jour de création) : une course reportée de lundi à
  * mercredi passe au mercredi.
  */

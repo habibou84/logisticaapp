@@ -35,7 +35,7 @@ class WeeklyReportReady extends Notification implements ShouldQueue
     public function toArray(object $notifiable): array
     {
         $rate = $this->kpis['success_rate'] === null ? '' : ' · taux de livraison '.str_replace('.', ',', (string) $this->kpis['success_rate']).' %';
-        $relaunch = $this->toRelaunch ? " · {$this->toRelaunch} e-commerçant(s) à relancer" : '';
+        $relaunch = $this->toRelaunch ? " · {$this->toRelaunch} client(s) à relancer" : '';
 
         return [
             'kind' => 'weekly_report',

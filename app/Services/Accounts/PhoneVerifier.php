@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 /**
- * Vérification d'un numéro de téléphone, pour l'inscription d'un e-commerçant ou
+ * Vérification d'un numéro de téléphone, pour l'inscription d'un client ou
  * un mot de passe oublié :
  *  - WhatsApp (gratuit) : la personne envoie depuis son WhatsApp un message prérempli
  *    contenant un code au numéro de l'entreprise ; l'expéditeur prouve le numéro ;

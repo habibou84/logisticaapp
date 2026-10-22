@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * Vérification d'un numéro de téléphone : inscription d'un e-commerçant ou mot
+ * Vérification d'un numéro de téléphone : inscription d'un client ou mot
  * de passe oublié. Le numéro est prouvé par un message WhatsApp envoyé depuis ce
  * numéro (code prérempli) ou par le code reçu par SMS.
  */

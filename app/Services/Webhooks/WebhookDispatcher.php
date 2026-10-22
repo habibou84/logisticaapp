@@ -16,7 +16,7 @@ use App\Models\WebhookSubscription;
 use Illuminate\Support\Str;
 
 /**
- * Traduit les événements métier en webhooks pour les adresses abonnées du marchand.
+ * Traduit les événements métier en webhooks pour les adresses abonnées du client.
  * Chaque envoi est journalisé (webhook_deliveries) puis expédié par le job SendWebhook.
  */
 class WebhookDispatcher
@@ -37,7 +37,7 @@ class WebhookDispatcher
             }
         } elseif (($fields = self::updatedFields($event)) !== []) {
             // Changement sans changement de statut (date, adresse, montant, retour demandé…) : l'application
-            // du marchand doit aussi le savoir, sinon elle garde une information périmée
+            // du client doit aussi le savoir, sinon elle garde une information périmée
             $events[] = WebhookEvent::OrderUpdated;
         }
 
@@ -65,7 +65,7 @@ class WebhookDispatcher
     }
 
     /**
-     * Champs modifiés par un événement qui ne change pas le statut (vide : rien à signaler au marchand).
+     * Champs modifiés par un événement qui ne change pas le statut (vide : rien à signaler au client).
      *
      * @return list<string>
      */
@@ -111,7 +111,7 @@ class WebhookDispatcher
     }
 
     /**
-     * Envoie un événement à toutes les adresses actives du marchand qui l'écoutent.
+     * Envoie un événement à toutes les adresses actives du client qui l'écoutent.
      */
     public function dispatch(int $companyId, int $merchantId, string $event, array $data): void
     {

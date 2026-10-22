@@ -39,9 +39,7 @@
           <div>
             <label class="label" for="bp-formula">Formule</label>
             <select id="bp-formula" v-model="form.formula" class="input">
-              <option value="distribution_contract">Distribution sous contrat (forfait mensuel)</option>
-              <option value="distribution_unit">Distribution à l'unité (sans contrat)</option>
-              <option value="mad_contract">Mise à disposition de livreurs (MAD)</option>
+              <option v-for="f in formulas" :key="f.value" :value="f.value">{{ f.label }}</option>
             </select>
           </div>
           <div class="grid grid-cols-2 gap-3">
@@ -77,8 +75,8 @@
           </div>
           <p class="text-xs text-gray-500">
             <template v-if="hasForfait">Le forfait couvre les dix communes d'Abidjan (Réglages › Zones) ; </template>
-            <template v-else>Prix à l'unité par délai et type d'envoi : Tarifs › Distribution à l'unité ; </template>
-            villes de l'intérieur : Tarifs › Villes de l'intérieur. La formule en cours s'arrête la veille de la nouvelle.
+            <template v-else>Prix à l'unité par délai et type d'envoi : Clients › Formules et tarifs ; </template>
+            villes de l'intérieur : Clients › Formules et tarifs. La formule en cours s'arrête la veille de la nouvelle.
           </p>
         </template>
 
@@ -109,13 +107,21 @@ import Modal from './Modal.vue'
 import { useAuthStore } from '../stores/auth'
 import { useToastStore } from '../stores/toasts'
 import { date, money, today } from '../utils/format'
+import { myActivities } from '../utils/activities'
 
 const props = defineProps({ open: Boolean, merchant: { type: Object, default: null } })
 const emit = defineEmits(['close', 'saved'])
 
 const auth = useAuthStore()
 const toasts = useToastStore()
-const canManage = computed(() => auth.can('merchants.manage'))
+// Formules de son périmètre (un responsable distribution ne crée pas de formule MAD)
+const FORMULAS = [
+  { value: 'distribution_contract', activity: 'distribution', label: 'Distribution sous contrat (forfait mensuel)' },
+  { value: 'distribution_unit', activity: 'distribution', label: 'Distribution à l\'unité (sans contrat)' },
+  { value: 'mad_contract', activity: 'mad', label: 'Mise à disposition de livreurs (MAD)' },
+]
+const formulas = computed(() => FORMULAS.filter((f) => myActivities(auth.user).some((a) => a.value === f.activity)))
+const canManage = computed(() => auth.can('rates.manage') && formulas.value.length > 0)
 const plans = ref([])
 const couriers = ref([])
 const loading = ref(false)
@@ -131,7 +137,7 @@ function reset() {
   editing.value = null
   error.value = ''
   Object.assign(form, {
-    formula: 'distribution_contract', monthly_fee: 0, included_quantity: 0, overage_price: 0, delivery_delay: '24h',
+    formula: formulas.value[0]?.value ?? 'distribution_contract', monthly_fee: 0, included_quantity: 0, overage_price: 0, delivery_delay: '24h',
     cheque_price: 0, extra_kg_price: 0, starts_on: today(), ends_on: '', notes: '', courier_ids: [],
   })
 }

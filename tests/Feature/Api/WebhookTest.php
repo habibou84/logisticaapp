@@ -156,7 +156,7 @@ class WebhookTest extends TestCase
         $this->assertSame('failed', $delivery->fresh()->status);
         $this->assertSame(1, $subscription->fresh()->consecutive_failures);
 
-        // Renvoi manuel, une fois le site du marchand réparé
+        // Renvoi manuel, une fois le site du client réparé
         Sanctum::actingAs($this->merchantUser);
         $this->postJson("/api/v1/webhook-deliveries/{$delivery->id}/redeliver")->assertOk()->assertJsonPath('data.status', 'delivered');
         $this->assertSame(0, $subscription->fresh()->consecutive_failures);

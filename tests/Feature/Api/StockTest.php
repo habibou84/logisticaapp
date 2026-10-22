@@ -24,7 +24,7 @@ use Tests\Concerns\BuildsDeliveryWorld;
 use Tests\TestCase;
 
 /**
- * Stock : produits, emplacements (chez le marchand ou à l'entrepôt), réservations
+ * Stock : produits, emplacements (chez le client ou à l'entrepôt), réservations
  * liées aux courses, préparation à l'entrepôt, inventaires et facturation du stockage.
  */
 class StockTest extends TestCase
@@ -131,7 +131,7 @@ class StockTest extends TestCase
         $this->postJson('/api/v1/stock/movements', ['product_id' => $bag, 'action' => 'receipt', 'quantity' => 10])
             ->assertCreated()
             ->assertJsonPath('product.available', 10)
-            ->assertJsonPath('product.levels.0.label', 'Chez le marchand');
+            ->assertJsonPath('product.levels.0.label', 'Chez le client');
 
         // Le stock de l'entrepôt est tenu par l'entreprise
         $this->postJson('/api/v1/stock/movements', ['product_id' => $bag, 'hub_id' => $this->hub->id, 'action' => 'receipt', 'quantity' => 5])
@@ -144,7 +144,7 @@ class StockTest extends TestCase
             ->assertJsonPath('data.on_hand_change', -1)
             ->assertJsonPath('product.on_hand', 6);
 
-        // Un employé du marchand voit les produits mais ne les gère pas
+        // Un employé du client voit les produits mais ne les gère pas
         $staff = $this->userWithRole(Role::MerchantStaff, ['merchant_id' => $this->merchant->id]);
         $this->as($staff)->getJson('/api/v1/products')->assertOk()->assertJsonCount(2, 'data');
         $this->postJson('/api/v1/products', ['name' => 'X'])->assertForbidden();
@@ -160,7 +160,7 @@ class StockTest extends TestCase
         $this->receiveAtHub(10);
         $this->assertSame(10, $this->level($this->hub->id)->on_hand);
 
-        // L'agent de dépôt ne touche pas au stock gardé chez le marchand
+        // L'agent de dépôt ne touche pas au stock gardé chez le client
         $this->postJson('/api/v1/stock/movements', ['product_id' => $this->dress->id, 'action' => 'receipt', 'quantity' => 1])->assertForbidden();
 
         $this->postJson('/api/v1/stock/movements', [
@@ -286,7 +286,7 @@ class StockTest extends TestCase
         $this->assertSame(2, $this->level(null)->reserved);
         $this->assertNull($order->items()->where('label', 'Ceinture offerte')->first()->stock_state);
 
-        // Disponible 5 → 3 : seuil atteint, alerte au marchand (une seule fois)
+        // Disponible 5 → 3 : seuil atteint, alerte au client (une seule fois)
         Notification::assertSentToTimes($this->merchantUser, StockAlert::class, 1);
         Notification::assertSentTo($this->merchantUser, StockAlert::class, fn (StockAlert $n) => str_contains($n->title, 'Stock bas'));
         Notification::assertNotSentTo($this->hubAgent, StockAlert::class);

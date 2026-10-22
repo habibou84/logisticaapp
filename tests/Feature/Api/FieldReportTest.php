@@ -48,7 +48,7 @@ class FieldReportTest extends TestCase
         Notification::fake();
         Sanctum::actingAs($this->courierB->user);
 
-        // Note interne du livreur (invisible pour le marchand) : le dispatch est quand même prévenu
+        // Note interne du livreur (invisible pour le client) : le dispatch est quand même prévenu
         $this->postJson("/api/v1/orders/{$this->order->id}/notes", ['note' => 'Portail fermé, j\'attends', 'visible_to_merchant' => false])->assertSuccessful();
         Notification::assertSentTo($this->dispatcher, OrderAlert::class, fn (OrderAlert $n) => $n->kind === 'note'
             && $n->toArray($this->dispatcher)['field'] === true
@@ -59,7 +59,7 @@ class FieldReportTest extends TestCase
         Notification::assertSentTo($this->admin, OrderAlert::class, fn (OrderAlert $n) => $n->kind === 'incident'
             && $n->toArray($this->admin)['severity'] === 'alert');
 
-        // Une note du marchand n'est pas une remontée terrain
+        // Une note du client n'est pas une remontée terrain
         Notification::fake();
         Sanctum::actingAs($this->merchantUser);
         $this->postJson("/api/v1/orders/{$this->order->id}/notes", ['note' => 'Appelez avant'])->assertSuccessful();

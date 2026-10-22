@@ -122,7 +122,7 @@ class CourierPay
                 'rule' => null,
                 'label' => 'Colis supplémentaire',
                 'amount' => $plan->pickup_extra_parcel_amount,
-                'detail' => 'Même passage chez le marchand : colis supplémentaire',
+                'detail' => 'Même passage chez le client : colis supplémentaire',
             ]];
         }
 

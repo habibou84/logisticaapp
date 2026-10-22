@@ -23,7 +23,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Conversation WhatsApp avec un e-commerçant : menu, création d'une course à partir
+ * Conversation WhatsApp avec un client : menu, création d'une course à partir
  * d'un message libre (questions pour les informations manquantes, récapitulatif,
  * confirmation), suivi d'un colis, point du jour.
  */
@@ -88,7 +88,7 @@ class Conversation
         $this->inbound->update(['merchant_id' => $merchant?->id]);
 
         if ($merchant === null) {
-            $this->reply("Bonjour 👋 Ce numéro n'est pas enregistré comme e-commerçant chez {$company->name}."
+            $this->reply("Bonjour 👋 Ce numéro n'est pas enregistré comme client chez {$company->name}."
                 .($company->phone ? " Contactez l'agence au ".PhoneNumber::display($company->phone).'.' : ''));
 
             return $this->done();
@@ -167,7 +167,7 @@ class Conversation
             $fields = $this->parser->parse($text, $zones, $this->phone);
         }
 
-        // « De Cocody à Yopougon » : la commune de ramassage du marchand n'est pas la destination
+        // « De Cocody à Yopougon » : la commune de ramassage du client n'est pas la destination
         if (count($fields['zones'] ?? []) > 1 && $merchant->pickup_zone_id) {
             $others = array_values(array_diff($fields['zones'], [$merchant->pickup_zone_id]));
             $fields['zones'] = $others ?: $fields['zones'];

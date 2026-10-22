@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
 /**
- * Ramassages regroupés par client : un e-commerçant a souvent plusieurs colis à la même adresse.
+ * Ramassages regroupés par client : un client a souvent plusieurs colis à la même adresse.
  *  - le dispatch voit les colis à ramasser regroupés par client et adresse, et assigne le lot d'un coup ;
  *  - un colis validé alors qu'un livreur est déjà prévu chez ce client (ramassage pas encore fait)
  *    lui est ajouté automatiquement.

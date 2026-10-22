@@ -110,11 +110,11 @@ gunzip -c /var/backups/logistica/<fichier>.sql.gz | docker compose exec -T postg
 ## 6. Reprise des données de l'ancienne application
 
 L'ancienne application (`admin.`, `client.`, `livreur.logisticadelivery.com`, base MySQL du même serveur) reste
-en ligne pendant la reprise. Sont repris : les **e-commerçants** et les **livreurs**, avec **le même numéro et le
+en ligne pendant la reprise. Sont repris : les **clients** et les **livreurs**, avec **le même numéro et le
 même mot de passe**. Ne sont pas repris : les commandes et les comptes de l'équipe (à recréer dans
 **Utilisateurs**). Aucun message n'est envoyé.
 
-Avant tout : dans la nouvelle application, réglez les **zones** (la commune de chaque e-commerçant choisit sa zone
+Avant tout : dans la nouvelle application, réglez les **zones** (la commune de chaque client choisit sa zone
 de ramassage).
 
 **Avec un export SQL** (le plus simple ici, tout est sur le même serveur) :
