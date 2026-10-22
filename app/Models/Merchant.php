@@ -102,6 +102,12 @@ class Merchant extends Model
         return $this->hasMany(Order::class);
     }
 
+    /** Formules de facturation (distribution, MAD), la plus récente en premier */
+    public function billingPlans(): HasMany
+    {
+        return $this->hasMany(BillingPlan::class)->latest('starts_on')->latest('id');
+    }
+
     public function ledgerEntries(): HasMany
     {
         return $this->hasMany(MerchantLedgerEntry::class);

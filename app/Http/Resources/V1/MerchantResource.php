@@ -39,6 +39,15 @@ class MerchantResource extends JsonResource
             'pricing_grid_id' => $this->when($isStaff, $this->pricing_grid_id),
             'notes' => $this->when($isStaff, $this->notes),
             'orders_count' => $this->whenCounted('orders'),
+            // Formule de facturation en cours (distribution, MAD) ; null : courses ordinaires
+            'billing_plan' => $this->whenLoaded('billingPlans', fn () => ($plan = $this->billingPlans->first()) ? [
+                'id' => $plan->id,
+                'formula' => $plan->formula->value,
+                'formula_label' => $plan->formula->label(),
+                'has_forfait' => $plan->formula->hasForfait(),
+                'delivery_delay' => $plan->delivery_delay->value,
+                'summary' => $plan->describe(),
+            ] : null),
             'users' => UserResource::collection($this->whenLoaded('users')),
             'created_at' => $this->created_at,
         ];

@@ -3,10 +3,12 @@
 namespace App\Models;
 
 use App\Enums\AssignmentType;
+use App\Enums\DeliveryDelay;
 use App\Enums\FeePayer;
 use App\Enums\OrderEventType;
 use App\Enums\OrderStatus;
 use App\Enums\Role;
+use App\Enums\ShipmentType;
 use App\Models\Concerns\BelongsToCompany;
 use App\Support\PhoneNumber;
 use Database\Factories\OrderFactory;
@@ -56,6 +58,8 @@ class Order extends Model
         'is_shipping',
         'description',
         'package_size',
+        'shipment_type',
+        'delivery_delay',
         'weight_kg',
         'is_fragile',
         'is_express',
@@ -63,6 +67,9 @@ class Order extends Model
         'delivery_fee',
         'surcharges_total',
         'pricing_details',
+        'billing_plan_id',
+        'billing_basis',
+        'billing_amount',
         'fee_payer',
         'items_amount',
         'cod_amount',
@@ -79,6 +86,9 @@ class Order extends Model
             'status' => OrderStatus::class,
             'fee_payer' => FeePayer::class,
             'pricing_details' => 'array',
+            'shipment_type' => ShipmentType::class,
+            'delivery_delay' => DeliveryDelay::class,
+            'billing_amount' => 'integer',
             'delivery_code' => 'encrypted',
             'pickup_lat' => 'float',
             'pickup_lng' => 'float',
@@ -161,6 +171,11 @@ class Order extends Model
     protected function pickupPhone(): Attribute
     {
         return Attribute::make(set: fn (?string $value) => PhoneNumber::normalize($value) ?? $value);
+    }
+
+    public function billingPlan(): BelongsTo
+    {
+        return $this->belongsTo(BillingPlan::class);
     }
 
     public function merchant(): BelongsTo

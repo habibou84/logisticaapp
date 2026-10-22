@@ -8,6 +8,9 @@ use App\Http\Controllers\Api\PublicV1\PublicApiController;
 use App\Http\Controllers\Api\V1\ApiKeyController;
 use App\Http\Controllers\Api\V1\AppearanceController;
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\BillingPlanController;
+use App\Http\Controllers\Api\V1\ClientInvoiceController;
+use App\Http\Controllers\Api\V1\ClientRateController;
 use App\Http\Controllers\Api\V1\CompanyController;
 use App\Http\Controllers\Api\V1\CourierAvailabilityController;
 use App\Http\Controllers\Api\V1\CourierController;
@@ -337,6 +340,35 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::get('stock/movements', [StockMovementController::class, 'index'])->name('stock.movements.index');
         Route::post('stock/movements', [StockMovementController::class, 'store'])->name('stock.movements.store');
         Route::apiResource('storage-contracts', StorageContractController::class)->except('show');
+
+        // Formules de facturation des clients (distribution, MAD) et leurs tarifs
+        Route::get('merchants/{merchant}/billing-plans', [BillingPlanController::class, 'index'])->name('merchants.billing-plans.index');
+        Route::post('merchants/{merchant}/billing-plans', [BillingPlanController::class, 'store'])->name('merchants.billing-plans.store');
+        Route::patch('billing-plans/{billingPlan}', [BillingPlanController::class, 'update'])->name('billing-plans.update');
+        Route::delete('billing-plans/{billingPlan}', [BillingPlanController::class, 'destroy'])->name('billing-plans.destroy');
+        Route::controller(ClientRateController::class)->group(function () {
+            Route::get('distribution-rates', 'distribution')->name('distribution-rates.index');
+            Route::put('distribution-rates', 'updateDistribution')->name('distribution-rates.update');
+            Route::get('interior-rates', 'interior')->name('interior-rates.index');
+            Route::post('interior-rates', 'storeInterior')->name('interior-rates.store');
+            Route::get('interior-rates/template', 'interiorTemplate')->name('interior-rates.template');
+            Route::post('interior-rates/import', 'importInterior')->middleware('throttle:20,1')->name('interior-rates.import');
+            Route::patch('interior-rates/{interiorRate}', 'updateInterior')->name('interior-rates.update');
+            Route::delete('interior-rates/{interiorRate}', 'destroyInterior')->name('interior-rates.destroy');
+        });
+
+        // Factures du mois des clients sous formule
+        Route::prefix('client-invoices')->name('client-invoices.')->controller(ClientInvoiceController::class)->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::post('generate', 'generate')->middleware('throttle:20,1')->name('generate');
+            Route::get('{clientInvoice}', 'show')->whereNumber('clientInvoice')->name('show');
+            Route::post('{clientInvoice}/refresh', 'refresh')->name('refresh');
+            Route::post('{clientInvoice}/lines', 'addLine')->name('lines.store');
+            Route::delete('{clientInvoice}/lines/{line}', 'removeLine')->whereNumber('line')->name('lines.destroy');
+            Route::post('{clientInvoice}/issue', 'issue')->name('issue');
+            Route::post('{clientInvoice}/payments', 'pay')->name('payments.store');
+            Route::post('{clientInvoice}/void', 'void')->name('void');
+        });
 
         Route::get('reports/summary', [ReportController::class, 'summary'])->name('reports.summary');
 

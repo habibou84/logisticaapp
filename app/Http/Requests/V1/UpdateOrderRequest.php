@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\V1;
 
+use App\Enums\DeliveryDelay;
 use App\Enums\FeePayer;
+use App\Enums\ShipmentType;
 use App\Rules\PhoneNumber;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -43,6 +45,8 @@ class UpdateOrderRequest extends FormRequest
             'description' => ['sometimes', 'nullable', 'string', 'max:1000'],
             'package_size' => ['sometimes', 'nullable', Rule::in(['S', 'M', 'L', 'XL'])],
             'weight_kg' => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:500'],
+            'shipment_type' => ['sometimes', 'nullable', Rule::enum(ShipmentType::class)],
+            'delivery_delay' => ['sometimes', 'nullable', Rule::enum(DeliveryDelay::class)],
             'is_fragile' => ['sometimes', 'boolean'],
             'is_express' => ['sometimes', 'boolean'],
             'merchant_note' => ['sometimes', 'nullable', 'string', 'max:1000'],

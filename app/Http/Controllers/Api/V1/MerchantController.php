@@ -35,7 +35,7 @@ class MerchantController extends Controller
         ]);
 
         $merchants = Merchant::query()
-            ->with('pickupZone')
+            ->with(['pickupZone', 'billingPlans' => fn ($q) => $q->activeOn(now())])
             ->withCount('orders')
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
             // Inscrits en ligne
@@ -75,7 +75,7 @@ class MerchantController extends Controller
             return $merchant;
         });
 
-        return MerchantResource::make($merchant->load(['pickupZone', 'users.roles']))
+        return MerchantResource::make($merchant->load(['pickupZone', 'users.roles', 'billingPlans' => fn ($q) => $q->activeOn(now())]))
             ->response()
             ->setStatusCode(201);
     }
@@ -84,7 +84,7 @@ class MerchantController extends Controller
     {
         Gate::authorize('view', $merchant);
 
-        return MerchantResource::make($merchant->load(['pickupZone', 'users.roles'])->loadCount('orders'));
+        return MerchantResource::make($merchant->load(['pickupZone', 'users.roles', 'billingPlans' => fn ($q) => $q->activeOn(now())])->loadCount('orders'));
     }
 
     public function update(UpdateMerchantRequest $request, Merchant $merchant): MerchantResource
@@ -99,7 +99,7 @@ class MerchantController extends Controller
             }
         }
 
-        return MerchantResource::make($merchant->load(['pickupZone', 'users.roles']));
+        return MerchantResource::make($merchant->load(['pickupZone', 'users.roles', 'billingPlans' => fn ($q) => $q->activeOn(now())]));
     }
 
     /**

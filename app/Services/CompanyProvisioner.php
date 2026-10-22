@@ -13,6 +13,9 @@ use App\Models\Zone;
  */
 class CompanyProvisioner
 {
+    /** Communes couvertes par les forfaits (distribution, MAD) */
+    public const FORFAIT_COMMUNES = ['Abobo', 'Adjamé', 'Attécoubé', 'Cocody', 'Koumassi', 'Marcory', 'Plateau', 'Port-Bouët', 'Treichville', 'Yopougon'];
+
     public const ABIDJAN_COMMUNES = [
         'Abobo', 'Adjamé', 'Anyama', 'Attécoubé', 'Bingerville', 'Cocody', 'Koumassi',
         'Marcory', 'Plateau', 'Port-Bouët', 'Songon', 'Treichville', 'Yopougon',
@@ -23,7 +26,7 @@ class CompanyProvisioner
         foreach (self::ABIDJAN_COMMUNES as $i => $name) {
             Zone::withoutGlobalScopes()->firstOrCreate(
                 ['company_id' => $company->id, 'parent_id' => null, 'name' => $name],
-                ['city' => 'Abidjan', 'sort_order' => $i],
+                ['city' => 'Abidjan', 'sort_order' => $i, 'in_forfait' => in_array($name, self::FORFAIT_COMMUNES, true)],
             );
         }
 

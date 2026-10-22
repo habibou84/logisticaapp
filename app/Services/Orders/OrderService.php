@@ -14,6 +14,7 @@ use App\Models\Recipient;
 use App\Models\User;
 use App\Models\Zone;
 use App\Services\Assignment\AutoAssigner;
+use App\Services\Pricing\ClientPricing;
 use App\Services\Pricing\PricingService;
 use App\Services\Stock\StockKeeper;
 use App\Support\PhoneNumber;
@@ -37,12 +38,15 @@ class OrderService
 
     private const PACKAGE_FIELDS = [
         'merchant_reference', 'description', 'package_size', 'weight_kg', 'is_fragile', 'is_express', 'merchant_note',
+        // Clients sous formule (distribution, MAD) : type d'envoi et délai
+        'shipment_type', 'delivery_delay',
     ];
 
     private const MONEY_FIELDS = ['items_amount', 'fee_payer'];
 
     public function __construct(
         private readonly PricingService $pricing,
+        private readonly ClientPricing $clientPricing,
         private readonly OrderJournal $journal,
         private readonly StockKeeper $stock,
         private readonly PickupGroups $pickups,
@@ -201,10 +205,12 @@ class OrderService
                 $order->items_amount = (int) $data['items_amount'];
             }
 
-            if ($order->isDirty(['pickup_zone_id', 'delivery_zone_id', 'is_express', 'is_fragile', 'weight_kg'])) {
-                $order->fill($this->price($order->merchant, $order->only([
-                    'pickup_zone_id', 'delivery_zone_id', 'is_express', 'is_fragile', 'weight_kg',
-                ])));
+            if ($order->isDirty(['pickup_zone_id', 'delivery_zone_id', 'is_express', 'is_fragile', 'weight_kg', 'shipment_type', 'delivery_delay'])) {
+                $order->fill($this->price($order->merchant, [
+                    ...$order->only(['pickup_zone_id', 'delivery_zone_id', 'is_express', 'is_fragile', 'weight_kg']),
+                    'shipment_type' => $order->shipment_type?->value,
+                    'delivery_delay' => $order->delivery_delay?->value,
+                ]));
             }
 
             $order->cod_amount = Order::computeCodAmount($order->items_amount, $order->totalFees(), $order->fee_payer);
@@ -311,6 +317,8 @@ class OrderService
     }
 
     /**
+     * Client sous formule (distribution, MAD) : facturé au mois (ClientPricing) ; sinon tarif de la course.
+     *
      * @return array{delivery_fee: int, surcharges_total: int, pricing_details: array}
      */
     private function price(Merchant $merchant, array $data): array
@@ -320,6 +328,10 @@ class OrderService
 
         if (! $pickupZone || ! $deliveryZone) {
             throw new BusinessRuleException('Zone inconnue.', $pickupZone ? 'delivery_zone_id' : 'pickup_zone_id');
+        }
+
+        if ($billed = $this->clientPricing->price($merchant, $pickupZone, $deliveryZone, $data)) {
+            return $billed;
         }
 
         $quote = $this->pricing->quote($merchant, $pickupZone, $deliveryZone, [
@@ -333,6 +345,11 @@ class OrderService
             'surcharges_total' => $quote->surchargesTotal(),
             'pricing_details' => $quote->toArray(),
             'is_shipping' => $deliveryZone->is_shipping,
+            'shipment_type' => null,
+            'delivery_delay' => null,
+            'billing_plan_id' => null,
+            'billing_basis' => null,
+            'billing_amount' => null,
         ];
     }
 

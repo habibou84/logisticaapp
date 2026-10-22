@@ -4,11 +4,13 @@ namespace App\Services\Assignment;
 
 use App\Enums\AssignmentStatus;
 use App\Enums\AssignmentType;
+use App\Enums\BillingFormula;
 use App\Enums\OrderEventType;
 use App\Enums\OrderStatus;
 use App\Enums\Role;
 use App\Exceptions\BusinessRuleException;
 use App\Models\Company;
+use App\Models\Courier;
 use App\Models\CourierRule;
 use App\Models\Order;
 use App\Models\OrderAssignment;
@@ -28,6 +30,8 @@ use Throwable;
  * Un livreur qui refuse, rend la mission ou reste injoignable est écarté pour cette course : son remplaçant la reçoit.
  * Automatisation suspendue (bouton du planning) : plus rien n'est confié.
  * Livraison du jour même (réglage à part) : le colis prêt va au livreur choisi par DeliveryChooser.
+ * Client en mise à disposition (MAD) : ses courses vont à ses livreurs attitrés, que l'assignation automatique
+ * soit active ou non (seule la suspension de l'automatisation l'arrête).
  * Ne fait jamais échouer la création ou la validation d'une course.
  */
 class AutoAssigner
@@ -37,11 +41,15 @@ class AutoAssigner
     /** Livraison du jour même choisie automatiquement (zones, capacité, planning) */
     public const SOURCE_AUTO = 'auto';
 
+    /** Livreur mis à disposition du client (MAD) */
+    public const SOURCE_MAD = 'mad';
+
     public function __construct(
         private readonly CourierPlanning $planning,
         private readonly DeliveryChooser $chooser,
         private readonly OrderDispatcher $dispatcher,
         private readonly OrderJournal $journal,
+        private readonly MadCouriers $mad,
     ) {}
 
     /**
@@ -121,6 +129,26 @@ class AutoAssigner
                     });
             });
 
+        // Clients en mise à disposition (MAD) : ramassages encore sans livreur attitré, même sans assignation automatique
+        Company::query()->where('status', 'active')->whereNull('automation_paused_at')
+            ->whereNotIn('auto_pickup', [Company::AUTO_TRIAL, Company::AUTO_ON])
+            ->each(function (Company $company) use (&$assigned) {
+                Order::withoutGlobalScopes()
+                    ->where('company_id', $company->id)
+                    ->where('status', OrderStatus::Confirmed->value)
+                    ->whereNull('pickup_hub_id')
+                    ->whereHas('billingPlan', fn ($q) => $q->withoutGlobalScopes()->where('formula', BillingFormula::MadContract->value))
+                    ->whereDoesntHave('assignments', fn ($q) => $q->active()->where('type', AssignmentType::Pickup->value))
+                    ->orderBy('confirmed_at')
+                    ->limit(500)
+                    ->get()
+                    ->each(function (Order $order) use (&$assigned) {
+                        if ($this->pickup($order)) {
+                            $assigned++;
+                        }
+                    });
+            });
+
         return $assigned;
     }
 
@@ -140,13 +168,20 @@ class AutoAssigner
     {
         $company = Company::query()->find($order->company_id);
         $mode = $company?->auto_delivery ?? Company::AUTO_OFF;
-        if ($company === null || $mode === Company::AUTO_OFF || $company->automationPaused()) {
+        if ($company === null || $company->automationPaused()) {
             return null;
         }
 
         $order = $order->fresh();
         $now = CarbonImmutable::now($company->timezone ?: config('app.timezone'));
         if ($this->chooser->blocker($order, $company, $now) !== null) {
+            return null;
+        }
+
+        if ($mad = $this->mad->choose($order, AssignmentType::Delivery, self::excluded($order, AssignmentType::Delivery))) {
+            return $this->assignMad($company, $order, AssignmentType::Delivery, $mad, $after);
+        }
+        if ($mode === Company::AUTO_OFF) {
             return null;
         }
         $choice = $this->chooser->choose($order, $company, $now, self::excluded($order, AssignmentType::Delivery));
@@ -193,13 +228,20 @@ class AutoAssigner
     {
         $company = Company::query()->find($order->company_id);
         $mode = $company?->auto_pickup ?? Company::AUTO_OFF;
-        if ($company === null || $mode === Company::AUTO_OFF || $company->automationPaused()) {
+        if ($company === null || $company->automationPaused()) {
             return null;
         }
 
         $order = $order->fresh();
         if ($order->status !== OrderStatus::Confirmed || $order->fromWarehouse() || $order->merchant_id === null
             || $order->assignments()->active()->where('type', AssignmentType::Pickup->value)->exists()) {
+            return null;
+        }
+
+        if ($mad = $this->mad->choose($order, AssignmentType::Pickup, self::excluded($order, AssignmentType::Pickup))) {
+            return $this->assignMad($company, $order, AssignmentType::Pickup, $mad, $after);
+        }
+        if ($mode === Company::AUTO_OFF) {
             return null;
         }
 
@@ -240,6 +282,29 @@ class AutoAssigner
             'note' => "Ramassage confié automatiquement à {$who}, {$why}.",
             'visible_to_merchant' => false,
             'meta' => ['auto' => 'pickup', 'courier_id' => $choice['courier']->id, 'rule_id' => $choice['rule']->id],
+        ]);
+
+        return $assignment;
+    }
+
+    private function assignMad(Company $company, Order $order, AssignmentType $type, Courier $courier, ?string $after): ?OrderAssignment
+    {
+        $actor = User::forCompany($company->id)->where('status', 'active')->role(Role::Admin->value)->first();
+        if ($actor === null) {
+            return null;
+        }
+
+        try {
+            $assignment = $this->dispatcher->assign($actor, $order, $type, $courier, self::SOURCE_MAD);
+        } catch (BusinessRuleException) {
+            return null;
+        }
+
+        $what = $type === AssignmentType::Pickup ? 'Ramassage' : 'Livraison';
+        $this->journal->record($order->fresh(), null, OrderEventType::Note, [
+            'note' => "{$what} confié(e) automatiquement à {$courier->user->name}, livreur mis à disposition du client".($after ? " ({$after})" : '').'.',
+            'visible_to_merchant' => false,
+            'meta' => ['auto' => $type->value, 'courier_id' => $courier->id, 'mad' => true],
         ]);
 
         return $assignment;

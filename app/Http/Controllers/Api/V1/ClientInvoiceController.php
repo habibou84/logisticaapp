@@ -1,0 +1,226 @@
+<?php
+
+namespace App\Http\Controllers\Api\V1;
+
+use App\Enums\ClientInvoiceStatus;
+use App\Enums\InvoicePaymentMethod;
+use App\Enums\Permission;
+use App\Http\Controllers\Controller;
+use App\Models\ClientInvoice;
+use App\Models\Merchant;
+use App\Models\Order;
+use App\Services\Finance\ClientInvoicing;
+use Carbon\CarbonImmutable;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+
+/**
+ * Factures du mois des clients sous formule : liste, détail (lignes, paiements, courses), calcul,
+ * lignes à la main, émission, paiements, annulation. Le client consulte ses factures émises.
+ */
+class ClientInvoiceController extends Controller
+{
+    public function __construct(private readonly ClientInvoicing $invoicing) {}
+
+    public function index(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $this->authorizeView($request);
+        $request->validate([
+            'status' => ['nullable', Rule::enum(ClientInvoiceStatus::class)],
+            'merchant_id' => ['nullable', 'integer'],
+            'period' => ['nullable', 'date_format:Y-m'],
+        ]);
+
+        $invoices = ClientInvoice::query()
+            ->with('merchant:id,business_name')
+            ->when($user->merchant_id, fn ($q) => $q->where('merchant_id', $user->merchant_id)->whereIn('status', [ClientInvoiceStatus::Issued->value, ClientInvoiceStatus::Paid->value]))
+            ->when(! $user->merchant_id && $request->filled('merchant_id'), fn ($q) => $q->where('merchant_id', $request->integer('merchant_id')))
+            ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
+            ->when($request->filled('period'), fn ($q) => $q->whereDate('period', $request->string('period').'-01'))
+            ->orderByDesc('period')->orderBy('id')
+            ->limit(500)
+            ->get();
+
+        return response()->json([
+            'data' => $invoices->map(fn (ClientInvoice $i) => $this->summary($i))->values(),
+            'totals' => $user->merchant_id ? null : [
+                'to_collect' => (int) $invoices->where('status', ClientInvoiceStatus::Issued)->sum(fn (ClientInvoice $i) => $i->balance()),
+                'overdue' => (int) $invoices->filter->isOverdue()->sum(fn (ClientInvoice $i) => $i->balance()),
+                'drafts' => $invoices->where('status', ClientInvoiceStatus::Draft)->count(),
+            ],
+        ]);
+    }
+
+    public function show(Request $request, ClientInvoice $clientInvoice): JsonResponse
+    {
+        $this->authorizeView($request, $clientInvoice);
+
+        return response()->json(['data' => $this->detail($clientInvoice)]);
+    }
+
+    /** Calcule les brouillons du mois (AAAA-MM), pour tous les clients ou un seul */
+    public function generate(Request $request): JsonResponse
+    {
+        $this->authorizeManage($request);
+        $data = $request->validate([
+            'month' => ['required', 'date_format:Y-m'],
+            'merchant_id' => ['nullable', 'integer', Rule::exists('merchants', 'id')->where('company_id', $request->user()->company_id)],
+        ], [], ['month' => 'mois']);
+        $month = CarbonImmutable::createFromFormat('Y-m-d', $data['month'].'-01');
+
+        $count = isset($data['merchant_id'])
+            ? (int) ($this->invoicing->compute(Merchant::findOrFail($data['merchant_id']), $month) !== null)
+            : $this->invoicing->generate($request->user()->company, $month);
+
+        return response()->json(['data' => ['count' => $count]]);
+    }
+
+    public function refresh(Request $request, ClientInvoice $clientInvoice): JsonResponse
+    {
+        $this->authorizeManage($request);
+        $invoice = $this->invoicing->compute($clientInvoice->merchant, CarbonImmutable::parse($clientInvoice->period));
+
+        return response()->json(['data' => $invoice ? $this->detail($invoice) : null]);
+    }
+
+    public function addLine(Request $request, ClientInvoice $clientInvoice): JsonResponse
+    {
+        $this->authorizeManage($request);
+        $data = $request->validate([
+            'label' => ['required', 'string', 'max:255'],
+            'quantity' => ['required', 'integer', 'min:1', 'max:100000'],
+            // Négatif : remise
+            'unit_price' => ['required', 'integer', 'min:-100000000', 'max:100000000'],
+        ], [], ['label' => 'libellé', 'quantity' => 'quantité', 'unit_price' => 'prix unitaire']);
+
+        return response()->json(['data' => $this->detail($this->invoicing->addLine($clientInvoice, $data['label'], $data['quantity'], $data['unit_price']))]);
+    }
+
+    public function removeLine(Request $request, ClientInvoice $clientInvoice, int $line): JsonResponse
+    {
+        $this->authorizeManage($request);
+
+        return response()->json(['data' => $this->detail($this->invoicing->removeLine($clientInvoice, $line))]);
+    }
+
+    public function issue(Request $request, ClientInvoice $clientInvoice): JsonResponse
+    {
+        $this->authorizeManage($request);
+
+        return response()->json(['data' => $this->detail($this->invoicing->issue($clientInvoice))]);
+    }
+
+    public function pay(Request $request, ClientInvoice $clientInvoice): JsonResponse
+    {
+        $this->authorizeManage($request);
+        $data = $request->validate([
+            'amount' => ['required', 'integer', 'min:1'],
+            'method' => ['required', Rule::enum(InvoicePaymentMethod::class)],
+            'reference' => ['nullable', 'string', 'max:100'],
+            'paid_on' => ['required', 'date_format:Y-m-d', 'before_or_equal:today'],
+            'notes' => ['nullable', 'string', 'max:500'],
+        ], [], ['amount' => 'montant', 'method' => 'moyen de paiement', 'paid_on' => 'date du paiement']);
+
+        return response()->json(['data' => $this->detail($this->invoicing->pay($clientInvoice, $data, $request->user()))]);
+    }
+
+    public function void(Request $request, ClientInvoice $clientInvoice): JsonResponse
+    {
+        $this->authorizeManage($request);
+        $invoice = $this->invoicing->void($clientInvoice);
+
+        return response()->json(['data' => $invoice ? $this->detail($invoice) : null]);
+    }
+
+    /** @return array<string, mixed> */
+    private function summary(ClientInvoice $invoice): array
+    {
+        return [
+            'id' => $invoice->id,
+            'number' => $invoice->number,
+            'merchant' => $invoice->merchant ? ['id' => $invoice->merchant->id, 'business_name' => $invoice->merchant->business_name] : null,
+            'period' => $invoice->period->format('Y-m'),
+            'period_label' => ucfirst($invoice->period->locale('fr')->translatedFormat('F Y')),
+            'status' => $invoice->status->value,
+            'status_label' => $invoice->isOverdue() ? 'En retard' : $invoice->status->label(),
+            'is_overdue' => $invoice->isOverdue(),
+            'total' => $invoice->total,
+            'amount_paid' => $invoice->amount_paid,
+            'balance' => $invoice->balance(),
+            'issued_at' => $invoice->issued_at?->toDateString(),
+            'due_at' => $invoice->due_at?->toDateString(),
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function detail(ClientInvoice $invoice): array
+    {
+        $invoice->loadMissing(['lines', 'payments.recorder:id,name', 'merchant']);
+        $merchant = $invoice->merchant;
+
+        return [
+            ...$this->summary($invoice),
+            'notes' => $invoice->notes,
+            'client' => [
+                'business_name' => $merchant->business_name,
+                'contact_name' => $merchant->contact_name,
+                'phone' => $merchant->phone,
+                'email' => $merchant->email,
+                'address' => $merchant->pickup_address,
+            ],
+            'lines' => $invoice->lines->map(fn ($l) => [
+                'id' => $l->id,
+                'kind' => $l->kind,
+                'label' => $l->label,
+                'quantity' => $l->quantity,
+                'unit_price' => $l->unit_price,
+                'amount' => $l->amount,
+                'manual' => $l->manual,
+            ])->values(),
+            'payments' => $invoice->payments->map(fn ($p) => [
+                'id' => $p->id,
+                'amount' => $p->amount,
+                'method' => $p->method->value,
+                'method_label' => $p->method->label(),
+                'reference' => $p->reference,
+                'paid_on' => $p->paid_on->toDateString(),
+                'recorded_by' => $p->recorder?->name,
+            ])->values(),
+            // Annexe : les courses du mois
+            'orders' => $this->invoicing->ordersOf($invoice)->get()->map(fn (Order $o) => [
+                'id' => $o->id,
+                'tracking_code' => $o->tracking_code,
+                'created_at' => $o->created_at,
+                'recipient_name' => $o->recipient_name,
+                'destination' => $o->deliveryZone?->name,
+                'shipment_type' => $o->shipment_type?->label(),
+                'delivery_delay' => $o->delivery_delay?->label(),
+                'weight_kg' => $o->weight_kg,
+                'status' => $o->status->value,
+                'status_label' => $o->status->label(),
+                'basis' => $o->billing_basis,
+                'amount' => $o->billing_basis === 'forfait' ? null : $o->billing_amount,
+            ])->values(),
+        ];
+    }
+
+    private function authorizeView(Request $request, ?ClientInvoice $invoice = null): void
+    {
+        $user = $request->user();
+        if ($user->merchant_id !== null) {
+            abort_unless($invoice === null || ($invoice->merchant_id === $user->merchant_id
+                && in_array($invoice->status, [ClientInvoiceStatus::Issued, ClientInvoiceStatus::Paid], true)), 404);
+            abort_unless($user->can(Permission::FinanceView->value), 403);
+
+            return;
+        }
+        abort_unless($user->can(Permission::FinanceView->value), 403);
+    }
+
+    private function authorizeManage(Request $request): void
+    {
+        abort_unless($request->user()->merchant_id === null && $request->user()->can(Permission::FinanceManage->value), 403);
+    }
+}

@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\V1;
 
+use App\Enums\DeliveryDelay;
 use App\Enums\FeePayer;
+use App\Enums\ShipmentType;
 use App\Models\Order;
 use App\Rules\PhoneNumber;
 use App\Services\Orders\ZoneResolver;
@@ -85,6 +87,9 @@ class StoreOrderRequest extends FormRequest
             'description' => ['nullable', 'string', 'max:1000'],
             'package_size' => ['nullable', Rule::in(['S', 'M', 'L', 'XL'])],
             'weight_kg' => ['nullable', 'numeric', 'min:0', 'max:500'],
+            // Clients sous formule : pli, colis ou chèque ; délai (distribution à l'unité)
+            'shipment_type' => ['nullable', Rule::enum(ShipmentType::class)],
+            'delivery_delay' => ['nullable', Rule::enum(DeliveryDelay::class)],
             'is_fragile' => ['boolean'],
             'is_express' => ['boolean'],
             // API : false quand l'application appelante prévient elle-même l'équipe du marchand
@@ -122,6 +127,8 @@ class StoreOrderRequest extends FormRequest
             'items_amount' => 'montant des articles',
             'fee_payer' => 'payeur des frais',
             'weight_kg' => 'poids',
+            'shipment_type' => 'type d\'envoi',
+            'delivery_delay' => 'délai de livraison',
             'pickup_hub_id' => 'entrepôt',
             'items' => 'articles',
             'items.*.label' => 'nom de l\'article',

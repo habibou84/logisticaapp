@@ -87,7 +87,17 @@ class OrderResource extends JsonResource
                 'is_fragile' => $this->is_fragile,
                 'is_express' => $this->is_express,
                 'merchant_note' => $this->merchant_note,
+                // Clients sous formule : pli, colis ou chèque, délai souhaité
+                'shipment_type' => $this->shipment_type?->value,
+                'shipment_type_label' => $this->shipment_type?->label(),
+                'delivery_delay' => $this->delivery_delay?->value,
             ],
+            // Facturée sur la facture du mois du client (distribution, MAD) : comment
+            'billing' => $this->billing_plan_id ? [
+                'basis' => $this->billing_basis,
+                'label' => $this->pricing_details['billing']['label'] ?? null,
+                'amount' => $this->billing_amount,
+            ] : null,
             'amounts' => [
                 'delivery_fee' => $this->delivery_fee,
                 'surcharges_total' => $this->surcharges_total,

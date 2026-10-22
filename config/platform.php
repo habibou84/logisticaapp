@@ -21,6 +21,12 @@ return [
     // Moteurs de recherche : seule la production est indexée (ailleurs : en-tête noindex et robots.txt fermé)
     'indexable' => (bool) env('SEARCH_INDEXING', env('APP_ENV') === 'production'),
 
+    // Factures mensuelles des clients sous formule (distribution, MAD) : préfixe des numéros, échéance en jours
+    'client_invoices' => [
+        'prefix' => env('CLIENT_INVOICE_PREFIX', 'FAC'),
+        'due_days' => (int) env('CLIENT_INVOICE_DUE_DAYS', 15),
+    ],
+
     // Requêtes par minute sur l'espace connecté : par compte, et pour toute l'entreprise
     'limits' => [
         'user_per_minute' => (int) env('PLATFORM_USER_RATE_LIMIT', 300),

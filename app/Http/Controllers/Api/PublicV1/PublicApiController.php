@@ -20,6 +20,7 @@ use App\Models\Zone;
 use App\Services\Orders\DeliveryDay;
 use App\Services\Orders\OrderService;
 use App\Services\Orders\OrderWorkflow;
+use App\Services\Pricing\ClientPricing;
 use App\Services\Pricing\PricingService;
 use App\Services\Reports\OrderSummary;
 use Illuminate\Database\Eloquent\Builder;
@@ -71,9 +72,9 @@ class PublicApiController extends Controller
         ]]);
     }
 
-    public function quote(Request $request, PricingService $pricing): JsonResponse
+    public function quote(Request $request, PricingService $pricing, ClientPricing $clientPricing): JsonResponse
     {
-        return app(QuoteController::class)($request, $pricing);
+        return app(QuoteController::class)($request, $pricing, $clientPricing);
     }
 
     public function orders(Request $request): AnonymousResourceCollection

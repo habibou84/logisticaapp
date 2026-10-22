@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\V1;
 
+use App\Models\BillingPlan;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -45,6 +46,13 @@ class UserResource extends JsonResource
             'merchant' => $this->whenLoaded('merchant', fn () => $this->merchant ? [
                 'id' => $this->merchant->id,
                 'business_name' => $this->merchant->business_name,
+                // Formule en cours (distribution, MAD) : type d'envoi et délai sur ses courses
+                'billing_plan' => ($plan = BillingPlan::activeFor($this->merchant)) ? [
+                    'formula' => $plan->formula->value,
+                    'formula_label' => $plan->formula->label(),
+                    'has_forfait' => $plan->formula->hasForfait(),
+                    'delivery_delay' => $plan->delivery_delay->value,
+                ] : null,
                 // Rappel dans l'application tant que le lieu de ramassage n'est pas localisé
                 'has_pickup_location' => $this->merchant->hasPickupLocation(),
                 'pickup_location_source' => $this->merchant->pickup_location_source,
