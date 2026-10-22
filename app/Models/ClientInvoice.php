@@ -19,7 +19,7 @@ class ClientInvoice extends Model
 
     protected $fillable = [
         'company_id', 'merchant_id', 'activity', 'number', 'period', 'status', 'total', 'amount_paid',
-        'issued_at', 'due_at', 'paid_at', 'notes',
+        'issued_at', 'due_at', 'paid_at', 'notes', 'reminded_at', 'overdue_notified_at',
     ];
 
     protected function casts(): array
@@ -33,6 +33,8 @@ class ClientInvoice extends Model
             'issued_at' => 'date:Y-m-d',
             'due_at' => 'date:Y-m-d',
             'paid_at' => 'datetime',
+            'reminded_at' => 'datetime',
+            'overdue_notified_at' => 'datetime',
         ];
     }
 

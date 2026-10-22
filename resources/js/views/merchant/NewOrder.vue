@@ -11,10 +11,10 @@
     <div class="m-card p-4 space-y-1">
       <p class="text-sm text-slate-500">Code de suivi</p>
       <p class="font-mono text-xl font-bold tracking-wider">{{ created.tracking_code }}</p>
-      <p class="text-sm text-slate-500 pt-2">Code de livraison à donner au client</p>
+      <p class="text-sm text-slate-500 pt-2">Code de livraison à donner au destinataire</p>
       <p class="font-mono text-2xl font-bold tracking-[0.3em]">{{ created.delivery_code }}</p>
     </div>
-    <a :href="shareLink" target="_blank" class="m-btn-success">💬 Envoyer le suivi au client sur WhatsApp</a>
+    <a :href="shareLink" target="_blank" class="m-btn-success">💬 Envoyer le suivi au destinataire sur WhatsApp</a>
     <div class="grid grid-cols-2 gap-2">
       <RouterLink :to="`/marchand/courses/${created.id}`" class="m-btn-secondary">Voir la course</RouterLink>
       <button class="m-btn-primary" @click="reset">+ Nouvelle</button>
@@ -27,11 +27,17 @@
       ✨ Course remplie d'après le message : vérifiez les champs avant d'envoyer.
     </p>
 
+    <!-- Client à plusieurs activités : la course en choisit une (facturation à part) -->
+    <section v-if="activityChoices.length > 1" class="m-card p-4 space-y-2" aria-labelledby="step-activity">
+      <h2 id="step-activity" class="m-step">Pour quelle activité ?</h2>
+      <ChoiceChips v-model="form.activity" :options="activityChoices" :columns="activityChoices.length === 2 ? 2 : 1" label="Activité de la course" />
+    </section>
+
     <PasteMessage mobile :start-open="route.query.coller === '1'" @parsed="applyParsed" />
 
-    <!-- 1. Le client -->
+    <!-- 1. Le destinataire -->
     <section class="m-card p-4 space-y-4" aria-labelledby="step-client">
-      <h2 id="step-client" class="m-step"><span class="m-step-num">1</span>Le client</h2>
+      <h2 id="step-client" class="m-step"><span class="m-step-num">1</span>Le destinataire</h2>
       <div class="relative">
         <label class="m-label" for="phone">Téléphone <span class="text-red-600">*</span></label>
         <input id="phone" v-model="form.recipient_phone" :class="['m-input text-lg', missing.phone ? 'ring-2 ring-red-500' : '']" inputmode="tel" autocomplete="jibiat-off" placeholder="07 00 00 00 00" @input="searchRecipients" @blur="checkDuplicates">
@@ -40,7 +46,7 @@
       <div v-for="r in suggestions" :key="r.id" class="rounded-xl bg-emerald-50 ring-1 ring-emerald-200 px-3 py-2.5 flex items-center gap-3 text-sm">
         <span class="text-xl">👤</span>
         <span class="min-w-0 flex-1">
-          <strong>{{ r.name || 'Client' }}</strong> · {{ localPhone(r.phone) }}
+          <strong>{{ r.name || 'Destinataire' }}</strong> · {{ localPhone(r.phone) }}
           <span class="block truncate text-slate-600">
             {{ r.deliveries_count ? `Déjà livré ${r.deliveries_count} fois` : 'Déjà enregistré' }}<template v-if="zoneOf(r)"> · {{ zoneOf(r) }}</template>
           </span>
@@ -49,7 +55,7 @@
         <button type="button" class="tap shrink-0 rounded-lg px-3 py-2 text-xs font-semibold text-white" :style="{ backgroundColor: 'var(--app-color)' }" @click="pickRecipient(r)">Utiliser</button>
       </div>
       <div v-if="duplicates.length" class="rounded-xl bg-amber-50 text-amber-900 px-4 py-3 text-sm">
-        ⚠️ Vous avez déjà envoyé {{ duplicates.length > 1 ? `${duplicates.length} courses` : 'une course' }} à ce client ces dernières 24 h :
+        ⚠️ Vous avez déjà envoyé {{ duplicates.length > 1 ? `${duplicates.length} courses` : 'une course' }} à ce destinataire ces dernières 24 h :
         <RouterLink v-for="d in duplicates" :key="d.id" :to="`/marchand/courses/${d.id}`" class="underline ml-1">{{ d.tracking_code }} ({{ d.status_label }})</RouterLink>
       </div>
       <div>
@@ -68,7 +74,7 @@
           <button v-for="z in zoneChoices" :key="z.id" type="button" :class="['tap mr-1 mt-1 rounded-full px-3 py-1 text-sm ring-1', form.delivery_zone_id === z.id ? 'text-white ring-transparent' : 'bg-white ring-slate-200']" :style="form.delivery_zone_id === z.id ? { backgroundColor: 'var(--app-color)' } : {}" @click="form.delivery_zone_id = z.id">{{ z.full_name }}</button>
         </p>
         <ZoneSelect id="zone" v-model="form.delivery_zone_id" :zones="zones" mobile :input-class="['m-input', missing.zone ? 'ring-2 ring-red-500' : '']" />
-        <p v-if="selectedZone?.is_shipping" class="mt-2 rounded-xl bg-indigo-50 text-indigo-900 text-sm p-3">
+        <p v-if="selectedZone?.is_shipping && !billed" class="mt-2 rounded-xl bg-indigo-50 text-indigo-900 text-sm p-3">
           🚌 <strong>Expédition</strong> : notre livreur dépose le colis à la gare et paie l'envoi
           <template v-if="selectedZone.shipping_fee_estimate">(environ {{ money(selectedZone.shipping_fee_estimate) }})</template>.
           Ces frais vous sont facturés au réel et déduits de votre point.
@@ -80,8 +86,35 @@
       </div>
     </section>
 
+    <!-- 3. Distribution, MAD : l'envoi (rien à encaisser, facture du mois) -->
+    <section v-if="billed" class="m-card p-4 space-y-4" aria-labelledby="step-shipment">
+      <h2 id="step-shipment" class="m-step"><span class="m-step-num">3</span>L'envoi</h2>
+      <p class="text-sm text-slate-600">
+        <template v-if="plan">{{ plan.formula_label }} : rien à encaisser, la course passe sur votre facture du mois.</template>
+        <template v-else>Aucune formule {{ activityLabel(form.activity) }} en cours : contactez l'agence.</template>
+      </p>
+      <div v-if="form.activity === 'distribution'">
+        <p class="m-label">Type d'envoi</p>
+        <ChoiceChips v-model="form.shipment_type" :options="SHIPMENT_TYPES" :columns="3" label="Type d'envoi" />
+      </div>
+      <div>
+        <label class="m-label" for="weight">Poids <span class="font-normal text-slate-500">(facultatif, kg)</span></label>
+        <input id="weight" v-model.number="form.weight_kg" type="number" min="0" step="0.1" inputmode="decimal" class="m-input" placeholder="Ex. : 2,5">
+        <p class="text-xs text-slate-500 mt-1">Au-delà de 5 kg, chaque kilogramme en plus est facturé.</p>
+      </div>
+      <div v-if="plan && !plan.has_forfait">
+        <p class="m-label">Délai de livraison</p>
+        <ChoiceChips v-model="form.delivery_delay" :options="DELAYS" :columns="3" label="Délai de livraison" />
+      </div>
+      <p v-else-if="plan" class="text-sm text-slate-600">⏱️ Délai du contrat : <strong>{{ plan.delivery_delay.replace('h', ' h') }}</strong></p>
+      <div v-if="form.activity === 'mad' && space.space?.couriers?.length" class="rounded-xl bg-slate-50 p-3 text-sm">
+        <p class="font-medium">🛵 Vos livreurs attitrés</p>
+        <p class="text-slate-600">{{ space.space.couriers.map((c) => `${c.name} (${c.status_label.toLowerCase()})`).join(', ') }}</p>
+      </div>
+    </section>
+
     <!-- 3. L'argent (et les articles du stock) -->
-    <section class="m-card p-4 space-y-4" aria-labelledby="step-money">
+    <section v-else class="m-card p-4 space-y-4" aria-labelledby="step-money">
       <h2 id="step-money" class="m-step"><span class="m-step-num">3</span>L'argent</h2>
       <button v-if="products.length && !showStock" type="button" class="tap w-full rounded-xl ring-1 ring-slate-200 px-4 py-3 flex items-center justify-between text-sm font-semibold active:bg-slate-50" @click="showStock = true">
         <span>📦 Prendre des articles de mon stock</span><span class="text-slate-400">›</span>
@@ -111,12 +144,12 @@
       </div>
 
       <div>
-        <label class="m-label" for="amount">Montant à encaisser chez le client</label>
+        <label class="m-label" for="amount">Montant à encaisser chez le destinataire</label>
         <div class="relative">
           <input id="amount" autocomplete="jibiat-off" v-model.number="form.items_amount" type="number" min="0" step="50" inputmode="numeric" class="m-input text-2xl font-bold pr-12">
           <span class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-semibold">F</span>
         </div>
-        <p class="text-xs text-slate-500 mt-1">Prix des articles, sans la livraison. Mettez 0 si le client a déjà payé.</p>
+        <p class="text-xs text-slate-500 mt-1">Prix des articles, sans la livraison. Mettez 0 si le destinataire a déjà payé.</p>
       </div>
       <div id="fee-payer" :class="['rounded-2xl', missing.feePayer ? 'ring-2 ring-red-500 p-2 -mx-2' : '']">
         <p class="m-label">Qui paie la livraison ? <span class="text-red-600">*</span></p>
@@ -125,11 +158,11 @@
           :columns="2"
           label="Payeur des frais"
           :options="[
-            { value: 'recipient', label: 'Le client', icon: '🧍', description: 'ajoutée au montant' },
+            { value: 'recipient', label: 'Le destinataire', icon: '🧍', description: 'ajoutée au montant' },
             { value: 'merchant', label: 'Moi', icon: '🏪', description: 'déduite de mon paiement' },
           ]"
         />
-        <p v-if="missing.feePayer" class="mt-2 text-sm font-medium text-red-600" role="alert">Choisissez qui paie la livraison : le client ou vous.</p>
+        <p v-if="missing.feePayer" class="mt-2 text-sm font-medium text-red-600" role="alert">Choisissez qui paie la livraison : le destinataire ou vous.</p>
       </div>
     </section>
 
@@ -156,7 +189,7 @@
           <label class="m-label" for="desc">Que contient le colis ?</label>
           <input id="desc" autocomplete="jibiat-off" v-model="form.description" class="m-input" placeholder="Ex. : 2 robes, 1 sac">
         </div>
-        <div class="grid grid-cols-2 gap-2">
+        <div v-if="!billed" class="grid grid-cols-2 gap-2">
           <label :class="['tap flex items-center gap-2 rounded-xl px-4 py-3 ring-1', form.is_express ? 'ring-2 ring-[var(--app-color)]' : 'ring-slate-200 bg-white']">
             <input v-model="form.is_express" type="checkbox" class="h-5 w-5 accent-[var(--app-color)]"> ⚡ Express
           </label>
@@ -169,7 +202,7 @@
           <textarea id="note" autocomplete="jibiat-off" v-model="form.merchant_note" rows="2" class="m-input" placeholder="Ex. : appeler avant d'arriver" />
         </div>
         <div>
-          <label class="m-label" for="phone2">Autre numéro du client</label>
+          <label class="m-label" for="phone2">Autre numéro du destinataire</label>
           <input id="phone2" autocomplete="jibiat-off" v-model="form.recipient_phone2" class="m-input" inputmode="tel" placeholder="Si le premier ne répond pas">
         </div>
       </div>
@@ -178,9 +211,21 @@
     <!-- Prix en direct et envoi -->
     <div v-show="!keyboardOpen" class="fixed bottom-16 inset-x-0 z-20 bg-white/95 backdrop-blur border-t border-slate-200 pb-safe shadow-[0_-6px_18px_rgba(15,23,42,0.06)]">
       <div class="mx-auto max-w-lg px-4 pt-3 pb-3 space-y-2">
-        <div v-if="quote" class="text-sm space-y-0.5">
+        <!-- Distribution, MAD : comment la course sera facturée, et le forfait du mois -->
+        <div v-if="billed && quote?.billing" class="text-sm space-y-0.5">
+          <div class="flex justify-between gap-3">
+            <span class="text-slate-500">{{ quote.billing.label }}</span>
+            <strong class="whitespace-nowrap">{{ quote.billing.basis === 'forfait' && !quote.billing.amount ? 'forfait' : money(quote.billing.amount) }}</strong>
+          </div>
+          <div v-if="usage?.included" class="flex justify-between text-slate-500">
+            <span>Forfait de {{ usage.month_label.toLowerCase() }}</span>
+            <span>{{ usage.used }} / {{ usage.included }} utilisés</span>
+          </div>
+          <p class="text-slate-500">Rien à encaisser · facture du mois</p>
+        </div>
+        <div v-else-if="quote && !billed" class="text-sm space-y-0.5">
           <div class="flex justify-between">
-            <span class="text-slate-500">Livraison {{ zoneName }} ({{ form.fee_payer === 'merchant' ? 'à ma charge' : form.fee_payer === 'recipient' ? 'payée par le client' : 'qui paie ?' }})</span>
+            <span class="text-slate-500">Livraison {{ zoneName }} ({{ form.fee_payer === 'merchant' ? 'à ma charge' : form.fee_payer === 'recipient' ? 'payée par le destinataire' : 'qui paie ?' }})</span>
             <strong>{{ money(quote.total) }}</strong>
           </div>
           <div v-if="quote.is_shipping" class="flex justify-between"><span class="text-slate-500">🚌 Expédition (au réel)</span><strong>≈ {{ money(shippingEstimate) }}</strong></div>
@@ -208,13 +253,39 @@ import { keyboardOpen } from '../../composables/useKeyboard'
 import { longDay, useDeliveryDate } from '../../composables/useDeliveryDate'
 import { useAuthStore } from '../../stores/auth'
 import { localPhone, money, today } from '../../utils/format'
+import { activityLabel } from '../../utils/activities'
+import { useClientSpaceStore } from '../../stores/clientSpace'
 import { siteOrigin } from '../../native'
 
 const route = useRoute()
 
 const auth = useAuthStore()
+const space = useClientSpaceStore()
+
+// Activités du client : l'e-commerce encaisse ; distribution et MAD passent sur la facture du mois
+const activityChoices = computed(() => space.activities.map((a) => ({
+  value: a.value,
+  label: a.value === 'mad' ? 'MAD' : a.label,
+  icon: { ecommerce: '🛍️', distribution: '✉️', mad: '🛵' }[a.value],
+  description: { ecommerce: 'montant encaissé', distribution: 'plis, colis, chèques', mad: 'mes livreurs attitrés' }[a.value],
+})))
+const defaultActivity = () => space.current || (space.hasEcommerce ? 'ecommerce' : space.activities[0]?.value) || 'ecommerce'
+const SHIPMENT_TYPES = [
+  { value: 'pli', label: 'Pli', icon: '✉️', description: '0-500 g' },
+  { value: 'colis', label: 'Colis', icon: '📦', description: '0-5 kg' },
+  { value: 'cheque', label: 'Chèque', icon: '🧾', description: 'à livrer' },
+]
+const DELAYS = [
+  { value: '24h', label: '24 h' },
+  { value: '48h', label: '48 h' },
+  { value: '72h', label: '72 h' },
+]
 
 const blank = () => ({
+  activity: defaultActivity(),
+  shipment_type: null,
+  weight_kg: null,
+  delivery_delay: null,
   recipient_phone: '',
   recipient_name: '',
   recipient_phone2: '',
@@ -232,6 +303,23 @@ const blank = () => ({
 
 // Un seul écran : l'essentiel visible, le reste derrière « Date, contenu du colis… »
 const form = reactive(blank())
+const billed = computed(() => form.activity !== 'ecommerce')
+// Formule de l'activité choisie (auth : sans réseau ; space : consommation du mois)
+const plan = computed(() => (auth.user?.merchant?.billing_plans || []).find((p) => p.activity === form.activity) || null)
+const usage = computed(() => space.planFor(form.activity))
+// Valeurs par défaut de l'envoi selon l'activité
+watch([() => form.activity, plan], (current, old) => {
+  if (!billed.value) {
+    // Retour à l'e-commerce : « qui paie » redevient un choix explicite
+    if (old && old[0] !== 'ecommerce') form.fee_payer = null
+    Object.assign(form, { shipment_type: null, weight_kg: null, delivery_delay: null })
+    return
+  }
+  form.fee_payer = 'merchant'
+  form.items_amount = 0
+  form.shipment_type = form.activity === 'distribution' ? (form.shipment_type || 'pli') : null
+  form.delivery_delay = plan.value && !plan.value.has_forfait ? (form.delivery_delay || plan.value.delivery_delay) : null
+}, { immediate: true })
 const showMore = ref(false)
 const showStock = ref(false)
 // Champs obligatoires oubliés, encadrés en rouge jusqu'à leur saisie
@@ -311,7 +399,7 @@ const shareLink = computed(() => {
 })
 
 // Tarif recalculé à chaque changement utile
-watch(() => [form.delivery_zone_id, form.is_express, form.is_fragile], fetchQuote)
+watch(() => [form.delivery_zone_id, form.is_express, form.is_fragile, form.activity, form.shipment_type, form.delivery_delay, form.weight_kg], fetchQuote)
 
 async function fetchQuote() {
   quote.value = null
@@ -319,6 +407,10 @@ async function fetchQuote() {
   if (!form.delivery_zone_id) return
   try {
     const { data } = await http.post('/quotes', {
+      activity: form.activity,
+      shipment_type: form.shipment_type || undefined,
+      delivery_delay: form.delivery_delay || undefined,
+      weight_kg: form.weight_kg || undefined,
       delivery_zone_id: form.delivery_zone_id,
       pickup_zone_id: sourceZoneId.value || undefined,
       is_express: form.is_express,
@@ -372,8 +464,10 @@ function applyParsed(data) {
   set('recipient_phone', (data.recipient_phone || '').replace(/^\+225/, ''))
   set('recipient_phone2', (data.recipient_phone2 || '').replace(/^\+225/, ''))
   set('delivery_address', joinAddress(data.delivery_address, data.delivery_landmark))
-  set('items_amount', data.items_amount)
-  set('fee_payer', data.fee_payer)
+  if (!billed.value) {
+    set('items_amount', data.items_amount)
+    set('fee_payer', data.fee_payer)
+  }
   set('description', data.description)
   set('merchant_note', data.merchant_note)
   zoneChoices.value = data.zones || []
@@ -398,14 +492,15 @@ async function checkDuplicates() {
 // Champs obligatoires : le premier oublié est montré à l'écran
 function validate() {
   missing.phone = form.recipient_phone.replace(/\D/g, '').length < 8
+  if (billed.value) form.fee_payer = 'merchant'
   missing.zone = !form.delivery_zone_id
   missing.feePayer = !form.fee_payer
   missing.date = !dateChosen.value
   const first = [
-    [missing.phone, 'phone', 'Indiquez le numéro de téléphone du client.'],
+    [missing.phone, 'phone', 'Indiquez le numéro de téléphone du destinataire.'],
     [missing.zone, 'zone-field', 'Choisissez la commune ou le quartier de livraison.'],
     [source.value && !pickedItems.value.length, 'amount', 'Choisissez les articles à prendre à l\'entrepôt.'],
-    [missing.feePayer, 'fee-payer', 'Choisissez qui paie la livraison : le client ou vous.'],
+    [missing.feePayer, 'fee-payer', 'Choisissez qui paie la livraison : le destinataire ou vous.'],
     [missing.date, 'when-field', 'Choisissez quand livrer la course.'],
   ].find(([bad]) => bad)
   if (!first) return true
@@ -436,7 +531,8 @@ async function submit() {
   saving.value = true
   try {
     const payload = Object.fromEntries(Object.entries(form).filter(([, v]) => v !== '' && v !== null))
-    if (pickedItems.value.length) payload.items = pickedItems.value.map(({ product_id, quantity, unit_price }) => ({ product_id, quantity, unit_price }))
+    if (billed.value) delete payload.items_amount
+    if (pickedItems.value.length && !billed.value) payload.items = pickedItems.value.map(({ product_id, quantity, unit_price }) => ({ product_id, quantity, unit_price }))
     if (source.value) payload.pickup_hub_id = source.value
     created.value = (await http.post('/orders', payload)).data.data
     loadStock()
@@ -453,7 +549,8 @@ async function submit() {
 }
 
 function reset() {
-  Object.assign(form, blank())
+  // Activité gardée d'une course à l'autre
+  Object.assign(form, { ...blank(), activity: form.activity })
   Object.keys(missing).forEach((key) => { missing[key] = false })
   showMore.value = false
   showStock.value = false
@@ -485,6 +582,7 @@ async function loadStock() {
 
 onMounted(async () => {
   loadDeliveryDay()
+  space.load()
   zones.value = (await http.get('/zones')).data.data
   loadStock()
 })

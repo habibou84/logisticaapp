@@ -117,3 +117,38 @@ API : `GET /api/v1/revenue?from=2026-01&to=2026-12`.
 - **Réglage fin** : chaque permission peut être **ajoutée** au rôle ou **retirée** pour ce seul compte (une permission
   retirée l'emporte toujours). Nouvelles permissions : `invoices.view`, `invoices.manage` (factures clients),
   `rates.manage` (formules et tarifs), `revenue.view` (chiffre d'affaires).
+
+## 7. L'application du client (distribution, MAD)
+
+L'application s'adapte aux activités du client :
+
+- **Plusieurs activités** : un sélecteur en haut de l'accueil, des courses et des statistiques (Tout, E-commerce,
+  Distribution, MAD) ; la nouvelle course demande « Pour quelle activité ? ».
+- **Nouvelle course en distribution** : type d'envoi (pli, colis, chèque), poids facultatif, délai (imposé par le
+  contrat, ou au choix en distribution à l'unité). **Rien à encaisser** en distribution et en MAD : ni montant, ni
+  « qui paie la livraison » (refusé aussi par l'API et l'import). Le bas de l'écran indique la facturation de la course
+  (« compris dans le forfait », prix à l'unité) et le forfait du mois (« 9 / 10 utilisés »).
+- **Accueil** : facture à payer (rouge si en retard), une carte par formule (envois utilisés sur le forfait, envois en plus,
+  facture estimée à ce jour) et, en MAD, **ses livreurs attitrés** (nom, téléphone, état : disponible, en course,
+  indisponible, absent ; jamais leur position).
+- **Onglet Factures** à la place d'« Argent » pour un client sans e-commerce ; chaque facture montre comment la payer
+  (**Réglages › Entreprise › Moyens de paiement des factures clients**, imprimés aussi sur la facture).
+- **Statistiques** : envois par type, destination (forfait, à l'unité, intérieur) et délai.
+- **Import Excel** : colonnes facultatives « Activité », « Type d'envoi », « Poids », « Délai ».
+
+API de l'application : `GET /api/v1/merchant/space` (activités, formules du mois, factures à payer, livreurs MAD) ;
+`activity` accepté par `/orders`, `/reports/summary` et `/merchant/stats`.
+
+### Notifications
+
+Cloche de l'application toujours ; notification sur le téléphone et WhatsApp (numéro de l'entreprise connecté dans
+**WhatsApp**) selon les réglages du client (**Profil › Notifications**), comme pour les autres messages :
+
+| Événement | Quand |
+|---|---|
+| Facture du mois émise | À l'émission (numéro, montant, échéance) |
+| Rappel de facture | Trois jours avant l'échéance, puis le lendemain de l'échéance et chaque semaine tant qu'elle n'est pas payée (`billing:remind`, 09:10) |
+| Forfait bientôt épuisé | À 80 % puis à 100 % du forfait du mois (une fois par seuil et par mois) |
+
+Modèles WhatsApp à faire approuver par Meta : `facture_emise`, `facture_rappel`, `facture_en_retard`, `forfait_consomme`
+(texte dans **WhatsApp › Modèles de messages**).

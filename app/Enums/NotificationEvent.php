@@ -14,6 +14,10 @@ enum NotificationEvent: string
     case OrderIncident = 'order.incident';
     case PayoutPaid = 'payout.paid';
     case ReturnSlip = 'order.returned';
+    // Clients sous formule (distribution, MAD)
+    case InvoiceIssued = 'invoice.issued';
+    case InvoiceReminder = 'invoice.reminder';
+    case ForfaitUsage = 'forfait.usage';
 
     public function label(): string
     {
@@ -24,6 +28,25 @@ enum NotificationEvent: string
             self::OrderIncident => 'Incident (échec, report)',
             self::PayoutPaid => 'Reversement effectué',
             self::ReturnSlip => 'Retour de colis (bon de retour)',
+            self::InvoiceIssued => 'Facture du mois émise',
+            self::InvoiceReminder => 'Rappel de facture (échéance proche, retard)',
+            self::ForfaitUsage => 'Forfait bientôt épuisé (80 %, puis 100 %)',
+        };
+    }
+
+    /**
+     * Activités concernées : un client sans formule ne voit pas les réglages de facture, un client sans
+     * e-commerce pas ceux des reversements.
+     *
+     * @return list<Activity>
+     */
+    public function activities(): array
+    {
+        return match ($this) {
+            self::PayoutPaid => [Activity::Ecommerce],
+            self::InvoiceIssued, self::InvoiceReminder => [Activity::Distribution, Activity::Mad],
+            self::ForfaitUsage => [Activity::Distribution, Activity::Mad],
+            default => Activity::cases(),
         };
     }
 

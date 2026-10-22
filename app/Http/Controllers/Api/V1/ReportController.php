@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Enums\Activity;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Services\Reports\OrderSummary;
@@ -25,11 +26,14 @@ class ReportController extends Controller
             'to' => ['nullable', 'date', 'after_or_equal:from'],
             'merchant_id' => ['nullable', 'integer'],
             'date_basis' => ['nullable', Rule::in(['created', 'delivery'])],
+            // Une seule activité (e-commerce, distribution, MAD)
+            'activity' => ['nullable', Rule::enum(Activity::class)],
         ]);
 
         $orders = Order::query()
             ->visibleTo($request->user())
-            ->when(isset($data['merchant_id']) && $request->user()->merchant_id === null, fn ($q) => $q->where('merchant_id', $data['merchant_id']));
+            ->when(isset($data['merchant_id']) && $request->user()->merchant_id === null, fn ($q) => $q->where('merchant_id', $data['merchant_id']))
+            ->when(isset($data['activity']), fn ($q) => $q->where('activity', $data['activity']));
 
         return response()->json(['data' => $summary->build(
             $orders,

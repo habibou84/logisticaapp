@@ -42,6 +42,7 @@ class UpdateCompanyRequest extends FormRequest
             'pickup_mission_custody' => ['sometimes', 'in:keep,depot,choose'],
             'depot_closes_at' => ['sometimes', 'nullable', 'date_format:H:i'],
             'tagline' => ['sometimes', 'nullable', 'string', 'max:160'],
+            'invoice_payment_info' => ['sometimes', 'nullable', 'string', 'max:1000'],
             'merchant_signup' => ['sometimes', 'boolean'],
             'weekly_report' => ['sometimes', 'boolean'],
             'pickup_assign_alert_minutes' => ['sometimes', 'integer', 'min:0', 'max:1440'],

@@ -24,7 +24,7 @@ class BillingPlan extends Model
 
     protected $fillable = [
         'company_id', 'merchant_id', 'formula', 'activity', 'monthly_fee', 'included_quantity', 'overage_price',
-        'delivery_delay', 'cheque_price', 'extra_kg_price', 'starts_on', 'ends_on', 'notes',
+        'delivery_delay', 'cheque_price', 'extra_kg_price', 'starts_on', 'ends_on', 'notes', 'usage_alert',
     ];
 
     protected function casts(): array

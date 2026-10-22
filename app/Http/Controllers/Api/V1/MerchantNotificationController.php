@@ -90,11 +90,15 @@ class MerchantNotificationController extends Controller
             // Notification sur le téléphone d'abord (gratuit), WhatsApp à défaut
             'push_first' => WebPush::enabled() && (bool) $merchant->company?->merchant_push_first,
             'push_devices' => $merchant->pushSubscriptions()->count(),
-            'events' => array_map(fn (NotificationEvent $e) => [
+            // Seulement les événements de ses activités (factures : clients sous formule)
+            'events' => array_values(array_map(fn (NotificationEvent $e) => [
                 'event' => $e->value,
                 'label' => $e->label(),
                 'enabled' => $merchant->wantsNotification($e),
-            ], NotificationEvent::cases()),
+            ], array_filter(NotificationEvent::cases(), fn (NotificationEvent $e) => array_intersect(
+                array_map(fn ($a) => $a->value, $e->activities()),
+                array_map(fn ($a) => $a->value, $merchant->activityList()),
+            ) !== []))),
             'reports' => collect(ReportFrequency::cases())->mapWithKeys(function (ReportFrequency $f) use ($merchant) {
                 $report = $merchant->scheduledReports->firstWhere('frequency', $f);
 

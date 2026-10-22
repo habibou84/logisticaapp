@@ -15,6 +15,7 @@ use App\Models\Recipient;
 use App\Models\User;
 use App\Models\Zone;
 use App\Services\Assignment\AutoAssigner;
+use App\Services\Finance\ClientSpace;
 use App\Services\Pricing\ClientPricing;
 use App\Services\Pricing\PricingService;
 use App\Services\Stock\StockKeeper;
@@ -83,6 +84,13 @@ class OrderService
                     'pickup_lat' => null,
                     'pickup_lng' => null,
                 ];
+            }
+
+            // Distribution et MAD : rien à encaisser auprès du destinataire, la course passe sur la facture du mois
+            if ($activity !== Activity::Ecommerce) {
+                $this->assertNoCollection($activity, $data);
+                $data['items_amount'] = 0;
+                $data['fee_payer'] = FeePayer::Merchant->value;
             }
 
             // Montant et contenu déduits des articles quand ils ne sont pas indiqués
@@ -171,6 +179,10 @@ class OrderService
                 }
             }
 
+            // Forfait du client bientôt épuisé : alerte à 80 % puis à 100 %
+            $created = $order;
+            DB::afterCommit(fn () => app(ClientSpace::class)->afterOrder($created));
+
             return $order;
         });
     }
@@ -200,6 +212,11 @@ class OrderService
             }
 
             $order->fill(Arr::only($data, [...self::PICKUP_FIELDS, ...self::DELIVERY_FIELDS, ...self::PACKAGE_FIELDS]));
+
+            if ($order->activity !== Activity::Ecommerce) {
+                $this->assertNoCollection($order->activity, $data);
+                unset($data['items_amount'], $data['fee_payer']);
+            }
 
             if (array_key_exists('fee_payer', $data)) {
                 $order->fee_payer = FeePayer::from($data['fee_payer']);
@@ -324,6 +341,18 @@ class OrderService
      * Activité de la course : celle demandée (parmi celles du client), sinon l'unique activité du client,
      * sinon l'e-commerce s'il en fait (API, imports), sinon sa première. Toujours dans le périmètre de l'auteur.
      */
+    /**
+     * Distribution et MAD : aucun montant à encaisser auprès du destinataire.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function assertNoCollection(Activity $activity, array $data): void
+    {
+        if ((int) ($data['items_amount'] ?? 0) > 0 || ($data['fee_payer'] ?? null) === FeePayer::Recipient->value) {
+            throw new BusinessRuleException("Pas de montant à encaisser en {$activity->label()} : la course passe sur la facture du mois du client.", 'items_amount');
+        }
+    }
+
     public function activity(User $actor, Merchant $merchant, Activity|string|null $wanted): Activity
     {
         $list = $merchant->activityList();

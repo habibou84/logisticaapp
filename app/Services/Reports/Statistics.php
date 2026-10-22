@@ -2,10 +2,12 @@
 
 namespace App\Services\Reports;
 
+use App\Enums\DeliveryDelay;
 use App\Enums\LedgerEntryType;
 use App\Enums\MerchantStatus;
 use App\Enums\OrderEventType;
 use App\Enums\OrderStatus;
+use App\Enums\ShipmentType;
 use App\Models\Company;
 use App\Models\Courier;
 use App\Models\CourierEarning;
@@ -139,6 +141,35 @@ class Statistics
             'previous_kpis' => $this->kpis($prevFrom, $prevTo, $withAmounts),
             'series' => array_values($series),
             'heatmap' => array_values(array_map('array_values', $heatmap)),
+        ];
+    }
+
+    /**
+     * Distribution, MAD : envois par type, destination (forfait, unité, intérieur) et délai.
+     *
+     * @return array<string, mixed>
+     */
+    public function shipments(CarbonInterface $from, CarbonInterface $to): array
+    {
+        $orders = $this->ordersBetween('created_at', $from, $to, ['shipment_type', 'billing_basis', 'delivery_delay', 'status'])
+            ->reject(fn (Order $o) => in_array($o->status, [OrderStatus::Cancelled, OrderStatus::Rejected], true));
+        $count = fn (Collection $group, string $key) => $group->groupBy(fn (Order $o) => $o->{$key}?->value ?? ($o->{$key} ?: 'none'))->map->count();
+
+        $types = $count($orders, 'shipment_type');
+        $basis = $count($orders, 'billing_basis');
+        $delays = $count($orders, 'delivery_delay');
+
+        return [
+            'total' => $orders->count(),
+            'types' => array_map(fn (ShipmentType $t) => ['value' => $t->value, 'label' => $t->label(), 'count' => (int) ($types[$t->value] ?? 0)], ShipmentType::cases()),
+            'destinations' => [
+                ['value' => 'forfait', 'label' => 'Abidjan (forfait)', 'count' => (int) ($basis['forfait'] ?? 0)],
+                ['value' => 'unit', 'label' => 'Abidjan (à l\'unité)', 'count' => (int) ($basis['unit'] ?? 0)],
+                ['value' => 'interior', 'label' => 'Villes de l\'intérieur', 'count' => (int) ($basis['interior'] ?? 0)],
+                ['value' => 'cheque', 'label' => 'Chèques', 'count' => (int) ($basis['cheque'] ?? 0)],
+                ['value' => 'outside', 'label' => 'Hors forfait', 'count' => (int) ($basis['outside'] ?? 0)],
+            ],
+            'delays' => array_map(fn (DeliveryDelay $d) => ['value' => $d->value, 'label' => $d->label(), 'count' => (int) ($delays[$d->value] ?? 0)], DeliveryDelay::cases()),
         ];
     }
 

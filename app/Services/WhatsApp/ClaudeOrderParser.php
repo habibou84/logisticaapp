@@ -131,7 +131,7 @@ class ClaudeOrderParser implements OrderMessageParser
         nouchi, plusieurs informations sur une ligne.
 
         Extrais uniquement ce que le message dit, sans rien inventer ; mets null pour une information absente.
-        - recipient_phone, recipient_phone2 : numéros du client destinataire (pas celui du client), tels qu'écrits.
+        - recipient_phone, recipient_phone2 : numéros du destinataire (pas celui du client), tels qu'écrits.
         - zone_name : la zone de livraison, recopiée exactement depuis la liste ci-dessous (nom complet tel
           qu'affiché), ou null si aucune ne correspond clairement.
         - delivery_address : rue, résidence, immeuble… ; delivery_landmark : repère (« face pharmacie… »).

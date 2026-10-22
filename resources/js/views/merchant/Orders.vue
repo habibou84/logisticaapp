@@ -5,6 +5,8 @@
       <svg viewBox="0 0 24 24" class="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" stroke-linecap="round" /></svg>
     </div>
 
+    <ActivitySwitch @change="reload" />
+
     <!-- Période : aujourd'hui par défaut, comme sur l'accueil ; seules les courses de ces dates s'affichent -->
     <PeriodPicker :model-value="period" @update:model-value="setPeriod" />
 
@@ -59,10 +61,13 @@ import { useAuthStore } from '../../stores/auth'
 import { telLink } from '../../utils/format'
 import { needsDecision } from '../../utils/merchantStatus'
 import PeriodPicker from '../../components/mobile/PeriodPicker.vue'
+import ActivitySwitch from '../../components/client/ActivitySwitch.vue'
+import { useClientSpaceStore } from '../../stores/clientSpace'
 import { ORDER_FILTERS, filterParams } from '../../utils/orderFilters'
 import { periodFromQuery, periodQuery } from '../../utils/periods'
 
 const auth = useAuthStore()
+const space = useClientSpaceStore()
 
 // En cours, reports compris (décision prise, nouvelle livraison prévue)
 const filters = ORDER_FILTERS
@@ -96,7 +101,7 @@ async function load(p = 1) {
   try {
     const { data } = await cachedGet('/orders', {
       // Une recherche porte sur toutes les dates : on retrouve une course sans connaître son jour
-      params: { page: p, per_page: 20, ...filterParams(current, search.value ? null : period.value), search: search.value || undefined },
+      params: { page: p, per_page: 20, ...filterParams(current, search.value ? null : period.value), search: search.value || undefined, activity: space.current || undefined },
     })
     orders.value = p === 1 ? data.data : [...orders.value, ...data.data]
     page.value = p
@@ -112,7 +117,7 @@ async function load(p = 1) {
 async function loadCounts() {
   await Promise.all(filters.map(async (f) => {
     try {
-      const { data } = await cachedGet('/orders', { params: { per_page: 1, ...filterParams(f, period.value) } })
+      const { data } = await cachedGet('/orders', { params: { per_page: 1, ...filterParams(f, period.value), activity: space.current || undefined } })
       counts[f.value] = data.meta?.total ?? 0
     } catch {
       // Compteur facultatif
@@ -123,6 +128,12 @@ async function loadCounts() {
 // Catégorie et période gardées dans l'adresse (retour depuis une fiche)
 function syncQuery() {
   router.replace({ query: { ...(filter.value === 'all' ? {} : { filtre: filter.value }), ...periodQuery(period.value, 'today') } })
+}
+
+// Autre activité choisie : liste et compteurs recalculés
+function reload() {
+  load()
+  loadCounts()
 }
 
 function setFilter(value) {

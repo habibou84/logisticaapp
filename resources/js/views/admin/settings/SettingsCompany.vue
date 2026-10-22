@@ -10,6 +10,11 @@
           <label class="label" for="tagline">Accroche de la page d'accueil des clients</label>
           <input id="tagline" v-model="form.tagline" class="input" maxlength="160" placeholder="Vos colis livrés vite, vos clients satisfaits.">
         </div>
+        <div class="sm:col-span-2">
+          <label class="label" for="payment-info">Moyens de paiement des factures clients</label>
+          <textarea id="payment-info" v-model="form.invoice_payment_info" rows="3" class="input" maxlength="1000" placeholder="Virement : IBAN CI00 0000 0000 0000&#10;Wave / Orange Money : 07 00 00 00 00&#10;Chèque à l'ordre de …" />
+          <p class="text-xs text-gray-500 mt-1">Imprimés sur les factures du mois (distribution, MAD) et affichés au client dans son application.</p>
+        </div>
       </div>
       <SaveBar :dirty="dirty" :saving="saving" :error="error" @save="save" @reset="reset" />
     </section>
@@ -49,7 +54,7 @@ import { useCompanySettings } from '../../../composables/useCompanySettings'
 import { useToastStore } from '../../../stores/toasts'
 import { loadBranding } from '../../../composables/useBranding'
 
-const { form, company, dirty, saving, error, save, reset } = useCompanySettings(['name', 'phone', 'address', 'tagline'])
+const { form, company, dirty, saving, error, save, reset } = useCompanySettings(['name', 'phone', 'address', 'tagline', 'invoice_payment_info'])
 const toasts = useToastStore()
 const logoUrl = ref(null)
 const uploading = ref(false)

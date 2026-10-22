@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BillingPlanController;
 use App\Http\Controllers\Api\V1\ClientInvoiceController;
 use App\Http\Controllers\Api\V1\ClientRateController;
+use App\Http\Controllers\Api\V1\ClientSpaceController;
 use App\Http\Controllers\Api\V1\CompanyController;
 use App\Http\Controllers\Api\V1\CourierAvailabilityController;
 use App\Http\Controllers\Api\V1\CourierController;
@@ -259,6 +260,8 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::get('merchant/pickup-location', [MerchantLocationController::class, 'mine'])->name('merchant.pickup-location');
         // Statistiques de l'e-commerçant (son application)
         Route::get('merchant/stats', [StatisticsController::class, 'merchant'])->middleware('can:orders.view')->name('merchant.stats');
+        // Espace client : forfait du mois, factures à payer, livreurs MAD
+        Route::get('merchant/space', ClientSpaceController::class)->name('merchant.space');
         Route::put('merchant/pickup-location', [MerchantLocationController::class, 'updateMine'])->name('merchant.pickup-location.update');
         // Lien Google Maps collé → coordonnées
         Route::post('geo/link', [MerchantLocationController::class, 'resolveLink'])->middleware('throttle:20,1')->name('geo.link');

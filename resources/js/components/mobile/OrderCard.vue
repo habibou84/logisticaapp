@@ -15,7 +15,9 @@
       <div class="shrink-0 text-right">
         <!-- Course à livrer un autre jour : son jour, en court -->
         <p v-if="later" class="mb-0.5 inline-block rounded-full bg-sky-50 px-2 py-0.5 text-[11px] font-semibold text-sky-700">📅 {{ later }}</p>
-        <p class="font-semibold">{{ money(order.amounts.cod_amount) }}</p>
+        <!-- Distribution, MAD : rien à encaisser, l'activité à la place du montant -->
+        <p v-if="order.activity && order.activity !== 'ecommerce' && !order.amounts.cod_amount" class="inline-block rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-semibold text-violet-700">{{ order.activity_label }}</p>
+        <p v-else class="font-semibold">{{ money(order.amounts.cod_amount) }}</p>
         <p class="font-mono text-[11px] text-slate-400">{{ order.tracking_code }}</p>
       </div>
     </RouterLink>

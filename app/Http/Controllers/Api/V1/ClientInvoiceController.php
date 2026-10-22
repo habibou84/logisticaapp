@@ -11,6 +11,7 @@ use App\Models\ClientInvoice;
 use App\Models\Merchant;
 use App\Models\Order;
 use App\Services\Finance\ClientInvoicing;
+use App\Services\Finance\ClientSpace;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -116,11 +117,14 @@ class ClientInvoiceController extends Controller
         return response()->json(['data' => $this->detail($this->invoicing->removeLine($clientInvoice, $line))]);
     }
 
-    public function issue(Request $request, ClientInvoice $clientInvoice): JsonResponse
+    public function issue(Request $request, ClientInvoice $clientInvoice, ClientSpace $space): JsonResponse
     {
         $this->authorizeManage($request);
+        $invoice = $this->invoicing->issue($clientInvoice);
+        // Le client est prévenu (cloche ; push et WhatsApp selon ses réglages)
+        $space->invoiceIssued($invoice);
 
-        return response()->json(['data' => $this->detail($this->invoicing->issue($clientInvoice))]);
+        return response()->json(['data' => $this->detail($invoice)]);
     }
 
     public function pay(Request $request, ClientInvoice $clientInvoice): JsonResponse
@@ -170,12 +174,14 @@ class ClientInvoiceController extends Controller
     /** @return array<string, mixed> */
     private function detail(ClientInvoice $invoice): array
     {
-        $invoice->loadMissing(['lines', 'payments.recorder:id,name', 'merchant']);
+        $invoice->loadMissing(['lines', 'payments.recorder:id,name', 'merchant', 'company']);
         $merchant = $invoice->merchant;
 
         return [
             ...$this->summary($invoice),
             'notes' => $invoice->notes,
+            // Moyens de paiement de l'entreprise (Réglages › Entreprise), imprimés sur la facture
+            'payment_info' => $invoice->company?->invoice_payment_info,
             'client' => [
                 'business_name' => $merchant->business_name,
                 'contact_name' => $merchant->contact_name,

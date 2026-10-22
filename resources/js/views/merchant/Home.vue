@@ -5,6 +5,8 @@
       <p class="text-slate-500 first-letter:uppercase">{{ todayLabel }}<span v-if="todayCount !== null"> · {{ todayCount ? `${todayCount} course${todayCount > 1 ? 's' : ''} aujourd'hui` : 'aucune course aujourd\'hui' }}</span></p>
     </div>
 
+    <ActivitySwitch @change="reload" />
+
     <!-- L'action principale : créer une course -->
     <div v-if="auth.can('orders.create')" class="flex gap-2">
       <RouterLink to="/marchand/courses/nouvelle" class="tap flex-1 rounded-2xl p-4 text-white flex items-center gap-3 active:opacity-90" :style="{ backgroundColor: 'var(--app-color)' }">
@@ -46,8 +48,27 @@
       </button>
     </section>
 
-    <!-- L'argent : un seul montant, en mots simples -->
-    <RouterLink v-if="balance" to="/marchand/paiements" class="tap block rounded-2xl p-5 text-white active:opacity-90" :style="{ backgroundColor: 'var(--app-color)' }">
+    <!-- Distribution, MAD : facture à payer, forfait du mois, livreurs attitrés -->
+    <template v-if="space.showsBilled && space.space">
+      <RouterLink
+        v-if="space.space.invoices?.to_pay"
+        to="/marchand/factures"
+        :class="['tap block rounded-2xl p-5 text-white active:opacity-90', space.space.invoices.overdue ? 'bg-red-600' : '']"
+        :style="space.space.invoices.overdue ? {} : { backgroundColor: 'var(--app-color)' }"
+      >
+        <p class="text-sm opacity-85">{{ space.space.invoices.overdue ? 'Facture en retard' : 'Facture à payer' }}</p>
+        <p class="text-3xl font-bold mt-0.5">{{ money(space.space.invoices.to_pay) }}</p>
+        <p v-if="space.space.invoices.next_due" class="mt-1 text-sm opacity-90">
+          {{ space.space.invoices.overdue ? 'Elle était à payer le' : 'À payer avant le' }} {{ date(space.space.invoices.next_due) }}
+        </p>
+        <p class="mt-2 text-xs font-semibold opacity-90">Voir mes factures ›</p>
+      </RouterLink>
+      <ForfaitCard v-for="p in space.plans" :key="p.id" :plan="p" />
+      <MadCouriers v-if="space.space.couriers?.length && space.current !== 'distribution'" :couriers="space.space.couriers" />
+    </template>
+
+    <!-- L'argent (e-commerce) : un seul montant, en mots simples -->
+    <RouterLink v-if="balance && space.showsEcommerce" to="/marchand/paiements" class="tap block rounded-2xl p-5 text-white active:opacity-90" :style="{ backgroundColor: 'var(--app-color)' }">
       <p class="text-sm opacity-85">{{ balance.available < 0 ? 'Vous devez à l\'agence' : 'On vous doit' }}</p>
       <p class="text-3xl font-bold mt-0.5">{{ money(Math.abs(balance.available)) }}</p>
       <div v-if="balance.pending_cash" class="mt-3 pt-3 border-t border-white/20 flex justify-between text-sm">
@@ -82,7 +103,7 @@
       </div>
 
       <!-- Argent de la période, en une phrase -->
-      <p v-if="summary && summary.amounts.collected" class="m-card px-4 py-3 text-sm text-slate-600">
+      <p v-if="summary && summary.amounts.collected && space.showsEcommerce" class="m-card px-4 py-3 text-sm text-slate-600">
         Les livreurs ont encaissé <strong class="text-slate-900">{{ money(summary.amounts.collected) }}</strong>,
         moins <strong class="text-slate-900">{{ money(fees) }}</strong> de frais :
         <strong :class="summary.amounts.net_to_merchant < 0 ? 'text-red-600' : 'text-[var(--app-color)]'">{{ money(summary.amounts.net_to_merchant) }} pour vous</strong>.
@@ -108,6 +129,11 @@
 
     <!-- Pour aller plus loin -->
     <section class="space-y-2">
+      <RouterLink v-if="space.hasBilled && auth.can('finance.view')" to="/marchand/factures" class="tap m-card p-4 flex items-center gap-3 text-sm active:bg-slate-50">
+        <span class="text-2xl">📄</span>
+        <span class="flex-1"><strong class="block">Mes factures</strong><span class="text-slate-500">Factures du mois, paiements, PDF</span></span>
+        <span class="text-slate-400">›</span>
+      </RouterLink>
       <RouterLink to="/marchand/statistiques" class="tap m-card p-4 flex items-center gap-3 text-sm active:bg-slate-50">
         <span class="text-2xl">📊</span>
         <span class="flex-1"><strong class="block">Mes statistiques</strong><span class="text-slate-500">Taux de livraison, motifs d'échec, communes</span></span>
@@ -141,13 +167,20 @@ import EmptyState from '../../components/mobile/EmptyState.vue'
 import InstallBanner from '../../components/mobile/InstallBanner.vue'
 import PushInvite from '../../components/mobile/PushInvite.vue'
 import PeriodPicker from '../../components/mobile/PeriodPicker.vue'
+import ActivitySwitch from '../../components/client/ActivitySwitch.vue'
+import ForfaitCard from '../../components/client/ForfaitCard.vue'
+import MadCouriers from '../../components/client/MadCouriers.vue'
+import { useClientSpaceStore } from '../../stores/clientSpace'
 import { useAuthStore } from '../../stores/auth'
 import { orderChanges } from '../../composables/useRealtime'
-import { localPhone, money, today as todayDate } from '../../utils/format'
+import { date, localPhone, money, today as todayDate } from '../../utils/format'
 import { ORDER_FILTERS, filterParams } from '../../utils/orderFilters'
 import { periodFromQuery, periodQuery } from '../../utils/periods'
 
 const auth = useAuthStore()
+const space = useClientSpaceStore()
+// Activité regardée (sélecteur en haut) : toutes les requêtes la suivent
+const scoped = (params = {}) => ({ ...params, activity: space.current || undefined })
 const route = useRoute()
 const router = useRouter()
 const firstName = computed(() => (auth.user?.name || '').split(' ')[0])
@@ -203,7 +236,7 @@ function setPeriod(p) {
 
 async function loadCounts() {
   const results = await Promise.all(ORDER_FILTERS.map((f) =>
-    cachedGet('/orders', { params: { per_page: 1, ...filterParams(f, period.value) } }).catch(() => null)))
+    cachedGet('/orders', { params: scoped({ per_page: 1, ...filterParams(f, period.value) }) }).catch(() => null)))
   ORDER_FILTERS.forEach((f, i) => {
     if (results[i]) counts[f.value] = results[i].data.meta?.total ?? results[i].data.data.length
   })
@@ -214,7 +247,7 @@ const laterCount = ref(0)
 const laterPeriod = () => periodFromQuery({ periode: 'later' })
 async function loadLater() {
   try {
-    const { data } = await cachedGet('/orders', { params: { per_page: 1, ...filterParams(ORDER_FILTERS[0], laterPeriod()) } })
+    const { data } = await cachedGet('/orders', { params: scoped({ per_page: 1, ...filterParams(ORDER_FILTERS[0], laterPeriod()) }) })
     laterCount.value = data.meta?.total ?? data.data.length
   } catch {
     laterCount.value = 0
@@ -225,7 +258,7 @@ async function loadOrders(p = 1) {
   loadingMore.value = p > 1
   const filter = ORDER_FILTERS.find((f) => f.value === homeFilter.value)
   try {
-    const { data } = await cachedGet('/orders', { params: { ...filterParams(filter, period.value), per_page: 10, page: p } })
+    const { data } = await cachedGet('/orders', { params: scoped({ ...filterParams(filter, period.value), per_page: 10, page: p }) })
     orders.value = p === 1 ? data.data : [...orders.value, ...data.data]
     page.value = p
     total.value = data.meta?.total ?? orders.value.length
@@ -239,9 +272,9 @@ async function load() {
   const d = todayDate()
   try {
     const [s, m, a] = await Promise.all([
-      cachedGet('/reports/summary', { params: { from: period.value.from || undefined, to: period.value.to || undefined, date_basis: 'delivery' } }),
-      cachedGet('/reports/summary', { params: { from: `${d.slice(0, 8)}01`, to: d, date_basis: 'delivery' } }),
-      cachedGet('/orders', { params: { queue: 'to_decide', per_page: 10 } }),
+      cachedGet('/reports/summary', { params: scoped({ from: period.value.from || undefined, to: period.value.to || undefined, date_basis: 'delivery' }) }),
+      cachedGet('/reports/summary', { params: scoped({ from: `${d.slice(0, 8)}01`, to: d, date_basis: 'delivery' }) }),
+      cachedGet('/orders', { params: scoped({ queue: 'to_decide', per_page: 10 }) }),
       loadOrders(1),
       loadCounts(),
       loadLater(),
@@ -261,7 +294,13 @@ async function load() {
 watch(orderChanges, () => {
   load()
   loadBalance()
+  space.load()
 })
+
+// Autre activité choisie : courses, compteurs et cartes recalculés
+function reload() {
+  load()
+}
 // Résumé du stock (seulement si le client a des produits)
 const stock = reactive({ total: 0, low: 0 })
 async function loadStock() {
@@ -279,7 +318,8 @@ async function loadStock() {
 }
 
 async function loadBalance() {
-  if (!auth.can('finance.view') || !auth.user?.merchant_id) return
+  // Reversements : seulement l'e-commerce
+  if (!auth.can('finance.view') || !auth.user?.merchant_id || !space.hasEcommerce) return
   try {
     balance.value = (await cachedGet(`/finance/merchants/${auth.user.merchant_id}/ledger`, { params: { per_page: 1 } })).data.summary
   } catch {
@@ -291,5 +331,6 @@ onMounted(() => {
   load()
   loadStock()
   loadBalance()
+  space.load()
 })
 </script>

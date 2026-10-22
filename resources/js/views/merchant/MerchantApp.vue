@@ -7,8 +7,10 @@ import { computed } from 'vue'
 import MobileLayout from '../../components/mobile/MobileLayout.vue'
 import { loadBranding, spaceColor } from '../../composables/useBranding'
 import { useAuthStore } from '../../stores/auth'
+import { useClientSpaceStore } from '../../stores/clientSpace'
 
 const auth = useAuthStore()
+const space = useClientSpaceStore()
 
 const shopName = computed(() => auth.user?.merchant?.business_name || 'Mes livraisons')
 // « Boutique Chic Abidjan » → « BC »
@@ -22,12 +24,15 @@ const tabs = computed(() => [
     label: 'Nouvelle course',
     primary: true,
     menu: auth.can('orders.create') ? [
-      { to: '/marchand/courses/nouvelle', icon: '＋', label: 'Une nouvelle course', text: 'Le client, la commune, le montant' },
+      { to: '/marchand/courses/nouvelle', icon: '＋', label: 'Une nouvelle course', text: space.hasEcommerce ? 'Le destinataire, la commune, le montant' : 'Le destinataire, la commune, l\'envoi' },
       { to: '/marchand/courses/nouvelle?coller=1', icon: '💬', label: 'Coller un message WhatsApp', text: 'La course se remplit toute seule' },
       { to: '/marchand/courses/import', icon: '📥', label: 'Importer un fichier Excel', text: 'Beaucoup de courses d\'un coup' },
     ] : null,
   },
-  ...(auth.can('finance.view') ? [{ to: '/marchand/paiements', label: 'Argent', emoji: '💰' }] : []),
+  // Argent (reversements e-commerce) ; sans e-commerce, les factures du mois
+  ...(auth.can('finance.view')
+    ? [space.hasEcommerce ? { to: '/marchand/paiements', label: 'Argent', emoji: '💰' } : { to: '/marchand/factures', label: 'Factures', emoji: '📄' }]
+    : []),
   { to: '/marchand/profil', label: 'Moi', emoji: '👤' },
 ])
 

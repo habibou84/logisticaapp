@@ -30,7 +30,7 @@
 
       <!-- Actions utiles en un toucher -->
       <div :class="['grid gap-2 text-center text-xs font-medium', courier ? 'grid-cols-3' : 'grid-cols-2']">
-        <a :href="telLink(order.recipient.phone)" class="tap rounded-2xl bg-slate-50 py-3 ring-1 ring-slate-200"><span class="block text-xl">📞</span>Client</a>
+        <a :href="telLink(order.recipient.phone)" class="tap rounded-2xl bg-slate-50 py-3 ring-1 ring-slate-200"><span class="block text-xl">📞</span>Destinataire</a>
         <a v-if="courier" :href="telLink(courier.phone)" class="tap rounded-2xl bg-slate-50 py-3 ring-1 ring-slate-200"><span class="block text-xl">🛵</span>{{ courier.name.split(' ')[0] }}</a>
         <a v-if="!isFinal" :href="whatsappShare" target="_blank" class="tap rounded-2xl bg-emerald-50 py-3 ring-1 ring-emerald-200 text-emerald-800"><span class="block text-xl">🔗</span>Envoyer le suivi</a>
         <button v-else class="tap rounded-2xl bg-slate-50 py-3 ring-1 ring-slate-200" @click="copy(trackingUrl)"><span class="block text-xl">🔗</span>Lien de suivi</button>
@@ -40,16 +40,16 @@
     <!-- Code à donner au livreur (tant que la course n'est pas terminée) -->
     <section v-if="!isFinal" class="m-card p-4 flex items-center justify-between">
       <div>
-        <p class="text-sm text-slate-500">Code de livraison du client</p>
+        <p class="text-sm text-slate-500">Code de livraison du destinataire</p>
         <p class="font-mono text-2xl font-bold tracking-[0.3em]">{{ order.delivery_code }}</p>
       </div>
       <button class="rounded-xl bg-slate-100 px-3 py-2 text-sm font-medium" @click="copy(order.delivery_code)">Copier</button>
     </section>
 
-    <!-- Client -->
+    <!-- Destinataire -->
     <section class="m-card p-4 space-y-1">
       <div class="flex justify-between">
-        <p class="text-sm text-slate-500">Client</p>
+        <p class="text-sm text-slate-500">Destinataire</p>
         <button v-if="canEdit" class="text-sm font-medium text-[var(--app-color)]" @click="openEdit">Modifier</button>
       </div>
       <p class="font-semibold text-lg">{{ order.recipient.name || '—' }}</p>
@@ -73,9 +73,12 @@
 
     <!-- L'argent de la course : ce qui vous revient -->
     <section class="m-card p-4 space-y-2 text-sm">
-      <h2 class="font-semibold text-base">L'argent de la course</h2>
-      <div class="flex justify-between">
-        <span class="text-slate-500">{{ collected !== null ? 'Encaissé chez le client' : 'À encaisser chez le client' }}</span>
+      <h2 class="font-semibold text-base">{{ billedOrder ? 'La facturation de la course' : 'L\'argent de la course' }}</h2>
+      <div v-if="billedOrder" class="flex justify-between">
+        <span class="text-slate-500">Activité</span><span>{{ order.activity_label }} · rien à encaisser</span>
+      </div>
+      <div v-else class="flex justify-between">
+        <span class="text-slate-500">{{ collected !== null ? 'Encaissé chez le destinataire' : 'À encaisser chez le destinataire' }}</span>
         <span>{{ money(collected ?? order.amounts.cod_amount) }}</span>
       </div>
       <div v-if="order.billing" class="flex justify-between">
@@ -83,7 +86,7 @@
         <span>{{ order.billing.basis === 'forfait' ? 'forfait' : money(order.billing.amount) }} · facture du mois</span>
       </div>
       <div v-else class="flex justify-between">
-        <span class="text-slate-500">Livraison (payée par {{ order.amounts.fee_payer === 'recipient' ? 'le client' : 'vous' }})</span>
+        <span class="text-slate-500">Livraison (payée par {{ order.amounts.fee_payer === 'recipient' ? 'le destinataire' : 'vous' }})</span>
         <span>− {{ money(order.amounts.total_fees) }}</span>
       </div>
       <div v-if="order.is_shipping" class="flex justify-between">
@@ -93,7 +96,7 @@
       <div v-if="expensesTotal" class="flex justify-between">
         <span class="text-slate-500">Autres frais</span><span>− {{ money(expensesTotal) }}</span>
       </div>
-      <div v-if="showNet" class="flex justify-between items-baseline border-t pt-2">
+      <div v-if="showNet && !billedOrder" class="flex justify-between items-baseline border-t pt-2">
         <span class="font-semibold">{{ order.status === 'delivered' ? 'Pour vous' : 'Pour vous, une fois livrée' }}</span>
         <span :class="['text-xl font-bold', net < 0 ? 'text-red-600' : 'text-emerald-700']">{{ money(net) }}</span>
       </div>
@@ -137,7 +140,7 @@
         <p v-if="closed" class="text-xs text-slate-500">🌙 {{ closedReason }}.</p>
         <input v-if="when === 'other'" v-model="reschedule.delivery_scheduled_date" type="date" :min="minDate" class="m-input" aria-label="Jour de la nouvelle livraison">
         <p v-if="dateSummary" class="text-sm font-semibold text-slate-700">{{ dateSummary.replace('Votre course sera livrée', 'Nouvelle livraison') }}</p>
-        <textarea v-model="reschedule.note" rows="2" class="m-input" placeholder="Message (facultatif) : ex. le client sera là après 17h" />
+        <textarea v-model="reschedule.note" rows="2" class="m-input" placeholder="Message (facultatif) : ex. le destinataire sera là après 17h" />
         <button class="m-btn-primary" :disabled="busy || !dateChosen" @click="doReschedule">Confirmer la relivraison</button>
         <button v-if="!order.return_requested" class="w-full text-sm font-medium text-slate-600 py-1" @click="sheet = 'return'">Plutôt faire revenir le colis</button>
       </div>
@@ -161,7 +164,7 @@
 
     <BottomSheet :open="sheet === 'note'" title="Envoyer un message" @close="sheet = null">
       <div class="space-y-3">
-        <textarea v-model="noteText" rows="3" class="m-input" placeholder="Ex. : le client préfère être livré au bureau" />
+        <textarea v-model="noteText" rows="3" class="m-input" placeholder="Ex. : le destinataire préfère être livré au bureau" />
         <button class="m-btn-primary" :disabled="busy || !noteText.trim()" @click="doNote">Envoyer</button>
       </div>
     </BottomSheet>
@@ -209,6 +212,8 @@ const auth = useAuthStore()
 const toasts = useToastStore()
 
 const order = ref(null)
+// Distribution, MAD : rien à encaisser, la course passe sur la facture du mois
+const billedOrder = computed(() => !!order.value?.activity && order.value.activity !== 'ecommerce')
 const error = ref('')
 const sheet = ref(null)
 const busy = ref(false)

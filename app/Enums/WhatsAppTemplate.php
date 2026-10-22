@@ -22,6 +22,10 @@ enum WhatsAppTemplate: string
     case ReturnHanded = 'retour_remis';
     case ManagerReport = 'point_semaine_gerant';
     case OrderConfirmedForDate = 'course_validee_date';
+    case InvoiceIssued = 'facture_emise';
+    case InvoiceReminder = 'facture_rappel';
+    case InvoiceOverdue = 'facture_en_retard';
+    case ForfaitUsage = 'forfait_consomme';
 
     public const LANGUAGE = 'fr';
 
@@ -41,6 +45,10 @@ enum WhatsAppTemplate: string
             self::ReturnSlip => 'Bonjour {{1}}, notre livreur {{2}} vous rapporte {{3}} colis non livré(s) (bon de retour {{4}}). Détail du bon : {{5}} . Merci.',
             self::ReturnHanded => 'Bonjour {{1}}, {{2}} colis vous ont été rendus (bon de retour {{3}}), reçus par {{4}}. Détail du bon : {{5}} . Merci.',
             self::ManagerReport => 'Bonjour {{1}}, voici le point de la semaine {{2}} pour {{3}} : {{4}} courses créées ({{5}}), {{6}} livrées, taux de livraison {{7}}. Chiffre d\'affaires : {{8}} ({{9}}). Clients à relancer : {{10}}. Toutes les statistiques : {{11}} .',
+            self::InvoiceIssued => 'Bonjour {{1}}, votre facture {{2}} ({{3}}, {{4}}) est disponible : {{5}}, à payer avant le {{6}}. Le détail est dans votre espace client. Merci.',
+            self::InvoiceReminder => 'Bonjour {{1}}, rappel : votre facture {{2}} arrive à échéance le {{3}}. Reste à payer : {{4}}. Merci.',
+            self::InvoiceOverdue => 'Bonjour {{1}}, votre facture {{2}} était à payer le {{3}}. Reste à payer : {{4}}. Merci de la régler ou de nous contacter.',
+            self::ForfaitUsage => 'Bonjour {{1}}, votre forfait {{2}} de {{3}} est utilisé à {{4}} : {{5}} sur {{6}} inclus. Au-delà : {{7}} chacun, sur la facture du mois. Merci.',
         };
     }
 
@@ -62,6 +70,10 @@ enum WhatsAppTemplate: string
             self::ReturnSlip => '↩️ Colis en retour',
             self::ReturnHanded => '↩️ Colis rendus',
             self::ManagerReport => '📊 Point de la semaine',
+            self::InvoiceIssued => '📄 Nouvelle facture',
+            self::InvoiceReminder => '⏰ Facture bientôt à échéance',
+            self::InvoiceOverdue => '⚠️ Facture en retard',
+            self::ForfaitUsage => '📦 Votre forfait du mois',
         };
     }
 
@@ -81,6 +93,10 @@ enum WhatsAppTemplate: string
             self::ReturnSlip => 'Au marchand, quand un bon de retour de ses colis est confié à un livreur',
             self::ReturnHanded => 'Au marchand, quand ses colis lui ont été rendus (bon de retour signé)',
             self::ManagerReport => 'Aux administrateurs de l\'entreprise, point de la semaine (lundi matin)',
+            self::InvoiceIssued => 'Au client sous formule, quand sa facture du mois est émise',
+            self::InvoiceReminder => 'Au client, trois jours avant l\'échéance d\'une facture non payée',
+            self::InvoiceOverdue => 'Au client, quand une facture n\'est pas payée à l\'échéance (puis chaque semaine)',
+            self::ForfaitUsage => 'Au client sous contrat, quand son forfait du mois est utilisé à 80 % puis à 100 %',
         };
     }
 
@@ -105,6 +121,10 @@ enum WhatsAppTemplate: string
             self::ReturnSlip => ['Boutique Chic', 'Koffi', '4', 'BR-261009-00012', 'https://exemple.ci/bon-de-retour/12'],
             self::ReturnHanded => ['Boutique Chic', '4', 'BR-261009-00012', 'Mariam Koné', 'https://exemple.ci/bon-de-retour/12'],
             self::ManagerReport => ['Awa', 'du 05/10 au 11/10', 'Rapide Express', '312', '+12 %', '287', '94 %', '430 500 F', '+8 %', '3', 'https://exemple.ci/admin/statistiques'],
+            self::InvoiceIssued => ['Boutique Chic', 'DIS-202610-0001', 'Distribution', 'octobre 2026', '53 800 F', '15/11/2026'],
+            self::InvoiceReminder => ['Boutique Chic', 'DIS-202610-0001', '15/11/2026', '53 800 F'],
+            self::InvoiceOverdue => ['Boutique Chic', 'DIS-202610-0001', '15/11/2026', '53 800 F'],
+            self::ForfaitUsage => ['Boutique Chic', 'Distribution sous contrat', 'octobre 2026', '80 %', '80', '100', '800 F'],
         };
     }
 

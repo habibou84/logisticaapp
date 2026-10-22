@@ -17,6 +17,11 @@
       </div>
     </section>
 
+    <!-- Client aussi en distribution ou MAD : ses factures du mois sont à part -->
+    <RouterLink v-if="space.hasBilled" to="/marchand/factures" class="tap m-card p-4 flex items-center justify-between text-sm active:bg-slate-50">
+      <span>📄 <strong>Mes factures</strong> <span class="text-slate-500">· distribution, MAD</span></span><span class="text-slate-400">›</span>
+    </RouterLink>
+
     <div class="flex rounded-xl bg-slate-200 p-1">
       <button v-for="t in tabs" :key="t.value" :class="['tap flex-1 rounded-lg py-2 text-sm font-medium', tab === t.value ? 'bg-white shadow-sm' : 'text-slate-600']" @click="tab = t.value">
         {{ t.label }}
@@ -52,6 +57,7 @@
 
 <script setup>
 import { onMounted, ref } from 'vue'
+import { useClientSpaceStore } from '../../stores/clientSpace'
 import { cachedGet } from '../../composables/useCachedApi'
 import PayoutBadge from '../../components/PayoutBadge.vue'
 import EmptyState from '../../components/mobile/EmptyState.vue'
@@ -59,6 +65,7 @@ import { useAuthStore } from '../../stores/auth'
 import { date, dateTime, money, signedClass } from '../../utils/format'
 
 const auth = useAuthStore()
+const space = useClientSpaceStore()
 const tabs = [
   { value: 'payouts', label: 'Mes paiements' },
   { value: 'entries', label: 'Détail des mouvements' },

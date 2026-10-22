@@ -24,6 +24,7 @@ class Company extends Model
         'email',
         'address',
         'tagline',
+        'invoice_payment_info',
         'currency',
         'timezone',
         'auto_confirm_orders',

@@ -76,8 +76,11 @@ class StatisticsController extends Controller
         $merchant = $request->user()->merchant;
         abort_if($merchant === null, 403);
         [$from, $to] = $this->period($request);
+        $request->validate(['activity' => ['nullable', Rule::enum(Activity::class)]]);
+        $activity = $request->input('activity');
 
-        $stats = $this->statistics->forMerchant($merchant);
+        // Une de ses activités, ou toutes
+        $stats = $this->statistics->forMerchant($merchant)->forActivity($activity);
         $withAmounts = $this->withAmounts($request);
         $overview = $stats->overview($from, $to, $withAmounts);
         $deliveries = $stats->deliveries($from, $to);
@@ -93,6 +96,9 @@ class StatisticsController extends Controller
             'delays' => $deliveries['delays'],
             'failure_reasons' => $deliveries['failure_reasons'],
             'outcomes' => $deliveries['outcomes'],
+            // Distribution, MAD : envois par type, destination et délai
+            'shipments' => $activity !== Activity::Ecommerce->value && ($merchant->hasActivity(Activity::Distribution) || $merchant->hasActivity(Activity::Mad))
+                ? $stats->shipments($from, $to) : null,
             'zones' => collect($stats->zones($from, $to, false)['zones'])->take(8)
                 ->map(fn (array $z) => collect($z)->only(['id', 'name', 'delivered', 'failed', 'success_rate'])->all())->values(),
         ]]);

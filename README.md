@@ -302,6 +302,9 @@ Chaque client a une ou plusieurs **activités** (e-commerce, distribution, MAD),
 « Activité » côte à côte), factures (une série par activité : `DIS-…`, `MAD-…`), chiffre d'affaires (**Finances ›
 Chiffre d'affaires**). Les comptes de l'équipe peuvent être limités à certaines activités (périmètre), avec le rôle
 « Responsable d'activité » et le réglage fin des permissions (ajoutées ou retirées au rôle, compte par compte).
+L'application du client suit ses activités : en distribution et en MAD, rien à encaisser, type d'envoi et délai à la
+saisie, forfait du mois, factures (onglet Factures, moyens de paiement), livreurs attitrés en MAD, notifications de
+facture et de forfait (voir le guide, section 7).
 Guide : [`docs/FORMULES-CLIENTS.md`](docs/FORMULES-CLIENTS.md).
 
 | Formule | Facturation |

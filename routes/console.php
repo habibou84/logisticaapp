@@ -23,6 +23,8 @@ Schedule::command('merchants:locate')->dailyAt('03:10')->withoutOverlapping();
 Schedule::command('storage:bill')->monthlyOn(1, '01:10')->withoutOverlapping();
 // Factures des clients sous formule (distribution, MAD) : brouillons du mois écoulé, à vérifier puis émettre
 Schedule::command('billing:invoice')->monthlyOn(1, '01:30')->withoutOverlapping();
+// Rappels des factures à payer (clients sous formule)
+Schedule::command('billing:remind')->dailyAt('09:10')->withoutOverlapping();
 // Accès WhatsApp du bouton « Connecter WhatsApp » (60 jours) : relais par la plateforme ou alerte avant l'échéance
 Schedule::command('whatsapp:tokens')->dailyAt('08:15')->withoutOverlapping();
 Schedule::command('model:prune', ['--model' => [IdempotencyKey::class, WebhookDelivery::class, CourierLocation::class]])->daily();

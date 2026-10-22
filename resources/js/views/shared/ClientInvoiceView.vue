@@ -67,6 +67,13 @@
         <button class="btn-secondary" :disabled="busy">+ Ajouter</button>
       </form>
 
+      <!-- Comment payer : moyens de paiement de l'entreprise (Réglages › Entreprise) -->
+      <div v-if="invoice.payment_info && invoice.status !== 'void'" class="rounded border border-slate-200 bg-slate-50 p-3 text-sm">
+        <p class="font-semibold">Comment payer</p>
+        <p class="whitespace-pre-line text-gray-700">{{ invoice.payment_info }}</p>
+        <p class="text-xs text-gray-500 mt-1">Indiquez le numéro {{ invoice.number }} en référence du paiement.</p>
+      </div>
+
       <div v-if="invoice.payments.length" class="text-sm space-y-1">
         <h2 class="font-semibold">Paiements</h2>
         <p v-for="p in invoice.payments" :key="p.id">

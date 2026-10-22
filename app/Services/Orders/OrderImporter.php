@@ -2,13 +2,18 @@
 
 namespace App\Services\Orders;
 
+use App\Enums\Activity;
+use App\Enums\DeliveryDelay;
 use App\Enums\FeePayer;
+use App\Enums\ShipmentType;
 use App\Exceptions\BusinessRuleException;
 use App\Models\Merchant;
 use App\Models\User;
 use App\Models\Zone;
+use App\Services\Pricing\ClientPricing;
 use App\Services\Pricing\PricingService;
 use App\Services\WhatsApp\ZoneMatcher;
+use App\Support\Money;
 use App\Support\PhoneNumber;
 use DateTimeInterface;
 use Illuminate\Support\Carbon;
@@ -42,12 +47,18 @@ class OrderImporter
         'merchant_reference' => ['reference', 'ref', 'commande', 'numerodecommande', 'numerocommande'],
         'delivery_scheduled_date' => ['date', 'datedelivraison', 'datelivraison'],
         'merchant_note' => ['note', 'instruction', 'instructions', 'commentaire'],
+        // Distribution, MAD
+        'activity' => ['activite', 'activity'],
+        'shipment_type' => ['typedenvoi', 'typeenvoi', 'envoi', 'type', 'shipmenttype'],
+        'weight_kg' => ['poids', 'poidskg', 'weight', 'kg'],
+        'delivery_delay' => ['delai', 'delaidelivraison', 'delay'],
     ];
 
     public function __construct(
         private readonly ZoneMatcher $zones,
         private readonly PricingService $pricing,
         private readonly OrderService $orders,
+        private readonly ClientPricing $clientPricing,
     ) {}
 
     /**
@@ -56,9 +67,9 @@ class OrderImporter
     public static function template(): string
     {
         $rows = [
-            ['Nom', 'Téléphone', 'Téléphone 2', 'Commune', 'Quartier', 'Adresse', 'Repère', 'Montant', 'Frais payés par', 'Description', 'Référence', 'Date de livraison', 'Note'],
-            ['Awa Koné', '07 08 09 10 11', '', 'Yopougon', 'Siporex', 'Rue des jardins', 'Face pharmacie', '15000', 'client', '2 robes', 'CMD-1001', '', 'Appeler avant'],
-            ['Jean Kouadio', '05 44 33 22 11', '', 'Cocody', '', 'Riviera 3', '', '0', 'moi', '1 sac (déjà payé)', 'CMD-1002', '', ''],
+            ['Nom', 'Téléphone', 'Téléphone 2', 'Commune', 'Quartier', 'Adresse', 'Repère', 'Montant', 'Frais payés par', 'Description', 'Référence', 'Date de livraison', 'Note', 'Activité', 'Type d\'envoi', 'Poids', 'Délai'],
+            ['Awa Koné', '07 08 09 10 11', '', 'Yopougon', 'Siporex', 'Rue des jardins', 'Face pharmacie', '15000', 'destinataire', '2 robes', 'CMD-1001', '', 'Appeler avant', 'e-commerce', '', '', ''],
+            ['Jean Kouadio', '05 44 33 22 11', '', 'Cocody', '', 'Riviera 3', '', '0', 'moi', '1 sac (déjà payé)', 'CMD-1002', '', '', 'e-commerce', '', '', ''],
         ];
 
         return "\u{FEFF}".implode("\r\n", array_map(fn ($r) => implode(';', array_map(fn ($v) => str_contains($v, ';') ? '"'.$v.'"' : $v, $r)), $rows))."\r\n";
@@ -246,6 +257,34 @@ class OrderImporter
 
         $feePayer = $this->feePayer($text('fee_payer')) ?? $merchant->default_fee_payer;
 
+        // Activité de la ligne (sinon : e-commerce si le client l'a, sa seule activité sinon)
+        $activities = $merchant->activityList();
+        $activity = $text('activity') ? $this->activity($text('activity')) : (in_array(Activity::Ecommerce, $activities, true) ? Activity::Ecommerce : $activities[0]);
+        if ($activity === null || ! in_array($activity, $activities, true)) {
+            $errors[] = $activity === null ? 'Activité inconnue : '.$text('activity') : "Activité {$activity->label()} non ouverte pour ce client";
+            $activity = null;
+        }
+        $type = $text('shipment_type') ? ShipmentType::tryFrom(str_replace('è', 'e', mb_strtolower($text('shipment_type')))) : null;
+        if ($text('shipment_type') && $type === null) {
+            $errors[] = 'Type d\'envoi inconnu (pli, colis, chèque) : '.$text('shipment_type');
+        }
+        $weightValue = $text('weight_kg') !== null && is_numeric(str_replace(',', '.', (string) $text('weight_kg'))) ? (float) str_replace(',', '.', (string) $text('weight_kg')) : null;
+        if ($text('weight_kg') !== null && $weightValue === null) {
+            $errors[] = 'Poids invalide : '.$text('weight_kg');
+        }
+        $delay = $text('delivery_delay') ? DeliveryDelay::tryFrom(preg_replace('/\D/', '', (string) $text('delivery_delay')).'h') : null;
+        if ($text('delivery_delay') && $delay === null) {
+            $errors[] = 'Délai inconnu (24h, 48h, 72h) : '.$text('delivery_delay');
+        }
+        // Distribution et MAD : rien à encaisser, facturé au mois
+        $billed = $activity !== null && $activity !== Activity::Ecommerce;
+        if ($billed && is_int($amount) && $amount > 0) {
+            $errors[] = "Pas de montant à encaisser en {$activity->label()}";
+        }
+        if ($billed) {
+            $feePayer = FeePayer::Merchant;
+        }
+
         $date = $this->date($raw['delivery_scheduled_date'] ?? null);
         if ($date === false) {
             $errors[] = 'Date invalide : '.$text('delivery_scheduled_date');
@@ -266,13 +305,25 @@ class OrderImporter
             'merchant_reference' => $text('merchant_reference'),
             'delivery_scheduled_date' => $date ?: null,
             'merchant_note' => $text('merchant_note'),
+            'activity' => $activity?->value,
+            'shipment_type' => $type?->value,
+            'weight_kg' => $weightValue,
+            'delivery_delay' => $delay?->value,
         ], fn ($v) => $v !== null);
+        if ($billed) {
+            unset($data['items_amount']);
+        }
 
         $fee = 0;
+        $billing = null;
         if ($zone && $errors === []) {
             try {
                 $pickup = $zones->firstWhere('id', $merchant->pickup_zone_id) ?? Zone::findOrFail($merchant->pickup_zone_id);
-                $fee = $this->pricing->quote($merchant, $pickup, $zone, [])->total();
+                if ($billed) {
+                    $billing = $this->clientPricing->price($merchant, $activity, $pickup, $zone, $data)['pricing_details']['billing'] ?? null;
+                } else {
+                    $fee = $this->pricing->quote($merchant, $pickup, $zone, [])->total();
+                }
             } catch (BusinessRuleException $e) {
                 $errors[] = $e->getMessage();
             }
@@ -283,6 +334,9 @@ class OrderImporter
             'data' => $data,
             'zone_name' => $zone?->fullName(),
             'delivery_fee' => $fee,
+            'activity' => $activity?->value,
+            // Distribution, MAD : comment la course sera facturée (forfait, prix à l'unité…)
+            'billing_label' => $billing ? $billing['label'].($billing['basis'] !== 'forfait' && $billing['amount'] ? ' · '.Money::format((int) $billing['amount']) : '') : null,
             'cod_amount' => (int) ($data['items_amount'] ?? 0) + ($feePayer === FeePayer::Recipient ? $fee : 0),
             'errors' => $errors,
         ];
@@ -339,6 +393,18 @@ class OrderImporter
         return (int) $digits * ($thousands ? 1000 : 1);
     }
 
+    private function activity(string $value): ?Activity
+    {
+        $value = str_replace(['-', ' '], '', ZoneMatcher::normalize($value));
+
+        return match (true) {
+            in_array($value, ['ecommerce', 'ecom', 'vente', 'vad'], true) => Activity::Ecommerce,
+            in_array($value, ['distribution', 'distrib', 'courrier'], true) => Activity::Distribution,
+            in_array($value, ['mad', 'miseadisposition'], true) => Activity::Mad,
+            default => null,
+        };
+    }
+
     private function feePayer(?string $value): ?FeePayer
     {
         if ($value === null) {
@@ -348,6 +414,7 @@ class OrderImporter
         $value = ZoneMatcher::normalize($value);
 
         return match (true) {
+            // « client » : ancien modèle (l'acheteur), compris comme le destinataire
             in_array($value, ['client', 'destinataire', 'recipient', 'acheteur'], true) => FeePayer::Recipient,
             in_array($value, ['moi', 'marchand', 'boutique', 'vendeur', 'merchant'], true) => FeePayer::Merchant,
             default => null,

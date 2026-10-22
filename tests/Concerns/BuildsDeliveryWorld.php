@@ -2,6 +2,7 @@
 
 namespace Tests\Concerns;
 
+use App\Enums\Activity;
 use App\Enums\Role;
 use App\Models\Company;
 use App\Models\Courier;
@@ -131,12 +132,16 @@ trait BuildsDeliveryWorld
      */
     protected function createOrder(array $data = [], ?User $actor = null, ?Merchant $merchant = null): Order
     {
-        return app(OrderService::class)->create($actor ?? $this->merchantUser, $merchant ?? $this->merchant, [
+        $merchant ??= $this->merchant;
+        // Distribution, MAD : rien à encaisser auprès du destinataire
+        $billed = in_array($data['activity'] ?? null, ['distribution', 'mad'], true) || ! $merchant->hasActivity(Activity::Ecommerce);
+
+        return app(OrderService::class)->create($actor ?? $this->merchantUser, $merchant, [
             'recipient_name' => 'Jean Kouadio',
             'recipient_phone' => '0707070707',
             'delivery_zone_id' => $this->yopougon->id,
             'delivery_address' => 'Yopougon Siporex',
-            'items_amount' => 10000,
+            'items_amount' => $billed ? 0 : 10000,
             ...$data,
         ]);
     }

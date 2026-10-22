@@ -99,6 +99,8 @@ class Messenger
             'url' => match (true) {
                 $message->order_id !== null => '/marchand/courses/'.$message->order_id,
                 $message->event === NotificationEvent::PayoutPaid->value => '/marchand/paiements',
+                str_starts_with((string) $message->event, 'invoice.') => '/marchand/factures',
+                $message->event === NotificationEvent::ForfaitUsage->value => '/marchand',
                 str_starts_with((string) $message->event, 'report.') => '/marchand/statistiques',
                 default => '/marchand',
             },

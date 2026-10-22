@@ -102,7 +102,8 @@ class StoreOrderRequest extends FormRequest
             'items_amount' => ['nullable', 'integer', 'min:0', 'max:100000000'],
             // Saisie dans l'application ou le back-office : choix explicite, jamais par défaut
             // (API publique : réglage habituel du client si absent)
-            'fee_payer' => [Rule::requiredIf(! $this->is('api/public/*')), 'nullable', Rule::enum(FeePayer::class)],
+            // (distribution, MAD : toujours le client, facturé au mois)
+            'fee_payer' => [Rule::requiredIf(! $this->is('api/public/*') && ! in_array($this->input('activity'), [Activity::Distribution->value, Activity::Mad->value], true)), 'nullable', Rule::enum(FeePayer::class)],
 
             // Articles : produits du stock (réservés) ou articles libres
             'items' => ['nullable', 'array', 'max:50'],
@@ -115,7 +116,7 @@ class StoreOrderRequest extends FormRequest
 
     public function messages(): array
     {
-        return ['fee_payer.required' => 'Indiquez qui paie la livraison : le client ou le client.'];
+        return ['fee_payer.required' => 'Indiquez qui paie la livraison : le client ou le destinataire.'];
     }
 
     public function attributes(): array

@@ -22,7 +22,7 @@ const STATUS_TEXT = {
   confirmed: 'Course validée',
   picked_up: 'Colis récupéré à votre boutique',
   at_hub: 'Colis arrivé à l\'entrepôt',
-  out_for_delivery: 'En route vers le client',
+  out_for_delivery: 'En route vers le destinataire',
   delivered: 'Livrée',
   delivery_failed: 'Livraison échouée',
   rescheduled: 'Livraison reportée',

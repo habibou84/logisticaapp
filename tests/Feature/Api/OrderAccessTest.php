@@ -68,7 +68,7 @@ class OrderAccessTest extends TestCase
             'merchant_id' => $this->merchant->id,
             'recipient_phone' => '0707070707',
             'delivery_zone_id' => $this->yopougon->id,
-        ])->assertJsonValidationErrors(['fee_payer' => 'Indiquez qui paie la livraison : le client ou le client.']);
+        ])->assertJsonValidationErrors(['fee_payer' => 'Indiquez qui paie la livraison : le client ou le destinataire.']);
 
         $this->postJson('/api/v1/orders', [
             'merchant_id' => $this->merchant->id,

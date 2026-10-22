@@ -54,6 +54,7 @@ class CompanyResource extends JsonResource
             'same_courier_delivery' => (bool) $this->same_courier_delivery,
             'cutoff_by_day' => (object) ($this->cutoff_by_day ?? []),
             'tagline' => $this->tagline,
+            'invoice_payment_info' => $this->invoice_payment_info,
             'merchant_signup' => $this->merchant_signup,
             'weekly_report' => $this->weekly_report,
             'logo_url' => Branding::logoUrl($this->resource),
