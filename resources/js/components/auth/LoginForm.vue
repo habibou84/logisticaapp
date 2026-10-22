@@ -44,28 +44,14 @@
     <button type="submit" :disabled="loading" :class="['w-full rounded-xl py-3 font-semibold text-white shadow-sm disabled:opacity-60 transition', button]">
       {{ loading ? 'Connexion…' : 'Se connecter' }}
     </button>
-
-    <!-- Préproduction seulement (le serveur ne les donne pas ailleurs) : comptes de test en un toucher -->
-    <div v-if="demoAccounts.length" class="rounded-xl border border-dashed border-amber-300 bg-amber-50 p-3 text-sm">
-      <p class="font-semibold text-amber-900">🧪 Comptes de test (préproduction)</p>
-      <p class="text-xs text-amber-800 mb-2">Touchez un compte pour remplir le formulaire. Mot de passe : <code>{{ demoAccounts[0].password }}</code></p>
-      <ul class="space-y-1">
-        <li v-for="a in demoAccounts" :key="a.login">
-          <button type="button" class="w-full flex items-center justify-between gap-2 rounded-lg bg-white px-3 py-2 text-left ring-1 ring-amber-200 hover:ring-amber-400" @click="useDemo(a)">
-            <span class="min-w-0"><span class="block truncate font-medium text-slate-800">{{ a.name }}</span><span class="text-xs text-slate-500">{{ a.role_label }}</span></span>
-            <span class="shrink-0 font-mono text-xs text-slate-600">{{ a.login }}</span>
-          </button>
-        </li>
-      </ul>
-    </div>
   </form>
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
-import http, { apiErrorMessage } from '../../bootstrap/axios'
+import { apiErrorMessage } from '../../bootstrap/axios'
 import { LOGIN_PAGES, SPACE_FROM_SERVER } from '../../bootstrap/session'
 import { appLock } from '../../native'
 import { spaceColor } from '../../composables/useBranding'
@@ -92,20 +78,6 @@ const SPACE_LABELS = { marchand: 'Aller à l\'espace e-commerçant', livreur: 'A
 const auth = useAuthStore()
 const router = useRouter()
 const route = useRoute()
-
-// Comptes de test de l'entreprise pour cet espace (préproduction ; ailleurs la requête échoue sans bruit)
-const demoAccounts = ref([])
-onMounted(async () => {
-  try {
-    demoAccounts.value = (await http.get('/demo-accounts')).data.data.filter((a) => a.space === props.tone)
-  } catch {
-    demoAccounts.value = []
-  }
-})
-function useDemo(account) {
-  login.value = account.login
-  password.value = account.password
-}
 
 async function submit() {
   error.value = ''

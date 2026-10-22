@@ -21,7 +21,6 @@ use App\Http\Controllers\Api\V1\CourierMessageController;
 use App\Http\Controllers\Api\V1\CourierSpaceController;
 use App\Http\Controllers\Api\V1\CustomDomainController;
 use App\Http\Controllers\Api\V1\DeliveryDayController;
-use App\Http\Controllers\Api\V1\DemoAccountController;
 use App\Http\Controllers\Api\V1\FieldReportController;
 use App\Http\Controllers\Api\V1\FinanceController;
 use App\Http\Controllers\Api\V1\HubController;
@@ -159,8 +158,6 @@ Route::prefix('v1')->name('v1.')->group(function () {
 
     // Nom, logo et accroche de l'entreprise de livraison (pages de connexion)
     Route::get('branding', [BrandingController::class, 'show'])->name('branding.show');
-    // Préproduction seulement : comptes de démonstration de l'entreprise affichés sur les pages de connexion
-    Route::get('demo-accounts', DemoAccountController::class)->middleware('throttle:20,1')->name('demo-accounts');
 
     // Suivi public d'un colis (destinataire)
     Route::get('tracking/{code}', TrackingController::class)

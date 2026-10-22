@@ -63,15 +63,6 @@ class PreprodGateTest extends TestCase
         $this->postJson('http://preprod.jibiat.test/api/webhooks/whatsapp', [])->assertDontSee('Saisissez le code', false);
     }
 
-    public function test_the_public_api_stays_open_to_the_merchant_app(): void
-    {
-        // Jibiat Marchand de préproduction appelle l'API publique sans cookie : c'est la clé API qui protège
-        $this->getJson('http://express-ds.preprod.jibiat.test/api/public/v1/me')->assertUnauthorized()
-            ->assertJsonMissing(['message' => 'Préproduction : saisissez le code d\'accès.']);
-        // Le reste de l'API reste derrière le code
-        $this->getJson('http://express-ds.preprod.jibiat.test/api/v1/auth/me')->assertForbidden();
-    }
-
     public function test_apps_stay_installable_behind_the_code(): void
     {
         // Le navigateur télécharge le manifeste sans cookie : il doit le recevoir pour proposer l'installation

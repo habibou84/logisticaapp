@@ -98,13 +98,6 @@ Options :
 - **Comptes de démonstration**, au mot de passe `password` :
   - super administrateur `07 00 00 00 00` sur `admin.preprod.jibiat.com` ;
   - entreprise `livraison-express-ci.preprod.jibiat.com`, avec administrateur `07 00 00 00 01` et livreurs `07 00 00 00 04`.
-- **Panneau « 🧪 Comptes de test »** sous le formulaire de connexion (équipe, livreur, e-commerçant) : les comptes
-  de l'entreprise de l'adresse qui ont encore le mot de passe `password`, en un toucher. Jamais le super
-  administrateur, jamais en production ni sans le code d'accès (`GET /api/v1/demo-accounts`). Un compte dont
-  le mot de passe a été changé disparaît du panneau.
-- Gardez la préproduction sans envois réels : pas de vrais accès WhatsApp, SMS ou e-mail dans son `.env`
-  (passerelles en simulation), et aucune copie des données de production. Toute personne qui a le code
-  d'accès peut se connecter avec ces comptes.
 
 ## 5. Moteurs de recherche
 
