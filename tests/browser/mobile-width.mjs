@@ -13,7 +13,7 @@ const PAGES = [
   '', 'statistiques', 'courses', 'courses?queue=to_pickup', 'courses?queue=by_client', 'courses/nouvelle', 'carte', 'disponibilites',
   'planning', 'terrain', 'colis-livreurs', 'retours', 'caisse', 'paie-livreurs', 'marchands', 'stock', 'messages', 'livreurs', 'utilisateurs',
   'mise-en-route', 'reglages', 'reglages/entreprise', 'reglages/courses', 'reglages/alertes', 'reglages/e-commercants', 'reglages/reprise',
-  'zones', 'tarifs', 'whatsapp', 'integrations', 'abonnement',
+  'zones', 'tarifs', 'whatsapp', 'integrations',
 ]
 
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {})
