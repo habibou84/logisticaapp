@@ -30,22 +30,21 @@ Vérification depuis votre ordinateur : `ping app.logisticadelivery.com` doit r�
 
 ## 2. Récupérer le code sur le serveur
 
-En SSH, en root :
+En SSH, en root (le dépôt et le paquet commun `habibou84/socle` sont publics : pas de clé à créer) :
 
 ```bash
 apt-get update && apt-get install -y git
-git clone -b main https://github.com/habibou84/logisticaapp.git /opt/logistica
+git clone -b claude/delivery-app-standalone-config-7s34ck https://github.com/habibou84/logisticaapp.git /opt/logistica
 cd /opt/logistica
 ```
 
-Dépôt privé : créez d'abord une clé de déploiement (`ssh-keygen -t ed25519 -f /root/.ssh/logistica -N ""`),
-ajoutez le contenu de `/root/.ssh/logistica.pub` dans GitHub › dépôt › **Settings › Deploy keys** (sans droit
-d'écriture), puis :
+La branche clonée est celle que suivent les mises à jour (`deploy/update.sh`). Pour suivre une autre branche
+plus tard (ex. `main` une fois la version validée) : `git -C /opt/logistica fetch origin main && git -C /opt/logistica checkout main`.
 
-```bash
-GIT_SSH_COMMAND="ssh -i /root/.ssh/logistica" git clone -b main git@github.com:habibou84/logisticaapp.git /opt/logistica
-git -C /opt/logistica config core.sshCommand "ssh -i /root/.ssh/logistica"
-```
+Si le dépôt devient privé : créez une clé de déploiement (`ssh-keygen -t ed25519 -f /root/.ssh/logistica -N ""`),
+ajoutez `/root/.ssh/logistica.pub` dans GitHub › dépôt › **Settings › Deploy keys** (sans droit d'écriture), puis
+`git -C /opt/logistica remote set-url origin git@github.com:habibou84/logisticaapp.git` et
+`git -C /opt/logistica config core.sshCommand "ssh -i /root/.ssh/logistica"`.
 
 ## 3. Installation
 
