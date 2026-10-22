@@ -11,10 +11,6 @@
       <div class="rounded-2xl bg-white p-6 shadow-xl">
         <LoginForm tone="staff" />
       </div>
-      <!-- Adresse de la console : les entreprises peuvent s'y inscrire -->
-      <p v-if="onConsoleHost" class="text-center text-sm text-white/70">
-        Entreprise de livraison ? <RouterLink to="/creer-mon-entreprise" class="font-medium text-white underline">Créer mon entreprise</RouterLink>
-      </p>
     </div>
   </div>
 </template>
@@ -24,9 +20,6 @@ import { onMounted } from 'vue'
 import BrandLogo from '../../components/auth/BrandLogo.vue'
 import LoginForm from '../../components/auth/LoginForm.vue'
 import { branding, loadBranding, spaceColor } from '../../composables/useBranding'
-
-// Console de la plateforme (admin.…) : aucune entreprise derrière l'adresse
-const onConsoleHost = window.location.hostname.startsWith('admin.')
 
 onMounted(() => loadBranding())
 </script>

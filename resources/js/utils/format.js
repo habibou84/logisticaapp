@@ -88,7 +88,6 @@ export const EVENT_LABELS = {
 }
 
 export const ROLE_LABELS = {
-  super_admin: 'Super admin',
   admin: 'Administrateur',
   dispatcher: 'Dispatcher',
   cashier: 'Caissier',

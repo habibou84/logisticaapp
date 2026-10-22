@@ -35,7 +35,6 @@
     </section>
 
     <AppearanceSettings v-if="company" />
-    <CustomDomainSettings />
   </SettingsPage>
 </template>
 
@@ -46,7 +45,6 @@ import SettingsPage from '../../../components/settings/SettingsPage.vue'
 import SaveBar from '../../../components/settings/SaveBar.vue'
 import MoreHelp from '../../../components/settings/MoreHelp.vue'
 import AppearanceSettings from '../../../components/AppearanceSettings.vue'
-import CustomDomainSettings from '../../../components/CustomDomainSettings.vue'
 import { useCompanySettings } from '../../../composables/useCompanySettings'
 import { useToastStore } from '../../../stores/toasts'
 import { loadBranding } from '../../../composables/useBranding'

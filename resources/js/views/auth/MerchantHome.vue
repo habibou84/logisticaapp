@@ -41,7 +41,6 @@
             </div>
             <LoginForm tone="merchant" />
             <InstallBanner app="marchand" class="md:hidden" />
-            <NativeCompanySwitch />
             <div v-if="branding.signup_open" class="border-t border-slate-200 pt-5 text-center space-y-2">
               <p class="text-sm text-slate-600">Pas encore client ?</p>
               <RouterLink to="/inscription" class="block w-full rounded-xl border-2 border-[var(--app-color)] py-3 font-semibold text-[var(--app-color)] hover:bg-slate-50">Créer mon compte gratuitement</RouterLink>
@@ -109,7 +108,6 @@ import { useRouter } from 'vue-router'
 import BrandLogo from '../../components/auth/BrandLogo.vue'
 import LoginForm from '../../components/auth/LoginForm.vue'
 import InstallBanner from '../../components/mobile/InstallBanner.vue'
-import NativeCompanySwitch from '../../components/auth/NativeCompanySwitch.vue'
 import { nativeApp } from '../../native'
 import { branding, loadBranding, whatsappLink, spaceColor } from '../../composables/useBranding'
 

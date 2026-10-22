@@ -50,7 +50,7 @@ npm run mobile:livreur        # écrans + synchronisation des projets Android et
 cd mobile/livreur/android && ./gradlew assembleDebug   # APK (Android Studio ou SDK Android requis)
 ```
 
-`VITE_PLATFORM_URL` (par défaut `https://jibiat.com`) désigne la plateforme qui retrouve les entreprises.
+`VITE_APP_URL` (par défaut `https://app.logisticadelivery.com`) désigne le site auquel les applications parlent.
 
 Après avoir changé une icône du site : `python3 mobile/assets.py`.
 

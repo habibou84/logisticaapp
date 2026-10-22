@@ -23,19 +23,8 @@
         :data-tab="t.key"
         :class="['-mb-px whitespace-nowrap border-b-2 px-4 py-2 text-sm font-medium', tab === t.key ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-800']"
         @click="selectTab(t.key)"
-      >{{ t.label }}<span v-if="t.locked" class="ml-1" aria-label="non inclus dans votre formule">🔒</span></button>
+      >{{ t.label }}</button>
     </nav>
-
-    <!-- Onglet hors formule : on montre ce qu'il apporte -->
-    <section v-if="current?.locked" class="card p-6 text-center space-y-3">
-      <p class="text-4xl">🔒</p>
-      <h2 class="text-lg font-semibold">Statistiques avancées</h2>
-      <p class="mx-auto max-w-md text-slate-600">
-        Statistiques par commune (réussite, délais, frais moyen), finances de l'entreprise (revenus, dépenses, marge, argent en circulation)
-        et export des tableaux vers Excel. Ce module n'est pas inclus dans votre formule actuelle.
-      </p>
-      <RouterLink v-if="auth.can('settings.manage')" to="/admin/abonnement" class="btn-primary inline-block">Voir mon abonnement</RouterLink>
-    </section>
 
     <p v-if="error" class="rounded bg-red-50 px-3 py-2 text-sm text-red-700">{{ error }}</p>
     <p v-if="loading && !data[tab]" class="text-slate-500">Chargement…</p>
@@ -61,7 +50,7 @@
           <h2 class="font-semibold">Courses par jour</h2>
           <div class="flex gap-2 text-sm">
             <button class="text-blue-600" @click="showTable = !showTable">{{ showTable ? 'Voir le graphique' : 'Voir en tableau' }}</button>
-            <button v-if="advanced" class="text-blue-600" @click="exportSeries">Exporter</button>
+            <button class="text-blue-600" @click="exportSeries">Exporter</button>
           </div>
         </div>
         <LineChart
@@ -141,7 +130,7 @@
       <section class="card overflow-x-auto">
         <div class="flex items-center justify-between p-4 pb-2">
           <h2 class="font-semibold">Classement des livreurs</h2>
-          <button v-if="advanced" class="text-sm text-blue-600" @click="exportCouriers">Exporter</button>
+          <button class="text-sm text-blue-600" @click="exportCouriers">Exporter</button>
         </div>
         <table class="w-full text-sm">
           <thead class="bg-slate-50 text-left text-slate-600">
@@ -177,8 +166,8 @@
       <p class="text-xs text-slate-500">Délai : médiane entre le ramassage et la livraison. Écart de caisse : manques constatés aux versements de la période. Gains : paie enregistrée sur la période.</p>
     </template>
 
-    <MerchantsTab v-if="tab === 'merchants' && data.merchants" :data="data.merchants" :with-amounts="withAmounts" :exportable="advanced" />
-    <ZonesTab v-if="tab === 'zones' && data.zones" :data="data.zones" :with-amounts="withAmounts" :exportable="advanced" />
+    <MerchantsTab v-if="tab === 'merchants' && data.merchants" :data="data.merchants" :with-amounts="withAmounts" exportable />
+    <ZonesTab v-if="tab === 'zones' && data.zones" :data="data.zones" :with-amounts="withAmounts" exportable />
     <FinancesTab v-if="tab === 'finances' && data.finances" :data="data.finances" />
   </div>
 </template>
@@ -236,17 +225,14 @@ const PRESETS = {
   },
 }
 
-const advanced = computed(() => auth.hasFeature('advanced_stats'))
 const tabs = computed(() => [
   { key: 'overview', label: 'Vue d\'ensemble' },
   { key: 'deliveries', label: 'Livraisons' },
   ...(auth.can('orders.dispatch') ? [{ key: 'couriers', label: 'Livreurs' }] : []),
   ...(auth.can('merchants.view') ? [{ key: 'merchants', label: 'E-commerçants' }] : []),
-  // Statistiques avancées (selon la formule) : onglets visibles mais verrouillés sans le module
-  { key: 'zones', label: 'Zones', locked: !advanced.value },
-  ...(auth.can('finance.view') ? [{ key: 'finances', label: 'Finances', locked: !advanced.value }] : []),
+  { key: 'zones', label: 'Zones' },
+  ...(auth.can('finance.view') ? [{ key: 'finances', label: 'Finances' }] : []),
 ])
-const current = computed(() => tabs.value.find((t) => t.key === tab.value))
 const ENDPOINTS = Object.fromEntries(['overview', 'deliveries', 'couriers', 'merchants', 'zones', 'finances'].map((k) => [k, `/stats/${k}`]))
 
 const preset = ref(PRESETS[route.query.periode] ? route.query.periode : 'month')
@@ -265,7 +251,6 @@ const cr = computed(() => data.couriers)
 const withAmounts = computed(() => auth.can('finance.view'))
 
 async function load() {
-  if (current.value?.locked) return
   loading.value = true
   error.value = ''
   const wanted = tab.value

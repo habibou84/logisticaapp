@@ -61,7 +61,7 @@ const company = ref(null)
 const query = ref('')
 const setup = ref(null)
 
-const allowed = (item) => (!item.permission || auth.can(item.permission)) && (!item.feature || auth.hasFeature(item.feature))
+const allowed = (item) => !item.permission || auth.can(item.permission)
 const onOff = (v) => (v ? 'oui' : 'non')
 
 const ALL = computed(() => {
@@ -114,17 +114,11 @@ const ALL = computed(() => {
       key: 'integrations', icon: '🔌', title: 'Intégrations',
       description: 'Clés API et webhooks pour les boutiques en ligne, reprise de l\'ancienne application.',
       links: [
-        { to: '/admin/integrations', label: 'API et webhooks', permission: 'integrations.manage', feature: 'api' },
+        { to: '/admin/integrations', label: 'API et webhooks', permission: 'integrations.manage' },
         { to: '/admin/reglages/reprise', label: 'Reprise de l\'ancienne application', permission: 'settings.manage' },
       ],
       keywords: 'api clé webhook boutique import reprise ancienne application',
     },
-    ...(auth.user?.company?.plan ? [{
-      key: 'billing', icon: '🧾', title: 'Abonnement', to: '/admin/abonnement', permission: 'settings.manage',
-      description: 'Votre formule et vos factures.',
-      summary: `Formule ${auth.user.company.plan.name}`,
-      keywords: 'abonnement formule facture paiement',
-    }] : []),
   ]
 })
 

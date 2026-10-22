@@ -72,23 +72,6 @@
         <button class="btn-primary shrink-0">Chercher</button>
       </form>
 
-      <div v-if="auth.user?.support_session" class="bg-red-600 text-white text-sm px-4 py-2 flex flex-wrap items-center justify-between gap-2" role="status">
-        <span>
-          🛟 Session d'assistance ouverte par {{ auth.user.support_session.opened_by || 'le super administrateur' }}
-          avec le compte de {{ auth.user.name }}<template v-if="auth.user.support_session.expires_at"> · fin à {{ new Date(auth.user.support_session.expires_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) }}</template>
-        </span>
-        <button class="rounded bg-white/20 px-3 py-1 font-medium hover:bg-white/30" @click="logout">Terminer la session</button>
-      </div>
-
-      <!-- Abonnement : facture de la plateforme en retard (administrateurs) -->
-      <RouterLink
-        v-if="billingBanner"
-        to="/admin/abonnement"
-        :class="['block px-4 py-2 text-sm print:hidden', billingBanner.cls]"
-      >
-        {{ billingBanner.text }} <span class="font-medium underline">Voir mon abonnement</span>
-      </RouterLink>
-
       <!-- Mise en route : étapes essentielles qui restent (tableau de bord) -->
       <RouterLink
         v-if="setupBanner"
@@ -189,12 +172,6 @@ const heldParcels = useHeldParcelStore()
 const dispatchCounts = useDispatchCountStore()
 const isDispatch = computed(() => auth.can('orders.dispatch'))
 
-// Bandeau d'impayé : échéance passée, alerte (J+7), création de courses suspendue (J+15)
-const billingBanner = computed(() => ({
-  due: { cls: 'bg-amber-50 text-amber-900', text: 'Une facture de votre abonnement est arrivée à échéance.' },
-  warning: { cls: 'bg-amber-500 text-white', text: 'Facture d\'abonnement en retard : sans paiement, la création de courses sera bientôt suspendue.' },
-  restricted: { cls: 'bg-red-600 text-white', text: 'Création de courses suspendue : une facture de votre abonnement est impayée. Tout le reste reste consultable.' },
-})[auth.user?.company?.billing_state] ?? null)
 let countsTimer
 function fetchCounts() {
   fieldReports.fetchCounts().catch(() => {})
@@ -251,7 +228,7 @@ onMounted(() => {
 onBeforeUnmount(() => clearInterval(countsTimer))
 
 // Menu en rubriques ; une entrée sans droit ni module disparaît, une rubrique vide aussi
-const visible = (item) => (!item.permission || auth.can(item.permission)) && (!item.feature || auth.hasFeature(item.feature))
+const visible = (item) => !item.permission || auth.can(item.permission)
 const menu = computed(() => {
   const groups = [
     {
@@ -280,7 +257,7 @@ const menu = computed(() => {
       label: 'Clients',
       items: [
         { to: '/admin/marchands', icon: '🏪', label: 'E-commerçants', permission: 'merchants.view' },
-        { to: '/admin/stock', icon: '🏬', label: 'Stock', permission: 'stock.manage', feature: 'stock' },
+        { to: '/admin/stock', icon: '🏬', label: 'Stock', permission: 'stock.manage' },
         { to: '/admin/messages', icon: '💬', label: 'Messages', permission: 'orders.dispatch' },
       ],
     },
@@ -295,7 +272,7 @@ const menu = computed(() => {
     {
       id: 'configuration',
       label: 'Configuration',
-      // Zones, tarifs, WhatsApp, intégrations, abonnement… : tout passe par la page Réglages, rangée par thèmes
+      // Zones, tarifs, WhatsApp, intégrations… : tout passe par la page Réglages, rangée par thèmes
       items: [
         // Point rouge : alertes du bilan de santé
         { to: '/admin/reglages', icon: '⚙️', label: 'Réglages', permission: ['settings.manage', 'integrations.manage', 'users.view'], badge: (setup.value?.health || []).filter((h) => h.level === 'alert').length },

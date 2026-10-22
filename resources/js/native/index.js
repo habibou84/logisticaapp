@@ -2,10 +2,8 @@
 // « livreur » ou « ecommercant » selon l'application, null dans le navigateur (fixé à la compilation).
 export const nativeApp = import.meta.env.VITE_NATIVE_APP || null
 
-// Adresse de la plateforme, qui retrouve une entreprise à partir de son code
-const PLATFORM_URL = (import.meta.env.VITE_PLATFORM_URL || 'https://jibiat.com').replace(/\/$/, '')
-
-const COMPANY_KEY = 'native-company'
+// Adresse du site auquel l'application parle (fixée à la compilation)
+const SITE_URL = (import.meta.env.VITE_APP_URL || 'https://app.logisticadelivery.com').replace(/\/$/, '')
 
 // Chaque application ne s'ouvre qu'aux comptes de son espace
 const APPS = {
@@ -55,29 +53,9 @@ export function appLock() {
   return nativeConfig || (installedApp ? APPS[installedApp] : null)
 }
 
-/** Entreprise choisie sur l'appareil : { code, name, url, logo_url } */
-export function nativeCompany() {
-  try {
-    return JSON.parse(localStorage.getItem(COMPANY_KEY) || 'null')
-  } catch {
-    return null
-  }
-}
-
-export function setNativeCompany(company) {
-  localStorage.setItem(COMPANY_KEY, JSON.stringify(company))
-  // Nom et logo de l'entreprise précédente : rechargés depuis la nouvelle
-  localStorage.removeItem('branding')
-}
-
-export function clearNativeCompany() {
-  localStorage.removeItem(COMPANY_KEY)
-  localStorage.removeItem('branding')
-}
-
-/** Adresse du site de l'entreprise (application) ou du site ouvert (navigateur) */
+/** Adresse du site (application) ou du site ouvert (navigateur) */
 export function siteOrigin() {
-  return nativeApp ? (nativeCompany()?.url || PLATFORM_URL) : window.location.origin
+  return nativeApp ? SITE_URL : window.location.origin
 }
 
 /** Lien absolu vers une page ou un fichier du site (« /suivi/… » → « https://…/suivi/… ») */
@@ -86,24 +64,9 @@ export function siteUrl(path) {
   return siteOrigin() + (path.startsWith('/') ? path : `/${path}`)
 }
 
-/**
- * Retrouve l'entreprise à partir de son code (son adresse sur la plateforme, ex. « rapide-express »).
- */
-export async function findCompany(code) {
-  const clean = String(code || '').trim().toLowerCase().replace(/^https?:\/\//, '').split('.')[0]
-  const response = await fetch(`${PLATFORM_URL}/api/public/apps/companies/${encodeURIComponent(clean)}`, {
-    headers: { Accept: 'application/json' },
-  })
-  const body = await response.json().catch(() => ({}))
-  if (!response.ok) {
-    throw new Error(body.message || 'Code introuvable. Vérifiez-le auprès de votre entreprise de livraison.')
-  }
-  return body.data
-}
-
 /** Chemin autorisé dans cette application (les autres espaces restent sur le site) */
 export function allowedInApp(path) {
   const lock = appLock()
   if (!lock) return true
-  return path === '/' || path === '/entreprise' || lock.paths.some((p) => path === p || path.startsWith(`${p}/`))
+  return path === '/' || lock.paths.some((p) => path === p || path.startsWith(`${p}/`))
 }

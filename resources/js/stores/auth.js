@@ -22,13 +22,7 @@ export const useAuthStore = defineStore('auth', {
     role: (state) => state.user?.role ?? null,
     homeRoute: (state) => homeFor(state.user?.role),
     // Une liste de droits : l'un d'eux suffit
-    can: (state) => (permission) =>
-      state.user?.role === 'super_admin' || [permission].flat().some((p) => (state.user?.permissions ?? []).includes(p)),
-    // Module inclus dans la formule de l'entreprise (sans entreprise ni formule : tout)
-    hasFeature: (state) => (feature) => {
-      const features = state.user?.company?.features
-      return !Array.isArray(features) || features.includes(feature)
-    },
+    can: (state) => (permission) => [permission].flat().some((p) => (state.user?.permissions ?? []).includes(p)),
   },
 
   actions: {

@@ -11,7 +11,7 @@ const NATIVE_SPACES = { livreur: 'livreur', ecommercant: 'marchand' }
 /** Espace d'une page ; null pour les pages communes (mot de passe oublié, suivi d'un colis…) */
 export function spaceForPath(path) {
   if (path.startsWith('/livreur')) return 'livreur'
-  if (path.startsWith('/admin') || path.startsWith('/console')) return 'admin'
+  if (path.startsWith('/admin')) return 'admin'
   if (path === '/' || path.startsWith('/marchand') || path.startsWith('/inscription')) return 'marchand'
   return null
 }
