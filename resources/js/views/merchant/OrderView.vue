@@ -78,7 +78,11 @@
         <span class="text-slate-500">{{ collected !== null ? 'Encaissé chez le client' : 'À encaisser chez le client' }}</span>
         <span>{{ money(collected ?? order.amounts.cod_amount) }}</span>
       </div>
-      <div class="flex justify-between">
+      <div v-if="order.billing" class="flex justify-between">
+        <span class="text-slate-500">Livraison ({{ order.package.shipment_type_label }}<template v-if="order.package.delivery_delay">, {{ order.package.delivery_delay.replace('h', ' h') }}</template>)</span>
+        <span>{{ order.billing.basis === 'forfait' ? 'forfait' : money(order.billing.amount) }} · facture du mois</span>
+      </div>
+      <div v-else class="flex justify-between">
         <span class="text-slate-500">Livraison (payée par {{ order.amounts.fee_payer === 'recipient' ? 'le client' : 'vous' }})</span>
         <span>− {{ money(order.amounts.total_fees) }}</span>
       </div>

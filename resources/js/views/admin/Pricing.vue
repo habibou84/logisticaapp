@@ -86,6 +86,9 @@
       <button v-if="grid && !grid.is_default" class="btn-secondary" @click="makeDefault">Définir comme grille par défaut</button>
     </div>
     <ReturnFeeSettings />
+
+    <!-- Clients sous formule (distribution, MAD) -->
+    <ClientRates />
   </div>
 </template>
 
@@ -94,6 +97,7 @@ import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import { useToastStore } from '../../stores/toasts'
+import ClientRates from '../../components/ClientRates.vue'
 import ReturnFeeSettings from '../../components/settings/ReturnFeeSettings.vue'
 
 const toasts = useToastStore()

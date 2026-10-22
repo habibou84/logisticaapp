@@ -69,12 +69,21 @@
           <span :class="z.is_active ? '' : 'line-through text-gray-400'">
             {{ z.parent_id ? '↳ ' : '' }}{{ z.name }}
             <span v-if="z.is_shipping" class="ml-2 rounded-full bg-indigo-100 text-indigo-800 text-xs font-medium px-2 py-0.5">🚌 Expédition</span>
+            <span v-if="z.in_forfait" class="ml-2 rounded-full bg-emerald-100 text-emerald-800 text-xs font-medium px-2 py-0.5">Forfait</span>
+            <span v-if="z.city && z.city !== 'Abidjan'" class="ml-2 rounded-full bg-amber-100 text-amber-800 text-xs font-medium px-2 py-0.5">Intérieur · {{ z.city }}</span>
           </span>
           <span class="flex flex-wrap items-center justify-end gap-3">
             <label v-if="z.is_shipping" class="flex items-center gap-1 text-xs text-gray-500 font-normal">
               Frais habituels
               <input :value="z.shipping_fee_estimate" type="number" min="0" class="input w-24 py-1 text-xs" aria-label="Frais d'expédition habituels" @change="setEstimate(z, $event.target.value)">
             </label>
+            <button
+              v-if="!z.parent_id && !z.is_shipping && (!z.city || z.city === 'Abidjan')" class="text-blue-600 text-xs"
+              :title="z.in_forfait ? 'Retirer des communes couvertes par les forfaits (distribution, MAD)' : 'Ajouter aux communes couvertes par les forfaits (distribution, MAD)'"
+              @click="toggleForfait(z)"
+            >
+              {{ z.in_forfait ? 'Retirer du forfait' : 'Mettre au forfait' }}
+            </button>
             <button class="text-blue-600 text-xs" @click="startEdit(z)">Modifier</button>
             <button class="text-blue-600 text-xs" @click="toggle(z)">{{ z.is_active ? 'Désactiver' : 'Réactiver' }}</button>
             <button class="text-red-600 text-xs" @click="remove(z)">Supprimer</button>
@@ -160,6 +169,16 @@ async function remove(zone) {
 async function toggle(zone) {
   await http.patch(`/zones/${zone.id}`, { is_active: !zone.is_active })
   load()
+}
+
+// Communes couvertes par les forfaits des clients sous contrat (par défaut : les dix communes d'Abidjan)
+async function toggleForfait(zone) {
+  try {
+    await http.patch(`/zones/${zone.id}`, { in_forfait: !zone.in_forfait })
+    load()
+  } catch (e) {
+    toasts.error(apiErrorMessage(e))
+  }
 }
 
 async function setEstimate(zone, value) {

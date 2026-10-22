@@ -85,6 +85,43 @@
       </div>
     </section>
 
+    <!-- Client sous formule (distribution, MAD) : l'envoi passe sur la facture du mois -->
+    <section v-if="billingPlan" class="card p-4 space-y-3">
+      <div>
+        <h3 class="font-semibold">Envoi</h3>
+        <p class="text-sm text-gray-600">{{ billingPlan.formula_label }} : rien à payer sur la course, elle passe sur la facture du mois.</p>
+      </div>
+      <div class="grid sm:grid-cols-3 gap-3">
+        <div>
+          <p class="label">Type d'envoi</p>
+          <div class="flex flex-wrap gap-2" role="radiogroup" aria-label="Type d'envoi">
+            <button
+              v-for="t in SHIPMENT_TYPES" :key="t.value" type="button" role="radio" :aria-checked="form.shipment_type === t.value"
+              :class="['rounded-full px-3 py-1 text-sm ring-1', form.shipment_type === t.value ? 'bg-slate-900 text-white ring-slate-900' : 'bg-white ring-slate-300']"
+              @click="form.shipment_type = t.value"
+            >
+              {{ t.label }} <span class="opacity-70">{{ t.hint }}</span>
+            </button>
+          </div>
+        </div>
+        <div>
+          <label class="label" for="weight">Poids (kg, facultatif)</label>
+          <input id="weight" v-model.number="form.weight_kg" type="number" min="0" step="0.1" class="input" placeholder="Au-delà de 5 kg : supplément">
+          <p v-if="errors.weight_kg" class="field-error">{{ errors.weight_kg[0] }}</p>
+        </div>
+        <div>
+          <label class="label" for="delay">Délai de livraison</label>
+          <select v-if="!billingPlan.has_forfait" id="delay" v-model="form.delivery_delay" class="input">
+            <option value="24h">24 h</option>
+            <option value="48h">48 h</option>
+            <option value="72h">72 h</option>
+          </select>
+          <p v-else class="text-sm py-2">{{ billingPlan.delivery_delay.replace('h', ' h') }} (délai du contrat)</p>
+          <p v-if="errors.delivery_delay" class="field-error">{{ errors.delivery_delay[0] }}</p>
+        </div>
+      </div>
+    </section>
+
     <section class="card p-4 space-y-3">
       <h3 class="font-semibold">Paiement</h3>
       <div class="grid sm:grid-cols-2 gap-3">
@@ -180,6 +217,10 @@
     <div class="card p-4 flex flex-wrap items-center justify-between gap-3 sticky bottom-0">
       <div class="text-sm">
         <p v-if="quoteError" class="text-red-600">{{ quoteError }}</p>
+        <template v-else-if="quote?.billing">
+          <p>Facture du mois : <strong>{{ quote.billing.label }}</strong><template v-if="quote.billing.amount"> · {{ money(quote.billing.amount) }}</template></p>
+          <p class="text-gray-600">À encaisser auprès du client : <strong>{{ money(codAmount) }}</strong></p>
+        </template>
         <template v-else-if="quote">
           <p>Frais de livraison : <strong>{{ money(quote.total) }}</strong></p>
           <p class="text-gray-600">À encaisser auprès du client : <strong>{{ money(codAmount) }}</strong></p>
@@ -232,7 +273,16 @@ const form = reactive({
   pickup_zone_id: null,
   pickup_address: '',
   pickup_hub_id: null,
+  // Clients sous formule : pli, colis ou chèque, poids, délai (distribution à l'unité)
+  shipment_type: null,
+  weight_kg: null,
+  delivery_delay: null,
 })
+const SHIPMENT_TYPES = [
+  { value: 'pli', label: 'Pli', hint: '0-500 g' },
+  { value: 'colis', label: 'Colis', hint: '0-5 kg' },
+  { value: 'cheque', label: 'Chèque', hint: 'à l\'unité' },
+]
 const items = ref([])
 const hubs = ref([])
 const products = ref([])
@@ -300,6 +350,16 @@ async function checkDuplicates() {
 
 const itemsTotal = computed(() => items.value.reduce((sum, i) => sum + (i.quantity || 0) * (i.unit_price || 0), 0))
 const merchantId = computed(() => (isMerchant.value ? auth.user.merchant_id : form.merchant_id))
+// Formule de facturation du client (distribution, MAD) : null pour les courses ordinaires
+const billingPlan = computed(() => (isMerchant.value
+  ? auth.user?.merchant?.billing_plan
+  : merchants.value.find((m) => m.id === form.merchant_id)?.billing_plan) || null)
+watch(billingPlan, (plan) => {
+  form.shipment_type = plan ? (form.shipment_type || 'colis') : null
+  form.delivery_delay = plan && !plan.has_forfait ? (form.delivery_delay || plan.delivery_delay) : null
+  // Rien à payer sur la course : les frais ne changent pas l'encaissement
+  if (plan && !form.fee_payer) form.fee_payer = 'merchant'
+}, { immediate: true })
 const hubZoneId = computed(() => hubs.value.find((h) => h.id === form.pickup_hub_id)?.zone_id)
 
 // Disponible du produit à l'emplacement choisi (chez le marchand ou à l'entrepôt)
@@ -348,7 +408,7 @@ watch(() => form.merchant_id, () => {
 // Devis en direct
 let quoteTimer
 watch(
-  () => [form.merchant_id, form.delivery_zone_id, form.pickup_zone_id, form.pickup_hub_id, form.is_express, form.is_fragile],
+  () => [form.merchant_id, form.delivery_zone_id, form.pickup_zone_id, form.pickup_hub_id, form.is_express, form.is_fragile, form.shipment_type, form.delivery_delay, form.weight_kg],
   () => {
     clearTimeout(quoteTimer)
     quoteTimer = setTimeout(fetchQuote, 250)
@@ -366,6 +426,9 @@ async function fetchQuote() {
       pickup_zone_id: hubZoneId.value || form.pickup_zone_id || undefined,
       is_express: form.is_express,
       is_fragile: form.is_fragile,
+      shipment_type: form.shipment_type || undefined,
+      delivery_delay: form.delivery_delay || undefined,
+      weight_kg: form.weight_kg || undefined,
     })
     quote.value = data.data
   } catch (e) {
@@ -404,7 +467,7 @@ function pickRecipient(r) {
 // Après « Enregistrer et nouvelle » : formulaire vidé, e-commerçant gardé
 const blank = { ...form }
 function reset() {
-  Object.assign(form, { ...blank, merchant_id: form.merchant_id })
+  Object.assign(form, { ...blank, merchant_id: form.merchant_id, shipment_type: form.shipment_type, delivery_delay: form.delivery_delay, fee_payer: billingPlan.value ? 'merchant' : null })
   items.value = []
   zoneChoices.value = []
   duplicates.value = []

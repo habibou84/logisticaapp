@@ -58,12 +58,20 @@
 
         <div class="card p-4 text-sm grid sm:grid-cols-4 gap-3">
           <div><p class="text-gray-500">Articles</p><p class="font-semibold">{{ money(order.amounts.items_amount) }}</p></div>
-          <div>
+          <div v-if="order.billing">
+            <p class="text-gray-500">Facture du mois</p>
+            <p class="font-semibold">{{ order.billing.basis === 'forfait' ? 'Forfait' : money(order.billing.amount) }}</p>
+          </div>
+          <div v-else>
             <p class="text-gray-500">Frais ({{ order.amounts.fee_payer === 'recipient' ? 'client' : 'marchand' }})</p>
             <p class="font-semibold">{{ money(order.amounts.total_fees) }}</p>
           </div>
           <div><p class="text-gray-500">À encaisser</p><p class="font-semibold text-lg">{{ money(order.amounts.cod_amount) }}</p></div>
           <div><p class="text-gray-500">Encaissé</p><p class="font-semibold">{{ money(order.amounts.collected_amount) }}</p></div>
+          <div v-if="order.billing" class="sm:col-span-4 rounded bg-indigo-50 text-indigo-900 p-2">
+            📄 {{ order.package.shipment_type_label }}<template v-if="order.package.delivery_delay"> en {{ order.package.delivery_delay.replace('h', ' h') }}</template> ·
+            {{ order.billing.label }} : sur la facture du mois du client.
+          </div>
           <div v-if="order.is_shipping" class="sm:col-span-4 rounded bg-indigo-50 text-indigo-900 p-2">
             🚌 <strong>Expédition</strong> ·
             <template v-if="order.shipping.carrier">

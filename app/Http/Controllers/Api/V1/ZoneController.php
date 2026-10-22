@@ -94,6 +94,8 @@ class ZoneController extends Controller
             'city' => ['sometimes', 'string', 'max:100'],
             'is_active' => ['sometimes', 'boolean'],
             'is_shipping' => ['sometimes', 'boolean'],
+            // Commune couverte par les forfaits (distribution, MAD)
+            'in_forfait' => ['sometimes', 'boolean'],
             'shipping_fee_estimate' => ['sometimes', 'nullable', 'integer', 'min:0', 'max:1000000'],
             'sort_order' => ['sometimes', 'integer', 'min:0'],
         ];

@@ -16,7 +16,7 @@
     <div class="card overflow-x-auto">
       <table class="w-full text-sm stack-table">
         <thead class="bg-slate-50 text-left text-gray-600">
-          <tr><th class="p-2">Nom</th><th class="p-2">Contact</th><th class="p-2">Ramassage</th><th class="p-2">Frais payés par</th><th class="p-2">Courses</th><th class="p-2">Statut</th><th /></tr>
+          <tr><th class="p-2">Nom</th><th class="p-2">Contact</th><th class="p-2">Ramassage</th><th class="p-2">Facturation</th><th class="p-2">Courses</th><th class="p-2">Statut</th><th /></tr>
         </thead>
         <tbody class="divide-y">
           <tr v-for="m in merchants" :key="m.id">
@@ -33,11 +33,21 @@
                 {{ m.pickup_lat == null ? '⚠ sans position' : `📍 ${SOURCES[m.pickup_location_source] || 'localisé'}` }}
               </div>
             </td>
-            <td data-label="Frais payés par" class="p-2">{{ m.default_fee_payer === 'recipient' ? 'Destinataire' : 'Marchand' }}</td>
+            <td data-label="Facturation" class="p-2">
+              <template v-if="m.billing_plan">
+                <span class="rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700">{{ m.billing_plan.formula_label }}</span>
+                <div class="text-xs text-gray-500">Facture du mois</div>
+              </template>
+              <template v-else>
+                Courses ordinaires
+                <div class="text-xs text-gray-500">Frais payés par {{ m.default_fee_payer === 'recipient' ? 'le destinataire' : 'le marchand' }}</div>
+              </template>
+            </td>
             <td data-label="Courses" class="p-2">{{ m.orders_count }}</td>
             <td data-label="Statut" class="p-2"><span :class="m.status === 'active' ? 'text-emerald-700' : 'text-red-600'">{{ m.status === 'active' ? 'Actif' : 'Suspendu' }}</span></td>
             <td class="p-2 text-right whitespace-nowrap">
               <RouterLink :to="{ path: '/admin/courses', query: { merchant_id: m.id } }" class="text-blue-600 mr-3">Courses</RouterLink>
+              <button class="text-blue-600 mr-3" @click="billing = m">Formule</button>
               <button v-if="auth.can('merchants.manage')" class="text-blue-600" @click="openForm(m)">Modifier</button>
             </td>
           </tr>
@@ -45,6 +55,8 @@
         </tbody>
       </table>
     </div>
+
+    <BillingPlanModal :open="!!billing" :merchant="billing" @close="billing = null" @saved="load" />
 
     <Modal :open="form.open" :title="form.id ? 'Modifier l\'e-commerçant' : 'Nouvel e-commerçant'" @close="form.open = false">
       <form class="space-y-3" @submit.prevent="save">
@@ -116,6 +128,7 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
+import BillingPlanModal from '../../components/BillingPlanModal.vue'
 import ConnectRequests from '../../components/ConnectRequests.vue'
 import LocationPicker from '../../components/LocationPicker.vue'
 import Modal from '../../components/Modal.vue'
@@ -128,6 +141,8 @@ const merchants = ref([])
 const zones = ref([])
 const grids = ref([])
 const search = ref('')
+// E-commerçant dont on ouvre la formule de facturation
+const billing = ref(null)
 const route = useRoute()
 // Lien de la notification « Nouvel e-commerçant » : ?nouveaux=1
 const onlySignups = ref(!!route.query.nouveaux)

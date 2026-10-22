@@ -20,6 +20,7 @@ class ZoneResource extends JsonResource
             'full_name' => $this->relationLoaded('parent') ? $this->fullName() : $this->name,
             'city' => $this->city,
             'is_shipping' => $this->is_shipping,
+            'in_forfait' => (bool) $this->in_forfait,
             'shipping_fee_estimate' => $this->shipping_fee_estimate,
             'is_active' => $this->is_active,
             'sort_order' => $this->sort_order,

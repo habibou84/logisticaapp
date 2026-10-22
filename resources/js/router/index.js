@@ -10,6 +10,7 @@ const shared = {
   orderCreate: () => import('../views/shared/OrderCreate.vue'),
   orderDetail: () => import('../views/shared/OrderDetail.vue'),
   payoutDetail: () => import('../views/shared/PayoutDetail.vue'),
+  clientInvoice: () => import('../views/shared/ClientInvoiceView.vue'),
 }
 
 const mobile = {
@@ -77,6 +78,9 @@ const routes = [
       { path: 'stock', component: () => import('../views/admin/Stock.vue'), meta: { permission: 'stock.manage' } },
       { path: 'caisse', component: () => import('../views/admin/Finance.vue'), meta: { permission: 'finance.view' } },
       { path: 'caisse/reversements/:id(\\d+)', component: shared.payoutDetail, meta: { permission: 'finance.view' } },
+      // Factures du mois des clients sous formule (distribution, MAD)
+      { path: 'factures', component: () => import('../views/admin/ClientInvoices.vue'), meta: { permission: 'finance.view' } },
+      { path: 'factures/:id(\\d+)', component: shared.clientInvoice, meta: { permission: 'finance.view' } },
       // Réglages par thèmes (l'ancienne page « Paramètres » y mène)
       { path: 'mise-en-route', component: () => import('../views/admin/SetupGuide.vue'), meta: { permission: 'settings.manage' } },
       { path: 'reglages', component: () => import('../views/admin/settings/SettingsHub.vue'), meta: { permission: ['settings.manage', 'integrations.manage', 'users.view'] } },
@@ -129,6 +133,8 @@ const routes = [
       { path: 'lieu-de-ramassage', component: () => import('../views/merchant/PickupLocation.vue'), meta: { title: 'Lieu de ramassage', back: true } },
       { path: 'paiements', component: () => import('../views/merchant/Payments.vue'), meta: { title: 'Mon argent', permission: 'finance.view' } },
       { path: 'paiements/:id(\\d+)', component: () => import('../views/merchant/PayoutView.vue'), meta: { title: 'Relevé', back: true, permission: 'finance.view' } },
+      { path: 'factures', component: () => import('../views/merchant/Invoices.vue'), meta: { title: 'Mes factures', back: true, permission: 'finance.view' } },
+      { path: 'factures/:id(\\d+)', component: shared.clientInvoice, meta: { title: 'Facture', back: true, permission: 'finance.view' } },
       { path: 'notifications', component: mobile.notifications, meta: { title: 'Notifications', back: true } },
       { path: 'profil', component: mobile.profile, meta: { title: 'Mon profil' } },
     ],

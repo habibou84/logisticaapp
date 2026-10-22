@@ -1,0 +1,197 @@
+<template>
+  <Modal :open="open" :title="`Formule de facturation · ${merchant?.business_name || ''}`" @close="$emit('close')">
+    <div class="space-y-4">
+      <p class="text-sm text-gray-600">
+        Sans formule, le client paie ses courses une à une (frais déduits de ses reversements). Avec une formule, ses courses
+        passent sur sa <strong>facture du mois</strong>, payée à part.
+      </p>
+
+      <p v-if="loading" class="text-gray-500 text-sm">Chargement…</p>
+
+      <ul v-else-if="plans.length" class="divide-y rounded border text-sm">
+        <li v-for="p in plans" :key="p.id" class="p-3 space-y-1">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <span class="font-medium">{{ p.formula_label }}</span>
+            <span :class="isCurrent(p) ? 'text-emerald-700' : 'text-gray-500'">
+              {{ isCurrent(p) ? 'En cours' : p.starts_on > today() ? 'À venir' : 'Terminée' }} · du {{ date(p.starts_on) }}{{ p.ends_on ? ` au ${date(p.ends_on)}` : '' }}
+            </span>
+          </div>
+          <p class="text-gray-600">{{ p.summary }}</p>
+          <p v-if="p.cheque_price || p.extra_kg_price" class="text-gray-600">
+            <template v-if="p.cheque_price">Chèque : {{ money(p.cheque_price) }}</template>
+            <template v-if="p.cheque_price && p.extra_kg_price"> · </template>
+            <template v-if="p.extra_kg_price">kg au-delà de 5 kg : {{ money(p.extra_kg_price) }}</template>
+          </p>
+          <p v-if="p.couriers?.length" class="text-gray-600">Livreurs mis à disposition : {{ p.couriers.map((c) => c.name).join(', ') }}</p>
+          <div v-if="canManage && !p.ends_on" class="flex flex-wrap gap-3 pt-1">
+            <button type="button" class="text-blue-600" @click="endPlan(p)">Terminer…</button>
+            <button v-if="p.formula === 'mad_contract'" type="button" class="text-blue-600" @click="editCouriers(p)">Changer les livreurs</button>
+          </div>
+        </li>
+      </ul>
+      <p v-else class="text-sm text-gray-500">Aucune formule : courses ordinaires.</p>
+
+      <form v-if="canManage" class="space-y-3 border-t pt-3" @submit.prevent="save">
+        <h3 class="font-semibold">{{ editing ? 'Livreurs mis à disposition' : 'Nouvelle formule' }}</h3>
+        <div v-if="error" class="rounded bg-red-50 border border-red-200 text-red-700 text-sm px-3 py-2">{{ error }}</div>
+
+        <template v-if="!editing">
+          <div>
+            <label class="label" for="bp-formula">Formule</label>
+            <select id="bp-formula" v-model="form.formula" class="input">
+              <option value="distribution_contract">Distribution sous contrat (forfait mensuel)</option>
+              <option value="distribution_unit">Distribution à l'unité (sans contrat)</option>
+              <option value="mad_contract">Mise à disposition de livreurs (MAD)</option>
+            </select>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <template v-if="hasForfait">
+              <div><label class="label" for="bp-fee">Forfait mensuel (F)</label><input id="bp-fee" v-model.number="form.monthly_fee" type="number" min="0" class="input" required></div>
+              <div>
+                <label class="label" for="bp-qty">{{ form.formula === 'mad_contract' ? 'Courses incluses' : 'Plis et colis inclus' }}</label>
+                <input id="bp-qty" v-model.number="form.included_quantity" type="number" min="0" class="input" required>
+              </div>
+              <div>
+                <label class="label" for="bp-over">{{ form.formula === 'mad_contract' ? 'Prix d\'une course en plus (F)' : 'Prix d\'un pli ou colis en plus (F)' }}</label>
+                <input id="bp-over" v-model.number="form.overage_price" type="number" min="0" class="input">
+              </div>
+            </template>
+            <div>
+              <label class="label" for="bp-delay">{{ hasForfait ? 'Délai de livraison du contrat' : 'Délai par défaut' }}</label>
+              <select id="bp-delay" v-model="form.delivery_delay" class="input">
+                <option value="24h">24 h</option>
+                <option value="48h">48 h</option>
+                <option value="72h">72 h</option>
+              </select>
+            </div>
+            <div v-if="form.formula === 'distribution_contract'">
+              <label class="label" for="bp-cheque">Prix d'un chèque livré (F)</label>
+              <input id="bp-cheque" v-model.number="form.cheque_price" type="number" min="0" class="input">
+            </div>
+            <div>
+              <label class="label" for="bp-kg">Kilogramme au-delà de 5 kg, Abidjan (F)</label>
+              <input id="bp-kg" v-model.number="form.extra_kg_price" type="number" min="0" class="input">
+            </div>
+            <div><label class="label" for="bp-start">À partir du</label><input id="bp-start" v-model="form.starts_on" type="date" class="input" required></div>
+            <div><label class="label" for="bp-end">Jusqu'au (facultatif)</label><input id="bp-end" v-model="form.ends_on" type="date" class="input" :min="form.starts_on"></div>
+          </div>
+          <p class="text-xs text-gray-500">
+            <template v-if="hasForfait">Le forfait couvre les dix communes d'Abidjan (Réglages › Zones) ; </template>
+            <template v-else>Prix à l'unité par délai et type d'envoi : Tarifs › Distribution à l'unité ; </template>
+            villes de l'intérieur : Tarifs › Villes de l'intérieur. La formule en cours s'arrête la veille de la nouvelle.
+          </p>
+        </template>
+
+        <fieldset v-if="form.formula === 'mad_contract' || editing" class="border rounded p-3 space-y-2">
+          <legend class="text-sm font-medium px-1">Livreurs mis à disposition</legend>
+          <p class="text-xs text-gray-500">Les courses du client leur sont confiées (ramassage et livraison), au moins chargé des disponibles.</p>
+          <label v-for="c in couriers" :key="c.id" class="flex items-center gap-2 text-sm">
+            <input v-model="form.courier_ids" type="checkbox" :value="c.id"> {{ c.user?.name || c.name }}
+          </label>
+          <p v-if="!couriers.length" class="text-sm text-gray-500">Aucun livreur.</p>
+        </fieldset>
+
+        <div v-if="!editing"><label class="label" for="bp-notes">Notes (référence du contrat…)</label><input id="bp-notes" v-model="form.notes" class="input" maxlength="1000"></div>
+
+        <div class="flex gap-2">
+          <button class="btn-primary flex-1" :disabled="saving">{{ saving ? 'Enregistrement…' : 'Enregistrer' }}</button>
+          <button v-if="editing" type="button" class="btn-secondary" @click="reset">Annuler</button>
+        </div>
+      </form>
+    </div>
+  </Modal>
+</template>
+
+<script setup>
+import { computed, reactive, ref, watch } from 'vue'
+import http, { apiErrorMessage } from '../bootstrap/axios'
+import Modal from './Modal.vue'
+import { useAuthStore } from '../stores/auth'
+import { useToastStore } from '../stores/toasts'
+import { date, money, today } from '../utils/format'
+
+const props = defineProps({ open: Boolean, merchant: { type: Object, default: null } })
+const emit = defineEmits(['close', 'saved'])
+
+const auth = useAuthStore()
+const toasts = useToastStore()
+const canManage = computed(() => auth.can('merchants.manage'))
+const plans = ref([])
+const couriers = ref([])
+const loading = ref(false)
+const saving = ref(false)
+const error = ref('')
+const editing = ref(null)
+const form = reactive({})
+const hasForfait = computed(() => form.formula !== 'distribution_unit')
+
+const isCurrent = (p) => p.starts_on <= today() && (!p.ends_on || p.ends_on >= today())
+
+function reset() {
+  editing.value = null
+  error.value = ''
+  Object.assign(form, {
+    formula: 'distribution_contract', monthly_fee: 0, included_quantity: 0, overage_price: 0, delivery_delay: '24h',
+    cheque_price: 0, extra_kg_price: 0, starts_on: today(), ends_on: '', notes: '', courier_ids: [],
+  })
+}
+
+async function load() {
+  loading.value = true
+  try {
+    plans.value = (await http.get(`/merchants/${props.merchant.id}/billing-plans`)).data.data
+    if (canManage.value && !couriers.value.length) couriers.value = (await http.get('/couriers')).data.data
+  } finally {
+    loading.value = false
+  }
+}
+
+watch(() => [props.open, props.merchant?.id], ([open]) => {
+  if (open && props.merchant) {
+    reset()
+    load()
+  }
+}, { immediate: true })
+
+function editCouriers(plan) {
+  reset()
+  editing.value = plan
+  form.formula = plan.formula
+  form.courier_ids = (plan.couriers || []).map((c) => c.id)
+}
+
+async function endPlan(plan) {
+  const end = window.prompt('Dernier jour de la formule (AAAA-MM-JJ) :', today())
+  if (!end) return
+  try {
+    await http.patch(`/billing-plans/${plan.id}`, { ends_on: end })
+    toasts.success('Formule terminée.')
+    await load()
+    emit('saved')
+  } catch (e) {
+    toasts.error(apiErrorMessage(e))
+  }
+}
+
+async function save() {
+  saving.value = true
+  error.value = ''
+  try {
+    if (editing.value) {
+      await http.patch(`/billing-plans/${editing.value.id}`, { courier_ids: form.courier_ids })
+    } else {
+      const payload = { ...form, ends_on: form.ends_on || null, notes: form.notes || null }
+      if (form.formula !== 'mad_contract') delete payload.courier_ids
+      await http.post(`/merchants/${props.merchant.id}/billing-plans`, payload)
+    }
+    toasts.success('Formule enregistrée.')
+    reset()
+    await load()
+    emit('saved')
+  } catch (e) {
+    error.value = apiErrorMessage(e)
+  } finally {
+    saving.value = false
+  }
+}
+</script>

@@ -249,6 +249,7 @@ const menu = computed(() => {
       label: 'Finances',
       items: [
         { to: '/admin/caisse', icon: '💰', label: 'Caisse', permission: 'finance.view' },
+        { to: '/admin/factures', icon: '📄', label: 'Factures clients', permission: 'finance.view' },
         { to: '/admin/paie-livreurs', icon: '🧾', label: 'Paie des livreurs', permission: 'settings.manage' },
       ],
     },
