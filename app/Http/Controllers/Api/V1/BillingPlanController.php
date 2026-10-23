@@ -42,7 +42,7 @@ class BillingPlanController extends Controller
         $state = $data['state'] ?? 'current';
 
         $plans = BillingPlan::query()
-            ->with(['merchant.company', 'couriers.user'])
+            ->with(['merchant.company', 'couriers.user', 'zones'])
             ->when($data['activity'] ?? null, fn ($q, $a) => $q->where('activity', $a))
             ->when($state === 'current', fn ($q) => $q->activeOn($today))
             ->when($state === 'upcoming', fn ($q) => $q->whereDate('starts_on', '>', $today))
@@ -82,7 +82,7 @@ class BillingPlanController extends Controller
     {
         abort_unless($request->user()->can(Permission::MerchantsView->value), 403);
 
-        return BillingPlanResource::collection($merchant->billingPlans()->with('couriers.user')->get()
+        return BillingPlanResource::collection($merchant->billingPlans()->with(['couriers.user', 'zones'])->get()
             ->filter(fn (BillingPlan $p) => $request->user()->seesActivity($p->activity))->values());
     }
 
@@ -106,16 +106,17 @@ class BillingPlanController extends Controller
 
             $plan = BillingPlan::create([
                 'monthly_fee' => 0, 'included_quantity' => 0, 'overage_price' => 0, 'cheque_price' => 0, 'extra_kg_price' => 0,
-                ...collect($data)->except('courier_ids')->all(),
+                ...collect($data)->except(['courier_ids', 'zone_ids'])->all(),
                 'merchant_id' => $merchant->id,
                 'company_id' => $merchant->company_id,
             ]);
             $plan->couriers()->sync($plan->formula->isMad() ? ($data['courier_ids'] ?? []) : []);
+            $plan->zones()->sync($plan->formula->hasForfait() ? ($data['zone_ids'] ?? []) : []);
 
             return $plan;
         });
 
-        return BillingPlanResource::make($plan->load('couriers.user'))->response()->setStatusCode(201);
+        return BillingPlanResource::make($plan->load(['couriers.user', 'zones']))->response()->setStatusCode(201);
     }
 
     public function update(Request $request, BillingPlan $billingPlan): BillingPlanResource
@@ -124,21 +125,25 @@ class BillingPlanController extends Controller
         $data = $this->validated($request, $billingPlan);
 
         // Formule déjà utilisée : ses prix restent ceux des courses passées (nouvelle formule pour les changer)
-        $priced = ['formula', 'monthly_fee', 'included_quantity', 'overage_price', 'delivery_delay', 'cheque_price', 'extra_kg_price', 'interior_in_forfait', 'starts_on'];
+        $priced = ['formula', 'monthly_fee', 'included_quantity', 'overage_price', 'delivery_delay', 'cheque_price', 'extra_kg_price', 'starts_on'];
         $changed = collect($priced)->filter(fn ($f) => array_key_exists($f, $data)
             && (string) ($data[$f] ?? '') !== (string) ($billingPlan->getAttributes()[$f] ?? ''))->values();
         if ($changed->isNotEmpty() && Order::where('billing_plan_id', $billingPlan->id)->exists()) {
             throw new BusinessRuleException('Cette formule a déjà des courses : indiquez une date de fin et créez-en une nouvelle pour changer ses conditions.', $changed->first());
         }
 
+        // Zones du forfait : modifiables à tout moment (les courses déjà créées gardent leur tarif)
         DB::transaction(function () use ($billingPlan, $data) {
-            $billingPlan->update(collect($data)->except('courier_ids')->all());
+            $billingPlan->update(collect($data)->except(['courier_ids', 'zone_ids'])->all());
+            if (array_key_exists('zone_ids', $data)) {
+                $billingPlan->zones()->sync($billingPlan->formula->hasForfait() ? $data['zone_ids'] : []);
+            }
             if (array_key_exists('courier_ids', $data) || ! $billingPlan->formula->isMad()) {
                 $billingPlan->couriers()->sync($billingPlan->formula->isMad() ? ($data['courier_ids'] ?? []) : []);
             }
         });
 
-        return BillingPlanResource::make($billingPlan->fresh('couriers.user'));
+        return BillingPlanResource::make($billingPlan->fresh(['couriers.user', 'zones']));
     }
 
     public function destroy(Request $request, BillingPlan $billingPlan): JsonResponse
@@ -175,8 +180,9 @@ class BillingPlanController extends Controller
             'delivery_delay' => [$sometimes, Rule::enum(DeliveryDelay::class)],
             'cheque_price' => ['sometimes', 'integer', 'min:0'],
             'extra_kg_price' => ['sometimes', 'integer', 'min:0'],
-            // Distribution sous contrat : l'intérieur compte dans les courses incluses
-            'interior_in_forfait' => ['sometimes', 'boolean'],
+            // Zones couvertes par le forfait : communes, villes de l'intérieur (vide : communes « Forfait »)
+            'zone_ids' => ['sometimes', 'array', 'max:300'],
+            'zone_ids.*' => ['integer', Rule::exists('zones', 'id')->where('company_id', $request->user()->company_id)],
             'starts_on' => [$sometimes, 'date_format:Y-m-d'],
             'ends_on' => ['sometimes', 'nullable', 'date_format:Y-m-d', 'after_or_equal:'.($request->input('starts_on') ?? $plan?->starts_on?->toDateString() ?? '1970-01-01')],
             'notes' => ['sometimes', 'nullable', 'string', 'max:1000'],
@@ -193,6 +199,7 @@ class BillingPlanController extends Controller
             'starts_on' => 'date de début',
             'ends_on' => 'date de fin',
             'courier_ids' => 'livreurs mis à disposition',
+            'zone_ids' => 'zones du forfait',
         ]);
 
         // Sans forfait : rien d'inclus

@@ -8,11 +8,13 @@ use App\Enums\ShipmentType;
 use App\Http\Controllers\Controller;
 use App\Models\DistributionRate;
 use App\Models\InteriorRate;
+use App\Models\Merchant;
 use App\Services\Pricing\ClientPricing;
 use App\Services\Pricing\InteriorRateImporter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -22,15 +24,40 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class ClientRateController extends Controller
 {
+    /**
+     * Clients qui ont des prix négociés (grille propre), pour choisir la grille à afficher.
+     */
+    public function clients(Request $request): JsonResponse
+    {
+        $this->authorize($request, read: true);
+        $counts = fn ($model) => $model::query()->whereNotNull('merchant_id')->selectRaw('merchant_id, count(*) as total')->groupBy('merchant_id')->pluck('total', 'merchant_id');
+        $interior = $counts(InteriorRate::class);
+        $unit = $counts(DistributionRate::class);
+        $ids = $interior->keys()->merge($unit->keys())->unique();
+
+        return response()->json(['data' => Merchant::query()->whereIn('id', $ids)->orderBy('business_name')->get(['id', 'business_name'])
+            ->map(fn (Merchant $m) => [
+                'id' => $m->id,
+                'business_name' => $m->business_name,
+                'interior_rates' => (int) ($interior[$m->id] ?? 0),
+                'unit_rates' => (int) ($unit[$m->id] ?? 0),
+            ])->values()]);
+    }
+
     public function distribution(Request $request): JsonResponse
     {
         $this->authorize($request, read: true);
-        $prices = DistributionRate::all()->keyBy(fn (DistributionRate $r) => $r->delivery_delay->value.'|'.$r->shipment_type->value);
+        $merchantId = $this->merchantId($request);
+        $key = fn (DistributionRate $r) => $r->delivery_delay->value.'|'.$r->shipment_type->value;
+        $prices = DistributionRate::query()->grid($merchantId)->get()->keyBy($key);
+        // Prix de la grille commune, rappelés à côté des prix négociés
+        $common = $merchantId ? DistributionRate::query()->grid(null)->get()->keyBy($key) : collect();
 
         return response()->json(['data' => collect(DeliveryDelay::cases())->map(fn (DeliveryDelay $d) => [
             'delivery_delay' => $d->value,
             'label' => $d->label(),
             'prices' => collect(ShipmentType::cases())->mapWithKeys(fn (ShipmentType $t) => [$t->value => $prices[$d->value.'|'.$t->value]?->price ?? null]),
+            'common' => collect(ShipmentType::cases())->mapWithKeys(fn (ShipmentType $t) => [$t->value => $common[$d->value.'|'.$t->value]?->price ?? null]),
         ])->values()]);
     }
 
@@ -44,9 +71,10 @@ class ClientRateController extends Controller
             'rates.*.price' => ['nullable', 'integer', 'min:0'],
         ]);
 
-        DB::transaction(function () use ($data, $request) {
+        $merchantId = $this->merchantId($request);
+        DB::transaction(function () use ($data, $request, $merchantId) {
             foreach ($data['rates'] as $rate) {
-                $keys = ['company_id' => $request->user()->company_id, 'delivery_delay' => $rate['delivery_delay'], 'shipment_type' => $rate['shipment_type']];
+                $keys = ['company_id' => $request->user()->company_id, 'merchant_id' => $merchantId, 'delivery_delay' => $rate['delivery_delay'], 'shipment_type' => $rate['shipment_type']];
                 $rate['price'] === null
                     ? DistributionRate::where($keys)->delete()
                     : DistributionRate::updateOrCreate($keys, ['price' => $rate['price']]);
@@ -60,7 +88,7 @@ class ClientRateController extends Controller
     {
         $this->authorize($request, read: true);
 
-        return response()->json(['data' => InteriorRate::query()->orderBy('city')->get()
+        return response()->json(['data' => InteriorRate::query()->grid($this->merchantId($request))->orderBy('city')->get()
             ->sortBy(fn (InteriorRate $r) => ClientPricing::cityKey($r->city).'|'.$r->delivery_delay->hours())
             ->values()->map(fn (InteriorRate $r) => $this->interiorRow($r))]);
     }
@@ -69,8 +97,11 @@ class ClientRateController extends Controller
     {
         $this->authorize($request);
         $data = $request->validate($this->interiorRules());
-        $rate = InteriorRate::query()->get()->first(fn (InteriorRate $r) => ClientPricing::cityKey($r->city) === ClientPricing::cityKey($data['city'])
-            && $r->delivery_delay->value === $data['delivery_delay']) ?? new InteriorRate(['company_id' => $request->user()->company_id]);
+        // « bouaké », « BOUAKÉ » : écrit comme à l'import
+        $data['city'] = Str::title(mb_strtolower(trim($data['city'])));
+        $merchantId = $this->merchantId($request);
+        $rate = InteriorRate::query()->grid($merchantId)->get()->first(fn (InteriorRate $r) => ClientPricing::cityKey($r->city) === ClientPricing::cityKey($data['city'])
+            && $r->delivery_delay->value === $data['delivery_delay']) ?? new InteriorRate(['company_id' => $request->user()->company_id, 'merchant_id' => $merchantId]);
         $rate->fill($data)->save();
         InteriorRateImporter::ensureZone($request->user()->company_id, $rate->city);
 
@@ -100,7 +131,7 @@ class ClientRateController extends Controller
         $file = $request->file('file');
         $extension = strtolower($file->getClientOriginalExtension() ?: $file->extension());
 
-        return response()->json(['data' => $importer->import($request->user()->company, $file->getRealPath(), $extension, $request->boolean('dry_run'))]);
+        return response()->json(['data' => $importer->import($request->user()->company, $file->getRealPath(), $extension, $request->boolean('dry_run'), $this->merchantId($request))]);
     }
 
     public function interiorTemplate(): Response
@@ -136,9 +167,21 @@ class ClientRateController extends Controller
         ];
     }
 
+    /**
+     * Grille demandée : celle d'un client (prix négociés) ou la grille commune (vide).
+     */
+    private function merchantId(Request $request): ?int
+    {
+        $request->validate(['merchant_id' => ['nullable', 'integer', Rule::exists('merchants', 'id')->where('company_id', $request->user()->company_id)]], [], ['merchant_id' => 'client']);
+
+        return $request->filled('merchant_id') ? $request->integer('merchant_id') : null;
+    }
+
     private function authorize(Request $request, bool $read = false): void
     {
         $user = $request->user();
+        // Grilles de l'entreprise et prix négociés : jamais pour un compte client
+        abort_if($user->merchant_id !== null, 403);
         abort_unless($user->canAny([Permission::SettingsManage->value, Permission::RatesManage->value])
             || ($read && $user->canAny([Permission::OrdersCreate->value, Permission::FinanceView->value, Permission::InvoicesView->value])), 403);
     }

@@ -43,8 +43,8 @@ sur la course comme une commune.
 et tarifs », dans son périmètre). Le même contrat s'ouvre aussi depuis **Clients › « Contrat »**.
 
 - **Distribution sous contrat** : forfait mensuel, **courses incluses par mois**, prix d'une course en plus à
-  Abidjan, délai du contrat, prix d'un chèque livré, prix du kilogramme au-delà de 5 kg, et la case
-  **« Les courses vers l'intérieur comptent dans le forfait »** (cochée par défaut) ;
+  Abidjan, délai du contrat, prix d'un chèque livré, prix du kilogramme au-delà de 5 kg, et les **zones couvertes
+  par le forfait** ;
 - **Distribution à l'unité** (sans contrat) : délai par défaut ; prix de « Distribution › Tarifs » ;
 - **Mise à disposition (MAD)** : forfait mensuel, courses incluses, prix de chacune au-delà, délai, livreurs attitrés.
 
@@ -52,13 +52,23 @@ Un contrat par activité : en créer un nouveau arrête le précédent **de la m
 début (distribution et MAD peuvent coexister). Un contrat qui a déjà des courses ne change plus de prix (pour
 changer les conditions : « Terminer… », puis un nouveau contrat).
 
+**Zones couvertes par le forfait** : chaque contrat choisit les siennes, communes d'Abidjan et villes de l'intérieur
+(leurs quartiers suivent). Un nouveau contrat part des communes marquées « Forfait » (Réglages › Zones) ; raccourcis
+« + tout Abidjan », « + tout l'intérieur ». Elles se changent à tout moment (« Changer les zones ») : les courses
+déjà créées gardent leur facturation.
+
+- course vers une zone couverte : comptée dans les courses incluses ; au-delà, **au prix de sa destination**
+  (prix du contrat à Abidjan, tarif de la ville à l'intérieur) ;
+- course vers une zone non couverte : facturée à part dès la première (tarif de la ville à l'intérieur, tarif
+  ordinaire ailleurs).
+
 La page **Contrats** montre, pour chaque contrat en cours : les courses du mois sur les courses incluses
 (« 34 / 50 »), les courses en plus et la **facture estimée à ce jour**. Filtres : en cours, à venir, terminés.
 
 ### Exemple : 50 000 F par mois pour 50 courses
 
-Contrat : forfait 50 000 F, 50 courses incluses, 800 F la course en plus à Abidjan, intérieur compté dans le
-forfait ; grille de l'intérieur : Bouaké 4 000 F le colis en 48 h.
+Contrat : forfait 50 000 F, 50 courses incluses, 800 F la course en plus à Abidjan, zones couvertes : les communes
+d'Abidjan et Bouaké ; grille de l'intérieur : Bouaké 4 000 F le colis en 48 h.
 
 Dans le mois, le client envoie 48 courses à Abidjan et 5 à Bouaké (53 courses) : les **50 premières** (dans
 l'ordre de création) sont dans le forfait, les 3 suivantes sont facturées **au prix de leur destination** :
@@ -71,8 +81,16 @@ l'ordre de création) sont dans le forfait, les 3 suivantes sont facturées **au
 | Courses au-delà du forfait · Colis pour Bouaké en 48 h | 2 | 4 000 F | 8 000 F |
 | **Total** | | | **58 800 F** |
 
-Case décochée : le forfait ne couvre qu'Abidjan et chaque course vers l'intérieur est facturée au tarif de sa
-ville dès la première.
+Si Bouaké n'est pas dans les zones du contrat, les 5 courses vers Bouaké sont facturées 4 000 F chacune, dès la
+première, et ne comptent pas dans les 50.
+
+### Prix négociés d'un client
+
+**Distribution et MAD › Tarifs** : la **grille commune** vaut pour tous les clients. Pour un client aux prix
+négociés : « + Prix négociés pour un client » (ou « Prix négociés » sur la ligne de son contrat), puis saisir ou
+importer **ses** prix (villes de l'intérieur, distribution à l'unité). Ils remplacent la grille commune pour ce
+client, ville par ville et délai par délai ; ce qui n'est pas saisi suit la grille commune (rappelée en gris).
+Le sélecteur « Grille » liste les clients qui ont des prix négociés.
 
 ## 3. Les courses
 
@@ -83,12 +101,14 @@ un colis. Rien n'est encaissé sur la course ; elle indique comment elle sera fa
 
 | Destination | Facturation |
 |---|---|
-| Commune du forfait (Abidjan) | Comptée dans le forfait du mois ; au-delà des courses incluses, prix « en plus » du contrat |
-| Ville de l'intérieur (intérieur compté) | Comptée dans le forfait ; au-delà, tarif de la ville (pli ou colis, délai du contrat) |
-| Ville de l'intérieur (intérieur à part) | Tarif de la ville, dès la première course |
+| Commune d'Abidjan couverte par le contrat | Comptée dans le forfait du mois ; au-delà des courses incluses, prix « en plus » du contrat |
+| Ville de l'intérieur couverte par le contrat | Comptée dans le forfait ; au-delà, tarif de la ville (pli ou colis, délai du contrat) |
+| Ville de l'intérieur non couverte | Tarif de la ville, dès la première course |
 | Chèque | Prix du chèque, toujours hors forfait |
 | Abidjan, distribution à l'unité | Prix du délai et du type d'envoi |
-| Autre commune (Bingerville…) | Tarif ordinaire de la course |
+| Autre commune non couverte (Bingerville…) | Tarif ordinaire de la course |
+
+Tarif de la ville et prix à l'unité : les prix négociés du client s'il en a, sinon la grille commune.
 
 Au-delà de 5 kg, chaque kilogramme commencé est facturé en plus (prix du contrat à Abidjan, de la ville à l'intérieur).
 

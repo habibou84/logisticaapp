@@ -120,7 +120,7 @@ class ClientInvoicing
             $inForfait = $orders->where('billing_plan_id', $plan->id)->where('billing_basis', 'forfait')->values();
             $count = $inForfait->count();
             $units = $plan->formula->unitLabel();
-            $where = $plan->countsInterior() ? 'à Abidjan et à l\'intérieur' : 'sur les communes du forfait';
+            $where = 'dans les zones du forfait';
 
             $lines[] = $this->line('forfait', "Forfait {$plan->formula->label()} en {$plan->delivery_delay->label()} · {$month}", 1, $plan->monthly_fee);
             $lines[] = $this->line('included', ucfirst($units)." {$where} : {$count} ({$plan->included_quantity} inclus)", $count, 0);

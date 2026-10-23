@@ -49,6 +49,7 @@
             <td data-label="Contrat" class="p-2 max-w-sm">
               <div class="font-medium">{{ p.formula_label }}</div>
               <div class="text-xs text-gray-500">{{ p.summary }}</div>
+              <div v-if="p.has_forfait" class="text-xs text-gray-500">Zones : {{ p.zones?.length ? (p.zones.length > 5 ? `${p.zones.slice(0, 5).map((z) => z.name).join(', ')}… (${p.zones.length})` : p.zones.map((z) => z.name).join(', ')) : 'communes « Forfait »' }}</div>
               <div v-if="p.couriers?.length" class="text-xs text-gray-500">Livreurs : {{ p.couriers.map((c) => c.name).join(', ') }}</div>
             </td>
             <td data-label="Période" class="p-2 whitespace-nowrap">
@@ -73,6 +74,7 @@
             <td class="p-2 text-right whitespace-nowrap">
               <button class="text-blue-600 mr-3" @click="open = p.merchant">{{ canManage ? 'Modifier' : 'Voir' }}</button>
               <RouterLink :to="{ path: '/admin/courses', query: { merchant_id: p.merchant?.id, activity: p.activity, day: 'all' } }" class="text-blue-600 mr-3">Courses</RouterLink>
+              <RouterLink v-if="canManage" :to="{ path: '/admin/formules', query: { client: p.merchant?.id } }" class="text-blue-600 mr-3">Prix négociés</RouterLink>
               <RouterLink v-if="auth.can('invoices.view')" to="/admin/factures" class="text-blue-600">Factures</RouterLink>
             </td>
           </tr>

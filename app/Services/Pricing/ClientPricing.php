@@ -17,11 +17,12 @@ use App\Support\Money;
 /**
  * Tarif d'une course d'un client sous formule (distribution ou MAD). Rien n'est retenu course par course :
  * les frais de la course sont à zéro et la course passe sur la facture du mois, selon sa base :
- *  - forfait : commune du forfait (dix communes d'Abidjan) ou, contrat de distribution qui le prévoit, ville
- *    de l'intérieur : comptée dans le forfait du mois ; au-delà des courses incluses, au prix de sa
- *    destination (prix « en plus » du contrat à Abidjan, tarif de la ville à l'intérieur) ;
+ *  - forfait : zone couverte par le contrat (communes d'Abidjan, villes de l'intérieur choisies sur le contrat ;
+ *    par défaut les communes « Forfait ») : comptée dans le forfait du mois ; au-delà des courses incluses, au
+ *    prix de sa destination (prix « en plus » du contrat à Abidjan, tarif de la ville à l'intérieur) ;
  *  - unit : distribution à l'unité sur Abidjan, au prix du délai et du type d'envoi ;
- *  - interior : ville de l'intérieur, au tarif importé (pli, colis, kilogramme en plus) ;
+ *  - interior : ville de l'intérieur non couverte, au tarif de la ville (pli, colis, kilogramme en plus) ;
+ * Tarifs de l'intérieur et de l'unité : prix négociés du client s'il en a, sinon grille commune.
  *  - cheque : chèque livré, toujours à l'unité ;
  *  - outside : client sous contrat livré hors des communes du forfait, au tarif ordinaire de la course.
  * Au-delà de 5 kg, chaque kilogramme commencé est facturé en plus.
@@ -59,13 +60,15 @@ class ClientPricing
 
         // Prix d'une course comptée dans le forfait quand les courses incluses sont épuisées
         $overage = null;
+        // Zone couverte par le forfait du contrat (choisie sur le contrat, sinon communes « Forfait »)
+        $covered = $plan->formula->hasForfait() && $this->covers($plan, $deliveryZone);
         [$basis, $amount, $label] = match (true) {
             $type === ShipmentType::Cheque => $this->cheque($plan, $delay),
-            $this->isInterior($deliveryZone) && $plan->countsInterior() => $this->interiorInForfait($plan, $deliveryZone, $type, $delay, $extraKg, $overage),
+            $covered && $this->isInterior($deliveryZone) => $this->interiorInForfait($plan, $deliveryZone, $type, $delay, $extraKg, $overage),
+            $covered => ['forfait', $extraKg * $plan->extra_kg_price, 'Compris dans le forfait du mois'
+                .($extraKg > 0 ? " + {$extraKg} kg au-delà de 5 kg (".Money::format($extraKg * $plan->extra_kg_price).')' : '')],
             $this->isInterior($deliveryZone) => $this->interior($plan, $deliveryZone, $type, $delay, $extraKg),
             $plan->formula === BillingFormula::DistributionUnit => $this->unit($plan, $type, $delay, $extraKg),
-            $this->inForfait($deliveryZone) => ['forfait', $extraKg * $plan->extra_kg_price, 'Compris dans le forfait du mois'
-                .($extraKg > 0 ? " + {$extraKg} kg au-delà de 5 kg (".Money::format($extraKg * $plan->extra_kg_price).')' : '')],
             default => $this->outside($merchant, $pickupZone, $deliveryZone, $data),
         };
         if ($basis === 'forfait') {
@@ -109,6 +112,28 @@ class ClientPricing
     public function isInterior(Zone $zone): bool
     {
         return self::cityKey($zone->city) !== self::cityKey('Abidjan');
+    }
+
+    /**
+     * Zone couverte par le forfait du contrat : une de ses zones ou un quartier de l'une d'elles. Contrat sans
+     * zone choisie : les communes marquées « Forfait » (Réglages › Zones).
+     */
+    public function covers(BillingPlan $plan, Zone $zone): bool
+    {
+        $ids = $plan->relationLoaded('zones') ? $plan->zones->modelKeys() : $plan->zones()->pluck('zones.id')->all();
+        if ($ids === []) {
+            return $this->inForfait($zone);
+        }
+
+        // La zone, puis ses parents (quartier → commune → ville)
+        for ($id = $zone->id, $depth = 0; $id !== null && $depth < 4; $depth++) {
+            if (in_array($id, $ids, true)) {
+                return true;
+            }
+            $id = Zone::withoutGlobalScopes()->whereKey($id)->value('parent_id');
+        }
+
+        return false;
     }
 
     /** Commune du forfait (ou quartier d'une commune du forfait) */
@@ -165,8 +190,11 @@ class ClientPricing
 
     private function interiorRate(BillingPlan $plan, Zone $zone, DeliveryDelay $delay): InteriorRate
     {
-        $rate = InteriorRate::forCompany($plan->company_id)->where('delivery_delay', $delay->value)->get()
+        // Prix négociés du client, sinon grille commune
+        $find = fn (?int $merchantId) => InteriorRate::forCompany($plan->company_id)->grid($merchantId)
+            ->where('delivery_delay', $delay->value)->get()
             ->first(fn (InteriorRate $r) => self::cityKey($r->city) === self::cityKey($zone->city));
+        $rate = $find($plan->merchant_id) ?? $find(null);
         if ($rate === null) {
             throw new BusinessRuleException(
                 "Aucun tarif pour {$zone->city} en {$delay->label()} : ajoutez-le dans Distribution › Tarifs (villes de l'intérieur).",
@@ -188,11 +216,13 @@ class ClientPricing
 
     private function rate(BillingPlan $plan, ShipmentType $type, DeliveryDelay $delay): int
     {
-        $rate = DistributionRate::forCompany($plan->company_id)
+        // Prix négociés du client, sinon grille commune
+        $find = fn (?int $merchantId) => DistributionRate::forCompany($plan->company_id)->grid($merchantId)
             ->where('delivery_delay', $delay->value)->where('shipment_type', $type->value)->value('price');
+        $rate = $find($plan->merchant_id) ?? $find(null);
         if ($rate === null) {
             throw new BusinessRuleException(
-                "Prix à l'unité d'un {$type->label()} en {$delay->label()} pas encore fixé : voir Tarifs › Distribution à l'unité.",
+                "Prix à l'unité d'un {$type->label()} en {$delay->label()} pas encore fixé : voir Distribution › Tarifs.",
                 'delivery_delay',
             );
         }

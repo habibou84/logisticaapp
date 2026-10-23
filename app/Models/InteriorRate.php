@@ -14,7 +14,15 @@ class InteriorRate extends Model
 {
     use BelongsToCompany;
 
-    protected $fillable = ['company_id', 'city', 'delivery_delay', 'pli_price', 'colis_price', 'extra_kg_price'];
+    protected $fillable = ['company_id', 'merchant_id', 'city', 'delivery_delay', 'pli_price', 'colis_price', 'extra_kg_price'];
+
+    /**
+     * Grille du client : ses prix négociés, ou la grille commune (merchant_id vide) quand il n'en a pas.
+     */
+    public function scopeGrid($query, ?int $merchantId)
+    {
+        return $merchantId === null ? $query->whereNull('merchant_id') : $query->where('merchant_id', $merchantId);
+    }
 
     protected function casts(): array
     {

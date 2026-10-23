@@ -41,7 +41,7 @@ class InteriorRateImporter
     /**
      * @return array{rows: int, created: int, updated: int, zones_created: list<string>, errors: list<string>}
      */
-    public function import(Company $company, string $path, string $extension, bool $dryRun = false): array
+    public function import(Company $company, string $path, string $extension, bool $dryRun = false, ?int $merchantId = null): array
     {
         $rows = $this->read($path, $extension);
         $errors = [];
@@ -69,7 +69,8 @@ class InteriorRateImporter
             $valid[ClientPricing::cityKey($city).'|'.$delay->value] = ['city' => Str::title(mb_strtolower($city)), 'delay' => $delay, ...$prices];
         }
 
-        $existing = InteriorRate::forCompany($company->id)->get()->keyBy(fn (InteriorRate $r) => ClientPricing::cityKey($r->city).'|'.$r->delivery_delay->value);
+        // Grille commune, ou prix négociés d'un client
+        $existing = InteriorRate::forCompany($company->id)->grid($merchantId)->get()->keyBy(fn (InteriorRate $r) => ClientPricing::cityKey($r->city).'|'.$r->delivery_delay->value);
         $zoneCities = Zone::forCompany($company->id)->pluck('city')->map(fn ($c) => ClientPricing::cityKey($c))->unique()->all();
         $newCities = collect($valid)->pluck('city')->unique(fn ($c) => ClientPricing::cityKey($c))
             ->reject(fn ($c) => in_array(ClientPricing::cityKey($c), $zoneCities, true))->values()->all();
@@ -86,9 +87,9 @@ class InteriorRateImporter
             return $report;
         }
 
-        DB::transaction(function () use ($company, $valid, $existing, $newCities) {
+        DB::transaction(function () use ($company, $valid, $existing, $newCities, $merchantId) {
             foreach ($valid as $key => $rate) {
-                $model = $existing[$key] ?? new InteriorRate(['company_id' => $company->id, 'city' => $rate['city'], 'delivery_delay' => $rate['delay']]);
+                $model = $existing[$key] ?? new InteriorRate(['company_id' => $company->id, 'merchant_id' => $merchantId, 'city' => $rate['city'], 'delivery_delay' => $rate['delay']]);
                 $model->fill([
                     'pli_price' => $rate['pli'] ?? $rate['colis'],
                     'colis_price' => $rate['colis'] ?? $rate['pli'],

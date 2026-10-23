@@ -309,7 +309,7 @@ Guide : [`docs/FORMULES-CLIENTS.md`](docs/FORMULES-CLIENTS.md).
 
 | Formule | Facturation |
 |---|---|
-| Distribution sous contrat | Forfait mensuel pour un nombre de courses (Abidjan et, au choix, intérieur) ; au-delà, chaque course au prix de sa destination (prix du contrat à Abidjan, grille de la ville à l'intérieur) ; chèque livré à l'unité ; délai fixé par le contrat (24 h, 48 h, 72 h) |
+| Distribution sous contrat | Forfait mensuel pour un nombre de courses vers les zones choisies sur le contrat (communes, villes de l'intérieur) ; au-delà, chaque course au prix de sa destination (prix du contrat à Abidjan, tarif de la ville à l'intérieur) ; grille commune ou prix négociés par client ; chèque livré à l'unité ; délai fixé par le contrat (24 h, 48 h, 72 h) |
 | Distribution à l'unité | Chaque pli, colis ou chèque au prix du délai choisi (Distribution › Tarifs) |
 | Mise à disposition (MAD) | Forfait mensuel, courses incluses, chacune au-delà au prix du contrat ; livreurs attitrés |
 

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Api;
 
+use App\Enums\Activity;
 use App\Enums\ClientInvoiceStatus;
 use App\Enums\OrderStatus;
 use App\Models\BillingPlan;
@@ -65,8 +66,8 @@ class ClientBillingTest extends TestCase
 
     public function test_contract_courses_are_billed_on_the_monthly_invoice(): void
     {
-        // Ancienne règle : l'intérieur toujours facturé à part (hors forfait)
-        $plan = $this->plan(['interior_in_forfait' => false]);
+        // Contrat sans zone choisie : les communes « Forfait » ; l'intérieur est facturé à part
+        $plan = $this->plan();
         InteriorRate::create(['company_id' => $this->company->id, 'city' => 'Bouaké', 'delivery_delay' => '48h', 'pli_price' => 3000, 'colis_price' => 4000, 'extra_kg_price' => 500]);
         $bouake = Zone::factory()->create(['company_id' => $this->company->id, 'name' => 'Bouaké', 'city' => 'Bouaké']);
 
@@ -138,11 +139,11 @@ class ClientBillingTest extends TestCase
 
     public function test_interior_courses_count_in_the_forfait_then_cost_their_city_price(): void
     {
-        // 50 000 F pour 3 courses (Abidjan ou intérieur) ; au-delà : 800 F à Abidjan, tarif de la ville à l'intérieur
-        $plan = $this->plan();
-        $this->assertTrue($plan->countsInterior());
+        // 50 000 F pour 3 courses, zones couvertes : Yopougon et Bouaké ; au-delà : 800 F à Abidjan, tarif de la ville à l'intérieur
         InteriorRate::create(['company_id' => $this->company->id, 'city' => 'Bouaké', 'delivery_delay' => '48h', 'pli_price' => 3000, 'colis_price' => 4000, 'extra_kg_price' => 500]);
         $bouake = Zone::factory()->create(['company_id' => $this->company->id, 'name' => 'Bouaké', 'city' => 'Bouaké']);
+        $plan = $this->plan(['zone_ids' => [$this->yopougon->id, $bouake->id]]);
+        $this->assertEqualsCanonicalizing([$this->yopougon->id, $bouake->id], $plan->zones()->pluck('zones.id')->all());
 
         $this->createOrder(['shipment_type' => 'pli']);
         $interior = $this->createOrder(['shipment_type' => 'colis', 'delivery_zone_id' => $bouake->id, 'weight_kg' => 6.5]);
@@ -159,7 +160,7 @@ class ClientBillingTest extends TestCase
         $lines = $invoice->lines->sortBy('position')->map(fn ($l) => [$l->kind, $l->label, $l->quantity, $l->unit_price])->values()->all();
 
         $this->assertSame(['forfait', 1, 50000], [$lines[0][0], $lines[0][2], $lines[0][3]]);
-        $this->assertSame(['included', 'Course(s) à Abidjan et à l\'intérieur : 5 (3 inclus)', 5, 0], $lines[1]);
+        $this->assertSame(['included', 'Course(s) dans les zones du forfait : 5 (3 inclus)', 5, 0], $lines[1]);
         $this->assertSame(['overage', 'Course(s) au-delà du forfait · Abidjan', 1, 800], $lines[2]);
         $this->assertSame(['overage', 'Course(s) au-delà du forfait · Colis pour Bouaké en 48 h', 1, 4000], $lines[3]);
         $this->assertSame('extra_kg', $lines[4][0]);
@@ -177,7 +178,7 @@ class ClientBillingTest extends TestCase
         $this->assertCount(1, $data);
         $this->assertSame($plan->id, $data[0]['id']);
         $this->assertSame('current', $data[0]['state']);
-        $this->assertTrue($data[0]['interior_in_forfait']);
+        $this->assertSame([], $data[0]['zones']);
         $this->assertSame($this->merchant->business_name, $data[0]['merchant']['business_name']);
         $this->assertSame([2, 3, 67, 50000], [$data[0]['usage']['used'], $data[0]['usage']['included'], $data[0]['usage']['percent'], $data[0]['usage']['estimate']]);
 
@@ -188,6 +189,38 @@ class ClientBillingTest extends TestCase
         // Le client ne voit pas la liste des contrats
         Sanctum::actingAs($this->merchantUser);
         $this->getJson('/api/v1/billing-plans')->assertForbidden();
+    }
+
+    public function test_negotiated_rates_replace_the_common_grid_for_one_client(): void
+    {
+        $this->plan();
+        $bouake = Zone::factory()->create(['company_id' => $this->company->id, 'name' => 'Bouaké', 'city' => 'Bouaké']);
+        InteriorRate::create(['company_id' => $this->company->id, 'city' => 'Bouaké', 'delivery_delay' => '48h', 'pli_price' => 3000, 'colis_price' => 4000, 'extra_kg_price' => 500]);
+
+        // Prix négociés du client : saisis puis importés dans sa grille
+        Sanctum::actingAs($this->admin);
+        $this->postJson('/api/v1/interior-rates', ['merchant_id' => $this->merchant->id, 'city' => 'bouaké', 'delivery_delay' => '48h', 'pli_price' => 2000, 'colis_price' => 2500])->assertCreated();
+        $csv = "Ville;Délai;Pli;Colis;Kg supplémentaire\nKorhogo;48h;3500;4500;600\n";
+        $this->post('/api/v1/interior-rates/import', ['merchant_id' => $this->merchant->id, 'file' => UploadedFile::fake()->createWithContent('t.csv', $csv)])->assertOk()->assertJsonPath('data.created', 1);
+
+        $this->assertSame(['Bouaké'], array_column($this->getJson('/api/v1/interior-rates')->json('data'), 'city'));
+        $this->assertSame(['Bouaké', 'Korhogo'], array_column($this->getJson('/api/v1/interior-rates?merchant_id='.$this->merchant->id)->json('data'), 'city'));
+        $this->getJson('/api/v1/client-rates/clients')->assertOk()
+            ->assertJsonPath('data.0.id', $this->merchant->id)->assertJsonPath('data.0.interior_rates', 2);
+
+        // Ce client : prix négociés ; un autre client : grille commune
+        $order = $this->createOrder(['shipment_type' => 'colis', 'delivery_zone_id' => $bouake->id]);
+        $this->assertSame(['interior', 2500], [$order->billing_basis, (int) $order->billing_amount]);
+
+        $other = Merchant::factory()->create(['company_id' => $this->company->id, 'pickup_zone_id' => $this->cocody->id]);
+        $this->postJson("/api/v1/merchants/{$other->id}/billing-plans", ['formula' => 'distribution_contract', 'monthly_fee' => 10000, 'included_quantity' => 1, 'delivery_delay' => '48h', 'starts_on' => '2026-11-01'])->assertCreated();
+        $other->syncActivities([Activity::Distribution]);
+        $otherOrder = $this->createOrder(['shipment_type' => 'colis', 'delivery_zone_id' => $bouake->id], $this->admin, $other);
+        $this->assertSame(4000, (int) $otherOrder->billing_amount);
+
+        // Un client ne voit aucune grille
+        Sanctum::actingAs($this->merchantUser);
+        $this->getJson('/api/v1/interior-rates?merchant_id='.$this->merchant->id)->assertForbidden();
     }
 
     public function test_unit_distribution_follows_the_chosen_delay(): void
@@ -210,7 +243,7 @@ class ClientBillingTest extends TestCase
         $this->postJson('/api/v1/orders', [
             'recipient_phone' => '0707070707', 'delivery_zone_id' => $this->yopougon->id, 'fee_payer' => 'merchant',
             'shipment_type' => 'pli', 'delivery_delay' => '48h',
-        ])->assertUnprocessable()->assertJsonFragment(['message' => 'Prix à l\'unité d\'un Pli en 48 h pas encore fixé : voir Tarifs › Distribution à l\'unité.']);
+        ])->assertUnprocessable()->assertJsonFragment(['message' => 'Prix à l\'unité d\'un Pli en 48 h pas encore fixé : voir Distribution › Tarifs.']);
 
         // Devis pendant la saisie : rien sur la course, explication de la facture
         $this->postJson('/api/v1/quotes', ['delivery_zone_id' => $this->yopougon->id, 'shipment_type' => 'pli', 'delivery_delay' => '24h'])
@@ -281,7 +314,7 @@ class ClientBillingTest extends TestCase
         // MAD : on compte les courses
         $this->travelTo('2026-12-01 08:00:00');
         $this->artisan('billing:invoice')->assertSuccessful();
-        $this->assertStringStartsWith('Course(s) sur les communes du forfait : 2', ClientInvoice::sole()->lines->firstWhere('kind', 'included')->label);
+        $this->assertStringStartsWith('Course(s) dans les zones du forfait : 2', ClientInvoice::sole()->lines->firstWhere('kind', 'included')->label);
     }
 
     public function test_a_new_plan_ends_the_previous_one_and_used_plans_keep_their_prices(): void

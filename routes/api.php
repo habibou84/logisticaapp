@@ -353,6 +353,7 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::patch('billing-plans/{billingPlan}', [BillingPlanController::class, 'update'])->name('billing-plans.update');
         Route::delete('billing-plans/{billingPlan}', [BillingPlanController::class, 'destroy'])->name('billing-plans.destroy');
         Route::controller(ClientRateController::class)->group(function () {
+            Route::get('client-rates/clients', 'clients')->name('client-rates.clients');
             Route::get('distribution-rates', 'distribution')->name('distribution-rates.index');
             Route::put('distribution-rates', 'updateDistribution')->name('distribution-rates.update');
             Route::get('interior-rates', 'interior')->name('interior-rates.index');
