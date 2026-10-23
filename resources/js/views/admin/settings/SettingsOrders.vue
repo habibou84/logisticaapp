@@ -159,6 +159,22 @@
         </label>
       </section>
 
+      <!-- Délai interne : pour l'équipe, jamais montré au client -->
+      <section class="card p-4 space-y-3">
+        <h2 class="font-semibold">Délai interne de distribution</h2>
+        <p class="text-sm text-gray-600">
+          Délai que l'entreprise se donne pour distribuer une course, à partir de sa création. À 80 % du délai, l'équipe reçoit
+          « risque de retard » ; au-delà, « en retard » (dispatch et responsables de l'activité). Les courses concernées sont
+          dans la file « ⏰ Délai interne dépassé ». Un contrat peut avoir son propre délai. Vide : pas de délai interne.
+        </p>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div v-for="a in INTERNAL_ACTIVITIES" :key="a.value">
+            <label class="label" :for="`delay-${a.value}`">{{ a.label }} (heures)</label>
+            <input :id="`delay-${a.value}`" v-model.number="form.internal_delays[a.value]" type="number" min="1" max="2000" class="input" placeholder="Aucun">
+          </div>
+        </div>
+      </section>
+
       <SaveBar :dirty="dirty" :saving="saving" :error="error" @save="save" @reset="reset" />
     </template>
   </SettingsPage>
@@ -174,6 +190,11 @@ import { ACCEPT_MODES, AUTO_MODES, CUSTODY_MODES, DELIVERY_MODES, VALIDATION_MOD
 const { form, dirty, saving, error, save, reset } = useCompanySettings([
   'validation_mode', 'daily_cutoff_time', 'default_max_attempts', 'require_delivery_code', 'offline_courier_actions', 'pickup_mission_custody', 'depot_closes_at', 'auto_pickup',
   'mission_acceptance', 'unreachable_minutes', 'late_pickup_alert_minutes', 'courier_available_alert',
-  'auto_delivery', 'auto_delivery_max_cod', 'same_courier_delivery', 'cutoff_by_day',
+  'auto_delivery', 'auto_delivery_max_cod', 'same_courier_delivery', 'cutoff_by_day', 'internal_delays',
 ])
+const INTERNAL_ACTIVITIES = [
+  { value: 'distribution', label: 'Distribution' },
+  { value: 'mad', label: 'MAD' },
+  { value: 'ecommerce', label: 'E-commerce' },
+]
 </script>

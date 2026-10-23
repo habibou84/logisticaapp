@@ -46,6 +46,9 @@ class UpdateCompanyRequest extends FormRequest
             'invoice_payment_info' => ['sometimes', 'nullable', 'string', 'max:1000'],
             // Moyens de paiement des factures : comptes bancaires, Mobile Money, chèque… au choix de l'entreprise
             ...InvoicePayments::rules(),
+            // Délai interne de distribution par activité, en heures (vide : aucun)
+            'internal_delays' => ['sometimes', 'nullable', 'array:ecommerce,distribution,mad'],
+            'internal_delays.*' => ['nullable', 'integer', 'min:1', 'max:2000'],
             'merchant_signup' => ['sometimes', 'boolean'],
             'weekly_report' => ['sometimes', 'boolean'],
             'pickup_assign_alert_minutes' => ['sometimes', 'integer', 'min:0', 'max:1440'],

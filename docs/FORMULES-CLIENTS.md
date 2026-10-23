@@ -129,6 +129,18 @@ commun…), ajoutées **à part** sur sa facture du mois :
 - une fois la facture du mois émise, ses suppléments ne changent plus et le mois est fermé (dater le supplément
   du mois suivant).
 
+## 3 ter. Délai interne de distribution
+
+Délai que l'entreprise se donne (le client ne le voit pas), compté **à partir de la création de la course** :
+
+- **Réglages › Courses et livraison › Délai interne de distribution** : un délai en heures par activité
+  (distribution, MAD, e-commerce ; vide = aucun) ;
+- **contrat** : un délai propre (« Délai interne… » sur le contrat, ou à la création) qui l'emporte sur celui de l'activité ;
+- à **80 %** du délai, l'équipe reçoit « ⚠️ Risque de retard » ; une fois le délai dépassé, « ⏰ En retard » (une seule
+  fois chacune ; administrateurs, dispatch et responsables de l'activité) ; vérification toutes les 5 minutes
+  (`orders:internal-delays`) ;
+- liste des courses : file **« ⏰ Délai interne dépassé »** et badges ; fiche course : échéance interne.
+
 ## 4. La facture du mois
 
 Le 1er de chaque mois à 01:30, la facture du mois écoulé de chaque client sous formule est **calculée en

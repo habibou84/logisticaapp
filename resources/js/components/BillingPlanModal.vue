@@ -25,10 +25,12 @@
           <p v-if="p.has_forfait" class="text-gray-600">
             Zones du forfait : {{ p.zones?.length ? zoneNames(p.zones) : 'communes « Forfait » (Réglages › Zones)' }}
           </p>
+          <p v-if="p.internal_delay_hours" class="text-gray-600">Délai interne : {{ p.internal_delay_hours }} h (équipe)</p>
           <p v-if="p.couriers?.length" class="text-gray-600">Livreurs mis à disposition : {{ p.couriers.map((c) => c.name).join(', ') }}</p>
           <div v-if="canManage && !p.ends_on" class="flex flex-wrap gap-3 pt-1">
             <button type="button" class="text-blue-600" @click="endPlan(p)">Terminer…</button>
             <button v-if="p.has_forfait" type="button" class="text-blue-600" @click="editZones(p)">Changer les zones</button>
+            <button type="button" class="text-blue-600" @click="editInternalDelay(p)">Délai interne…</button>
             <button v-if="p.formula === 'mad_contract'" type="button" class="text-blue-600" @click="editCouriers(p)">Changer les livreurs</button>
           </div>
         </li>
@@ -73,6 +75,10 @@
             <div>
               <label class="label" for="bp-kg">Kilogramme au-delà de 5 kg, Abidjan (F)</label>
               <input id="bp-kg" v-model.number="form.extra_kg_price" type="number" min="0" class="input">
+            </div>
+            <div>
+              <label class="label" for="bp-internal">Délai interne (heures, facultatif)</label>
+              <input id="bp-internal" v-model.number="form.internal_delay_hours" type="number" min="1" max="2000" class="input" placeholder="Celui de l'activité">
             </div>
             <div><label class="label" for="bp-start">À partir du</label><input id="bp-start" v-model="form.starts_on" type="date" class="input" required></div>
             <div><label class="label" for="bp-end">Jusqu'au (facultatif)</label><input id="bp-end" v-model="form.ends_on" type="date" class="input" :min="form.starts_on"></div>
@@ -160,7 +166,7 @@ function reset() {
   error.value = ''
   Object.assign(form, {
     formula: formulas.value[0]?.value ?? 'distribution_contract', monthly_fee: 0, included_quantity: 0, overage_price: 0, delivery_delay: '24h',
-    cheque_price: 0, extra_kg_price: 0, starts_on: today(), ends_on: '', notes: '', courier_ids: [], zone_ids: defaultZones(),
+    cheque_price: 0, extra_kg_price: 0, internal_delay_hours: null, starts_on: today(), ends_on: '', notes: '', courier_ids: [], zone_ids: defaultZones(),
   })
 }
 
@@ -199,6 +205,20 @@ function editCouriers(plan) {
   editMode.value = 'couriers'
   form.formula = plan.formula
   form.courier_ids = (plan.couriers || []).map((c) => c.id)
+}
+
+// Délai interne propre au contrat (vide : celui de l'activité, Réglages › Courses)
+async function editInternalDelay(plan) {
+  const value = window.prompt('Délai interne de ce contrat, en heures (vide : celui de l\'activité) :', plan.internal_delay_hours ?? '')
+  if (value === null) return
+  try {
+    await http.patch(`/billing-plans/${plan.id}`, { internal_delay_hours: value.trim() === '' ? null : Number(value) })
+    toasts.success('Délai interne enregistré.')
+    await load()
+    emit('saved')
+  } catch (e) {
+    toasts.error(apiErrorMessage(e))
+  }
 }
 
 async function endPlan(plan) {

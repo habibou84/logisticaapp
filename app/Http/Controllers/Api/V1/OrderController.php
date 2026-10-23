@@ -40,7 +40,7 @@ class OrderController extends Controller
             'status' => ['nullable', 'array'],
             'status.*' => [Rule::enum(OrderStatus::class)],
             // File d'attente du dispatch : à valider, à ramasser, à livrer, à retourner
-            'queue' => ['nullable', Rule::in(['to_confirm', 'to_pickup', 'to_prepare', 'to_deliver', 'unassigned', 'to_decide', 'scheduled', 'to_return', 'incidents', 'code_to_verify'])],
+            'queue' => ['nullable', Rule::in(['to_confirm', 'to_pickup', 'to_prepare', 'to_deliver', 'unassigned', 'to_decide', 'scheduled', 'to_return', 'incidents', 'code_to_verify', 'internal_late'])],
             // File « Sans livreur » : ramassage, livraison ou les deux
             'awaiting' => ['nullable', Rule::in([AwaitingCourier::PICKUP, AwaitingCourier::DELIVERY])],
             'merchant_id' => ['nullable', 'integer'],
@@ -130,6 +130,7 @@ class OrderController extends Controller
             'to_confirm' => $count('to_confirm'),
             'to_pickup' => $count('to_pickup'),
             'to_deliver' => $count('to_deliver'),
+            'internal_late' => $count('internal_late'),
             'unassigned' => AwaitingCourier::scope(Order::query())->count(),
             'late' => $awaiting->lateCounts($request->user()->company),
             // Tableau de bord : en attente d'un livreur, par étape
@@ -259,6 +260,9 @@ class OrderController extends Controller
             'incidents' => $query->whereIn('status', OrderStatus::values([OrderStatus::DeliveryFailed, OrderStatus::Rescheduled])),
             // Livrées hors connexion avec un code client incorrect : à vérifier auprès du destinataire
             'code_to_verify' => $query->whereNotNull('delivery_code_unverified_at'),
+            // Délai interne de distribution dépassé, course pas terminée
+            'internal_late' => $query->whereNotNull('internal_due_at')->where('internal_due_at', '<=', now())
+                ->whereNotIn('status', OrderStatus::values(array_filter(OrderStatus::cases(), fn (OrderStatus $s) => $s->isFinal()))),
         };
     }
 }

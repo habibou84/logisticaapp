@@ -5,6 +5,10 @@
       <h1 class="text-xl font-bold font-mono">{{ order.tracking_code }}</h1>
       <StatusBadge :status="order.status" :label="order.status_label" />
       <span v-if="order.activity" :class="['text-xs rounded-full px-2 py-0.5 font-medium', activityBadge(order.activity)]">{{ order.activity_label }}</span>
+      <!-- Délai interne (équipe) : échéance, risque, dépassement -->
+      <span v-if="order.internal_due_at" :class="['text-xs rounded-full px-2 py-0.5 font-medium', order.internal_late ? 'bg-red-100 text-red-700' : order.internal_risk ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-600']">
+        {{ order.internal_late ? '⏰ Délai interne dépassé' : order.internal_risk ? '⚠️ Risque de retard' : '⏱ Délai interne' }} · {{ dateTime(order.internal_due_at) }}
+      </span>
       <span v-if="order.return_requested && !['returned', 'return_assigned', 'returning'].includes(order.status)" class="text-xs rounded-full bg-rose-100 text-rose-700 px-2 py-0.5">Retour demandé</span>
       <div class="ml-auto flex gap-2">
         <!-- Client sous contrat : prestation exceptionnelle sur la facture du mois -->

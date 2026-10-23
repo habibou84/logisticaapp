@@ -134,6 +134,8 @@ class OrderService
                 'items_amount' => $itemsAmount,
                 'max_attempts' => $company->default_max_attempts,
                 ...$pricing,
+                // Délai interne de distribution (équipe) : du contrat, sinon de l'activité
+                'internal_due_at' => app(InternalDelays::class)->dueAt($company, $activity, $pricing['billing_plan_id'] ?? null, now()),
             ]);
             $order->cod_amount = Order::computeCodAmount($itemsAmount, $order->totalFees(), $feePayer);
             $order->recipient_id = $this->rememberRecipient($merchant, $data)->id;

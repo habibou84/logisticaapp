@@ -181,6 +181,7 @@ class BillingPlanController extends Controller
             'delivery_delay' => [$sometimes, Rule::enum(DeliveryDelay::class)],
             'cheque_price' => ['sometimes', 'integer', 'min:0'],
             'extra_kg_price' => ['sometimes', 'integer', 'min:0'],
+            'internal_delay_hours' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:2000'],
             // Zones couvertes par le forfait : communes, villes de l'intérieur (vide : communes « Forfait »)
             'zone_ids' => ['sometimes', 'array', 'max:300'],
             'zone_ids.*' => ['integer', Rule::exists('zones', 'id')->where('company_id', $request->user()->company_id)],
@@ -201,6 +202,7 @@ class BillingPlanController extends Controller
             'ends_on' => 'date de fin',
             'courier_ids' => 'livreurs mis à disposition',
             'zone_ids' => 'zones du forfait',
+            'internal_delay_hours' => 'délai interne',
         ]);
 
         // Sans forfait : rien d'inclus

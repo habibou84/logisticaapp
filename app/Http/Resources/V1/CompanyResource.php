@@ -56,6 +56,8 @@ class CompanyResource extends JsonResource
             'tagline' => $this->tagline,
             'invoice_payment_info' => $this->invoice_payment_info,
             'invoice_payment_methods' => $this->invoice_payment_methods ?? [],
+            // Délai interne de distribution par activité (heures, vide : aucun)
+            'internal_delays' => (object) ($this->internal_delays ?? []),
             'merchant_signup' => $this->merchant_signup,
             'weekly_report' => $this->weekly_report,
             'logo_url' => Branding::logoUrl($this->resource),

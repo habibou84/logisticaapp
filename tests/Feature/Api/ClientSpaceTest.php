@@ -9,6 +9,7 @@ use App\Models\CourierAbsence;
 use App\Models\DistributionRate;
 use App\Models\Order;
 use App\Notifications\ClientBillingAlert;
+use App\Notifications\OrderAlert;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Notification;
@@ -207,6 +208,47 @@ class ClientSpaceTest extends TestCase
 
         $this->assertSame(['Virement bancaire', 'Wave', 'Chèque'], array_column($methods, 'title'));
         $this->assertSame(['label' => 'IBAN', 'value' => 'CI93 CI00 0010 1234 5678 9012 3456', 'copy' => true], $methods[0]['lines'][2]);
+    }
+
+    public function test_internal_delay_alerts_the_team_at_80_then_100_percent(): void
+    {
+        Notification::fake();
+        $this->plan();
+        Sanctum::actingAs($this->admin);
+        $this->patchJson("/api/v1/companies/{$this->company->id}", ['internal_delays' => ['distribution' => 10, 'mad' => null]])
+            ->assertOk()->assertJsonPath('data.internal_delays.distribution', 10);
+
+        $id = $this->send()->assertCreated()->json('data.id');
+        $order = Order::findOrFail($id);
+        $this->assertSame('2026-11-10 20:00', $order->internal_due_at->format('Y-m-d H:i'));
+
+        // Le client ne voit pas le délai interne ; l'équipe oui
+        $this->assertArrayNotHasKey('internal_due_at', $this->getJson("/api/v1/orders/{$id}")->json('data'));
+        Sanctum::actingAs($this->admin);
+        $this->getJson("/api/v1/orders/{$id}")->assertJsonPath('data.internal_late', false);
+
+        $this->travelTo('2026-11-10 17:00:00');   // 7 h : rien
+        $this->artisan('orders:internal-delays')->expectsOutputToContain('0 risque(s) de retard, 0 retard(s)')->assertSuccessful();
+        $this->travelTo('2026-11-10 18:05:00');   // 8 h 05 : risque de retard (80 %)
+        $this->artisan('orders:internal-delays')->expectsOutputToContain('1 risque(s) de retard, 0 retard(s)')->assertSuccessful();
+        $this->artisan('orders:internal-delays')->expectsOutputToContain('0 risque(s) de retard, 0 retard(s)')->assertSuccessful();
+        Notification::assertSentTo($this->dispatcher, OrderAlert::class, fn ($n) => $n->kind === 'internal_risk');
+        $this->getJson("/api/v1/orders/{$id}")->assertJsonPath('data.internal_risk', true);
+
+        $this->travelTo('2026-11-10 20:01:00');   // dépassé : en retard, une seule fois
+        $this->artisan('orders:internal-delays')->expectsOutputToContain('0 risque(s) de retard, 1 retard(s)')->assertSuccessful();
+        $this->artisan('orders:internal-delays')->expectsOutputToContain('0 risque(s) de retard, 0 retard(s)')->assertSuccessful();
+        Notification::assertSentTo($this->dispatcher, OrderAlert::class, fn ($n) => $n->kind === 'internal_late');
+
+        Sanctum::actingAs($this->admin);
+        $this->assertSame([$id], array_column($this->getJson('/api/v1/orders?queue=internal_late')->assertOk()->json('data'), 'id'));
+        $this->assertSame(1, $this->getJson('/api/v1/orders/counts')->json('data.internal_late'));
+
+        // Délai propre au contrat : il l'emporte sur celui de l'activité
+        $plan = BillingPlan::firstOrFail();
+        $this->patchJson("/api/v1/billing-plans/{$plan->id}", ['internal_delay_hours' => 72])->assertOk()->assertJsonPath('data.internal_delay_hours', 72);
+        $second = Order::findOrFail($this->send()->assertCreated()->json('data.id'));
+        $this->assertSame('2026-11-13 20:01', $second->internal_due_at->format('Y-m-d H:i'));
     }
 
     public function test_notification_settings_follow_the_activities(): void

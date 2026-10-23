@@ -6,7 +6,7 @@ import http from '../bootstrap/axios'
 export const useDispatchCountStore = defineStore('dispatchCounts', {
   state: () => ({
     counts: {
-      to_confirm: 0, to_pickup: 0, to_deliver: 0, unassigned: 0,
+      to_confirm: 0, to_pickup: 0, to_deliver: 0, unassigned: 0, internal_late: 0,
       late: { pickup: 0, delivery: 0, total: 0 },
       waiting: { pickup: null, delivery: null },
       cutoff: null,

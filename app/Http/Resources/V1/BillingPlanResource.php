@@ -25,6 +25,8 @@ class BillingPlanResource extends JsonResource
             'delivery_delay' => $this->delivery_delay->value,
             'cheque_price' => $this->cheque_price,
             'extra_kg_price' => $this->extra_kg_price,
+            // Délai interne propre au contrat (heures ; vide : celui de l'activité)
+            'internal_delay_hours' => $this->when($request->user()?->merchant_id === null, $this->internal_delay_hours),
             // Zones couvertes par le forfait (vide : communes « Forfait »)
             'zones' => $this->whenLoaded('zones', fn () => $this->zones->map(fn ($z) => ['id' => $z->id, 'name' => $z->name, 'city' => $z->city])->values()),
             'starts_on' => $this->starts_on?->toDateString(),

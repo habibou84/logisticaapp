@@ -24,7 +24,7 @@ class BillingPlan extends Model
 
     protected $fillable = [
         'company_id', 'merchant_id', 'formula', 'activity', 'monthly_fee', 'included_quantity', 'overage_price',
-        'delivery_delay', 'cheque_price', 'extra_kg_price', 'starts_on', 'ends_on', 'notes', 'usage_alert',
+        'delivery_delay', 'cheque_price', 'extra_kg_price', 'starts_on', 'ends_on', 'notes', 'usage_alert', 'internal_delay_hours',
     ];
 
     protected function casts(): array
@@ -38,6 +38,7 @@ class BillingPlan extends Model
             'overage_price' => 'integer',
             'cheque_price' => 'integer',
             'extra_kg_price' => 'integer',
+            'internal_delay_hours' => 'integer',
             'starts_on' => 'date:Y-m-d',
             'ends_on' => 'date:Y-m-d',
         ];

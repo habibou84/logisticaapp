@@ -219,6 +219,7 @@
             <span v-if="o.delivery_courier">↓ {{ o.delivery_courier.name }}</span>
             <span v-if="o.held_by" class="text-amber-700">🎒 {{ o.held_by.name }}</span>
           </div>
+          <div v-if="o.internal_late || o.internal_risk" :class="['text-xs font-medium', o.internal_late ? 'text-red-600' : 'text-amber-700']">{{ o.internal_late ? '⏰ Délai interne dépassé' : '⚠️ Risque de retard' }} ({{ dateTime(o.internal_due_at) }})</div>
           <div class="text-xs text-gray-400">Livraison {{ date(o.delivery.scheduled_date || o.created_at) }} · créée {{ dateTime(o.created_at) }}</div>
         </article>
       </div>
@@ -251,6 +252,7 @@
               <td v-if="isStaff" class="p-2" @click.stop><input v-model="selected" type="checkbox" :value="o.id" :aria-label="`Sélectionner ${o.tracking_code}`"></td>
               <td class="p-2 font-mono text-xs">
                 {{ o.tracking_code }}
+                <div v-if="o.internal_late || o.internal_risk" :class="['font-sans font-medium', o.internal_late ? 'text-red-600' : 'text-amber-700']" :title="`Délai interne : ${dateTime(o.internal_due_at)}`">{{ o.internal_late ? '⏰ délai dépassé' : '⚠️ risque de retard' }}</div>
                 <div v-if="activityChoices.length > 1"><span :class="['rounded-full px-1.5 font-sans font-medium', activityBadge(o.activity)]">{{ activityShort(o.activity) }}</span></div>
               </td>
               <td v-if="isStaff" class="p-2">{{ o.merchant?.business_name }}</td>
@@ -339,6 +341,8 @@ const queues = [
   { value: 'to_return', label: 'À retourner' },
   // Livrées hors connexion avec un code client incorrect
   { value: 'code_to_verify', label: '⚠️ Codes à vérifier' },
+  // Délai interne de distribution dépassé (toutes dates)
+  { value: 'internal_late', label: '⏰ Délai interne dépassé' },
 ]
 
 // Écran à part, réservé au dispatch (pas une file de la liste)
@@ -416,6 +420,7 @@ const DAY_COUNTED = { '': 'all', to_confirm: 'to_confirm', to_pickup: 'to_pickup
 const dayCounts = computed(() => (filters.day && dispatchCounts.dayCounts?.date === filters.day ? dispatchCounts.dayCounts : null))
 const tabCount = (queue) => {
   if (!isDispatch.value) return 0
+  if (queue === 'internal_late') return dispatchCounts.counts.internal_late || 0
   if (dayCounts.value) return dayCounts.value[DAY_COUNTED[queue]] || 0
   return COUNTED[queue] ? dispatchCounts.counts[COUNTED[queue]] : 0
 }

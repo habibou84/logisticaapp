@@ -27,6 +27,12 @@ class OrderResource extends JsonResource
             // E-commerce, distribution ou MAD
             'activity' => $this->activity?->value,
             'activity_label' => $this->activity?->label(),
+            // Délai interne (équipe seulement) : échéance, risque de retard, en retard
+            ...($request->user()?->merchant_id === null && $this->internal_due_at ? [
+                'internal_due_at' => $this->internal_due_at,
+                'internal_late' => ! $this->status->isFinal() && $this->internal_due_at->isPast(),
+                'internal_risk' => ! $this->status->isFinal() && ! $this->internal_due_at->isPast() && (int) $this->internal_alert >= 1,
+            ] : []),
             'status' => $this->status,
             'status_label' => $this->statusLabel(),
             'merchant_id' => $this->merchant_id,

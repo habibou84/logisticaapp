@@ -72,6 +72,8 @@ class Order extends Model
         'pricing_details',
         'billing_plan_id',
         'billing_basis',
+        // Délai interne de distribution (équipe) : échéance calculée à la création
+        'internal_due_at',
         'billing_amount',
         'fee_payer',
         'items_amount',
@@ -93,6 +95,8 @@ class Order extends Model
             'shipment_type' => ShipmentType::class,
             'delivery_delay' => DeliveryDelay::class,
             'billing_amount' => 'integer',
+            'internal_due_at' => 'datetime',
+            'internal_alert' => 'integer',
             'delivery_code' => 'encrypted',
             'pickup_lat' => 'float',
             'pickup_lng' => 'float',
