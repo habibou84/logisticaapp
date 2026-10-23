@@ -41,6 +41,6 @@ enum BillingFormula: string
     /** Ce que compte le forfait : plis et colis, ou courses */
     public function unitLabel(): string
     {
-        return $this === self::MadContract ? 'course(s)' : 'pli(s) et colis';
+        return 'course(s)';
     }
 }

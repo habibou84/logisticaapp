@@ -65,7 +65,8 @@ class ClientBillingTest extends TestCase
 
     public function test_contract_courses_are_billed_on_the_monthly_invoice(): void
     {
-        $plan = $this->plan();
+        // Ancienne règle : l'intérieur toujours facturé à part (hors forfait)
+        $plan = $this->plan(['interior_in_forfait' => false]);
         InteriorRate::create(['company_id' => $this->company->id, 'city' => 'Bouaké', 'delivery_delay' => '48h', 'pli_price' => 3000, 'colis_price' => 4000, 'extra_kg_price' => 500]);
         $bouake = Zone::factory()->create(['company_id' => $this->company->id, 'name' => 'Bouaké', 'city' => 'Bouaké']);
 
@@ -135,6 +136,60 @@ class ClientBillingTest extends TestCase
         $this->postJson("/api/v1/client-invoices/{$invoice->id}/void")->assertUnprocessable();
     }
 
+    public function test_interior_courses_count_in_the_forfait_then_cost_their_city_price(): void
+    {
+        // 50 000 F pour 3 courses (Abidjan ou intérieur) ; au-delà : 800 F à Abidjan, tarif de la ville à l'intérieur
+        $plan = $this->plan();
+        $this->assertTrue($plan->countsInterior());
+        InteriorRate::create(['company_id' => $this->company->id, 'city' => 'Bouaké', 'delivery_delay' => '48h', 'pli_price' => 3000, 'colis_price' => 4000, 'extra_kg_price' => 500]);
+        $bouake = Zone::factory()->create(['company_id' => $this->company->id, 'name' => 'Bouaké', 'city' => 'Bouaké']);
+
+        $this->createOrder(['shipment_type' => 'pli']);
+        $interior = $this->createOrder(['shipment_type' => 'colis', 'delivery_zone_id' => $bouake->id, 'weight_kg' => 6.5]);
+        $this->createOrder(['shipment_type' => 'colis']);
+        $this->createOrder(['shipment_type' => 'pli']);                                          // 4e : au-delà, Abidjan
+        $this->createOrder(['shipment_type' => 'colis', 'delivery_zone_id' => $bouake->id]);    // 5e : au-delà, Bouaké
+
+        // Dans le forfait : seulement les kilos en plus, au prix de la ville (2 kg × 500 F)
+        $this->assertSame(['forfait', 1000], [$interior->billing_basis, (int) $interior->billing_amount]);
+        $this->assertSame(4000, $interior->pricing_details['billing']['overage']);
+
+        $this->artisan('billing:invoice', ['--month' => '2026-11'])->assertSuccessful();
+        $invoice = ClientInvoice::sole();
+        $lines = $invoice->lines->sortBy('position')->map(fn ($l) => [$l->kind, $l->label, $l->quantity, $l->unit_price])->values()->all();
+
+        $this->assertSame(['forfait', 1, 50000], [$lines[0][0], $lines[0][2], $lines[0][3]]);
+        $this->assertSame(['included', 'Course(s) à Abidjan et à l\'intérieur : 5 (3 inclus)', 5, 0], $lines[1]);
+        $this->assertSame(['overage', 'Course(s) au-delà du forfait · Abidjan', 1, 800], $lines[2]);
+        $this->assertSame(['overage', 'Course(s) au-delà du forfait · Colis pour Bouaké en 48 h', 1, 4000], $lines[3]);
+        $this->assertSame('extra_kg', $lines[4][0]);
+        $this->assertSame(50000 + 800 + 4000 + 1000, $invoice->total);
+    }
+
+    public function test_contracts_page_lists_contracts_with_their_month(): void
+    {
+        $plan = $this->plan();
+        $this->createOrder(['shipment_type' => 'pli']);
+        $this->createOrder(['shipment_type' => 'pli']);
+
+        Sanctum::actingAs($this->admin);
+        $data = $this->getJson('/api/v1/billing-plans')->assertOk()->json('data');
+        $this->assertCount(1, $data);
+        $this->assertSame($plan->id, $data[0]['id']);
+        $this->assertSame('current', $data[0]['state']);
+        $this->assertTrue($data[0]['interior_in_forfait']);
+        $this->assertSame($this->merchant->business_name, $data[0]['merchant']['business_name']);
+        $this->assertSame([2, 3, 67, 50000], [$data[0]['usage']['used'], $data[0]['usage']['included'], $data[0]['usage']['percent'], $data[0]['usage']['estimate']]);
+
+        $this->assertCount(0, $this->getJson('/api/v1/billing-plans?state=ended')->assertOk()->json('data'));
+        $this->assertCount(0, $this->getJson('/api/v1/billing-plans?activity=mad')->assertOk()->json('data'));
+        $this->assertCount(1, $this->getJson('/api/v1/billing-plans?search='.urlencode(mb_substr($this->merchant->business_name, 0, 4)))->json('data'));
+
+        // Le client ne voit pas la liste des contrats
+        Sanctum::actingAs($this->merchantUser);
+        $this->getJson('/api/v1/billing-plans')->assertForbidden();
+    }
+
     public function test_unit_distribution_follows_the_chosen_delay(): void
     {
         $this->plan(['formula' => 'distribution_unit', 'delivery_delay' => '24h', 'extra_kg_price' => 200]);
@@ -193,7 +248,7 @@ class ClientBillingTest extends TestCase
         Sanctum::actingAs($this->merchantUser);
         $this->postJson('/api/v1/orders', [
             'recipient_phone' => '0707070707', 'delivery_zone_id' => Zone::where('city', 'Bouaké')->value('id'), 'fee_payer' => 'merchant',
-        ])->assertUnprocessable()->assertJsonFragment(['message' => 'Aucun tarif pour Bouaké en 72 h : ajoutez-le dans Tarifs › Villes de l\'intérieur.']);
+        ])->assertUnprocessable()->assertJsonFragment(['message' => 'Aucun tarif pour Bouaké en 72 h : ajoutez-le dans Distribution › Tarifs (villes de l\'intérieur).']);
 
         // Réservé aux administrateurs
         Sanctum::actingAs($this->dispatcher);

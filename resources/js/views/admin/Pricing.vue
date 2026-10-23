@@ -90,7 +90,7 @@
     <!-- Clients sous formule (distribution, MAD) : page à part (droit « formules et tarifs ») -->
     <p class="text-sm text-gray-600">
       Tarifs de la distribution à l'unité et des villes de l'intérieur :
-      <RouterLink to="/admin/formules" class="text-blue-600 underline">Formules et tarifs des clients</RouterLink>.
+      <RouterLink to="/admin/formules" class="text-blue-600 underline">Distribution › Tarifs</RouterLink>.
     </p>
   </div>
 </template>

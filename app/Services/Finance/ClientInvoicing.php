@@ -116,16 +116,21 @@ class ClientInvoicing
         $lines = [];
 
         foreach ($plans->filter(fn (BillingPlan $p) => $p->formula->hasForfait()) as $plan) {
-            $inForfait = $orders->where('billing_plan_id', $plan->id)->where('billing_basis', 'forfait');
+            // Dans l'ordre de création : les premières sont incluses, les suivantes au prix de leur destination
+            $inForfait = $orders->where('billing_plan_id', $plan->id)->where('billing_basis', 'forfait')->values();
             $count = $inForfait->count();
-            $over = max(0, $count - $plan->included_quantity);
             $units = $plan->formula->unitLabel();
+            $where = $plan->countsInterior() ? 'à Abidjan et à l\'intérieur' : 'sur les communes du forfait';
 
             $lines[] = $this->line('forfait', "Forfait {$plan->formula->label()} en {$plan->delivery_delay->label()} · {$month}", 1, $plan->monthly_fee);
-            $lines[] = $this->line('included', ucfirst($units)." sur les communes du forfait : {$count} ({$plan->included_quantity} inclus)", $count, 0);
-            if ($over > 0) {
-                $lines[] = $this->line('overage', ucfirst($units).' au-delà du forfait', $over, $plan->overage_price);
-            }
+            $lines[] = $this->line('included', ucfirst($units)." {$where} : {$count} ({$plan->included_quantity} inclus)", $count, 0);
+            $inForfait->slice($plan->included_quantity)
+                ->groupBy(fn (Order $o) => ($o->pricing_details['billing']['overage_label'] ?? 'Abidjan').'|'.($o->pricing_details['billing']['overage'] ?? $plan->overage_price))
+                ->sortKeys()
+                ->each(function (Collection $group, string $key) use (&$lines, $units) {
+                    [$where, $price] = explode('|', $key, 2);
+                    $lines[] = $this->line('overage', ucfirst($units)." au-delà du forfait · {$where}", $group->count(), (int) $price);
+                });
 
             $heavy = $inForfait->filter(fn (Order $o) => (int) $o->billing_amount > 0);
             if ($heavy->isNotEmpty()) {

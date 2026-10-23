@@ -83,6 +83,7 @@ const routes = [
       { path: 'factures/:id(\\d+)', component: shared.clientInvoice, meta: { permission: 'invoices.view' } },
       // Chiffre d'affaires par activité (e-commerce, distribution, MAD)
       { path: 'chiffre-affaires', component: () => import('../views/admin/Revenue.vue'), meta: { permission: 'revenue.view' } },
+      { path: 'contrats', component: () => import('../views/admin/Contracts.vue'), meta: { permission: 'merchants.view' } },
       { path: 'formules', component: () => import('../views/admin/ClientFormulas.vue'), meta: { permission: ['settings.manage', 'rates.manage'] } },
       // Réglages par thèmes (l'ancienne page « Paramètres » y mène)
       { path: 'mise-en-route', component: () => import('../views/admin/SetupGuide.vue'), meta: { permission: 'settings.manage' } },

@@ -24,7 +24,7 @@ class BillingPlan extends Model
 
     protected $fillable = [
         'company_id', 'merchant_id', 'formula', 'activity', 'monthly_fee', 'included_quantity', 'overage_price',
-        'delivery_delay', 'cheque_price', 'extra_kg_price', 'starts_on', 'ends_on', 'notes', 'usage_alert',
+        'delivery_delay', 'cheque_price', 'extra_kg_price', 'starts_on', 'ends_on', 'notes', 'usage_alert', 'interior_in_forfait',
     ];
 
     protected function casts(): array
@@ -38,6 +38,7 @@ class BillingPlan extends Model
             'overage_price' => 'integer',
             'cheque_price' => 'integer',
             'extra_kg_price' => 'integer',
+            'interior_in_forfait' => 'boolean',
             'starts_on' => 'date:Y-m-d',
             'ends_on' => 'date:Y-m-d',
         ];
@@ -116,6 +117,17 @@ class BillingPlan extends Model
 
         return $this->formula->label().' · '.Money::format($this->monthly_fee).' par mois, '
             .$this->included_quantity.' '.$this->formula->unitLabel().' inclus en '.$this->delivery_delay->label()
-            .', '.Money::format($this->overage_price).' au-delà';
+            .($this->countsInterior()
+                ? ' (Abidjan et intérieur) ; au-delà : '.Money::format($this->overage_price).' à Abidjan, intérieur au tarif de la ville'
+                : ', '.Money::format($this->overage_price).' au-delà');
+    }
+
+    /**
+     * Contrat de distribution dont les courses vers l'intérieur comptent dans le forfait
+     * (au-delà des courses incluses, chacune au tarif de sa ville).
+     */
+    public function countsInterior(): bool
+    {
+        return $this->formula === BillingFormula::DistributionContract && (bool) ($this->interior_in_forfait ?? true);
     }
 }

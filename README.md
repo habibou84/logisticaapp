@@ -296,7 +296,7 @@ boutiques, statistiques avancées).
 ### Formules des clients : distribution et mise à disposition (MAD)
 
 En dehors des courses ordinaires (frais déduits course par course), un client peut avoir une **formule**
-(fiche client › « Formule ») ; ses courses passent alors sur sa **facture du mois**, payée à part.
+(**Distribution et MAD › Contrats**) ; ses courses passent alors sur sa **facture du mois**, payée à part.
 
 Chaque client a une ou plusieurs **activités** (e-commerce, distribution, MAD), tenues séparément : courses (filtre
 « Activité » côte à côte), factures (une série par activité : `DIS-…`, `MAD-…`), chiffre d'affaires (**Finances ›
@@ -309,14 +309,14 @@ Guide : [`docs/FORMULES-CLIENTS.md`](docs/FORMULES-CLIENTS.md).
 
 | Formule | Facturation |
 |---|---|
-| Distribution sous contrat | Forfait mensuel, plis et colis (0-5 kg) inclus sur les communes du forfait, chacun au-delà au prix du contrat ; chèque livré à l'unité ; délai fixé par le contrat (24 h, 48 h, 72 h) |
-| Distribution à l'unité | Chaque pli, colis ou chèque au prix du délai choisi (Clients › Formules et tarifs) |
+| Distribution sous contrat | Forfait mensuel pour un nombre de courses (Abidjan et, au choix, intérieur) ; au-delà, chaque course au prix de sa destination (prix du contrat à Abidjan, grille de la ville à l'intérieur) ; chèque livré à l'unité ; délai fixé par le contrat (24 h, 48 h, 72 h) |
+| Distribution à l'unité | Chaque pli, colis ou chèque au prix du délai choisi (Distribution › Tarifs) |
 | Mise à disposition (MAD) | Forfait mensuel, courses incluses, chacune au-delà au prix du contrat ; livreurs attitrés |
 
 - Villes de l'intérieur : prix d'un pli (0-500 g), d'un colis (0-5 kg) et du kilogramme au-delà de 5 kg, par délai
-  (Clients › Formules et tarifs, saisis ou importés depuis un fichier CSV ou Excel) ; chaque ville a sa zone.
+  (Distribution › Tarifs, saisis ou importés depuis un fichier CSV ou Excel) ; chaque ville a sa zone.
 - Au-delà de 5 kg sur Abidjan : kilogramme au prix de la formule. Hors des communes du forfait (Bingerville…) : tarif ordinaire.
-- `billing:invoice` (le 1er à 01:30) calcule les brouillons du mois écoulé ; **Finances › Factures clients** :
+- `billing:invoice` (le 1er à 01:30) calcule les brouillons du mois écoulé ; **Distribution et MAD › Factures** :
   vérifier, ajouter une remise, émettre (numéro `DIS-AAAAMM-0001` ou `MAD-AAAAMM-0001`, échéance `CLIENT_INVOICE_DUE_DAYS`, 15 jours),
   enregistrer les paiements. Le client voit ses factures émises dans son application (Profil › Mes factures).
 

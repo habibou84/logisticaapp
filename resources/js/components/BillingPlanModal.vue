@@ -1,5 +1,5 @@
 <template>
-  <Modal :open="open" :title="`Formule de facturation · ${merchant?.business_name || ''}`" @close="$emit('close')">
+  <Modal :open="open" :title="`Contrat · ${merchant?.business_name || ''}`" @close="$emit('close')">
     <div class="space-y-4">
       <p class="text-sm text-gray-600">
         Sans formule, le client paie ses courses une à une (frais déduits de ses reversements). Avec une formule, ses courses
@@ -32,7 +32,7 @@
       <p v-else class="text-sm text-gray-500">Aucune formule : courses ordinaires.</p>
 
       <form v-if="canManage" class="space-y-3 border-t pt-3" @submit.prevent="save">
-        <h3 class="font-semibold">{{ editing ? 'Livreurs mis à disposition' : 'Nouvelle formule' }}</h3>
+        <h3 class="font-semibold">{{ editing ? 'Livreurs mis à disposition' : 'Nouveau contrat' }}</h3>
         <div v-if="error" class="rounded bg-red-50 border border-red-200 text-red-700 text-sm px-3 py-2">{{ error }}</div>
 
         <template v-if="!editing">
@@ -46,11 +46,11 @@
             <template v-if="hasForfait">
               <div><label class="label" for="bp-fee">Forfait mensuel (F)</label><input id="bp-fee" v-model.number="form.monthly_fee" type="number" min="0" class="input" required></div>
               <div>
-                <label class="label" for="bp-qty">{{ form.formula === 'mad_contract' ? 'Courses incluses' : 'Plis et colis inclus' }}</label>
+                <label class="label" for="bp-qty">Courses incluses par mois</label>
                 <input id="bp-qty" v-model.number="form.included_quantity" type="number" min="0" class="input" required>
               </div>
               <div>
-                <label class="label" for="bp-over">{{ form.formula === 'mad_contract' ? 'Prix d\'une course en plus (F)' : 'Prix d\'un pli ou colis en plus (F)' }}</label>
+                <label class="label" for="bp-over">{{ form.formula === 'mad_contract' ? 'Prix d\'une course en plus (F)' : 'Prix d\'une course en plus à Abidjan (F)' }}</label>
                 <input id="bp-over" v-model.number="form.overage_price" type="number" min="0" class="input">
               </div>
             </template>
@@ -70,13 +70,24 @@
               <label class="label" for="bp-kg">Kilogramme au-delà de 5 kg, Abidjan (F)</label>
               <input id="bp-kg" v-model.number="form.extra_kg_price" type="number" min="0" class="input">
             </div>
+            <label v-if="form.formula === 'distribution_contract'" class="col-span-2 flex items-start gap-2 rounded border p-2 text-sm">
+              <input v-model="form.interior_in_forfait" type="checkbox" class="mt-0.5">
+              <span>
+                <strong>Les courses vers l'intérieur comptent dans le forfait</strong>
+                <span class="block text-xs text-gray-500">
+                  {{ form.interior_in_forfait
+                    ? 'Les courses incluses valent pour Abidjan et l\'intérieur ; au-delà, chacune au prix de sa destination (prix ci-dessus à Abidjan, tarif de la ville à l\'intérieur).'
+                    : 'Le forfait ne couvre qu\'Abidjan : chaque course vers l\'intérieur est facturée au tarif de sa ville, dès la première.' }}
+                </span>
+              </span>
+            </label>
             <div><label class="label" for="bp-start">À partir du</label><input id="bp-start" v-model="form.starts_on" type="date" class="input" required></div>
             <div><label class="label" for="bp-end">Jusqu'au (facultatif)</label><input id="bp-end" v-model="form.ends_on" type="date" class="input" :min="form.starts_on"></div>
           </div>
           <p class="text-xs text-gray-500">
-            <template v-if="hasForfait">Le forfait couvre les dix communes d'Abidjan (Réglages › Zones) ; </template>
-            <template v-else>Prix à l'unité par délai et type d'envoi : Clients › Formules et tarifs ; </template>
-            villes de l'intérieur : Clients › Formules et tarifs. La formule en cours s'arrête la veille de la nouvelle.
+            <template v-if="hasForfait">Abidjan : les communes marquées « Forfait » (Réglages › Zones) ; </template>
+            <template v-else>Prix à l'unité par délai et type d'envoi : Distribution › Tarifs ; </template>
+            villes de l'intérieur : Distribution › Tarifs. Un nouveau contrat arrête le précédent la veille de son début.
           </p>
         </template>
 
@@ -138,7 +149,7 @@ function reset() {
   error.value = ''
   Object.assign(form, {
     formula: formulas.value[0]?.value ?? 'distribution_contract', monthly_fee: 0, included_quantity: 0, overage_price: 0, delivery_delay: '24h',
-    cheque_price: 0, extra_kg_price: 0, starts_on: today(), ends_on: '', notes: '', courier_ids: [],
+    cheque_price: 0, extra_kg_price: 0, interior_in_forfait: true, starts_on: today(), ends_on: '', notes: '', courier_ids: [],
   })
 }
 
@@ -188,6 +199,7 @@ async function save() {
     } else {
       const payload = { ...form, ends_on: form.ends_on || null, notes: form.notes || null }
       if (form.formula !== 'mad_contract') delete payload.courier_ids
+      if (form.formula !== 'distribution_contract') delete payload.interior_in_forfait
       await http.post(`/merchants/${props.merchant.id}/billing-plans`, payload)
     }
     toasts.success('Formule enregistrée.')

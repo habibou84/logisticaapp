@@ -144,6 +144,7 @@ import { useFieldReportStore } from '../stores/fieldReports'
 import { useHeldParcelStore } from '../stores/heldParcels'
 import { useDispatchCountStore } from '../stores/dispatchCounts'
 import { branding, loadBranding, spaceColor } from '../composables/useBranding'
+import { myActivities } from '../utils/activities'
 
 const sidebarOpen = ref(false)
 const search = ref('')
@@ -228,7 +229,9 @@ onMounted(() => {
 onBeforeUnmount(() => clearInterval(countsTimer))
 
 // Menu en rubriques ; une entrée sans droit ni module disparaît, une rubrique vide aussi
-const visible = (item) => !item.permission || auth.can(item.permission)
+// Entrée propre à certaines activités : cachée aux comptes limités à d'autres
+const visible = (item) => (!item.permission || auth.can(item.permission))
+  && (!item.activities || myActivities(auth.user).some((a) => item.activities.includes(a.value)))
 const menu = computed(() => {
   const groups = [
     {
@@ -250,8 +253,17 @@ const menu = computed(() => {
       items: [
         { to: '/admin/caisse', icon: '💰', label: 'Caisse', permission: 'finance.view' },
         { to: '/admin/chiffre-affaires', icon: '📈', label: 'Chiffre d\'affaires', permission: 'revenue.view' },
-        { to: '/admin/factures', icon: '📄', label: 'Factures clients', permission: 'invoices.view' },
         { to: '/admin/paie-livreurs', icon: '🧾', label: 'Paie des livreurs', permission: 'settings.manage' },
+      ],
+    },
+    {
+      // Clients sous contrat : forfait du mois, tarifs, factures
+      id: 'contrats',
+      label: 'Distribution et MAD',
+      items: [
+        { to: '/admin/contrats', icon: '📑', label: 'Contrats', permission: 'merchants.view', activities: ['distribution', 'mad'] },
+        { to: '/admin/formules', icon: '🧮', label: 'Tarifs', permission: ['settings.manage', 'rates.manage'], activities: ['distribution', 'mad'] },
+        { to: '/admin/factures', icon: '📄', label: 'Factures', permission: 'invoices.view', activities: ['distribution', 'mad'] },
       ],
     },
     {
@@ -259,7 +271,6 @@ const menu = computed(() => {
       label: 'Clients',
       items: [
         { to: '/admin/marchands', icon: '🏪', label: 'Clients', permission: 'merchants.view' },
-        { to: '/admin/formules', icon: '🧮', label: 'Formules et tarifs', permission: 'rates.manage' },
         { to: '/admin/stock', icon: '🏬', label: 'Stock', permission: 'stock.manage' },
         { to: '/admin/messages', icon: '💬', label: 'Messages', permission: 'orders.dispatch' },
       ],

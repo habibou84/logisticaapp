@@ -25,6 +25,7 @@ class BillingPlanResource extends JsonResource
             'delivery_delay' => $this->delivery_delay->value,
             'cheque_price' => $this->cheque_price,
             'extra_kg_price' => $this->extra_kg_price,
+            'interior_in_forfait' => $this->resource->countsInterior(),
             'starts_on' => $this->starts_on?->toDateString(),
             'ends_on' => $this->ends_on?->toDateString(),
             'notes' => $this->when($request->user()?->merchant_id === null, $this->notes),

@@ -22,10 +22,10 @@ sont les dix communes d'Abidjan (Abobo, Adjamé, Attécoubé, Cocody, Koumassi, 
 Treichville, Yopougon) ; « Mettre au forfait » ou « Retirer du forfait » sur chaque commune pour changer la liste.
 Les quartiers suivent leur commune.
 
-**Clients › Formules et tarifs › Distribution à l'unité (Abidjan)** : pour les clients sans contrat, prix d'un pli (0-500 g), d'un
+**Distribution › Tarifs › Distribution à l'unité (Abidjan)** : pour les clients sans contrat, prix d'un pli (0-500 g), d'un
 colis (0-5 kg) et d'un chèque, pour chaque délai (24 h, 48 h, 72 h).
 
-**Clients › Formules et tarifs › Villes de l'intérieur** : pour chaque ville et chaque délai, prix d'un pli, d'un colis et de chaque
+**Distribution › Tarifs › Villes de l'intérieur** : pour chaque ville et chaque délai, prix d'un pli, d'un colis et de chaque
 kilogramme au-delà de 5 kg. Saisie ligne par ligne, ou import d'un fichier (« Modèle CSV » pour le format) :
 
 | Ville | Délai | Pli | Colis | Kg supplémentaire |
@@ -37,35 +37,60 @@ L'import montre d'abord un aperçu (lignes nouvelles, mises à jour, erreurs), p
 fichier met à jour les prix sans créer de doublon. Chaque nouvelle ville reçoit sa zone de livraison, à choisir
 sur la course comme une commune.
 
-## 2. Donner une formule à un client
+## 2. Créer le contrat d'un client
 
-**Clients** › « Formule » sur la ligne du client (droit « Formules et tarifs », dans son périmètre) :
+**Distribution et MAD › Contrats › « + Nouveau contrat »** : choisir le client, puis la formule (droit « Formules
+et tarifs », dans son périmètre). Le même contrat s'ouvre aussi depuis **Clients › « Contrat »**.
 
-- **Distribution sous contrat** : forfait mensuel, nombre de plis et colis inclus, prix de chacun au-delà, délai du
-  contrat, prix d'un chèque livré, prix du kilogramme au-delà de 5 kg ;
-- **Distribution à l'unité** : délai par défaut (le client peut en choisir un autre à chaque envoi) et prix du
-  kilogramme au-delà de 5 kg ; les prix sont ceux de « Distribution à l'unité » ;
-- **Mise à disposition (MAD)** : forfait mensuel, nombre de courses incluses, prix de chacune au-delà, délai,
-  livreurs mis à disposition.
+- **Distribution sous contrat** : forfait mensuel, **courses incluses par mois**, prix d'une course en plus à
+  Abidjan, délai du contrat, prix d'un chèque livré, prix du kilogramme au-delà de 5 kg, et la case
+  **« Les courses vers l'intérieur comptent dans le forfait »** (cochée par défaut) ;
+- **Distribution à l'unité** (sans contrat) : délai par défaut ; prix de « Distribution › Tarifs » ;
+- **Mise à disposition (MAD)** : forfait mensuel, courses incluses, prix de chacune au-delà, délai, livreurs attitrés.
 
-Une formule par activité : en créer une nouvelle arrête la précédente **de la même activité** la veille de son
-début (un contrat de distribution et une MAD peuvent coexister). Ajouter une formule ajoute son activité au client. Une formule qui
-a déjà des courses ne change plus de prix (pour changer les conditions : « Terminer… », puis une nouvelle formule).
+Un contrat par activité : en créer un nouveau arrête le précédent **de la même activité** la veille de son
+début (distribution et MAD peuvent coexister). Un contrat qui a déjà des courses ne change plus de prix (pour
+changer les conditions : « Terminer… », puis un nouveau contrat).
+
+La page **Contrats** montre, pour chaque contrat en cours : les courses du mois sur les courses incluses
+(« 34 / 50 »), les courses en plus et la **facture estimée à ce jour**. Filtres : en cours, à venir, terminés.
+
+### Exemple : 50 000 F par mois pour 50 courses
+
+Contrat : forfait 50 000 F, 50 courses incluses, 800 F la course en plus à Abidjan, intérieur compté dans le
+forfait ; grille de l'intérieur : Bouaké 4 000 F le colis en 48 h.
+
+Dans le mois, le client envoie 48 courses à Abidjan et 5 à Bouaké (53 courses) : les **50 premières** (dans
+l'ordre de création) sont dans le forfait, les 3 suivantes sont facturées **au prix de leur destination** :
+
+| Ligne de la facture | Quantité | Prix | Montant |
+|---|---|---|---|
+| Forfait Distribution sous contrat en 48 h | 1 | 50 000 F | 50 000 F |
+| Courses à Abidjan et à l'intérieur : 53 (50 inclus) | 53 | | inclus |
+| Courses au-delà du forfait · Abidjan | 1 | 800 F | 800 F |
+| Courses au-delà du forfait · Colis pour Bouaké en 48 h | 2 | 4 000 F | 8 000 F |
+| **Total** | | | **58 800 F** |
+
+Case décochée : le forfait ne couvre qu'Abidjan et chaque course vers l'intérieur est facturée au tarif de sa
+ville dès la première.
 
 ## 3. Les courses
 
 Un client à plusieurs activités choisit l'**activité** de chaque course (back-office, application du client,
 champ `activity` de l'API ; e-commerce par défaut). Sur une course de distribution ou de MAD : **type d'envoi** (pli, colis
 ou chèque), **poids** (facultatif) et, en distribution à l'unité, **délai**. Un pli de plus de 500 g compte comme
-un colis. Rien n'est retenu sur la course ; elle indique comment elle sera facturée :
+un colis. Rien n'est encaissé sur la course ; elle indique comment elle sera facturée :
 
 | Destination | Facturation |
 |---|---|
-| Commune du forfait | Comptée dans le forfait du mois (+ kilogrammes au-delà de 5 kg) |
-| Ville de l'intérieur | Tarif de la ville pour le délai : pli ou colis, + kilogrammes au-delà de 5 kg |
+| Commune du forfait (Abidjan) | Comptée dans le forfait du mois ; au-delà des courses incluses, prix « en plus » du contrat |
+| Ville de l'intérieur (intérieur compté) | Comptée dans le forfait ; au-delà, tarif de la ville (pli ou colis, délai du contrat) |
+| Ville de l'intérieur (intérieur à part) | Tarif de la ville, dès la première course |
 | Chèque | Prix du chèque, toujours hors forfait |
 | Abidjan, distribution à l'unité | Prix du délai et du type d'envoi |
 | Autre commune (Bingerville…) | Tarif ordinaire de la course |
+
+Au-delà de 5 kg, chaque kilogramme commencé est facturé en plus (prix du contrat à Abidjan, de la ville à l'intérieur).
 
 **MAD** : les courses du client vont à ses livreurs attitrés (ramassage, puis livraison par le même livreur),
 même sans assignation automatique. Livreur absent ou indisponible : la course reste à l'équipe.
@@ -73,13 +98,13 @@ même sans assignation automatique. Livreur absent ou indisponible : la course r
 ## 4. La facture du mois
 
 Le 1er de chaque mois à 01:30, la facture du mois écoulé de chaque client sous formule est **calculée en
-brouillon**, une par activité (ou à la demande : **Finances › Factures clients** › « Calculer », toutes les activités
+brouillon**, une par activité (ou à la demande : **Distribution et MAD › Factures** › « Calculer », toutes les activités
 ou celle du filtre). Elle reprend les courses de son activité :
 
 1. le forfait du mois ;
-2. les plis et colis (ou courses, en MAD) des communes du forfait, et ceux au-delà de la quantité incluse ;
+2. les courses comptées dans le forfait, puis celles au-delà des courses incluses, au prix de leur destination ;
 3. les kilogrammes au-delà de 5 kg ;
-4. les chèques, les envois vers l'intérieur, la distribution à l'unité et les courses hors forfait.
+4. les chèques, les envois vers l'intérieur facturés à part, la distribution à l'unité et les courses hors forfait.
 
 Courses comptées : celles créées dans le mois, sauf les courses annulées ou refusées. Le forfait est compté en
 entier, même pour un contrat commencé en cours de mois (ajoutez une remise si besoin).

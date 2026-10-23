@@ -346,6 +346,8 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::apiResource('storage-contracts', StorageContractController::class)->except('show');
 
         // Formules de facturation des clients (distribution, MAD) et leurs tarifs
+        // Tous les contrats (Distribution › Contrats)
+        Route::get('billing-plans', [BillingPlanController::class, 'all'])->name('billing-plans.index');
         Route::get('merchants/{merchant}/billing-plans', [BillingPlanController::class, 'index'])->name('merchants.billing-plans.index');
         Route::post('merchants/{merchant}/billing-plans', [BillingPlanController::class, 'store'])->name('merchants.billing-plans.store');
         Route::patch('billing-plans/{billingPlan}', [BillingPlanController::class, 'update'])->name('billing-plans.update');

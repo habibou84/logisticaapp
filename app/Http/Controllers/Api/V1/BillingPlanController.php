@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Enums\Activity;
 use App\Enums\BillingFormula;
 use App\Enums\DeliveryDelay;
 use App\Enums\Permission;
@@ -11,6 +12,7 @@ use App\Http\Resources\V1\BillingPlanResource;
 use App\Models\BillingPlan;
 use App\Models\Merchant;
 use App\Models\Order;
+use App\Services\Finance\ClientSpace;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -24,6 +26,58 @@ use Illuminate\Validation\Rule;
  */
 class BillingPlanController extends Controller
 {
+    /**
+     * Tous les contrats (distribution, MAD) de son périmètre : en cours, à venir ou terminés, avec la
+     * consommation du mois et la facture estimée des contrats en cours.
+     */
+    public function all(Request $request, ClientSpace $space): JsonResponse
+    {
+        abort_unless($request->user()->can(Permission::MerchantsView->value), 403);
+        $data = $request->validate([
+            'activity' => ['nullable', Rule::in([Activity::Distribution->value, Activity::Mad->value])],
+            'state' => ['nullable', Rule::in(['current', 'upcoming', 'ended', 'all'])],
+            'search' => ['nullable', 'string', 'max:100'],
+        ]);
+        $today = CarbonImmutable::now($request->user()->company?->timezone ?: config('app.timezone'))->toDateString();
+        $state = $data['state'] ?? 'current';
+
+        $plans = BillingPlan::query()
+            ->with(['merchant.company', 'couriers.user'])
+            ->when($data['activity'] ?? null, fn ($q, $a) => $q->where('activity', $a))
+            ->when($state === 'current', fn ($q) => $q->activeOn($today))
+            ->when($state === 'upcoming', fn ($q) => $q->whereDate('starts_on', '>', $today))
+            ->when($state === 'ended', fn ($q) => $q->whereNotNull('ends_on')->whereDate('ends_on', '<', $today))
+            ->when($data['search'] ?? null, fn ($q, $term) => $q->whereHas('merchant', fn ($m) => $m
+                ->whereRaw('LOWER(business_name) LIKE ?', ['%'.mb_strtolower($term).'%'])))
+            ->orderByDesc('starts_on')->orderByDesc('id')
+            ->limit(500)->get()
+            ->filter(fn (BillingPlan $p) => $request->user()->seesActivity($p->activity));
+
+        $withAmounts = $request->user()->canAny([Permission::InvoicesView->value, Permission::RatesManage->value]);
+
+        return response()->json(['data' => $plans->map(function (BillingPlan $p) use ($request, $space, $today, $withAmounts) {
+            $current = $p->starts_on->toDateString() <= $today && ($p->ends_on === null || $p->ends_on->toDateString() >= $today);
+            $usage = $current && $p->merchant ? $space->usage($p->merchant, $p->activity) : null;
+
+            return [
+                ...BillingPlanResource::make($p)->toArray($request),
+                'activity' => $p->activity->value,
+                'activity_label' => $p->activity->label(),
+                'state' => $current ? 'current' : ($p->starts_on->toDateString() > $today ? 'upcoming' : 'ended'),
+                'merchant' => $p->merchant ? ['id' => $p->merchant->id, 'business_name' => $p->merchant->business_name, 'phone' => $p->merchant->phone] : null,
+                'usage' => $usage && $usage['id'] === $p->id ? [
+                    'month_label' => $usage['month_label'],
+                    'used' => $usage['used'],
+                    'included' => $usage['included'],
+                    'over' => $usage['over'],
+                    'percent' => $usage['percent'],
+                    'orders' => $usage['orders'],
+                    'estimate' => $withAmounts ? $usage['estimate'] : null,
+                ] : null,
+            ];
+        })->values()]);
+    }
+
     public function index(Request $request, Merchant $merchant): AnonymousResourceCollection
     {
         abort_unless($request->user()->can(Permission::MerchantsView->value), 403);
@@ -70,7 +124,7 @@ class BillingPlanController extends Controller
         $data = $this->validated($request, $billingPlan);
 
         // Formule déjà utilisée : ses prix restent ceux des courses passées (nouvelle formule pour les changer)
-        $priced = ['formula', 'monthly_fee', 'included_quantity', 'overage_price', 'delivery_delay', 'cheque_price', 'extra_kg_price', 'starts_on'];
+        $priced = ['formula', 'monthly_fee', 'included_quantity', 'overage_price', 'delivery_delay', 'cheque_price', 'extra_kg_price', 'interior_in_forfait', 'starts_on'];
         $changed = collect($priced)->filter(fn ($f) => array_key_exists($f, $data)
             && (string) ($data[$f] ?? '') !== (string) ($billingPlan->getAttributes()[$f] ?? ''))->values();
         if ($changed->isNotEmpty() && Order::where('billing_plan_id', $billingPlan->id)->exists()) {
@@ -121,6 +175,8 @@ class BillingPlanController extends Controller
             'delivery_delay' => [$sometimes, Rule::enum(DeliveryDelay::class)],
             'cheque_price' => ['sometimes', 'integer', 'min:0'],
             'extra_kg_price' => ['sometimes', 'integer', 'min:0'],
+            // Distribution sous contrat : l'intérieur compte dans les courses incluses
+            'interior_in_forfait' => ['sometimes', 'boolean'],
             'starts_on' => [$sometimes, 'date_format:Y-m-d'],
             'ends_on' => ['sometimes', 'nullable', 'date_format:Y-m-d', 'after_or_equal:'.($request->input('starts_on') ?? $plan?->starts_on?->toDateString() ?? '1970-01-01')],
             'notes' => ['sometimes', 'nullable', 'string', 'max:1000'],

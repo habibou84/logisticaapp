@@ -17,7 +17,9 @@ use App\Support\Money;
 /**
  * Tarif d'une course d'un client sous formule (distribution ou MAD). Rien n'est retenu course par course :
  * les frais de la course sont à zéro et la course passe sur la facture du mois, selon sa base :
- *  - forfait : commune du forfait (dix communes d'Abidjan), comptée dans le forfait du mois ;
+ *  - forfait : commune du forfait (dix communes d'Abidjan) ou, contrat de distribution qui le prévoit, ville
+ *    de l'intérieur : comptée dans le forfait du mois ; au-delà des courses incluses, au prix de sa
+ *    destination (prix « en plus » du contrat à Abidjan, tarif de la ville à l'intérieur) ;
  *  - unit : distribution à l'unité sur Abidjan, au prix du délai et du type d'envoi ;
  *  - interior : ville de l'intérieur, au tarif importé (pli, colis, kilogramme en plus) ;
  *  - cheque : chèque livré, toujours à l'unité ;
@@ -55,14 +57,20 @@ class ClientPricing
             : (DeliveryDelay::tryFrom((string) ($data['delivery_delay'] ?? '')) ?? $plan->delivery_delay);
         $extraKg = $weight !== null && $weight > ShipmentType::COLIS_MAX_KG ? (int) ceil($weight - ShipmentType::COLIS_MAX_KG) : 0;
 
+        // Prix d'une course comptée dans le forfait quand les courses incluses sont épuisées
+        $overage = null;
         [$basis, $amount, $label] = match (true) {
             $type === ShipmentType::Cheque => $this->cheque($plan, $delay),
+            $this->isInterior($deliveryZone) && $plan->countsInterior() => $this->interiorInForfait($plan, $deliveryZone, $type, $delay, $extraKg, $overage),
             $this->isInterior($deliveryZone) => $this->interior($plan, $deliveryZone, $type, $delay, $extraKg),
             $plan->formula === BillingFormula::DistributionUnit => $this->unit($plan, $type, $delay, $extraKg),
             $this->inForfait($deliveryZone) => ['forfait', $extraKg * $plan->extra_kg_price, 'Compris dans le forfait du mois'
                 .($extraKg > 0 ? " + {$extraKg} kg au-delà de 5 kg (".Money::format($extraKg * $plan->extra_kg_price).')' : '')],
             default => $this->outside($merchant, $pickupZone, $deliveryZone, $data),
         };
+        if ($basis === 'forfait') {
+            $overage ??= ['label' => 'Abidjan', 'price' => (int) $plan->overage_price];
+        }
 
         return [
             'delivery_fee' => 0,
@@ -75,6 +83,8 @@ class ClientPricing
                     'amount' => $amount,
                     // Kilogrammes commencés au-delà de 5 kg
                     'extra_kg' => $extraKg,
+                    // Course du forfait : son prix si les courses incluses sont épuisées (Abidjan ou ville)
+                    ...($overage ? ['overage_label' => $overage['label'], 'overage' => $overage['price']] : []),
                 ],
                 'surcharges' => [],
             ],
@@ -121,23 +131,50 @@ class ClientPricing
         return ['cheque', $price, 'Chèque livré'];
     }
 
+    /**
+     * Ville de l'intérieur comptée dans le forfait : seulement les kilogrammes au-delà de 5 kg (prix de la
+     * ville) ; au-delà des courses incluses, le prix du pli ou du colis de la ville.
+     *
+     * @param  array{label: string, price: int}|null  $overage
+     * @return array{0: string, 1: int, 2: string}
+     */
+    private function interiorInForfait(BillingPlan $plan, Zone $zone, ShipmentType $type, DeliveryDelay $delay, int $extraKg, ?array &$overage): array
+    {
+        $rate = $this->interiorRate($plan, $zone, $delay);
+        $overage = [
+            'label' => "{$type->label()} pour {$rate->city} en {$delay->label()}",
+            'price' => (int) ($type === ShipmentType::Pli ? $rate->pli_price : $rate->colis_price),
+        ];
+        $kg = $extraKg * $rate->extra_kg_price;
+
+        return ['forfait', $kg, "Compris dans le forfait du mois ({$rate->city})"
+            .($extraKg > 0 ? " + {$extraKg} kg au-delà de 5 kg (".Money::format($kg).')' : '')];
+    }
+
     /** @return array{0: string, 1: int, 2: string} */
     private function interior(BillingPlan $plan, Zone $zone, ShipmentType $type, DeliveryDelay $delay, int $extraKg): array
     {
-        $rate = InteriorRate::forCompany($plan->company_id)->where('delivery_delay', $delay->value)->get()
-            ->first(fn (InteriorRate $r) => self::cityKey($r->city) === self::cityKey($zone->city));
-        if ($rate === null) {
-            throw new BusinessRuleException(
-                "Aucun tarif pour {$zone->city} en {$delay->label()} : ajoutez-le dans Tarifs › Villes de l'intérieur.",
-                'delivery_zone_id',
-            );
-        }
+        $rate = $this->interiorRate($plan, $zone, $delay);
 
         $base = $type === ShipmentType::Pli ? $rate->pli_price : $rate->colis_price;
         $amount = $base + $extraKg * $rate->extra_kg_price;
 
         return ['interior', $amount, "{$type->label()} pour {$rate->city} en {$delay->label()}"
             .($extraKg > 0 ? " + {$extraKg} kg au-delà de 5 kg" : '')];
+    }
+
+    private function interiorRate(BillingPlan $plan, Zone $zone, DeliveryDelay $delay): InteriorRate
+    {
+        $rate = InteriorRate::forCompany($plan->company_id)->where('delivery_delay', $delay->value)->get()
+            ->first(fn (InteriorRate $r) => self::cityKey($r->city) === self::cityKey($zone->city));
+        if ($rate === null) {
+            throw new BusinessRuleException(
+                "Aucun tarif pour {$zone->city} en {$delay->label()} : ajoutez-le dans Distribution › Tarifs (villes de l'intérieur).",
+                'delivery_zone_id',
+            );
+        }
+
+        return $rate;
     }
 
     /** @return array{0: string, 1: int, 2: string} */

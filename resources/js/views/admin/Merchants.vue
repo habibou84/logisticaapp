@@ -60,7 +60,7 @@
             <td data-label="Statut" class="p-2"><span :class="m.status === 'active' ? 'text-emerald-700' : 'text-red-600'">{{ m.status === 'active' ? 'Actif' : 'Suspendu' }}</span></td>
             <td class="p-2 text-right whitespace-nowrap">
               <RouterLink :to="{ path: '/admin/courses', query: { merchant_id: m.id } }" class="text-blue-600 mr-3">Courses</RouterLink>
-              <button class="text-blue-600 mr-3" @click="billing = m">Formule</button>
+              <button class="text-blue-600 mr-3" @click="billing = m">Contrat</button>
               <button v-if="auth.can('merchants.manage')" class="text-blue-600" @click="openForm(m)">Modifier</button>
             </td>
           </tr>
