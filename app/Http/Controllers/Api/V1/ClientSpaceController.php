@@ -22,6 +22,7 @@ class ClientSpaceController extends Controller
         // Montants (forfait, factures) : comptes qui voient l'argent du client
         if (! $request->user()->can('finance.view')) {
             $summary['plans'] = array_map(fn (array $p) => [...$p, 'monthly_fee' => null, 'overage_price' => null, 'estimate' => null], $summary['plans']);
+            $summary['lots'] = array_map(fn (array $l) => [...$l, 'lot_price' => null, 'estimate' => null], $summary['lots']);
             $summary['invoices'] = null;
         }
 

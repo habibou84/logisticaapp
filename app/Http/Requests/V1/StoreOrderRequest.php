@@ -91,6 +91,8 @@ class StoreOrderRequest extends FormRequest
             // Clients sous formule : pli, colis ou chèque ; délai (distribution à l'unité)
             // Activité de la course (client qui en a plusieurs) : e-commerce, distribution, mad
             'activity' => ['nullable', Rule::enum(Activity::class)],
+            // Lot ponctuel de distribution (contrat d'un lot de colis)
+            'billing_plan_id' => ['nullable', 'integer'],
             'shipment_type' => ['nullable', Rule::enum(ShipmentType::class)],
             'delivery_delay' => ['nullable', Rule::enum(DeliveryDelay::class)],
             'is_fragile' => ['boolean'],

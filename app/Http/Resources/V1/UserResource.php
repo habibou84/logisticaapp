@@ -51,6 +51,8 @@ class UserResource extends JsonResource
                 'activities' => array_map(fn (Activity $a) => $a->value, $this->merchant->activityList()),
                 'billing_plans' => collect([Activity::Distribution, Activity::Mad])
                     ->map(fn (Activity $a) => BillingPlan::activeFor($this->merchant, $a)?->brief())->filter()->values(),
+                // Lots ponctuels ouverts : choisis sur la course
+                'lots' => BillingPlan::openLotsFor($this->merchant)->map(fn (BillingPlan $p) => $p->brief())->values(),
                 // Rappel dans l'application tant que le lieu de ramassage n'est pas localisé
                 'has_pickup_location' => $this->merchant->hasPickupLocation(),
                 'pickup_location_source' => $this->merchant->pickup_location_source,

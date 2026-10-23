@@ -233,6 +233,9 @@ class OrderService
                     ...$order->only(['pickup_zone_id', 'delivery_zone_id', 'is_express', 'is_fragile', 'weight_kg']),
                     'shipment_type' => $order->shipment_type?->value,
                     'delivery_delay' => $order->delivery_delay?->value,
+                    // Colis d'un lot : reste dans son lot (sans se compter lui-même)
+                    ...($order->billing_basis !== null && str_starts_with((string) $order->billing_basis, 'lot')
+                        ? ['billing_plan_id' => $order->billing_plan_id, 'exclude_order_id' => $order->id] : []),
                 ]));
             }
 

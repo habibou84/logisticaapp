@@ -2,7 +2,10 @@
   <div class="space-y-4">
     <div class="flex flex-wrap items-center justify-between gap-2">
       <h1 class="text-xl font-bold">Contrats</h1>
-      <button v-if="canManage" class="btn-primary" @click="picking = true">+ Nouveau contrat</button>
+      <div v-if="canManage" class="flex gap-2">
+        <button class="btn-secondary" @click="startPicking('distribution_lot')">+ Lot de colis</button>
+        <button class="btn-primary" @click="startPicking(null)">+ Nouveau contrat</button>
+      </div>
     </div>
 
     <p class="text-sm text-gray-600">
@@ -38,7 +41,7 @@
     <div class="card overflow-x-auto">
       <table class="w-full text-sm stack-table">
         <thead class="bg-slate-50 text-left text-gray-600">
-          <tr><th class="p-2">Client</th><th class="p-2">Contrat</th><th class="p-2">Période</th><th class="p-2">Ce mois-ci</th><th class="p-2 text-right">Facture estimée</th><th /></tr>
+          <tr><th class="p-2">Client</th><th class="p-2">Contrat</th><th class="p-2">Période</th><th class="p-2">Avancement</th><th class="p-2 text-right">Facture estimée</th><th /></tr>
         </thead>
         <tbody class="divide-y">
           <tr v-for="p in plans" :key="p.id">
@@ -47,7 +50,7 @@
               <span :class="['ml-1 rounded-full px-2 py-0.5 text-xs font-medium', activityBadge(p.activity)]">{{ activityShort(p.activity) }}</span>
             </td>
             <td data-label="Contrat" class="p-2 max-w-sm">
-              <div class="font-medium">{{ p.formula_label }}</div>
+              <div class="font-medium">{{ p.formula === 'distribution_lot' ? `📦 ${p.lot_name}` : p.formula_label }}</div>
               <div class="text-xs text-gray-500">{{ p.summary }}</div>
               <div v-if="p.has_forfait" class="text-xs text-gray-500">Zones : {{ p.zones?.length ? (p.zones.length > 5 ? `${p.zones.slice(0, 5).map((z) => z.name).join(', ')}… (${p.zones.length})` : p.zones.map((z) => z.name).join(', ')) : 'communes « Forfait »' }}</div>
               <div v-if="p.couriers?.length" class="text-xs text-gray-500">Livreurs : {{ p.couriers.map((c) => c.name).join(', ') }}</div>
@@ -56,16 +59,22 @@
               du {{ date(p.starts_on) }}<template v-if="p.ends_on"><br>au {{ date(p.ends_on) }}</template>
               <div v-if="p.state !== 'current'" class="text-xs text-gray-500">{{ p.state === 'upcoming' ? 'À venir' : 'Terminé' }}</div>
             </td>
-            <td data-label="Ce mois-ci" class="p-2 min-w-40">
+            <td data-label="Avancement" class="p-2 min-w-40">
               <template v-if="p.usage && p.usage.included !== null">
                 <div class="flex justify-between text-xs">
-                  <span><strong>{{ p.usage.used }}</strong> / {{ p.usage.included }} courses</span>
+                  <span><strong>{{ p.usage.used }}</strong> / {{ p.usage.included }} {{ p.formula === 'distribution_lot' ? 'colis' : 'courses' }}</span>
                   <span :class="p.usage.percent >= 100 ? 'text-red-600 font-semibold' : p.usage.percent >= 80 ? 'text-amber-700' : 'text-gray-500'">{{ p.usage.percent }} %</span>
                 </div>
                 <div class="mt-1 h-2 rounded bg-slate-100 overflow-hidden">
                   <div class="h-2" :class="p.usage.percent >= 100 ? 'bg-red-500' : p.usage.percent >= 80 ? 'bg-amber-500' : 'bg-emerald-500'" :style="{ width: `${Math.min(100, p.usage.percent)}%` }" />
                 </div>
-                <div v-if="p.usage.over" class="text-xs text-gray-600 mt-0.5">{{ p.usage.over }} en plus du forfait</div>
+                <div v-if="p.usage.over" class="text-xs text-gray-600 mt-0.5">{{ p.usage.over }} en plus {{ p.formula === 'distribution_lot' ? 'du lot' : 'du forfait' }}</div>
+                <!-- Lot : avancement de la distribution -->
+                <div v-if="p.formula === 'distribution_lot'" class="text-xs text-gray-600">
+                  {{ p.usage.delivered }} livré(s) · {{ p.usage.in_progress }} en cours<template v-if="p.usage.remaining"> · {{ p.usage.remaining }} à créer</template>
+                  <span v-if="p.usage.late" class="text-red-600 font-medium"> · {{ p.usage.late }} en retard</span>
+                  <span v-if="p.usage.done" class="text-emerald-700 font-medium"> · terminé ✓</span>
+                </div>
                 <div v-if="p.usage.supplements" class="text-xs text-gray-600">Suppléments : {{ money(p.usage.supplements) }}</div>
               </template>
               <span v-else-if="p.usage" class="text-xs">{{ p.usage.orders }} course(s)</span>
@@ -83,7 +92,7 @@
           <tr v-if="!plans.length">
             <td colspan="6" class="p-6 text-center text-gray-500">
               {{ loading ? 'Chargement…' : state === 'current' ? 'Aucun contrat en cours.' : 'Aucun contrat.' }}
-              <button v-if="!loading && canManage && state === 'current'" class="text-blue-600 ml-1" @click="picking = true">Créer le premier contrat</button>
+              <button v-if="!loading && canManage && state === 'current'" class="text-blue-600 ml-1" @click="startPicking(null)">Créer le premier contrat</button>
             </td>
           </tr>
         </tbody>
@@ -107,7 +116,7 @@
       </div>
     </Modal>
 
-    <BillingPlanModal :open="!!open" :merchant="open" @close="open = null" @saved="load" />
+    <BillingPlanModal :open="!!open" :merchant="open" :initial-formula="pickFormula" @close="open = null; pickFormula = null" @saved="load" />
     <SupplementsModal :open="!!supplementFor" :merchant="supplementFor?.merchant" :activity="supplementFor?.activity" @close="supplementFor = null" @saved="load" />
   </div>
 </template>
@@ -145,6 +154,12 @@ const open = ref(null)
 // Contrat dont on gère les suppléments du mois
 const supplementFor = ref(null)
 const picking = ref(false)
+// Formule proposée d'abord après le choix du client (lot de colis, ou contrat)
+const pickFormula = ref(null)
+function startPicking(formula) {
+  pickFormula.value = formula
+  picking.value = true
+}
 const clientSearch = ref('')
 const clients = ref([])
 

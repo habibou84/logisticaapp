@@ -10,6 +10,7 @@ use App\Models\Scopes\ActivityScope;
 use App\Support\Money;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -25,6 +26,7 @@ class BillingPlan extends Model
     protected $fillable = [
         'company_id', 'merchant_id', 'formula', 'activity', 'monthly_fee', 'included_quantity', 'overage_price',
         'delivery_delay', 'cheque_price', 'extra_kg_price', 'starts_on', 'ends_on', 'notes', 'usage_alert', 'internal_delay_hours',
+        'lot_label', 'lot_quantity', 'lot_price', 'lot_due_on',
     ];
 
     protected function casts(): array
@@ -39,6 +41,9 @@ class BillingPlan extends Model
             'cheque_price' => 'integer',
             'extra_kg_price' => 'integer',
             'internal_delay_hours' => 'integer',
+            'lot_quantity' => 'integer',
+            'lot_price' => 'integer',
+            'lot_due_on' => 'date:Y-m-d',
             'starts_on' => 'date:Y-m-d',
             'ends_on' => 'date:Y-m-d',
         ];
@@ -89,15 +94,45 @@ class BillingPlan extends Model
     }
 
     /**
-     * Formule en cours du client pour une activité (distribution ou MAD).
+     * Formule en cours du client pour une activité (distribution ou MAD), hors lots ponctuels.
      */
     public static function activeFor(Merchant $merchant, Activity $activity, CarbonInterface|string|null $date = null): ?self
     {
         $day = $date ?? now($merchant->company?->timezone ?? config('app.timezone'));
 
         return self::forCompany($merchant->company_id)->where('merchant_id', $merchant->id)
-            ->where('activity', $activity->value)
+            ->where('activity', $activity->value)->contracts()
             ->activeOn($day)->latest('starts_on')->latest('id')->first();
+    }
+
+    /**
+     * Lots ponctuels ouverts du client (distribution), du plus ancien au plus récent.
+     *
+     * @return Collection<int, self>
+     */
+    public static function openLotsFor(Merchant $merchant, CarbonInterface|string|null $date = null)
+    {
+        $day = $date ?? now($merchant->company?->timezone ?? config('app.timezone'));
+
+        return self::forCompany($merchant->company_id)->where('merchant_id', $merchant->id)->lots()
+            ->activeOn($day)->orderBy('starts_on')->orderBy('id')->get();
+    }
+
+    /** Contrats (mensuels ou à l'unité), sans les lots ponctuels */
+    public function scopeContracts(Builder $query): Builder
+    {
+        return $query->where('formula', '!=', BillingFormula::DistributionLot->value);
+    }
+
+    public function scopeLots(Builder $query): Builder
+    {
+        return $query->where('formula', BillingFormula::DistributionLot->value);
+    }
+
+    /** Nom du lot : « Lot n° 12 » sans libellé */
+    public function lotName(): string
+    {
+        return $this->lot_label ?: 'Lot n° '.$this->id;
     }
 
     /**
@@ -115,11 +150,22 @@ class BillingPlan extends Model
             'has_forfait' => $this->formula->hasForfait(),
             'delivery_delay' => $this->delivery_delay->value,
             'summary' => $this->describe(),
+            ...($this->formula->isLot() ? [
+                'lot_name' => $this->lotName(),
+                'lot_quantity' => $this->lot_quantity,
+                'lot_price' => $this->lot_price,
+                'lot_due_on' => $this->lot_due_on?->toDateString(),
+            ] : []),
         ];
     }
 
     public function describe(): string
     {
+        if ($this->formula->isLot()) {
+            return $this->lotName().' : '.$this->lot_quantity.' colis en '.$this->delivery_delay->label()
+                .($this->lot_price !== null ? ' pour '.Money::format($this->lot_price) : ' au prix unitaire de la grille')
+                .' ; au-delà, au prix unitaire'.($this->lot_due_on ? ' ; à distribuer avant le '.$this->lot_due_on->format('d/m/Y') : '');
+        }
         if (! $this->formula->hasForfait()) {
             return $this->formula->label();
         }

@@ -5,12 +5,14 @@ namespace App\Services\Pricing;
 use App\Enums\Activity;
 use App\Enums\BillingFormula;
 use App\Enums\DeliveryDelay;
+use App\Enums\OrderStatus;
 use App\Enums\ShipmentType;
 use App\Exceptions\BusinessRuleException;
 use App\Models\BillingPlan;
 use App\Models\DistributionRate;
 use App\Models\InteriorRate;
 use App\Models\Merchant;
+use App\Models\Order;
 use App\Models\Zone;
 use App\Support\Money;
 
@@ -43,7 +45,15 @@ class ClientPricing
         if (! $activity->isBilled()) {
             return null;
         }
+        $weight = isset($data['weight_kg']) && $data['weight_kg'] !== '' ? (float) $data['weight_kg'] : null;
+        $type = $this->type($data['shipment_type'] ?? null, $weight);
+
+        // Lot ponctuel choisi sur la course (ou le seul lot ouvert d'un client sans contrat de distribution)
         $plan = BillingPlan::activeFor($merchant, $activity);
+        $lot = $this->lot($merchant, $activity, $data['billing_plan_id'] ?? null, $plan === null);
+        if ($lot !== null) {
+            return $this->lotPrice($lot, $deliveryZone, $type, $weight, $data);
+        }
         if ($plan === null) {
             throw new BusinessRuleException(
                 "Aucune formule {$activity->label()} en cours pour ce client : ajoutez-la sur sa fiche (Formule).",
@@ -51,8 +61,6 @@ class ClientPricing
             );
         }
 
-        $weight = isset($data['weight_kg']) && $data['weight_kg'] !== '' ? (float) $data['weight_kg'] : null;
-        $type = $this->type($data['shipment_type'] ?? null, $weight);
         $delay = $plan->formula->hasForfait()
             ? $plan->delivery_delay
             : (DeliveryDelay::tryFrom((string) ($data['delivery_delay'] ?? '')) ?? $plan->delivery_delay);
@@ -75,6 +83,73 @@ class ClientPricing
             $overage ??= ['label' => 'Abidjan', 'price' => (int) $plan->overage_price];
         }
 
+        return $this->result($plan, $deliveryZone, $basis, $amount, $label, $extraKg, $type, $delay, $overage);
+    }
+
+    /**
+     * Lot de la course : celui choisi (client, ouvert, distribution), ou le seul lot ouvert d'un client sans
+     * contrat de distribution. Plusieurs lots sans choix : à préciser.
+     */
+    private function lot(Merchant $merchant, Activity $activity, mixed $id, bool $withoutContract): ?BillingPlan
+    {
+        if ($activity !== Activity::Distribution) {
+            return null;
+        }
+        $open = BillingPlan::openLotsFor($merchant);
+        if ($id !== null && $id !== '') {
+            return $open->firstWhere('id', (int) $id)
+                ?? throw new BusinessRuleException('Ce lot n\'existe pas, n\'est pas celui du client ou est terminé.', 'billing_plan_id');
+        }
+        if (! $withoutContract || $open->isEmpty()) {
+            return null;
+        }
+        if ($open->count() > 1) {
+            throw new BusinessRuleException('Ce client a plusieurs lots en cours : choisissez le lot de la course.', 'billing_plan_id');
+        }
+
+        return $open->first();
+    }
+
+    /**
+     * Colis d'un lot : compris dans le prix global du lot (seulement les kilos en plus), ou au prix unitaire de
+     * la grille (commune ou négociée) ; au-delà du nombre de colis prévu, au prix unitaire.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function lotPrice(BillingPlan $lot, Zone $deliveryZone, ShipmentType $type, ?float $weight, array $data): array
+    {
+        $delay = DeliveryDelay::tryFrom((string) ($data['delivery_delay'] ?? '')) ?? $lot->delivery_delay;
+        $extraKg = $weight !== null && $weight > ShipmentType::COLIS_MAX_KG ? (int) ceil($weight - ShipmentType::COLIS_MAX_KG) : 0;
+
+        // Prix unitaire de la grille : ville de l'intérieur, sinon distribution à l'unité (pli, colis, chèque)
+        if ($type !== ShipmentType::Cheque && $this->isInterior($deliveryZone)) {
+            $rate = $this->interiorRate($lot, $deliveryZone, $delay);
+            [$unit, $kg, $where] = [(int) ($type === ShipmentType::Pli ? $rate->pli_price : $rate->colis_price), $extraKg * $rate->extra_kg_price, " pour {$rate->city}"];
+        } else {
+            [$unit, $kg, $where] = [$this->rate($lot, $type, $delay), $extraKg * $lot->extra_kg_price, ''];
+        }
+
+        $done = Order::withoutGlobalScopes()->where('billing_plan_id', $lot->id)->whereNull('deleted_at')
+            ->when($data['exclude_order_id'] ?? null, fn ($q, $id) => $q->whereKeyNot($id))
+            ->whereNotIn('status', [OrderStatus::Cancelled->value, OrderStatus::Rejected->value])->count();
+        $what = "{$type->label()}{$where} en {$delay->label()}".($extraKg > 0 ? " + {$extraKg} kg au-delà de 5 kg" : '');
+
+        [$basis, $amount, $label] = match (true) {
+            $done >= (int) $lot->lot_quantity => ['lot_extra', $unit + $kg, "{$lot->lotName()} · au-delà des {$lot->lot_quantity} colis · {$what}"],
+            $lot->lot_price !== null => ['lot', $kg, "{$lot->lotName()} · compris dans le prix du lot".($extraKg > 0 ? " + {$extraKg} kg au-delà de 5 kg" : '')],
+            default => ['lot', $unit + $kg, "{$lot->lotName()} · {$what}"],
+        };
+
+        return $this->result($lot, $deliveryZone, $basis, $amount, $label, $extraKg, $type, $delay);
+    }
+
+    /**
+     * @param  array{label: string, price: int}|null  $overage
+     * @return array<string, mixed>
+     */
+    private function result(BillingPlan $plan, Zone $deliveryZone, string $basis, int $amount, string $label, int $extraKg, ShipmentType $type, DeliveryDelay $delay, ?array $overage = null): array
+    {
         return [
             'delivery_fee' => 0,
             'surcharges_total' => 0,

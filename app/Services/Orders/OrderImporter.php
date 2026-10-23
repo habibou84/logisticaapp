@@ -7,6 +7,7 @@ use App\Enums\DeliveryDelay;
 use App\Enums\FeePayer;
 use App\Enums\ShipmentType;
 use App\Exceptions\BusinessRuleException;
+use App\Models\BillingPlan;
 use App\Models\Merchant;
 use App\Models\User;
 use App\Models\Zone;
@@ -80,13 +81,18 @@ class OrderImporter
      *
      * @return array{rows: list<array>, valid: int, invalid: int, total_fees: int, total_cod: int}
      */
-    public function preview(Merchant $merchant, string $path, string $extension): array
+    public function preview(Merchant $merchant, string $path, string $extension, ?int $lotId = null): array
     {
         $zones = Zone::forCompany($merchant->company_id)->active()->with('parent')->get();
+        // Lot ponctuel choisi : un lot ouvert de ce client
+        $lot = $lotId !== null ? BillingPlan::openLotsFor($merchant)->firstWhere('id', $lotId) : null;
+        if ($lotId !== null && $lot === null) {
+            throw new BusinessRuleException('Ce lot n\'existe pas, n\'est pas celui du client ou est terminé.', 'billing_plan_id');
+        }
         $rows = [];
 
         foreach ($this->read($path, $extension) as $line => $raw) {
-            $rows[] = $this->check($merchant, $zones, $line, $raw);
+            $rows[] = $this->check($merchant, $zones, $line, $lot !== null ? [...$raw, 'activity' => 'distribution'] : $raw, $lot);
         }
 
         if ($rows === []) {
@@ -109,9 +115,9 @@ class OrderImporter
      *
      * @return array{created: list<array{line: int, tracking_code: string, id: int}>, errors: list<array{line: int, message: string}>}
      */
-    public function import(User $actor, Merchant $merchant, string $path, string $extension, bool $skipInvalid): array
+    public function import(User $actor, Merchant $merchant, string $path, string $extension, bool $skipInvalid, ?int $lotId = null): array
     {
-        $preview = $this->preview($merchant, $path, $extension);
+        $preview = $this->preview($merchant, $path, $extension, $lotId);
 
         if ($preview['invalid'] > 0 && ! $skipInvalid) {
             throw new BusinessRuleException("{$preview['invalid']} ligne(s) comportent des erreurs : corrigez le fichier ou importez seulement les lignes valides.", 'file');
@@ -228,7 +234,7 @@ class OrderImporter
     /**
      * @param  Collection<int, Zone>  $zones
      */
-    private function check(Merchant $merchant, Collection $zones, int $line, array $raw): array
+    private function check(Merchant $merchant, Collection $zones, int $line, array $raw, ?BillingPlan $lot = null): array
     {
         $text = fn (string $field) => ($v = trim((string) ($raw[$field] ?? ''))) === '' ? null : $v;
         $errors = [];
@@ -309,6 +315,8 @@ class OrderImporter
             'shipment_type' => $type?->value,
             'weight_kg' => $weightValue,
             'delivery_delay' => $delay?->value,
+            // Colis d'un lot ponctuel : tous ceux du fichier
+            'billing_plan_id' => $lot?->id,
         ], fn ($v) => $v !== null);
         if ($billed) {
             unset($data['items_amount']);

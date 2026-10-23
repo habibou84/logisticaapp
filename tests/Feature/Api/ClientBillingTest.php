@@ -11,6 +11,7 @@ use App\Models\DistributionRate;
 use App\Models\InteriorRate;
 use App\Models\Merchant;
 use App\Models\MerchantLedgerEntry;
+use App\Models\Order;
 use App\Models\Zone;
 use App\Services\Assignment\AutoAssigner;
 use App\Services\Finance\FinanceRecorder;
@@ -260,6 +261,61 @@ class ClientBillingTest extends TestCase
         $this->postJson('/api/v1/client-supplements', ['merchant_id' => $this->merchant->id, 'activity' => 'distribution', 'label' => 'Oubli', 'unit_price' => 1000, 'performed_on' => '2026-11-20'])
             ->assertUnprocessable()->assertJsonPath('message', 'La facture de ce mois est déjà émise : datez le supplément du mois suivant.');
         $this->getJson('/api/v1/client-supplements?month=2026-11')->assertJsonPath('data.0.locked', true);
+    }
+
+    public function test_distribution_lots_are_quick_contracts_billed_on_the_month_invoice(): void
+    {
+        DistributionRate::create(['company_id' => $this->company->id, 'delivery_delay' => '48h', 'shipment_type' => 'pli', 'price' => 1500]);
+        $this->merchant->syncActivities([Activity::Distribution]);
+        Sanctum::actingAs($this->admin);
+        $lot = fn (array $data) => $this->postJson("/api/v1/merchants/{$this->merchant->id}/billing-plans", [
+            'formula' => 'distribution_lot', 'delivery_delay' => '48h', 'starts_on' => '2026-11-10', ...$data,
+        ])->assertCreated()->json('data');
+
+        // Lot A : 3 courriers pour 10 000 F
+        $a = $lot(['lot_label' => 'Vœux 2027', 'lot_quantity' => 3, 'lot_price' => 10000]);
+        $this->assertStringContainsString('Vœux 2027 : 3 colis en 48 h pour 10 000 F', $a['summary']);
+        // Seul lot ouvert et pas de contrat : choisi d'office
+        $orders = collect(range(1, 4))->map(fn () => $this->createOrder(['shipment_type' => 'pli', 'activity' => 'distribution']));
+        $this->assertSame(['lot', 'lot', 'lot', 'lot_extra'], $orders->pluck('billing_basis')->all());
+        $this->assertSame([0, 0, 0, 1500], $orders->map(fn ($o) => (int) $o->billing_amount)->all());
+        $this->assertSame($a['id'], $orders->first()->billing_plan_id);
+
+        // Lot B en parallèle, au prix de la grille : il faut choisir le lot
+        $b = $lot(['lot_quantity' => 2]);
+        $this->postJson('/api/v1/orders', ['merchant_id' => $this->merchant->id, 'activity' => 'distribution', 'recipient_phone' => '0707070707', 'delivery_zone_id' => $this->yopougon->id, 'shipment_type' => 'pli'])
+            ->assertUnprocessable()->assertJsonPath('message', 'Ce client a plusieurs lots en cours : choisissez le lot de la course.');
+        $inB = $this->postJson('/api/v1/orders', ['merchant_id' => $this->merchant->id, 'activity' => 'distribution', 'billing_plan_id' => $b['id'], 'recipient_phone' => '0707070707', 'delivery_zone_id' => $this->yopougon->id, 'shipment_type' => 'pli'])
+            ->assertCreated()->json('data.id');
+        $this->assertSame(['lot', 1500], [Order::find($inB)->billing_basis, (int) Order::find($inB)->billing_amount]);
+
+        // Un contrat mensuel s'ajoute sans arrêter les lots
+        $this->postJson("/api/v1/merchants/{$this->merchant->id}/billing-plans", ['formula' => 'distribution_contract', 'monthly_fee' => 20000, 'included_quantity' => 10, 'delivery_delay' => '48h', 'starts_on' => '2026-11-10'])->assertCreated();
+        $this->assertCount(2, BillingPlan::openLotsFor($this->merchant->fresh()));
+        $contracts = collect($this->getJson('/api/v1/billing-plans')->json('data'))->keyBy('id');
+        $this->assertSame([4, 3, 1, 0], [$contracts[$a['id']]['usage']['used'], $contracts[$a['id']]['usage']['included'], $contracts[$a['id']]['usage']['over'], $contracts[$a['id']]['usage']['delivered']]);
+        $this->assertSame(11500, $contracts[$a['id']]['usage']['estimate']);
+        $this->assertSame('Vœux 2027', $contracts[$a['id']]['lot_name']);
+        // Avec le contrat, une course sans lot va au contrat
+        $this->assertSame('forfait', $this->createOrder(['shipment_type' => 'pli', 'activity' => 'distribution'])->billing_basis);
+
+        // Le client voit l'avancement de ses lots et peut les choisir sur ses courses
+        Sanctum::actingAs($this->merchantUser);
+        $space = $this->getJson('/api/v1/merchant/space')->assertOk()->json('data.lots');
+        $this->assertSame([$a['id'], $b['id']], array_column($space, 'id'));
+        $this->assertSame(['Vœux 2027', 3, 4, 1], [$space[0]['lot_name'], $space[0]['lot_quantity'], $space[0]['used'], $space[0]['over']]);
+        $me = $this->getJson('/api/v1/auth/me')->assertOk()->json();
+        $this->assertCount(2, data_get($me, 'data.merchant.lots', data_get($me, 'merchant.lots', data_get($me, 'user.merchant.lots'))));
+        Sanctum::actingAs($this->admin);
+
+        // Facture du mois : prix du lot, colis compris, colis en plus, lot B à l'unité, forfait du contrat
+        $this->artisan('billing:invoice', ['--month' => '2026-11'])->assertSuccessful();
+        $lines = ClientInvoice::sole()->lines->map(fn ($l) => [$l->kind, $l->label, $l->quantity, $l->unit_price])->values();
+        $this->assertContains(['lot', 'Vœux 2027 : 3 colis en 48 h (prix du lot)', 1, 10000], $lines->all());
+        $this->assertContains(['included', 'Vœux 2027 · compris dans le prix du lot', 3, 0], $lines->all());
+        $this->assertContains(['lot_extra', 'Vœux 2027 · au-delà des 3 colis · Pli en 48 h', 1, 1500], $lines->all());
+        $this->assertContains(['lot', "Lot n° {$b['id']} · Pli en 48 h", 1, 1500], $lines->all());
+        $this->assertSame(10000 + 1500 + 1500 + 20000, ClientInvoice::sole()->total);
     }
 
     public function test_unit_distribution_follows_the_chosen_delay(): void

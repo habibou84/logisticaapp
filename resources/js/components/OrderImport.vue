@@ -17,6 +17,15 @@
         </select>
       </div>
 
+      <!-- Lot de colis en cours : tous les colis du fichier en font partie -->
+      <div v-if="lots.length">
+        <label class="label" for="imp-lot">Lot de colis</label>
+        <select id="imp-lot" v-model="lotId" class="input" @change="reset">
+          <option :value="null">Aucun (courses ordinaires ou contrat du mois)</option>
+          <option v-for="l in lots" :key="l.id" :value="l.id">📦 {{ l.lot_name }} · {{ l.lot_quantity }} colis</option>
+        </select>
+      </div>
+
       <div>
         <label class="label" for="imp-file">Fichier</label>
         <input id="imp-file" ref="fileInput" type="file" accept=".csv,.xlsx,text/csv" class="input" @change="pick">
@@ -77,7 +86,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import http, { apiErrorMessage } from '../bootstrap/axios'
 import { useAuthStore } from '../stores/auth'
 import { money } from '../utils/format'
@@ -88,6 +97,10 @@ const base = computed(() => (staff.value ? '/admin' : '/marchand'))
 
 const merchants = ref([])
 const merchantId = ref(null)
+// Lots de colis en cours du client choisi (ou du client connecté)
+const lots = computed(() => (staff.value ? merchants.value.find((m) => m.id === merchantId.value)?.lots : auth.user?.merchant?.lots) || [])
+const lotId = ref(null)
+watch(lots, (list) => { if (!list.some((l) => l.id === lotId.value)) lotId.value = null })
 const file = ref(null)
 const fileInput = ref(null)
 const preview = ref(null)
@@ -99,6 +112,7 @@ function form(extra = {}) {
   const data = new FormData()
   data.append('file', file.value)
   if (staff.value) data.append('merchant_id', merchantId.value)
+  if (lotId.value) data.append('billing_plan_id', lotId.value)
   Object.entries(extra).forEach(([k, v]) => data.append(k, v))
   return data
 }

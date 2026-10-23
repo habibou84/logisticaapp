@@ -90,9 +90,14 @@
     <section v-if="billed" class="m-card p-4 space-y-4" aria-labelledby="step-shipment">
       <h2 id="step-shipment" class="m-step"><span class="m-step-num">3</span>L'envoi</h2>
       <p class="text-sm text-slate-600">
-        <template v-if="plan">{{ plan.formula_label }} : rien à encaisser, la course passe sur votre facture du mois.</template>
+        <template v-if="plan">{{ plan.lot_name || plan.formula_label }} : rien à encaisser, la course passe sur votre facture du mois.</template>
         <template v-else>Aucune formule {{ activityLabel(form.activity) }} en cours : contactez l'agence.</template>
       </p>
+      <!-- Lots de colis en cours : la course en fait partie, ou relève du contrat du mois -->
+      <div v-if="lots.length">
+        <p class="m-label">Lot</p>
+        <ChoiceChips v-model="form.billing_plan_id" :options="lotChoices" :columns="1" label="Lot de la course" />
+      </div>
       <div v-if="form.activity === 'distribution'">
         <p class="m-label">Type d'envoi</p>
         <ChoiceChips v-model="form.shipment_type" :options="SHIPMENT_TYPES" :columns="3" label="Type d'envoi" />
@@ -283,6 +288,8 @@ const DELAYS = [
 
 const blank = () => ({
   activity: defaultActivity(),
+  // Lot de colis (distribution) ; vide : contrat du mois
+  billing_plan_id: null,
   shipment_type: null,
   weight_kg: null,
   delivery_delay: null,
@@ -305,8 +312,21 @@ const blank = () => ({
 const form = reactive(blank())
 const billed = computed(() => form.activity !== 'ecommerce')
 // Formule de l'activité choisie (auth : sans réseau ; space : consommation du mois)
-const plan = computed(() => (auth.user?.merchant?.billing_plans || []).find((p) => p.activity === form.activity) || null)
-const usage = computed(() => space.planFor(form.activity))
+const contractPlan = computed(() => (auth.user?.merchant?.billing_plans || []).find((p) => p.activity === form.activity) || null)
+// Lots de colis en cours (distribution) ; sans contrat, la course va forcément dans un lot
+const lots = computed(() => (form.activity === 'distribution' ? auth.user?.merchant?.lots || [] : []))
+const lotChoices = computed(() => [
+  ...(contractPlan.value ? [{ value: null, label: contractPlan.value.formula_label, icon: '📄', description: 'contrat du mois' }] : []),
+  ...lots.value.map((l) => ({ value: l.id, label: l.lot_name, icon: '📦', description: `${l.lot_quantity} colis` })),
+])
+watch([lots, contractPlan], () => {
+  if (!lots.value.some((l) => l.id === form.billing_plan_id)) {
+    form.billing_plan_id = contractPlan.value || !lots.value.length ? null : lots.value[0].id
+  }
+}, { immediate: true })
+const plan = computed(() => lots.value.find((l) => l.id === form.billing_plan_id) || contractPlan.value)
+// Consommation du forfait du mois (pas pour un lot)
+const usage = computed(() => (form.billing_plan_id ? null : space.planFor(form.activity)))
 // Valeurs par défaut de l'envoi selon l'activité
 watch([() => form.activity, plan], (current, old) => {
   if (!billed.value) {
@@ -399,7 +419,7 @@ const shareLink = computed(() => {
 })
 
 // Tarif recalculé à chaque changement utile
-watch(() => [form.delivery_zone_id, form.is_express, form.is_fragile, form.activity, form.shipment_type, form.delivery_delay, form.weight_kg], fetchQuote)
+watch(() => [form.delivery_zone_id, form.is_express, form.is_fragile, form.activity, form.billing_plan_id, form.shipment_type, form.delivery_delay, form.weight_kg], fetchQuote)
 
 async function fetchQuote() {
   quote.value = null
@@ -408,6 +428,7 @@ async function fetchQuote() {
   try {
     const { data } = await http.post('/quotes', {
       activity: form.activity,
+      billing_plan_id: form.billing_plan_id || undefined,
       shipment_type: form.shipment_type || undefined,
       delivery_delay: form.delivery_delay || undefined,
       weight_kg: form.weight_kg || undefined,
@@ -550,7 +571,7 @@ async function submit() {
 
 function reset() {
   // Activité gardée d'une course à l'autre
-  Object.assign(form, { ...blank(), activity: form.activity })
+  Object.assign(form, { ...blank(), activity: form.activity, billing_plan_id: form.billing_plan_id })
   Object.keys(missing).forEach((key) => { missing[key] = false })
   showMore.value = false
   showStock.value = false

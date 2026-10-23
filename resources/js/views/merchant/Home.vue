@@ -64,6 +64,25 @@
         <p class="mt-2 text-xs font-semibold opacity-90">Voir mes factures ›</p>
       </RouterLink>
       <ForfaitCard v-for="p in space.plans" :key="p.id" :plan="p" />
+      <!-- Lots de colis en cours : avancement de la distribution -->
+      <div v-for="l in (space.current === 'mad' ? [] : space.space.lots || [])" :key="`lot-${l.id}`" class="m-card p-4 space-y-2">
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <p class="text-xs font-bold uppercase tracking-wide text-slate-500">Lot de colis</p>
+            <p class="font-semibold truncate">📦 {{ l.lot_name }}</p>
+          </div>
+          <span v-if="l.lot_due_on" class="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">avant le {{ date(l.lot_due_on) }}</span>
+        </div>
+        <div class="flex justify-between text-sm">
+          <span><strong class="text-lg">{{ l.delivered }}</strong> livré(s) sur {{ l.lot_quantity }}</span>
+          <span class="text-slate-500">{{ l.in_progress }} en cours<template v-if="l.remaining"> · {{ l.remaining }} à envoyer</template></span>
+        </div>
+        <div class="h-2.5 rounded-full bg-slate-100 overflow-hidden">
+          <div class="h-full rounded-full bg-[var(--app-color)]" :style="{ width: `${Math.min(100, Math.round(100 * l.delivered / Math.max(1, l.lot_quantity)))}%` }" />
+        </div>
+        <p v-if="l.over" class="text-xs text-slate-500">{{ l.over }} colis en plus du lot, facturés à l'unité.</p>
+        <p v-if="l.done" class="text-sm font-medium text-emerald-700">✓ Lot entièrement distribué</p>
+      </div>
       <MadCouriers v-if="space.space.couriers?.length && space.current !== 'distribution'" :couriers="space.space.couriers" />
     </template>
 

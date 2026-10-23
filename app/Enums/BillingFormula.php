@@ -13,6 +13,8 @@ enum BillingFormula: string
     case DistributionUnit = 'distribution_unit';
     // Mise à disposition de livreurs : forfait mensuel, courses incluses, chacune au-delà en supplément
     case MadContract = 'mad_contract';
+    // Distribution ponctuelle : un lot de colis (prix global, ou prix de la grille), au-delà au prix unitaire
+    case DistributionLot = 'distribution_lot';
 
     public function label(): string
     {
@@ -20,12 +22,19 @@ enum BillingFormula: string
             self::DistributionContract => 'Distribution sous contrat',
             self::DistributionUnit => 'Distribution à l\'unité',
             self::MadContract => 'Mise à disposition (MAD)',
+            self::DistributionLot => 'Distribution ponctuelle (lot)',
         };
     }
 
     public function hasForfait(): bool
     {
-        return $this !== self::DistributionUnit;
+        return ! in_array($this, [self::DistributionUnit, self::DistributionLot], true);
+    }
+
+    /** Lot ponctuel : plusieurs en même temps, à côté du contrat du mois */
+    public function isLot(): bool
+    {
+        return $this === self::DistributionLot;
     }
 
     public function activity(): Activity

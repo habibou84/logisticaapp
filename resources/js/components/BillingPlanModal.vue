@@ -49,6 +49,25 @@
             </select>
           </div>
           <div class="grid grid-cols-2 gap-3">
+            <!-- Lot ponctuel : nombre de colis, prix global ou prix de la grille, date limite -->
+            <template v-if="isLot">
+              <div class="col-span-2"><label class="label" for="bp-lot-label">Nom du lot</label><input id="bp-lot-label" v-model="form.lot_label" class="input" maxlength="100" placeholder="Ex. : Cartes de vœux 2027"></div>
+              <div><label class="label" for="bp-lot-qty">Nombre de colis *</label><input id="bp-lot-qty" v-model.number="form.lot_quantity" type="number" min="1" class="input" required></div>
+              <div>
+                <p class="label">Prix</p>
+                <div class="flex gap-3 text-sm pt-2">
+                  <label class="flex items-center gap-1"><input v-model="lotPriced" type="radio" :value="true"> Prix global</label>
+                  <label class="flex items-center gap-1"><input v-model="lotPriced" type="radio" :value="false"> Prix de la grille</label>
+                </div>
+              </div>
+              <div v-if="lotPriced"><label class="label" for="bp-lot-price">Prix du lot (F) *</label><input id="bp-lot-price" v-model.number="form.lot_price" type="number" min="0" class="input" required></div>
+              <div><label class="label" for="bp-lot-due">À distribuer avant le</label><input id="bp-lot-due" v-model="form.lot_due_on" type="date" class="input" :min="form.starts_on"></div>
+              <p class="col-span-2 text-xs text-gray-500">
+                {{ lotPriced ? 'Le prix du lot est facturé le mois où il commence.' : 'Chaque colis au prix unitaire de la grille (commune ou négociée), selon sa destination et son délai.' }}
+                Au-delà du nombre de colis prévu, chaque colis en plus au prix unitaire. Plusieurs lots peuvent courir en même temps,
+                à côté du contrat du mois ; le tout passe sur la facture du mois.
+              </p>
+            </template>
             <template v-if="hasForfait">
               <div><label class="label" for="bp-fee">Forfait mensuel (F)</label><input id="bp-fee" v-model.number="form.monthly_fee" type="number" min="0" class="input" required></div>
               <div>
@@ -61,7 +80,7 @@
               </div>
             </template>
             <div>
-              <label class="label" for="bp-delay">{{ hasForfait ? 'Délai de livraison du contrat' : 'Délai par défaut' }}</label>
+              <label class="label" for="bp-delay">{{ hasForfait ? 'Délai de livraison du contrat' : isLot ? 'Délai de livraison' : 'Délai par défaut' }}</label>
               <select id="bp-delay" v-model="form.delivery_delay" class="input">
                 <option value="24h">24 h</option>
                 <option value="48h">48 h</option>
@@ -130,7 +149,8 @@ import { useToastStore } from '../stores/toasts'
 import { date, money, today } from '../utils/format'
 import { myActivities } from '../utils/activities'
 
-const props = defineProps({ open: Boolean, merchant: { type: Object, default: null } })
+// initialFormula : formule proposée d'abord (ex. lot ponctuel depuis « + Lot de colis »)
+const props = defineProps({ open: Boolean, merchant: { type: Object, default: null }, initialFormula: { type: String, default: null } })
 const emit = defineEmits(['close', 'saved'])
 
 const auth = useAuthStore()
@@ -138,7 +158,8 @@ const toasts = useToastStore()
 // Formules de son périmètre (un responsable distribution ne crée pas de formule MAD)
 const FORMULAS = [
   { value: 'distribution_contract', activity: 'distribution', label: 'Distribution sous contrat (forfait mensuel)' },
-  { value: 'distribution_unit', activity: 'distribution', label: 'Distribution à l\'unité (sans contrat)' },
+  { value: 'distribution_lot', activity: 'distribution', label: 'Distribution ponctuelle : un lot de colis' },
+  { value: 'distribution_unit', activity: 'distribution', label: 'Distribution à l\'unité (sans contrat ni quantité)' },
   { value: 'mad_contract', activity: 'mad', label: 'Mise à disposition de livreurs (MAD)' },
 ]
 const formulas = computed(() => FORMULAS.filter((f) => myActivities(auth.user).some((a) => a.value === f.activity)))
@@ -156,7 +177,10 @@ const zones = ref([])
 const defaultZones = () => zones.value.filter((z) => !z.parent_id && z.in_forfait).map((z) => z.id)
 const zoneNames = (list) => (list.length > 6 ? `${list.slice(0, 6).map((z) => z.name).join(', ')} et ${list.length - 6} autre(s)` : list.map((z) => z.name).join(', '))
 const form = reactive({})
-const hasForfait = computed(() => form.formula !== 'distribution_unit')
+const hasForfait = computed(() => !['distribution_unit', 'distribution_lot'].includes(form.formula))
+const isLot = computed(() => form.formula === 'distribution_lot')
+// Lot : prix global (montant du lot) ou prix unitaire de la grille
+const lotPriced = ref(true)
 
 const isCurrent = (p) => p.starts_on <= today() && (!p.ends_on || p.ends_on >= today())
 
@@ -165,8 +189,8 @@ function reset() {
   editMode.value = null
   error.value = ''
   Object.assign(form, {
-    formula: formulas.value[0]?.value ?? 'distribution_contract', monthly_fee: 0, included_quantity: 0, overage_price: 0, delivery_delay: '24h',
-    cheque_price: 0, extra_kg_price: 0, internal_delay_hours: null, starts_on: today(), ends_on: '', notes: '', courier_ids: [], zone_ids: defaultZones(),
+    formula: formulas.value.find((f) => f.value === props.initialFormula)?.value ?? formulas.value[0]?.value ?? 'distribution_contract', monthly_fee: 0, included_quantity: 0, overage_price: 0, delivery_delay: '24h',
+    cheque_price: 0, extra_kg_price: 0, internal_delay_hours: null, lot_label: '', lot_quantity: null, lot_price: null, lot_due_on: '', starts_on: today(), ends_on: '', notes: '', courier_ids: [], zone_ids: defaultZones(),
   })
 }
 
@@ -244,6 +268,11 @@ async function save() {
       const payload = { ...form, ends_on: form.ends_on || null, notes: form.notes || null }
       if (form.formula !== 'mad_contract') delete payload.courier_ids
       if (!hasForfait.value) delete payload.zone_ids
+      if (isLot.value) {
+        Object.assign(payload, { lot_label: form.lot_label || null, lot_due_on: form.lot_due_on || null, lot_price: lotPriced.value ? form.lot_price : null })
+      } else {
+        for (const k of ['lot_label', 'lot_quantity', 'lot_price', 'lot_due_on']) delete payload[k]
+      }
       await http.post(`/merchants/${props.merchant.id}/billing-plans`, payload)
     }
     toasts.success('Formule enregistrée.')

@@ -42,17 +42,20 @@ class OrderImportController extends Controller
             ],
             'dry_run' => ['sometimes', 'boolean'],
             'skip_invalid' => ['sometimes', 'boolean'],
-        ], [], ['file' => 'fichier']);
+            // Lot ponctuel des colis du fichier (distribution)
+            'billing_plan_id' => ['nullable', 'integer'],
+        ], [], ['file' => 'fichier', 'billing_plan_id' => 'lot']);
+        $lotId = isset($data['billing_plan_id']) ? (int) $data['billing_plan_id'] : null;
 
         $merchant = Merchant::findOrFail($user->merchant_id ?? $data['merchant_id']);
         $file = $request->file('file');
         $extension = strtolower($file->getClientOriginalExtension() ?: $file->extension());
 
         if ($request->boolean('dry_run')) {
-            return response()->json(['data' => $this->importer->preview($merchant, $file->getRealPath(), $extension)]);
+            return response()->json(['data' => $this->importer->preview($merchant, $file->getRealPath(), $extension, $lotId)]);
         }
 
-        $result = $this->importer->import($user, $merchant, $file->getRealPath(), $extension, $request->boolean('skip_invalid'));
+        $result = $this->importer->import($user, $merchant, $file->getRealPath(), $extension, $request->boolean('skip_invalid'), $lotId);
 
         return response()->json(['data' => $result], $result['created'] ? 201 : 200);
     }

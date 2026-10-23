@@ -143,8 +143,16 @@ class ClientInvoicing
             }
         }
 
-        // Envois à l'unité, regroupés par libellé et par prix
-        $titles = ['cheque' => null, 'interior' => 'Intérieur', 'unit' => null, 'outside' => null];
+        // Lots ponctuels à prix global : facturés le mois où ils commencent
+        BillingPlan::forCompany($merchant->company_id)->where('merchant_id', $merchant->id)->where('activity', $activity->value)->lots()
+            ->whereNotNull('lot_price')->whereDate('starts_on', '>=', $from->toDateString())->whereDate('starts_on', '<', $to->toDateString())
+            ->orderBy('starts_on')->orderBy('id')->get()
+            ->each(function (BillingPlan $lot) use (&$lines) {
+                $lines[] = $this->line('lot', "{$lot->lotName()} : {$lot->lot_quantity} colis en {$lot->delivery_delay->label()} (prix du lot)", 1, (int) $lot->lot_price);
+            });
+
+        // Envois à l'unité, regroupés par libellé et par prix (colis des lots compris)
+        $titles = ['cheque' => null, 'interior' => 'Intérieur', 'unit' => null, 'outside' => null, 'lot' => null, 'lot_extra' => null];
         foreach ($titles as $basis => $prefix) {
             $orders->where('billing_basis', $basis)
                 ->groupBy(fn (Order $o) => ($o->pricing_details['billing']['label'] ?? $basis).'|'.(int) $o->billing_amount)
@@ -152,7 +160,9 @@ class ClientInvoicing
                 ->each(function (Collection $group) use (&$lines, $basis, $prefix) {
                     $first = $group->first();
                     $label = $first->pricing_details['billing']['label'] ?? $basis;
-                    $lines[] = $this->line($basis, $prefix ? "{$prefix} · {$label}" : $label, $group->count(), (int) $first->billing_amount);
+                    // Colis compris dans le prix global de leur lot : rappelés, sans montant
+                    $kind = $basis === 'lot' && (int) $first->billing_amount === 0 ? 'included' : $basis;
+                    $lines[] = $this->line($kind, $prefix ? "{$prefix} · {$label}" : $label, $group->count(), (int) $first->billing_amount);
                 });
         }
 

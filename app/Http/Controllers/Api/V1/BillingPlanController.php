@@ -57,7 +57,10 @@ class BillingPlanController extends Controller
 
         return response()->json(['data' => $plans->map(function (BillingPlan $p) use ($request, $space, $today, $withAmounts) {
             $current = $p->starts_on->toDateString() <= $today && ($p->ends_on === null || $p->ends_on->toDateString() >= $today);
-            $usage = $current && $p->merchant ? $space->usage($p->merchant, $p->activity) : null;
+            // Lot : son avancement (toute sa durée) ; contrat : le mois en cours
+            $usage = $p->formula->isLot()
+                ? ['id' => $p->id, 'month_label' => null, 'supplements' => 0, ...$space->lotProgress($p)]
+                : ($current && $p->merchant ? $space->usage($p->merchant, $p->activity) : null);
 
             return [
                 ...BillingPlanResource::make($p)->toArray($request),
@@ -74,6 +77,8 @@ class BillingPlanController extends Controller
                     'orders' => $usage['orders'],
                     'estimate' => $withAmounts ? $usage['estimate'] : null,
                     'supplements' => $withAmounts ? $usage['supplements'] : null,
+                    // Lot : livrés, en cours, en retard, terminé
+                    ...($p->formula->isLot() ? collect($usage)->only(['delivered', 'in_progress', 'late', 'done', 'remaining'])->all() : []),
                 ] : null,
             ];
         })->values()]);
@@ -94,16 +99,20 @@ class BillingPlanController extends Controller
 
         $plan = DB::transaction(function () use ($merchant, $data) {
             $starts = CarbonImmutable::parse($data['starts_on']);
-            $activity = BillingFormula::from($data['formula'])->activity();
+            $formula = BillingFormula::from($data['formula']);
+            $activity = $formula->activity();
             // Le client a l'activité de la formule
             $merchant->syncActivities([...$merchant->activityList(), $activity]);
-            // Même activité : la formule en cours s'arrête la veille, une formule qui n'a pas commencé est remplacée
-            BillingPlan::where('merchant_id', $merchant->id)->where('activity', $activity->value)->whereDate('starts_on', '>=', $starts)->get()
-                ->each(fn (BillingPlan $p) => Order::where('billing_plan_id', $p->id)->exists()
-                    ? throw new BusinessRuleException('Une formule qui commence à cette date ou après a déjà des courses.', 'starts_on')
-                    : $p->delete());
-            BillingPlan::where('merchant_id', $merchant->id)->where('activity', $activity->value)->activeOn($starts)
-                ->update(['ends_on' => $starts->subDay()->toDateString()]);
+            // Contrat (pas un lot) de la même activité : le contrat en cours s'arrête la veille, un contrat qui n'a
+            // pas commencé est remplacé. Un lot ponctuel s'ajoute aux autres, sans rien arrêter.
+            if (! $formula->isLot()) {
+                BillingPlan::where('merchant_id', $merchant->id)->where('activity', $activity->value)->contracts()->whereDate('starts_on', '>=', $starts)->get()
+                    ->each(fn (BillingPlan $p) => Order::where('billing_plan_id', $p->id)->exists()
+                        ? throw new BusinessRuleException('Une formule qui commence à cette date ou après a déjà des courses.', 'starts_on')
+                        : $p->delete());
+                BillingPlan::where('merchant_id', $merchant->id)->where('activity', $activity->value)->contracts()->activeOn($starts)
+                    ->update(['ends_on' => $starts->subDay()->toDateString()]);
+            }
 
             $plan = BillingPlan::create([
                 'monthly_fee' => 0, 'included_quantity' => 0, 'overage_price' => 0, 'cheque_price' => 0, 'extra_kg_price' => 0,
@@ -126,7 +135,7 @@ class BillingPlanController extends Controller
         $data = $this->validated($request, $billingPlan);
 
         // Formule déjà utilisée : ses prix restent ceux des courses passées (nouvelle formule pour les changer)
-        $priced = ['formula', 'monthly_fee', 'included_quantity', 'overage_price', 'delivery_delay', 'cheque_price', 'extra_kg_price', 'starts_on'];
+        $priced = ['formula', 'monthly_fee', 'included_quantity', 'overage_price', 'delivery_delay', 'cheque_price', 'extra_kg_price', 'starts_on', 'lot_quantity', 'lot_price'];
         $changed = collect($priced)->filter(fn ($f) => array_key_exists($f, $data)
             && (string) ($data[$f] ?? '') !== (string) ($billingPlan->getAttributes()[$f] ?? ''))->values();
         if ($changed->isNotEmpty() && Order::where('billing_plan_id', $billingPlan->id)->exists()) {
@@ -182,6 +191,11 @@ class BillingPlanController extends Controller
             'cheque_price' => ['sometimes', 'integer', 'min:0'],
             'extra_kg_price' => ['sometimes', 'integer', 'min:0'],
             'internal_delay_hours' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:2000'],
+            // Lot ponctuel : nombre de colis, prix global (vide : prix de la grille), date limite
+            'lot_label' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'lot_quantity' => [$formula?->isLot() && ! $plan ? 'required' : 'sometimes', 'nullable', 'integer', 'min:1', 'max:100000'],
+            'lot_price' => ['sometimes', 'nullable', 'integer', 'min:0'],
+            'lot_due_on' => ['sometimes', 'nullable', 'date_format:Y-m-d'],
             // Zones couvertes par le forfait : communes, villes de l'intérieur (vide : communes « Forfait »)
             'zone_ids' => ['sometimes', 'array', 'max:300'],
             'zone_ids.*' => ['integer', Rule::exists('zones', 'id')->where('company_id', $request->user()->company_id)],
@@ -203,11 +217,19 @@ class BillingPlanController extends Controller
             'courier_ids' => 'livreurs mis à disposition',
             'zone_ids' => 'zones du forfait',
             'internal_delay_hours' => 'délai interne',
+            'lot_label' => 'nom du lot',
+            'lot_quantity' => 'nombre de colis',
+            'lot_price' => 'prix du lot',
+            'lot_due_on' => 'date limite',
         ]);
 
         // Sans forfait : rien d'inclus
         if ($formula !== null && ! $forfait) {
             $data = [...$data, 'monthly_fee' => 0, 'included_quantity' => 0, 'overage_price' => 0];
+        }
+        // Pas un lot : pas de champs de lot
+        if ($formula !== null && ! $formula->isLot()) {
+            $data = [...$data, 'lot_label' => null, 'lot_quantity' => null, 'lot_price' => null, 'lot_due_on' => null];
         }
 
         return $data;

@@ -29,6 +29,14 @@ class BillingPlanResource extends JsonResource
             'internal_delay_hours' => $this->when($request->user()?->merchant_id === null, $this->internal_delay_hours),
             // Zones couvertes par le forfait (vide : communes « Forfait »)
             'zones' => $this->whenLoaded('zones', fn () => $this->zones->map(fn ($z) => ['id' => $z->id, 'name' => $z->name, 'city' => $z->city])->values()),
+            // Lot ponctuel : nom, nombre de colis, prix global (vide : prix de la grille), date limite
+            ...($this->formula->isLot() ? [
+                'lot_name' => $this->resource->lotName(),
+                'lot_label' => $this->lot_label,
+                'lot_quantity' => $this->lot_quantity,
+                'lot_price' => $this->lot_price,
+                'lot_due_on' => $this->lot_due_on?->toDateString(),
+            ] : []),
             'starts_on' => $this->starts_on?->toDateString(),
             'ends_on' => $this->ends_on?->toDateString(),
             'notes' => $this->when($request->user()?->merchant_id === null, $this->notes),

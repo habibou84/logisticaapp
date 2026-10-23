@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class ClientInvoiceLine extends Model
 {
     // Lignes calculées depuis la formule, les courses et les suppléments du mois ; « adjustment » : ajoutée à la main
-    public const KINDS = ['forfait', 'included', 'overage', 'extra_kg', 'cheque', 'interior', 'unit', 'outside', 'supplement', 'adjustment'];
+    public const KINDS = ['forfait', 'included', 'overage', 'extra_kg', 'cheque', 'interior', 'unit', 'outside', 'lot', 'lot_extra', 'supplement', 'adjustment'];
 
     protected $fillable = ['client_invoice_id', 'kind', 'label', 'quantity', 'unit_price', 'amount', 'manual', 'position'];
 

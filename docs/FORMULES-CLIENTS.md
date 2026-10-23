@@ -92,6 +92,25 @@ importer **ses** prix (villes de l'intérieur, distribution à l'unité). Ils re
 client, ville par ville et délai par délai ; ce qui n'est pas saisi suit la grille commune (rappelée en gris).
 Le sélecteur « Grille » liste les clients qui ont des prix négociés.
 
+### Distribution ponctuelle : un lot de colis
+
+Un client arrive avec un lot (« 10 colis », « 50 courriers à distribuer ») : **Distribution et MAD › Contrats ›
+« + Lot de colis »**, choisir le client, puis :
+
+- nom du lot (facultatif), **nombre de colis**, délai ;
+- **prix global** du lot (ex. 50 colis pour 75 000 F) ou **prix de la grille** (chaque colis au prix unitaire, commune
+  ou négocié, selon sa destination et son délai) ;
+- date limite de distribution (facultative) ; délai interne propre (facultatif).
+
+Plusieurs lots peuvent courir en même temps, à côté du contrat du mois. Sur la course (back-office, application du
+client, import Excel), on choisit le lot ; un client sans contrat qui n'a qu'un lot ouvert n'a rien à choisir.
+**Au-delà du nombre de colis prévu**, chaque colis en plus est facturé au prix unitaire.
+
+La page Contrats montre l'avancement de chaque lot (colis créés sur le nombre prévu, livrés, en cours, en retard,
+« terminé ✓ ») ; le client le voit sur son accueil. Facturation sur la **facture du mois** : le prix global le mois où
+le lot commence, les colis au prix de la grille et les colis en plus le mois de leur création. Pour clore un lot :
+« Terminer… ».
+
 ## 3. Les courses
 
 Un client à plusieurs activités choisit l'**activité** de chaque course (back-office, application du client,

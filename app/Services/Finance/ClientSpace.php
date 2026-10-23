@@ -6,6 +6,7 @@ use App\Enums\Activity;
 use App\Enums\BillingFormula;
 use App\Enums\ClientInvoiceStatus;
 use App\Enums\NotificationEvent;
+use App\Enums\OrderStatus;
 use App\Enums\WhatsAppTemplate;
 use App\Models\BillingPlan;
 use App\Models\ClientInvoice;
@@ -57,6 +58,10 @@ class ClientSpace
         return [
             'activities' => array_map(fn (Activity $a) => ['value' => $a->value, 'label' => $a->label()], $merchant->activityList()),
             'plans' => $plans,
+            // Lots ponctuels en cours : avancement
+            'lots' => $merchant->hasActivity(Activity::Distribution)
+                ? BillingPlan::openLotsFor($merchant)->map(fn (BillingPlan $lot) => [...$lot->brief(), ...$this->lotProgress($lot)])->values()->all()
+                : [],
             'invoices' => [
                 'to_pay' => (int) $unpaid->sum(fn (ClientInvoice $i) => $i->balance()),
                 'overdue' => (int) $unpaid->filter->isOverdue()->sum(fn (ClientInvoice $i) => $i->balance()),
@@ -106,6 +111,38 @@ class ClientSpace
             'estimate' => (int) array_sum(array_column($lines, 'amount')),
             // Suppléments du mois (compris dans l'estimation)
             'supplements' => (int) array_sum(array_column(array_filter($lines, fn ($l) => $l['kind'] === 'supplement'), 'amount')),
+        ];
+    }
+
+    /**
+     * Avancement d'un lot ponctuel : colis créés sur le nombre prévu, livrés, en cours, en retard (délai interne),
+     * colis en plus, et ce que le lot coûte à ce jour (prix du lot ou prix unitaires, et colis en plus).
+     *
+     * @return array<string, mixed>
+     */
+    public function lotProgress(BillingPlan $lot): array
+    {
+        $orders = Order::withoutGlobalScopes()->where('billing_plan_id', $lot->id)->whereNull('deleted_at')
+            ->whereNotIn('status', [OrderStatus::Cancelled->value, OrderStatus::Rejected->value])
+            ->get(['id', 'status', 'billing_amount', 'internal_due_at']);
+        $count = $orders->count();
+        $quantity = (int) $lot->lot_quantity;
+        $delivered = $orders->where('status', OrderStatus::Delivered)->count();
+        $finished = $orders->filter(fn (Order $o) => $o->status->isFinal())->count();
+
+        return [
+            'used' => $count,
+            'included' => $quantity,
+            'remaining' => max(0, $quantity - $count),
+            'over' => max(0, $count - $quantity),
+            'percent' => $quantity > 0 ? (int) min(999, round(100 * $count / $quantity)) : null,
+            'delivered' => $delivered,
+            'in_progress' => $count - $finished,
+            'late' => $orders->filter(fn (Order $o) => ! $o->status->isFinal() && $o->internal_due_at?->isPast())->count(),
+            // Tout est créé et terminé : le lot peut être clos
+            'done' => $count >= $quantity && $finished === $count,
+            'orders' => $count,
+            'estimate' => (int) ($lot->lot_price ?? 0) + (int) $orders->sum('billing_amount'),
         ];
     }
 

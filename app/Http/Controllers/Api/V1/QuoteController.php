@@ -43,6 +43,7 @@ class QuoteController extends Controller
             'shipment_type' => ['nullable', Rule::enum(ShipmentType::class)],
             'delivery_delay' => ['nullable', Rule::enum(DeliveryDelay::class)],
             'activity' => ['nullable', Rule::enum(Activity::class)],
+            'billing_plan_id' => ['nullable', 'integer'],
         ]);
 
         $merchant = Merchant::findOrFail($user->merchant_id ?? $data['merchant_id']);

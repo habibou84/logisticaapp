@@ -104,7 +104,16 @@
     <section v-if="billingPlan" class="card p-4 space-y-3">
       <div>
         <h3 class="font-semibold">Envoi</h3>
-        <p class="text-sm text-gray-600">{{ billingPlan.formula_label }} : rien à payer sur la course, elle passe sur la facture du mois.</p>
+        <p class="text-sm text-gray-600">{{ billingPlan.lot_name || billingPlan.formula_label }} : rien à payer sur la course, elle passe sur la facture du mois.</p>
+      </div>
+      <!-- Lots ponctuels du client : la course en fait partie, ou relève du contrat du mois -->
+      <div v-if="lots.length">
+        <label class="label" for="lot">Lot</label>
+        <select id="lot" v-model="form.billing_plan_id" class="input">
+          <option v-if="contractPlan" :value="null">{{ contractPlan.formula_label }} (contrat du mois)</option>
+          <option v-for="l in lots" :key="l.id" :value="l.id">📦 {{ l.lot_name }} · {{ l.lot_quantity }} colis</option>
+        </select>
+        <p v-if="errors.billing_plan_id" class="field-error">{{ errors.billing_plan_id[0] }}</p>
       </div>
       <div class="grid sm:grid-cols-3 gap-3">
         <div>
@@ -272,6 +281,8 @@ const form = reactive({
   merchant_id: null,
   // E-commerce, distribution ou MAD (parmi celles du client et du périmètre de ce compte)
   activity: null,
+  // Lot ponctuel de distribution (vide : contrat du mois)
+  billing_plan_id: null,
   recipient_name: '',
   recipient_phone: '',
   recipient_phone2: '',
@@ -379,9 +390,17 @@ watch(activityChoices, (choices) => {
   }
 }, { immediate: true })
 // Formule de facturation de l'activité choisie (distribution, MAD) : null pour l'e-commerce
-const billingPlan = computed(() => (form.activity && form.activity !== 'ecommerce'
+const contractPlan = computed(() => (form.activity && form.activity !== 'ecommerce'
   ? client.value?.billing_plans?.find((p) => p.activity === form.activity)
   : null) || null)
+// Lots ponctuels ouverts (distribution) ; sans contrat, la course va forcément dans un lot
+const lots = computed(() => (form.activity === 'distribution' ? client.value?.lots || [] : []))
+watch([lots, contractPlan], () => {
+  if (!lots.value.some((l) => l.id === form.billing_plan_id)) {
+    form.billing_plan_id = contractPlan.value || !lots.value.length ? null : lots.value[0].id
+  }
+}, { immediate: true })
+const billingPlan = computed(() => lots.value.find((l) => l.id === form.billing_plan_id) || contractPlan.value)
 watch(billingPlan, (plan) => {
   form.shipment_type = plan ? (form.shipment_type || 'colis') : null
   form.delivery_delay = plan && !plan.has_forfait ? (form.delivery_delay || plan.delivery_delay) : null
@@ -436,7 +455,7 @@ watch(() => form.merchant_id, () => {
 // Devis en direct
 let quoteTimer
 watch(
-  () => [form.merchant_id, form.activity, form.delivery_zone_id, form.pickup_zone_id, form.pickup_hub_id, form.is_express, form.is_fragile, form.shipment_type, form.delivery_delay, form.weight_kg],
+  () => [form.merchant_id, form.activity, form.billing_plan_id, form.delivery_zone_id, form.pickup_zone_id, form.pickup_hub_id, form.is_express, form.is_fragile, form.shipment_type, form.delivery_delay, form.weight_kg],
   () => {
     clearTimeout(quoteTimer)
     quoteTimer = setTimeout(fetchQuote, 250)
@@ -451,6 +470,7 @@ async function fetchQuote() {
     const { data } = await http.post('/quotes', {
       merchant_id: isMerchant.value ? undefined : form.merchant_id,
       activity: form.activity || undefined,
+      billing_plan_id: form.billing_plan_id || undefined,
       delivery_zone_id: form.delivery_zone_id,
       pickup_zone_id: hubZoneId.value || form.pickup_zone_id || undefined,
       is_express: form.is_express,
@@ -496,7 +516,7 @@ function pickRecipient(r) {
 // Après « Enregistrer et nouvelle » : formulaire vidé, client gardé
 const blank = { ...form }
 function reset() {
-  Object.assign(form, { ...blank, merchant_id: form.merchant_id, activity: form.activity, shipment_type: form.shipment_type, delivery_delay: form.delivery_delay, fee_payer: billingPlan.value ? 'merchant' : null })
+  Object.assign(form, { ...blank, merchant_id: form.merchant_id, activity: form.activity, billing_plan_id: form.billing_plan_id, shipment_type: form.shipment_type, delivery_delay: form.delivery_delay, fee_payer: billingPlan.value ? 'merchant' : null })
   items.value = []
   zoneChoices.value = []
   duplicates.value = []
