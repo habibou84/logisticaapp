@@ -2,7 +2,8 @@ name: CI
 
 on:
   push:
-    branches: [main, master, production]
+    # claude/** : branche de travail suivie par le serveur (deploy/auto-update.sh attend ces contrôles)
+    branches: [main, master, production, 'claude/**']
   pull_request:
 
 concurrency:

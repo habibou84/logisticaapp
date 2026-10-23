@@ -75,6 +75,25 @@ passe de l'administrateur. La **mise en route** guide les réglages (zones, tari
 
 ## 4. Mises à jour
 
+### Automatiques (recommandé)
+
+Une fois activée, le serveur vérifie toutes les 5 minutes s'il y a une nouvelle version sur la branche suivie. Il
+l'installe **seulement si les contrôles GitHub sont passés** sur cette version (style, tests, build : onglet
+*Actions* du dépôt) ; sinon il attend, ou l'écarte si un contrôle a échoué. Rien n'est ouvert sur le serveur :
+c'est lui qui va chercher le code.
+
+```bash
+bash /opt/logistica/deploy/auto-update.sh --install   # activer
+bash /opt/logistica/deploy/auto-update.sh --status    # version installée, dernière version, contrôles, journal
+bash /opt/logistica/deploy/auto-update.sh --now       # installer tout de suite la dernière version validée
+touch /opt/logistica/.no-auto-update                  # pause (intervention en cours) ; rm pour reprendre
+bash /opt/logistica/deploy/auto-update.sh --remove    # désactiver
+```
+
+Journal : `/var/log/logistica-update.log` (versions installées, écartées, échecs).
+
+### À la main
+
 ```bash
 bash /opt/logistica/deploy/update.sh
 ```

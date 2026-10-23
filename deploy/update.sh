@@ -26,7 +26,8 @@ main() {
         exit 1
     fi
     git checkout -q "$branch"
-    git reset -q --hard "origin/$branch"
+    # TARGET : version précise validée par GitHub (deploy/auto-update.sh), sinon la dernière de la branche
+    git reset -q --hard "${TARGET:-origin/$branch}"
 
     # .env lisible par l'application des conteneurs (groupe www-data, gid 33), fermé aux autres comptes
     chown root:33 .env && chmod 640 .env
