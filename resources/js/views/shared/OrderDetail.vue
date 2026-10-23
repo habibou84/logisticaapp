@@ -7,6 +7,8 @@
       <span v-if="order.activity" :class="['text-xs rounded-full px-2 py-0.5 font-medium', activityBadge(order.activity)]">{{ order.activity_label }}</span>
       <span v-if="order.return_requested && !['returned', 'return_assigned', 'returning'].includes(order.status)" class="text-xs rounded-full bg-rose-100 text-rose-700 px-2 py-0.5">Retour demandé</span>
       <div class="ml-auto flex gap-2">
+        <!-- Client sous contrat : prestation exceptionnelle sur la facture du mois -->
+        <button v-if="canSupplement" type="button" class="btn-secondary" @click="supplementOpen = true">➕ Supplément</button>
         <RouterLink :to="`/etiquette/${order.id}`" target="_blank" class="btn-secondary">🖨️ Étiquette</RouterLink>
       </div>
     </div>
@@ -211,6 +213,7 @@
 
     <LostParcelDialog :open="losing" :order="order" :couriers="couriers" @close="losing = false" @declared="declaredLost" />
     <OrderDecision :open="deciding" :order="order" :couriers="couriers" @close="deciding = false" @decided="decided" />
+    <SupplementsModal :open="supplementOpen" :merchant="order?.merchant" :activity="order?.activity" :order="order" @close="supplementOpen = false" />
   </div>
   <p v-else-if="error" class="text-red-600">{{ error }}</p>
   <p v-else class="text-gray-500">Chargement…</p>
@@ -234,6 +237,7 @@ import { useToastStore } from '../../stores/toasts'
 import { orderChanges, lastOrderChange } from '../../composables/useRealtime'
 import { date, dateTime, money, telLink } from '../../utils/format'
 import { activityBadge } from '../../utils/activities'
+import SupplementsModal from '../../components/SupplementsModal.vue'
 import { ASSIGNABLE, ASSIGNMENT_LABELS, BEFORE_PICKUP, FINAL, TRANSITIONS, isWarehouseStep } from '../../utils/workflow'
 
 const STOCK_STATES = {
@@ -254,6 +258,9 @@ const toasts = useToastStore()
 
 const order = ref(null)
 const error = ref('')
+const supplementOpen = ref(false)
+const canSupplement = computed(() => !auth.user?.merchant_id && ['distribution', 'mad'].includes(order.value?.activity)
+  && auth.can(['invoices.manage', 'rates.manage']))
 const couriers = ref([])
 // Colis perdu : administrateur (dispatch + caisse), colis ramassé et pas encore livré ou retourné
 const losing = ref(false)

@@ -9,6 +9,22 @@
       <p class="mt-1 text-sm opacity-90">Touchez une facture pour voir comment la régler.</p>
     </div>
 
+    <!-- Suppléments du mois en cours : ils iront sur la prochaine facture -->
+    <section v-if="supplements.length" class="m-card p-4 space-y-2">
+      <div class="flex justify-between items-baseline">
+        <h2 class="font-semibold">Suppléments de {{ supplementsMonth.toLowerCase() }}</h2>
+        <strong>{{ money(supplementsTotal) }}</strong>
+      </div>
+      <p class="text-xs text-slate-500">Demandes exceptionnelles, ajoutées à part sur votre prochaine facture.</p>
+      <div v-for="s in supplements" :key="s.id" class="flex justify-between gap-3 text-sm border-t pt-2">
+        <span class="min-w-0">
+          <span class="block">{{ s.label }}</span>
+          <span class="text-xs text-slate-500">{{ date(s.performed_on) }} · {{ s.activity_label }}<template v-if="s.quantity > 1"> · {{ s.quantity }} × {{ money(s.unit_price) }}</template><template v-if="s.order"> · {{ s.order.tracking_code }}</template></span>
+        </span>
+        <span class="whitespace-nowrap font-medium">{{ money(s.amount) }}</span>
+      </div>
+    </section>
+
     <p class="px-1 text-sm text-slate-500">Vos courses de distribution et de MAD sont facturées chaque mois, une facture par activité. Touchez une facture pour la voir ou l'enregistrer en PDF.</p>
     <RouterLink v-for="i in shown" :key="i.id" :to="`/marchand/factures/${i.id}`" class="tap m-card p-4 flex justify-between items-center gap-3 active:bg-slate-50">
       <span class="min-w-0">
@@ -35,6 +51,11 @@ import { date, money } from '../../utils/format'
 
 const space = useClientSpaceStore()
 const invoices = ref([])
+const allSupplements = ref([])
+const supplementsMonth = ref('')
+// Suppléments du mois pas encore facturés, de l'activité choisie
+const supplements = computed(() => allSupplements.value.filter((x) => !x.locked && (!space.current || space.current === 'ecommerce' || x.activity === space.current)))
+const supplementsTotal = computed(() => supplements.value.reduce((sum, x) => sum + x.amount, 0))
 const loaded = ref(false)
 // Activité choisie en haut (l'e-commerce n'a pas de facture du mois : toutes)
 const shown = computed(() => invoices.value.filter((i) => !space.current || space.current === 'ecommerce' || i.activity === space.current))
@@ -43,7 +64,10 @@ const toPay = computed(() => unpaid.value.reduce((sum, i) => sum + i.balance, 0)
 const overdue = computed(() => unpaid.value.filter((i) => i.is_overdue).reduce((sum, i) => sum + i.balance, 0))
 
 onMounted(async () => {
-  invoices.value = (await http.get('/client-invoices')).data.data
+  const [i, s] = await Promise.all([http.get('/client-invoices'), http.get('/client-supplements')])
+  invoices.value = i.data.data
+  allSupplements.value = s.data.data
+  supplementsMonth.value = s.data.month_label
   loaded.value = true
 })
 </script>

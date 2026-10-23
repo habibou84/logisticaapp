@@ -66,6 +66,7 @@
                   <div class="h-2" :class="p.usage.percent >= 100 ? 'bg-red-500' : p.usage.percent >= 80 ? 'bg-amber-500' : 'bg-emerald-500'" :style="{ width: `${Math.min(100, p.usage.percent)}%` }" />
                 </div>
                 <div v-if="p.usage.over" class="text-xs text-gray-600 mt-0.5">{{ p.usage.over }} en plus du forfait</div>
+                <div v-if="p.usage.supplements" class="text-xs text-gray-600">Suppléments : {{ money(p.usage.supplements) }}</div>
               </template>
               <span v-else-if="p.usage" class="text-xs">{{ p.usage.orders }} course(s)</span>
               <span v-else class="text-gray-400">—</span>
@@ -74,6 +75,7 @@
             <td class="p-2 text-right whitespace-nowrap">
               <button class="text-blue-600 mr-3" @click="open = p.merchant">{{ canManage ? 'Modifier' : 'Voir' }}</button>
               <RouterLink :to="{ path: '/admin/courses', query: { merchant_id: p.merchant?.id, activity: p.activity, day: 'all' } }" class="text-blue-600 mr-3">Courses</RouterLink>
+              <button v-if="p.state === 'current'" type="button" class="text-blue-600 mr-3" @click="supplementFor = p">Suppléments</button>
               <RouterLink v-if="canManage" :to="{ path: '/admin/formules', query: { client: p.merchant?.id } }" class="text-blue-600 mr-3">Prix négociés</RouterLink>
               <RouterLink v-if="auth.can('invoices.view')" to="/admin/factures" class="text-blue-600">Factures</RouterLink>
             </td>
@@ -106,6 +108,7 @@
     </Modal>
 
     <BillingPlanModal :open="!!open" :merchant="open" @close="open = null" @saved="load" />
+    <SupplementsModal :open="!!supplementFor" :merchant="supplementFor?.merchant" :activity="supplementFor?.activity" @close="supplementFor = null" @saved="load" />
   </div>
 </template>
 
@@ -114,6 +117,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import http from '../../bootstrap/axios'
 import BillingPlanModal from '../../components/BillingPlanModal.vue'
+import SupplementsModal from '../../components/SupplementsModal.vue'
 import Modal from '../../components/Modal.vue'
 import StatCard from '../../components/StatCard.vue'
 import { useAuthStore } from '../../stores/auth'
@@ -138,6 +142,8 @@ const plans = ref([])
 const loading = ref(false)
 // Client dont on ouvre le contrat
 const open = ref(null)
+// Contrat dont on gère les suppléments du mois
+const supplementFor = ref(null)
 const picking = ref(false)
 const clientSearch = ref('')
 const clients = ref([])

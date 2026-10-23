@@ -223,6 +223,45 @@ class ClientBillingTest extends TestCase
         $this->getJson('/api/v1/interior-rates?merchant_id='.$this->merchant->id)->assertForbidden();
     }
 
+    public function test_supplements_go_on_the_month_invoice_and_are_frozen_once_issued(): void
+    {
+        $this->plan();
+        $order = $this->createOrder(['shipment_type' => 'pli']);
+
+        Sanctum::actingAs($this->admin);
+        $id = $this->postJson('/api/v1/client-supplements', [
+            'merchant_id' => $this->merchant->id, 'activity' => 'distribution', 'label' => 'Livraison urgente le dimanche',
+            'unit_price' => 5000, 'order_id' => $order->id, 'performed_on' => '2026-11-15',
+        ])->assertCreated()->assertJsonPath('data.amount', 5000)->assertJsonPath('data.order.tracking_code', $order->tracking_code)->json('data.id');
+        $this->postJson('/api/v1/client-supplements', [
+            'merchant_id' => $this->merchant->id, 'activity' => 'distribution', 'label' => 'Mise sous pli', 'quantity' => 200, 'unit_price' => 25,
+        ])->assertCreated();
+        // Activité que le client n'a pas
+        $this->postJson('/api/v1/client-supplements', ['merchant_id' => $this->merchant->id, 'activity' => 'mad', 'label' => 'X', 'unit_price' => 1])->assertUnprocessable();
+
+        // Le client voit ses suppléments du mois, sans pouvoir en ajouter
+        Sanctum::actingAs($this->merchantUser);
+        $this->getJson('/api/v1/client-supplements?month=2026-11')->assertOk()->assertJsonCount(2, 'data')->assertJsonPath('total', 10000);
+        $this->postJson('/api/v1/client-supplements', ['merchant_id' => $this->merchant->id, 'activity' => 'distribution', 'label' => 'X', 'unit_price' => 1])->assertForbidden();
+        $this->assertSame(10000, $this->getJson('/api/v1/merchant/space')->json('data.plans.0.supplements'));
+
+        // Facture du mois : section « Suppléments »
+        $this->artisan('billing:invoice', ['--month' => '2026-11'])->assertSuccessful();
+        $invoice = ClientInvoice::sole();
+        $supplements = $invoice->lines->where('kind', 'supplement')->values();
+        $this->assertSame(['Supplément · Livraison urgente le dimanche (15/11)', 'Supplément · Mise sous pli (10/11)'], $supplements->pluck('label')->sort()->values()->all());
+        $this->assertSame(50000 + 10000, $invoice->total);
+
+        // Émise : supplément figé, le mois est fermé
+        Sanctum::actingAs($this->admin);
+        $this->postJson("/api/v1/client-invoices/{$invoice->id}/issue")->assertOk();
+        $this->patchJson("/api/v1/client-supplements/{$id}", ['unit_price' => 1])->assertUnprocessable();
+        $this->deleteJson("/api/v1/client-supplements/{$id}")->assertUnprocessable();
+        $this->postJson('/api/v1/client-supplements', ['merchant_id' => $this->merchant->id, 'activity' => 'distribution', 'label' => 'Oubli', 'unit_price' => 1000, 'performed_on' => '2026-11-20'])
+            ->assertUnprocessable()->assertJsonPath('message', 'La facture de ce mois est déjà émise : datez le supplément du mois suivant.');
+        $this->getJson('/api/v1/client-supplements?month=2026-11')->assertJsonPath('data.0.locked', true);
+    }
+
     public function test_unit_distribution_follows_the_chosen_delay(): void
     {
         $this->plan(['formula' => 'distribution_unit', 'delivery_delay' => '24h', 'extra_kg_price' => 200]);

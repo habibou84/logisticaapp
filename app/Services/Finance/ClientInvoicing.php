@@ -10,6 +10,7 @@ use App\Exceptions\BusinessRuleException;
 use App\Models\BillingPlan;
 use App\Models\ClientInvoice;
 use App\Models\ClientInvoicePayment;
+use App\Models\ClientSupplement;
 use App\Models\Company;
 use App\Models\Merchant;
 use App\Models\Order;
@@ -46,6 +47,7 @@ class ClientInvoicing
         $pairs = BillingPlan::forCompany($company->id)->overlapping($from->toDateString(), $to->toDateString())
             ->get(['merchant_id', 'activity'])->map(fn ($p) => $p->merchant_id.'|'.$p->activity->value)
             ->merge($this->orders($company->id, null, null, $from, $to)->get(['merchant_id', 'activity'])->map(fn ($o) => $o->merchant_id.'|'.$o->activity->value))
+            ->merge($this->supplements($company->id, null, null, $from, $to)->get(['merchant_id', 'activity'])->map(fn ($s) => $s->merchant_id.'|'.$s->activity->value))
             ->unique()->sort()
             ->filter(fn ($p) => $activities === null || in_array(explode('|', $p)[1], $activities, true))->values();
         $merchants = Merchant::withoutGlobalScopes()->with('company')->where('company_id', $company->id)->whereIn('id', $pairs->map(fn ($p) => (int) explode('|', $p)[0]))->get()->keyBy('id');
@@ -154,7 +156,26 @@ class ClientInvoicing
                 });
         }
 
+        // Suppléments du mois (demandes exceptionnelles), à part
+        foreach ($this->supplements($merchant->company_id, $merchant->id, $activity, $from, $to)->get() as $supplement) {
+            $lines[] = $this->line('supplement', 'Supplément · '.$supplement->label.' ('.$supplement->performed_on->format('d/m').')', $supplement->quantity, $supplement->unit_price);
+        }
+
         return $lines;
+    }
+
+    /**
+     * Suppléments d'un client (ou de tous) faits entre ces deux dates du mois.
+     */
+    public function supplements(int $companyId, ?int $merchantId, ?Activity $activity, CarbonImmutable $from, CarbonImmutable $to)
+    {
+        return ClientSupplement::withoutGlobalScopes()
+            ->where('company_id', $companyId)
+            ->when($merchantId, fn ($q) => $q->where('merchant_id', $merchantId))
+            ->when($activity, fn ($q) => $q->where('activity', $activity->value))
+            ->whereDate('performed_on', '>=', $from->toDateString())
+            ->whereDate('performed_on', '<', $to->toDateString())
+            ->orderBy('performed_on')->orderBy('id');
     }
 
     /**
@@ -233,6 +254,11 @@ class ClientInvoicing
                 'due_at' => $today->addDays((int) config('platform.client_invoices.due_days', 15))->toDateString(),
             ]);
 
+            // Suppléments repris par la facture : ils ne changent plus
+            [$from, $to] = $this->bounds($invoice->company, CarbonImmutable::parse($invoice->period));
+            $this->supplements($invoice->company_id, $invoice->merchant_id, $invoice->activity, $from, $to)
+                ->whereNull('client_invoice_id')->update(['client_invoice_id' => $invoice->id]);
+
             return $invoice;
         });
     }
@@ -288,6 +314,8 @@ class ClientInvoicing
             throw new BusinessRuleException('Seule une facture émise sans paiement peut être annulée.', 'status');
         }
         $invoice->update(['status' => ClientInvoiceStatus::Void]);
+        // Suppléments libérés (à facturer autrement)
+        ClientSupplement::withoutGlobalScopes()->where('client_invoice_id', $invoice->id)->update(['client_invoice_id' => null]);
 
         return $invoice;
     }

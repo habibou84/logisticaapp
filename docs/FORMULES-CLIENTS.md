@@ -115,6 +115,20 @@ Au-delà de 5 kg, chaque kilogramme commencé est facturé en plus (prix du cont
 **MAD** : les courses du client vont à ses livreurs attitrés (ramassage, puis livraison par le même livreur),
 même sans assignation automatique. Livreur absent ou indisponible : la course reste à l'équipe.
 
+## 3 bis. Suppléments
+
+Demandes exceptionnelles d'un client sous contrat (livraison urgente un dimanche, mise sous pli, course hors du
+commun…), ajoutées **à part** sur sa facture du mois :
+
+- **Distribution et MAD › Contrats › « Suppléments »** sur la ligne du contrat, ou **« ➕ Supplément »** sur la fiche
+  d'une course (le supplément est alors lié à la course) ;
+- date, libellé, quantité et prix unitaire ; droit « Gérer les factures clients » ou « Formules et tarifs » ;
+- la facture du mois de la date du supplément le reprend dans des lignes « Supplément · … » ; la facture estimée
+  du contrat le compte déjà ;
+- le client voit ses suppléments du mois dans son application (Factures, et sur la carte du forfait) ;
+- une fois la facture du mois émise, ses suppléments ne changent plus et le mois est fermé (dater le supplément
+  du mois suivant).
+
 ## 4. La facture du mois
 
 Le 1er de chaque mois à 01:30, la facture du mois écoulé de chaque client sous formule est **calculée en

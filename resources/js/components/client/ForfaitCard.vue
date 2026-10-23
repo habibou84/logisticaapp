@@ -26,6 +26,9 @@
     </template>
     <p v-else class="text-sm text-slate-600">{{ plan.orders }} envoi(s) ce mois-ci, au prix du délai choisi.</p>
 
+    <RouterLink v-if="plan.supplements" to="/marchand/factures" class="flex justify-between text-sm">
+      <span class="text-slate-500">Suppléments du mois ›</span><span>{{ money(plan.supplements) }}</span>
+    </RouterLink>
     <div v-if="plan.estimate !== null" class="flex justify-between border-t pt-2 text-sm">
       <span class="text-slate-500">Facture estimée à ce jour</span>
       <strong>{{ money(plan.estimate) }}</strong>

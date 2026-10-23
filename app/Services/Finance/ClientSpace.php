@@ -104,6 +104,8 @@ class ClientSpace
             'orders' => $orders->count(),
             // Ce que coûterait la facture si le mois s'arrêtait aujourd'hui (forfait compris)
             'estimate' => (int) array_sum(array_column($lines, 'amount')),
+            // Suppléments du mois (compris dans l'estimation)
+            'supplements' => (int) array_sum(array_column(array_filter($lines, fn ($l) => $l['kind'] === 'supplement'), 'amount')),
         ];
     }
 

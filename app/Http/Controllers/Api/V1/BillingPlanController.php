@@ -73,6 +73,7 @@ class BillingPlanController extends Controller
                     'percent' => $usage['percent'],
                     'orders' => $usage['orders'],
                     'estimate' => $withAmounts ? $usage['estimate'] : null,
+                    'supplements' => $withAmounts ? $usage['supplements'] : null,
                 ] : null,
             ];
         })->values()]);

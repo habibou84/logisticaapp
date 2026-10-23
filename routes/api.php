@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\V1\BillingPlanController;
 use App\Http\Controllers\Api\V1\ClientInvoiceController;
 use App\Http\Controllers\Api\V1\ClientRateController;
 use App\Http\Controllers\Api\V1\ClientSpaceController;
+use App\Http\Controllers\Api\V1\ClientSupplementController;
 use App\Http\Controllers\Api\V1\CompanyController;
 use App\Http\Controllers\Api\V1\CourierAvailabilityController;
 use App\Http\Controllers\Api\V1\CourierController;
@@ -368,6 +369,11 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::get('revenue', RevenueController::class)->name('revenue');
 
         // Factures du mois des clients sous formule
+        // Suppléments des clients sous contrat (facture du mois)
+        Route::get('client-supplements', [ClientSupplementController::class, 'index'])->name('client-supplements.index');
+        Route::post('client-supplements', [ClientSupplementController::class, 'store'])->name('client-supplements.store');
+        Route::patch('client-supplements/{clientSupplement}', [ClientSupplementController::class, 'update'])->name('client-supplements.update');
+        Route::delete('client-supplements/{clientSupplement}', [ClientSupplementController::class, 'destroy'])->name('client-supplements.destroy');
         Route::prefix('client-invoices')->name('client-invoices.')->controller(ClientInvoiceController::class)->group(function () {
             Route::get('/', 'index')->name('index');
             Route::post('generate', 'generate')->middleware('throttle:20,1')->name('generate');
