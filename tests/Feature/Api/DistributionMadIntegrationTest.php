@@ -5,11 +5,15 @@ namespace Tests\Feature\Api;
 use App\Enums\AssignmentType;
 use App\Enums\OrderStatus;
 use App\Models\BillingPlan;
+use App\Models\ClientInvoice;
+use App\Models\CourierEarning;
 use App\Models\CourierRule;
 use App\Models\DistributionRate;
 use App\Models\Merchant;
 use App\Models\Order;
 use App\Models\OutboundMessage;
+use App\Models\PayPlan;
+use App\Services\Finance\CourierPay;
 use App\Services\Orders\OrderDispatcher;
 use App\Services\Orders\OrderWorkflow;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -234,5 +238,51 @@ class DistributionMadIntegrationTest extends TestCase
             ->assertJsonPath('meta.mad.merchant', 'Ivoire Assurances')
             ->assertJsonPath('data.0.order.lot.name', 'Cartes de vœux')
             ->assertJsonPath('data.0.order.billed_monthly', true);
+    }
+
+    public function test_pay_rules_by_activity_and_mad_days(): void
+    {
+        $this->payPlan(['delivery' => ['event' => 'delivery', 'calc' => 'fixed', 'amount' => 500, 'conditions' => ['activities' => ['ecommerce', 'distribution']]]],
+            $this->courierB, ['pay_period' => 'monthly', 'mad_daily_rate' => 3000]);
+        $this->plan($this->madClient, ['formula' => 'mad_contract', 'courier_ids' => [$this->courierB->id], 'options' => ['mad_days' => [1, 2, 3, 4, 5]]]);
+        $pay = app(CourierPay::class);
+
+        // Course e-commerce payée à la course ; course MAD non (payée à la journée)
+        $this->assertSame(500, $pay->expectedFor($this->courierB, AssignmentType::Delivery, $this->createOrder()));
+        $this->assertNull($pay->expectedFor($this->courierB, AssignmentType::Delivery, $this->createOrder(['activity' => 'mad'], null, $this->madClient)));
+
+        // Novembre 2026 : 21 jours de semaine, moins une absence
+        Sanctum::actingAs($this->dispatcher);
+        $this->postJson('/api/v1/planning/absences', ['courier_id' => $this->courierB->id, 'starts_on' => self::MONDAY, 'ends_on' => self::MONDAY])->assertCreated();
+        $this->travelTo('2026-12-01 00:20:00');
+        $this->artisan('payroll:close')->assertSuccessful();
+        $line = CourierEarning::withoutGlobalScopes()->where('type', 'mad_days')->sole();
+        $this->assertSame(60000, $line->amount);
+        $this->assertStringContainsString('20 jour(s)', $line->detail);
+        $this->assertStringContainsString('Ivoire Assurances', $line->detail);
+        $this->assertNotNull($line->payout_id);
+
+        // Montant par jour sans période de paie : refusé
+        Sanctum::actingAs($this->admin);
+        $this->patchJson('/api/v1/pay-plans/'.PayPlan::where('courier_id', $this->courierB->id)->value('id'), ['pay_period' => null])->assertUnprocessable()->assertJsonValidationErrors('pay_period');
+    }
+
+    public function test_invoice_payments_reach_the_cash_desk(): void
+    {
+        $this->plan($this->merchant, ['formula' => 'distribution_contract']);
+        $this->createOrder(['activity' => 'distribution']);
+        $this->travelTo('2026-12-01 08:00:00');
+        $this->artisan('billing:invoice')->assertSuccessful();
+        $invoice = ClientInvoice::sole();
+        Sanctum::actingAs($this->admin);
+        $this->postJson("/api/v1/client-invoices/{$invoice->id}/issue")->assertOk();
+        $this->postJson("/api/v1/client-invoices/{$invoice->id}/payments", ['amount' => 20000, 'method' => 'mobile_money', 'reference' => 'OM-123', 'paid_on' => '2026-12-01'])->assertOk();
+
+        $this->getJson('/api/v1/finance/invoice-payments?month=2026-12')->assertOk()
+            ->assertJsonPath('total', 20000)
+            ->assertJsonPath('data.0.reference', 'OM-123')
+            ->assertJsonPath('data.0.invoice.merchant', $this->merchant->business_name)
+            ->assertJsonPath('by_method.Mobile Money', 20000);
+        $this->getJson('/api/v1/finance/invoice-payments?month=2026-11')->assertOk()->assertJsonPath('total', 0);
     }
 }

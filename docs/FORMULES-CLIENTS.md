@@ -160,6 +160,35 @@ Délai que l'entreprise se donne (le client ne le voit pas), compté **à partir
   (`orders:internal-delays`) ;
 - liste des courses : file **« ⏰ Délai interne dépassé »** et badges ; fiche course : échéance interne.
 
+## 3 quater. Distribution et MAD au quotidien (au choix de l'administrateur)
+
+Chaque choix se règle pour toute l'entreprise dans **Réglages › Courses › Distribution et MAD**, et chaque
+contrat peut faire autrement (**Contrats › Modifier › Réglages…** ; « comme l'entreprise » par défaut).
+
+| Réglage | Effet |
+|---|---|
+| Preuve de remise : nom, signature, photo | Ce que le livreur doit relever avant de valider la remise (vérifié par le serveur ; hors connexion, la livraison est gardée). Le nom et la signature figurent sur la fiche course ; le client voit « reçue par … ». |
+| Prévenir le destinataire sur WhatsApp | « Un envoi est en route » (sans montant, avec le code de remise et le suivi), ou rien. |
+| MAD : livreurs réservés | Pendant la mise à disposition, l'assignation automatique ne leur donne pas les courses des autres clients. |
+| MAD : jours et horaires | Quand les livreurs sont chez le client (ex. lundi–vendredi, 08:00–17:00). En dehors, ils reprennent le circuit habituel et les courses du client suivent le circuit habituel. |
+
+Ce que l'équipe voit :
+
+- **Courses** : « Facturé au mois » au lieu d'un montant ; filtre **Contrat / lot** (aussi depuis le lien « Courses »
+  d'un contrat) ; on sélectionne les courses d'un lot pour les **assigner à un livreur** et imprimer la
+  **feuille de route** (une ligne par course, cases « reçu par », signature et heure).
+- **Livreurs, carte, disponibilités, listes d'assignation** : pastille **MAD · client** (réservé ou non en ce moment).
+- **Planning** : les mises à disposition du jour ; un livreur attitré absent est signalé, avec des remplaçants
+  possibles. Le message du matin du livreur indique « Mise à disposition : client (horaires) ».
+- **Application du livreur** : bandeau « à la disposition de … aujourd'hui », pastille d'activité sur les missions,
+  livraisons d'un même lot à la suite, plus de montant à encaisser, preuve de remise demandée.
+- **Paie des livreurs** : condition **Activités** sur chaque règle (ex. payer les courses e-commerce et distribution,
+  pas les courses MAD) ; montant **par jour de mise à disposition** (jours du contrat, hors absences), ajouté à la
+  fiche de la période.
+- **Caisse › Paiements de factures** : l'argent des factures reçu dans le mois, par moyen de paiement.
+- **Tableau de bord** : filtre par activité ; bloc **Contrats** (forfaits à 80 % ou plus, lots en retard, factures
+  en retard, livreurs en MAD). Les montants encaissés et reversés ne concernent que l'e-commerce.
+
 ## 4. La facture du mois
 
 Le 1er de chaque mois à 01:30, la facture du mois écoulé de chaque client sous formule est **calculée en

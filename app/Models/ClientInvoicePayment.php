@@ -18,6 +18,11 @@ class ClientInvoicePayment extends Model
         return ['amount' => 'integer', 'method' => InvoicePaymentMethod::class, 'paid_on' => 'date:Y-m-d'];
     }
 
+    public function invoice(): BelongsTo
+    {
+        return $this->belongsTo(ClientInvoice::class, 'client_invoice_id');
+    }
+
     public function recorder(): BelongsTo
     {
         return $this->belongsTo(User::class, 'recorded_by');

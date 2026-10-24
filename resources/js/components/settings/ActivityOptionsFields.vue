@@ -6,7 +6,7 @@
   <div class="space-y-3 text-sm">
     <div>
       <p class="font-medium">Preuve de remise demandée au livreur</p>
-      <div class="mt-1 grid gap-2 sm:grid-cols-3">
+      <div :class="['mt-1 grid gap-2', inherit ? 'sm:grid-cols-1' : 'sm:grid-cols-3']">
         <div v-for="p in PROOFS" :key="p.key" class="rounded-lg border border-slate-200 p-2">
           <label v-if="!inherit" class="flex items-start gap-2">
             <input :checked="!!modelValue[p.key]" type="checkbox" class="mt-0.5" @change="set(p.key, $event.target.checked)">

@@ -218,6 +218,11 @@ class CourierPay
             }
         }
 
+        // Activité de la course (e-commerce, distribution, MAD) ; aucune cochée : toutes
+        if (! empty($conditions['activities']) && ! in_array($order->activity?->value ?? 'ecommerce', $conditions['activities'], true)) {
+            return false;
+        }
+
         if (! empty($conditions['express']) && ! $order->is_express) {
             return false;
         }

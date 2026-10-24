@@ -76,7 +76,7 @@ class CourierPayroll
             }
 
             // Salaire et primes de la période : créés maintenant, mais rattachés à cette fiche
-            $extra = collect([$this->salary($courier, $plan, $start, $end), ...$this->bonuses($courier, $plan, $start, $end)])
+            $extra = collect([$this->salary($courier, $plan, $start, $end), $this->madDays($courier, $plan, $start, $end), ...$this->bonuses($courier, $plan, $start, $end)])
                 ->filter()->map->getKey()->all();
 
             [, $until] = app(CourierActivity::class)->range($courier->company_id, $start, $end);
@@ -129,6 +129,39 @@ class CourierPayroll
             'detail' => $worked < $days
                 ? sprintf('%s × %d/%d jours (arrivée en cours de période)', Money::format($plan->base_salary), $worked, $days)
                 : 'Salaire de base de la période',
+            'period_start' => $start->toDateString(),
+            'period_end' => $end->toDateString(),
+        ]);
+    }
+
+    /**
+     * Mise à disposition (MAD) : jours de la période passés chez un client (jours du contrat, hors absences),
+     * au montant par jour du plan. Une seule ligne par période.
+     */
+    private function madDays(Courier $courier, PayPlan $plan, CarbonInterface $start, CarbonInterface $end): ?CourierEarning
+    {
+        if (! $plan->mad_daily_rate) {
+            return null;
+        }
+        $existing = CourierEarning::query()->withoutGlobalScopes()->where('courier_id', $courier->id)
+            ->where('type', EarningType::MadDays->value)->whereDate('period_start', $start->toDateString())->first();
+        if ($existing) {
+            return $existing->payout_id === null ? $existing : null;
+        }
+
+        $days = app(MadDays::class)->count($courier, $start, $end);
+        if ($days['total'] === 0) {
+            return null;
+        }
+
+        return CourierEarning::create([
+            'company_id' => $courier->company_id,
+            'courier_id' => $courier->id,
+            'type' => EarningType::MadDays,
+            'amount' => $days['total'] * $plan->mad_daily_rate,
+            'pay_plan_id' => $plan->id,
+            'description' => 'Mise à disposition '.$start->format('d/m').' → '.$end->format('d/m/Y'),
+            'detail' => sprintf('%d jour(s) × %s (%s)', $days['total'], Money::format($plan->mad_daily_rate), implode(', ', $days['clients'])),
             'period_start' => $start->toDateString(),
             'period_end' => $end->toDateString(),
         ]);

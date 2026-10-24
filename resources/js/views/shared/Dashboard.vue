@@ -8,6 +8,55 @@
       </div>
     </div>
 
+    <!-- Activité regardée (équipe qui en voit plusieurs) : chiffres, files et courses la suivent -->
+    <div v-if="!isMerchant && activityChoices.length > 1" class="flex flex-wrap gap-2 text-sm" role="group" aria-label="Activité">
+      <button
+        v-for="a in [{ value: '', label: 'Toutes' }, ...activityChoices]" :key="a.value" type="button"
+        :class="['rounded-full px-3 py-1 ring-1', activity === a.value ? 'bg-slate-900 text-white ring-slate-900' : 'bg-white ring-slate-300']"
+        :aria-pressed="activity === a.value" @click="activity = a.value; refresh()"
+      >
+        {{ a.label }}
+      </button>
+    </div>
+
+    <!-- Distribution et MAD : ce qui demande l'attention sur les contrats -->
+    <section v-if="contracts" class="card p-4 space-y-3">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <h2 class="font-semibold">📑 Contrats</h2>
+        <RouterLink to="/admin/contrats" class="text-sm text-blue-600">Tous les contrats</RouterLink>
+      </div>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <RouterLink to="/admin/contrats" :class="['rounded-xl border p-3 hover:shadow', contracts.forfaits.length ? 'border-amber-300 bg-amber-50' : 'border-slate-200']">
+          <p class="text-sm text-gray-600">Forfaits à 80 % ou plus</p>
+          <p class="text-2xl font-bold">{{ contracts.forfaits.length }}</p>
+        </RouterLink>
+        <RouterLink :to="{ path: '/admin/contrats', query: { activity: 'distribution' } }" :class="['rounded-xl border p-3 hover:shadow', contracts.lateLots.length ? 'border-red-300 bg-red-50' : 'border-slate-200']">
+          <p class="text-sm text-gray-600">Lots avec du retard</p>
+          <p class="text-2xl font-bold">{{ contracts.lateLots.length }}</p>
+        </RouterLink>
+        <RouterLink v-if="contracts.invoices" to="/admin/factures" :class="['rounded-xl border p-3 hover:shadow', contracts.invoices.overdue ? 'border-red-300 bg-red-50' : 'border-slate-200']">
+          <p class="text-sm text-gray-600">Factures en retard</p>
+          <p class="text-2xl font-bold">{{ money(contracts.invoices.overdue) }}</p>
+          <p class="text-xs text-gray-500">À encaisser : {{ money(contracts.invoices.to_collect) }}</p>
+        </RouterLink>
+        <RouterLink to="/admin/planning" class="rounded-xl border border-slate-200 p-3 hover:shadow">
+          <p class="text-sm text-gray-600">Livreurs en MAD</p>
+          <p class="text-2xl font-bold">{{ contracts.madCouriers }}</p>
+          <p class="text-xs text-gray-500">{{ contracts.madClients }} client(s)</p>
+        </RouterLink>
+      </div>
+      <ul v-if="contracts.forfaits.length || contracts.lateLots.length" class="text-sm divide-y">
+        <li v-for="p in contracts.forfaits" :key="`f${p.id}`" class="py-1.5 flex justify-between gap-2">
+          <span>{{ p.merchant?.business_name }} · {{ p.formula_label }}</span>
+          <span :class="p.usage.percent >= 100 ? 'text-red-700 font-semibold' : 'text-amber-700'">{{ p.usage.used }} / {{ p.usage.included }} ({{ p.usage.percent }} %)</span>
+        </li>
+        <li v-for="p in contracts.lateLots" :key="`l${p.id}`" class="py-1.5 flex justify-between gap-2">
+          <span>{{ p.merchant?.business_name }} · {{ p.lot_name }}</span>
+          <span class="text-red-700 font-semibold">{{ p.usage.late }} en retard</span>
+        </li>
+      </ul>
+    </section>
+
     <!-- Files d'attente du dispatch (personnel) -->
     <div v-if="!isMerchant && auth.can('orders.dispatch')" class="grid grid-cols-2 md:grid-cols-5 gap-3">
       <RouterLink
@@ -74,7 +123,8 @@
       <StatCard title="Annulés" :value="summary.counts.cancelled" icon="✖️" />
     </div>
 
-    <div v-if="summary" class="grid md:grid-cols-4 xl:grid-cols-5 gap-3">
+    <!-- Argent encaissé et reversé : e-commerce seulement (la distribution et la MAD sont facturées au mois) -->
+    <div v-if="summary && showsMoney" class="grid md:grid-cols-4 xl:grid-cols-5 gap-3">
       <StatCard title="Montant encaissé" :value="money(summary.amounts.collected)" icon="💰" />
       <StatCard title="Frais de livraison retenus" :value="money(summary.amounts.fees)" icon="🧾" />
       <StatCard v-if="summary.amounts.shipping_fees" title="Frais d'expédition" :value="money(summary.amounts.shipping_fees)" icon="🚌" />
@@ -124,9 +174,15 @@ import { useAuthStore } from '../../stores/auth'
 import { useDispatchCountStore } from '../../stores/dispatchCounts'
 import { orderChanges } from '../../composables/useRealtime'
 import { date, money, today, waitDuration } from '../../utils/format'
+import { myActivities } from '../../utils/activities'
 
 const auth = useAuthStore()
 const isMerchant = computed(() => !!auth.user?.merchant_id)
+// Équipe : activités de son périmètre ; « » = toutes
+const activityChoices = computed(() => (isMerchant.value ? [] : myActivities(auth.user)))
+const activity = ref('')
+const contracts = ref(null)
+const showsMoney = computed(() => isMerchant.value || (activityChoices.value.some((a) => a.value === 'ecommerce') && ['', 'ecommerce'].includes(activity.value)))
 
 // En attente d'un livreur : mêmes compteurs que le menu (rafraîchis chaque minute et à chaque alerte)
 const dispatchCounts = useDispatchCountStore()
@@ -160,10 +216,11 @@ function isMerchantStart() {
 }
 
 async function loadSummary() {
+  const scope = { activity: activity.value || undefined }
   const [delivery, byCreation, later] = await Promise.all([
-    http.get('/reports/summary', { params: { ...period, date_basis: 'delivery' } }),
-    isMerchant.value ? null : http.get('/reports/summary', { params: { ...period, date_basis: 'created' } }),
-    isMerchant.value ? null : http.get('/orders', { params: { ...period, date_basis: 'created', queue: 'scheduled', per_page: 1 } }),
+    http.get('/reports/summary', { params: { ...period, ...scope, date_basis: 'delivery' } }),
+    isMerchant.value ? null : http.get('/reports/summary', { params: { ...period, ...scope, date_basis: 'created' } }),
+    isMerchant.value ? null : http.get('/orders', { params: { ...period, ...scope, date_basis: 'created', queue: 'scheduled', per_page: 1 } }),
   ])
   summary.value = delivery.data.data
   created.value = byCreation?.data.data ?? null
@@ -173,13 +230,35 @@ async function loadSummary() {
 async function loadQueues() {
   if (isMerchant.value || !auth.can('orders.dispatch')) return
   await Promise.all(queues.value.map(async (q) => {
-    const { data } = await http.get('/orders', { params: { queue: q.value, per_page: 1 } })
+    const { data } = await http.get('/orders', { params: { queue: q.value, per_page: 1, activity: activity.value || undefined } })
     q.count = data.meta.total
   }))
 }
 
 async function loadRecent() {
-  recent.value = (await http.get('/orders', { params: { per_page: 8 } })).data.data
+  recent.value = (await http.get('/orders', { params: { per_page: 8, activity: activity.value || undefined } })).data.data
+}
+
+// Contrats (distribution, MAD) : forfaits presque consommés, lots en retard, factures en retard, livreurs en MAD
+async function loadContracts() {
+  const billed = activityChoices.value.filter((a) => a.value !== 'ecommerce').map((a) => a.value)
+  if (isMerchant.value || !billed.length || !auth.can('merchants.view') || activity.value === 'ecommerce') {
+    contracts.value = null
+    return
+  }
+  const scope = billed.includes(activity.value) ? activity.value : undefined
+  const [plans, invoices] = await Promise.all([
+    http.get('/billing-plans', { params: { state: 'current', activity: scope } }).then((r) => r.data.data).catch(() => []),
+    auth.can('invoices.view') ? http.get('/client-invoices', { params: { status: 'issued', activity: scope } }).then((r) => r.data.totals).catch(() => null) : null,
+  ])
+  const mad = plans.filter((p) => p.formula === 'mad_contract')
+  contracts.value = {
+    forfaits: plans.filter((p) => p.has_forfait && p.usage?.included && p.usage.percent >= 80),
+    lateLots: plans.filter((p) => p.formula === 'distribution_lot' && p.usage?.late),
+    invoices,
+    madCouriers: new Set(mad.flatMap((p) => (p.couriers || []).map((c) => c.id))).size,
+    madClients: mad.length,
+  }
 }
 
 function refresh() {
@@ -187,6 +266,7 @@ function refresh() {
   loadSummary()
   loadQueues()
   loadRecent()
+  loadContracts()
 }
 
 watch(orderChanges, refresh)

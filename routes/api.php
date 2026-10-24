@@ -420,6 +420,8 @@ Route::prefix('v1')->name('v1.')->group(function () {
                 Route::post('payouts/{payout}/cancel', 'cancelPayout')->name('payouts.cancel');
             });
 
+            // Paiements des factures (distribution, MAD) : l'argent qui entre en dehors des livreurs
+            Route::get('invoice-payments', 'invoicePayments')->name('invoice-payments.index');
             Route::get('courier-payouts', 'courierPayouts')->name('courier-payouts.index');
             Route::post('courier-payouts', 'storeCourierPayout')->name('courier-payouts.store');
             Route::get('courier-payouts/{courierPayout}', 'showCourierPayout')->name('courier-payouts.show');

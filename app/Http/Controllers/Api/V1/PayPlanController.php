@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Enums\Activity;
 use App\Enums\PayBonusMetric;
 use App\Enums\PayCalc;
 use App\Enums\PayEvent;
@@ -81,7 +82,7 @@ class PayPlanController extends Controller
             };
 
             if ($source) {
-                $attributes = $source->only(['pickup_mode', 'pickup_extra_parcel_amount', 'min_amount', 'max_amount', 'base_salary', 'pay_period', 'deduction_cap_percent']);
+                $attributes = $source->only(['pickup_mode', 'pickup_extra_parcel_amount', 'min_amount', 'max_amount', 'base_salary', 'pay_period', 'deduction_cap_percent', 'mad_daily_rate']);
                 $bonuses = $source->loadMissing('bonuses')->bonuses->map(fn ($b) => $b->only(['metric', 'threshold', 'min_count', 'amount', 'label']))
                     ->map(fn ($b) => ['metric' => $b['metric']->value] + $b)->all();
                 $rules = $source->rules->map(fn ($r) => [
@@ -120,6 +121,7 @@ class PayPlanController extends Controller
             array_key_exists('pay_period', $data) ? $data['pay_period'] : $payPlan->pay_period,
             $data['base_salary'] ?? $payPlan->base_salary,
             array_key_exists('bonuses', $data) ? count($data['bonuses']) : $payPlan->bonuses()->count(),
+            (int) (array_key_exists('mad_daily_rate', $data) ? $data['mad_daily_rate'] : $payPlan->mad_daily_rate),
         );
         if (($data['is_default'] ?? false) && $payPlan->courier_id !== null) {
             throw ValidationException::withMessages(['is_default' => 'Un plan personnel ne peut pas être le plan par défaut.']);
@@ -213,6 +215,8 @@ class PayPlanController extends Controller
             'min_amount' => ['sometimes', 'nullable', 'integer', 'min:0', 'max:1000000'],
             'max_amount' => ['sometimes', 'nullable', 'integer', 'min:0', 'max:1000000', 'gte:min_amount'],
             'base_salary' => ['sometimes', 'integer', 'min:0', 'max:100000000'],
+            // Mise à disposition (MAD) : montant par jour passé chez le client, ajouté à la fiche de la période
+            'mad_daily_rate' => ['sometimes', 'nullable', 'integer', 'min:0', 'max:10000000'],
             'pay_period' => ['sometimes', 'nullable', Rule::in(array_keys(PayPlan::PERIODS))],
             'deduction_cap_percent' => ['sometimes', 'nullable', 'integer', 'min:0', 'max:100'],
             'rules' => ['sometimes', 'array', 'max:100'],
@@ -228,6 +232,8 @@ class PayPlanController extends Controller
             'rules.*.conditions.zone_ids' => ['nullable', 'array'],
             'rules.*.conditions.zone_ids.*' => ['integer', Rule::exists('zones', 'id')->where('company_id', $companyId)],
             'rules.*.conditions.express' => ['nullable', 'boolean'],
+            'rules.*.conditions.activities' => ['nullable', 'array'],
+            'rules.*.conditions.activities.*' => [Rule::enum(Activity::class)],
             'rules.*.conditions.fragile' => ['nullable', 'boolean'],
             'rules.*.conditions.vehicle_types' => ['nullable', 'array'],
             'rules.*.conditions.vehicle_types.*' => [Rule::enum(VehicleType::class)],
@@ -267,6 +273,8 @@ class PayPlanController extends Controller
             'min_amount' => 'minimum',
             'max_amount' => 'plafond',
             'base_salary' => 'salaire de base',
+            'mad_daily_rate' => 'montant par jour de mise à disposition',
+            'rules.*.conditions.activities.*' => 'activité',
             'pay_period' => 'période de paie',
             'deduction_cap_percent' => 'plafond des retenues',
         ]);
@@ -289,10 +297,13 @@ class PayPlanController extends Controller
     /**
      * Salaire et primes se calculent par période : il en faut une.
      */
-    private function ensurePeriod(?string $period, int $salary, int $bonuses): void
+    private function ensurePeriod(?string $period, int $salary, int $bonuses, int $madDailyRate = 0): void
     {
         if ($period !== null) {
             return;
+        }
+        if ($madDailyRate > 0) {
+            throw ValidationException::withMessages(['pay_period' => 'Choisissez la période de paie : les jours de mise à disposition se comptent sur chaque période.']);
         }
         if ($salary > 0) {
             throw ValidationException::withMessages(['pay_period' => 'Choisissez la période de paie : le salaire de base est versé à chaque période.']);

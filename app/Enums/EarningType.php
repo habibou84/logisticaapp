@@ -20,6 +20,8 @@ enum EarningType: string
     case Carryover = 'carryover';
     // Prime d'objectif atteinte sur une période (plan de paie)
     case Bonus = 'bonus';
+    // Jours de mise à disposition (MAD) chez un client sur la période (plan de paie)
+    case MadDays = 'mad_days';
 
     public function label(): string
     {
@@ -34,6 +36,7 @@ enum EarningType: string
             self::Salary => 'Salaire de base',
             self::Carryover => 'Retenue reportée',
             self::Bonus => 'Prime d\'objectif',
+            self::MadDays => 'Mise à disposition',
         };
     }
 }

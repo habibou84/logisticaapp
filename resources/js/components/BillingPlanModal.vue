@@ -123,7 +123,7 @@
 
         <!-- Réglages propres au contrat : preuve de remise, messages, réservation MAD (vide : ceux de l'entreprise) -->
         <fieldset v-if="editMode === 'options'" class="border rounded p-3 space-y-2">
-          <legend class="text-sm font-medium px-1">Réglages du contrat</legend>
+          <p class="text-xs text-gray-500">Vide (« comme l'entreprise ») : le réglage de Réglages › Courses s'applique.</p>
           <ActivityOptionsFields v-model="form.options" :activity="editing.activity" :inherit="editing.default_options" />
         </fieldset>
 

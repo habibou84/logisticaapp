@@ -27,6 +27,7 @@ class PayPlanResource extends JsonResource
             'min_amount' => $this->min_amount,
             'max_amount' => $this->max_amount,
             'base_salary' => $this->base_salary,
+            'mad_daily_rate' => $this->mad_daily_rate,
             'pay_period' => $this->pay_period,
             'pay_period_label' => $this->periodLabel(),
             'deduction_cap_percent' => $this->deduction_cap_percent,

@@ -7,6 +7,7 @@ use App\Enums\Permission;
 use App\Exceptions\BusinessRuleException;
 use App\Http\Controllers\Controller;
 use App\Models\CashCollection;
+use App\Models\ClientInvoicePayment;
 use App\Models\Courier;
 use App\Models\CourierAdvance;
 use App\Models\CourierEarning;
@@ -24,6 +25,7 @@ use App\Services\Finance\CourierPay;
 use App\Services\Finance\CourierPayroll;
 use App\Services\Finance\MerchantPayouts;
 use App\Services\Finance\PayBonuses;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -327,6 +329,44 @@ class FinanceController extends Controller
         return response()->json([
             'data' => $this->earningData($this->payroll->adjust($request->user(), $courier, $data['amount'], $data['description'])),
         ], 201);
+    }
+
+    /**
+     * Paiements des factures des clients (distribution, MAD) du mois : l'argent qui entre en caisse
+     * en dehors des livreurs. Périmètre de l'équipe respecté (activités).
+     */
+    public function invoicePayments(Request $request): JsonResponse
+    {
+        $this->authorizeStaff($request);
+        $data = $request->validate(['month' => ['nullable', 'date_format:Y-m']]);
+        $month = CarbonImmutable::createFromFormat('Y-m-d', ($data['month'] ?? now()->format('Y-m')).'-01');
+
+        $payments = ClientInvoicePayment::query()
+            ->whereHas('invoice')
+            ->with(['invoice.merchant:id,business_name', 'recorder:id,name'])
+            ->whereBetween('paid_on', [$month->toDateString(), $month->endOfMonth()->toDateString()])
+            ->orderByDesc('paid_on')->orderByDesc('id')->get();
+
+        return response()->json([
+            'data' => $payments->map(fn (ClientInvoicePayment $p) => [
+                'id' => $p->id,
+                'paid_on' => $p->paid_on->toDateString(),
+                'amount' => $p->amount,
+                'method' => $p->method->value,
+                'method_label' => $p->method->label(),
+                'reference' => $p->reference,
+                'recorded_by' => $p->recorder?->name,
+                'invoice' => [
+                    'id' => $p->invoice->id,
+                    'number' => $p->invoice->number,
+                    'activity' => $p->invoice->activity?->value,
+                    'activity_label' => $p->invoice->activity?->label(),
+                    'merchant' => $p->invoice->merchant?->business_name,
+                ],
+            ])->values(),
+            'total' => $payments->sum('amount'),
+            'by_method' => $payments->groupBy(fn ($p) => $p->method->label())->map->sum('amount'),
+        ]);
     }
 
     public function courierPayouts(Request $request): JsonResponse

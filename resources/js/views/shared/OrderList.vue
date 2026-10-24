@@ -143,11 +143,15 @@
         </div>
       </BottomSheet>
 
-      <div :class="['card p-3 hidden md:grid grid-cols-2 gap-2', isStaff ? 'md:grid-cols-7' : 'md:grid-cols-6']">
+      <div :class="['card p-3 hidden md:grid grid-cols-2 gap-2', isStaff ? (plans.length ? 'md:grid-cols-8' : 'md:grid-cols-7') : 'md:grid-cols-6']">
         <input v-model="filters.search" class="input col-span-2" placeholder="Code, téléphone, nom, référence…" @input="debouncedLoad">
         <select v-model="filters.status" class="input" @change="load(1)">
           <option value="">Tous les statuts</option>
           <option v-for="(label, value) in STATUS_LABELS" :key="value" :value="value">{{ label }}</option>
+        </select>
+        <select v-if="isStaff && plans.length" v-model="filters.billing_plan_id" class="input" aria-label="Contrat ou lot" @change="syncQuery(); load(1)">
+          <option value="">Tous les contrats</option>
+          <option v-for="p in plans" :key="p.id" :value="String(p.id)">{{ p.merchant?.business_name }} · {{ p.formula === 'distribution_lot' ? p.lot_name : p.formula_label }}</option>
         </select>
         <select v-if="isStaff" v-model="filters.merchant_id" class="input" @change="load(1)">
           <option value="">Tous les clients</option>

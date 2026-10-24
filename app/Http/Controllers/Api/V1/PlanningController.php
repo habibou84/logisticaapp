@@ -64,8 +64,11 @@ class PlanningController extends Controller
             'automation' => $this->automation($company),
             'rules' => $rules,
             'absences' => $absences,
-            'gaps' => $this->gaps($company->id, $date),
-            'mad' => $this->mad($company, $date, $absent),
+            // Clients en MAD ce jour-là (livreur attitré présent) : pas « sans ramasseur »
+            'gaps' => $this->gaps($company->id, $date, collect($mad = $this->mad($company, $date, $absent))
+                ->filter(fn (array $m) => $m['reserved_today'] && collect($m['couriers'])->contains('absent', false))
+                ->pluck('merchant.id')->all()),
+            'mad' => $mad,
         ]]);
     }
 
@@ -263,7 +266,10 @@ class PlanningController extends Controller
      *
      * @return list<array<string, mixed>>
      */
-    private function gaps(int $companyId, string $date): array
+    /**
+     * @param  list<int>  $covered  clients déjà servis ce jour-là (MAD)
+     */
+    private function gaps(int $companyId, string $date, array $covered = []): array
     {
         $active = Order::query()->where('created_at', '>=', now()->subDays(30))->distinct()->pluck('merchant_id')->filter();
         $waiting = Order::query()->where('status', OrderStatus::Confirmed->value)->whereNull('pickup_hub_id')
@@ -272,7 +278,7 @@ class PlanningController extends Controller
 
         $zones = Zone::query()->pluck('name', 'id');
 
-        return Merchant::query()->whereIn('id', $active->merge($waiting->keys())->unique())->where('status', 'active')
+        return Merchant::query()->whereIn('id', $active->merge($waiting->keys())->unique()->diff($covered))->where('status', 'active')
             ->get(['id', 'business_name', 'pickup_zone_id'])
             ->filter(fn (Merchant $m) => $this->planning->resolveFor($companyId, CourierRule::PICKUP, $date, $m->pickup_zone_id, $m->id) === null)
             ->groupBy(fn (Merchant $m) => $m->pickup_zone_id ?? 0)

@@ -123,6 +123,36 @@
       </div>
     </template>
 
+    <!-- Paiements des factures (distribution, MAD) : argent reçu en dehors des livreurs -->
+    <template v-if="tab === 'invoices'">
+      <div class="flex flex-wrap items-end gap-3">
+        <div><label class="label" for="ip-month">Mois</label><input id="ip-month" v-model="invoicePayments.month" type="month" class="input w-auto" @change="load"></div>
+        <RouterLink to="/admin/factures" class="text-sm text-blue-600 pb-2">Factures des clients →</RouterLink>
+      </div>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <StatCard title="Reçu ce mois-ci" :value="money(invoicePayments.total)" icon="💶" />
+        <StatCard v-for="(amount, label) in invoicePayments.by_method" :key="label" :title="label" :value="money(amount)" icon="•" />
+      </div>
+      <div class="card overflow-x-auto">
+        <table class="w-full text-sm stack-table">
+          <thead class="bg-slate-50 text-left text-gray-600">
+            <tr><th class="p-2">Date</th><th class="p-2">Client</th><th class="p-2">Facture</th><th class="p-2">Moyen</th><th class="p-2 text-right">Montant</th><th class="p-2">Saisi par</th></tr>
+          </thead>
+          <tbody class="divide-y">
+            <tr v-for="p in invoicePayments.data" :key="p.id" class="hover:bg-slate-50 cursor-pointer" @click="router.push(`/admin/factures/${p.invoice.id}`)">
+              <td class="p-2 whitespace-nowrap">{{ date(p.paid_on) }}</td>
+              <td data-label="Client" class="p-2">{{ p.invoice.merchant }} <span class="text-xs text-gray-500">· {{ p.invoice.activity_label }}</span></td>
+              <td data-label="Facture" class="p-2 font-mono text-xs">{{ p.invoice.number }}</td>
+              <td data-label="Moyen" class="p-2">{{ p.method_label }}<span v-if="p.reference" class="block text-xs text-gray-500">{{ p.reference }}</span></td>
+              <td data-label="Montant" class="p-2 text-right font-semibold">{{ money(p.amount) }}</td>
+              <td data-label="Saisi par" class="p-2 text-xs">{{ p.recorded_by || '—' }}</td>
+            </tr>
+            <tr v-if="!invoicePayments.data.length"><td colspan="6" class="p-4 text-center text-gray-500">Aucun paiement de facture ce mois-ci.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </template>
+
     <!-- Paie des livreurs -->
     <template v-if="tab === 'payroll'">
       <div class="card overflow-x-auto">
@@ -336,6 +366,7 @@ import PayForm from '../../components/PayForm.vue'
 import { useAuthStore } from '../../stores/auth'
 import { useToastStore } from '../../stores/toasts'
 import { date, dateTime, money, signedClass } from '../../utils/format'
+import { myActivities } from '../../utils/activities'
 
 const auth = useAuthStore()
 const toasts = useToastStore()
@@ -343,12 +374,15 @@ const router = useRouter()
 const route = useRoute()
 const canManage = computed(() => auth.can('finance.manage'))
 
-const tabs = [
+// Soldes et reversements : e-commerce ; paiements de factures : distribution et MAD
+const seen = computed(() => myActivities(auth.user).map((a) => a.value))
+const tabs = computed(() => [
   { value: 'cash', label: 'Argent chez les livreurs' },
-  { value: 'merchants', label: 'Soldes clients' },
-  { value: 'payouts', label: 'Reversements' },
+  ...(seen.value.includes('ecommerce') ? [{ value: 'merchants', label: 'Soldes clients' }, { value: 'payouts', label: 'Reversements' }] : []),
+  ...(seen.value.some((a) => a !== 'ecommerce') ? [{ value: 'invoices', label: 'Paiements de factures' }] : []),
   { value: 'payroll', label: 'Paie des livreurs' },
-]
+])
+const invoicePayments = reactive({ month: new Date().toISOString().slice(0, 7), data: [], total: 0, by_method: {} })
 const tab = ref(route.query.tab || 'cash')
 
 const cash = ref(null)
@@ -407,6 +441,7 @@ async function load() {
   if (tab.value === 'merchants') merchantBalances.value = (await http.get('/finance/merchants')).data.data
   if (tab.value === 'payouts') payouts.value = (await http.get('/finance/payouts')).data.data
   if (tab.value === 'payroll') courierPayouts.value = (await http.get('/finance/courier-payouts')).data.data
+  if (tab.value === 'invoices') Object.assign(invoicePayments, (await http.get('/finance/invoice-payments', { params: { month: invoicePayments.month } })).data)
 }
 
 async function openRemit(courier) {

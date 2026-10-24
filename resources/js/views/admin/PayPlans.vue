@@ -74,6 +74,16 @@
           </div>
         </div>
         <p v-if="plan.base_salary > 0" class="text-xs text-gray-500">Un livreur arrivé en cours de période touche le salaire au prorata des jours.</p>
+        <!-- Mise à disposition (MAD) : un montant par jour passé chez le client -->
+        <div>
+          <label class="label" for="mad-rate">Par jour de mise à disposition (MAD), F</label>
+          <input id="mad-rate" v-model.number="plan.mad_daily_rate" type="number" min="0" class="input w-40" placeholder="Aucun">
+          <p class="text-xs text-gray-500 mt-1 max-w-xl">
+            Jours où le livreur est mis à disposition d'un client (jours du contrat, hors absences), ajoutés à la fiche de la période.
+            Pour ne pas payer aussi ses courses MAD une à une, limitez les règles ci-dessous aux autres activités (Conditions › Activités).
+          </p>
+          <p v-if="errors.mad_daily_rate" class="field-error has-error">{{ errors.mad_daily_rate[0] }}</p>
+        </div>
       </div>
 
       <!-- Règles par étape -->
@@ -139,6 +149,14 @@
               <div class="flex flex-wrap gap-4">
                 <label class="flex items-center gap-2"><input v-model="rule.conditions.express" type="checkbox"> Express seulement</label>
                 <label class="flex items-center gap-2"><input v-model="rule.conditions.fragile" type="checkbox"> Fragile seulement</label>
+              </div>
+              <div>
+                <p class="label">Activités (aucune cochée : toutes)</p>
+                <div class="flex flex-wrap gap-3">
+                  <label v-for="(label, value) in ACTIVITY_LABELS" :key="value" class="flex items-center gap-1">
+                    <input v-model="rule.conditions.activities" type="checkbox" :value="value"> {{ label }}
+                  </label>
+                </div>
               </div>
               <div>
                 <p class="label">Jours (aucun coché : tous les jours)</p>
@@ -298,6 +316,7 @@ import { useToastStore } from '../../stores/toasts'
 
 const VEHICLES = { moto: 'Moto', velo: 'Vélo', voiture: 'Voiture', tricycle: 'Tricycle', pieton: 'À pied' }
 const DAYS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
+const ACTIVITY_LABELS = { ecommerce: 'E-commerce', distribution: 'Distribution', mad: 'MAD' }
 
 const route = useRoute()
 const router = useRouter()
@@ -322,7 +341,7 @@ const sharedPlans = computed(() => plans.value.filter((p) => !p.personal))
 const personalPlans = computed(() => plans.value.filter((p) => p.personal))
 
 function emptyConditions() {
-  return { zone_ids: [], vehicle_types: [], incident_reason_ids: [], days: [], time_from: '', time_to: '', express: false, fragile: false }
+  return { zone_ids: [], vehicle_types: [], incident_reason_ids: [], days: [], time_from: '', time_to: '', express: false, fragile: false, activities: [] }
 }
 
 function editable(p) {
@@ -388,7 +407,7 @@ function ruleErrors(rule) {
 
 function hasConditions(rule) {
   const c = rule.conditions
-  return c.express || c.fragile || c.vehicle_types.length || c.zone_ids.length || c.days.length || c.time_from || (rule.event === 'failed_attempt' && c.incident_reason_ids.length)
+  return c.express || c.fragile || c.activities?.length || c.vehicle_types.length || c.zone_ids.length || c.days.length || c.time_from || (rule.event === 'failed_attempt' && c.incident_reason_ids.length)
 }
 
 function conditionsText(rule) {
@@ -396,6 +415,7 @@ function conditionsText(rule) {
   const parts = []
   if (c.express) parts.push('express')
   if (c.fragile) parts.push('fragile')
+  if (c.activities?.length) parts.push(c.activities.map((a) => ACTIVITY_LABELS[a]).join(', '))
   if (c.days.length) parts.push([...c.days].sort().map((d) => DAYS[d - 1]).join(', '))
   if (c.time_from && c.time_to) parts.push(`${c.time_from} → ${c.time_to}`)
   if (c.vehicle_types.length) parts.push(c.vehicle_types.map((v) => VEHICLES[v]).join(', '))
@@ -413,6 +433,7 @@ function payload(p) {
     min_amount: blank(p.min_amount),
     max_amount: blank(p.max_amount),
     base_salary: p.base_salary || 0,
+    mad_daily_rate: blank(p.mad_daily_rate),
     pay_period: p.pay_period || null,
     deduction_cap_percent: blank(p.deduction_cap_percent),
     rules: p.rules.map((r) => ({
@@ -425,6 +446,7 @@ function payload(p) {
       conditions: {
         express: r.conditions.express || null,
         fragile: r.conditions.fragile || null,
+        activities: r.conditions.activities || [],
         vehicle_types: r.conditions.vehicle_types,
         zone_ids: r.calc === 'zone_grid' ? [] : r.conditions.zone_ids,
         incident_reason_ids: r.event === 'failed_attempt' ? r.conditions.incident_reason_ids : [],
