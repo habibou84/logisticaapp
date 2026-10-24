@@ -1,7 +1,7 @@
 <template>
   <!-- Course envoyée : c'est fait, le n° de suivi, et l'action suivante la plus probable -->
-  <div v-if="created" class="mx-auto max-w-md space-y-6 pt-6 text-center">
-    <span class="mx-auto grid h-24 w-24 place-items-center rounded-full bg-emerald-100 text-emerald-700 ring-8 ring-emerald-50" aria-hidden="true"><StatusIcon name="check" class="h-12 w-12" /></span>
+  <div v-if="created" class="mx-auto max-w-md space-y-6 pt-2 text-center">
+    <span class="mx-auto grid h-20 w-20 place-items-center rounded-full bg-emerald-100 text-emerald-700 ring-8 ring-emerald-50" aria-hidden="true"><StatusIcon name="check" class="h-10 w-10" /></span>
     <div>
       <p class="text-2xl font-bold">Course envoyée</p>
       <p class="mt-1 text-slate-600">{{ created.from_warehouse ? 'L\'agence prépare votre commande à l\'entrepôt.' : 'Nous allons envoyer un livreur récupérer le colis.' }}</p>
@@ -20,8 +20,8 @@
     <div class="space-y-3">
       <button class="m-btn-primary" @click="reset"><StatusIcon name="plus" class="h-5 w-5" />Envoyer une autre course</button>
       <div class="grid grid-cols-2 gap-3">
-        <a :href="shareLink" target="_blank" class="m-btn-secondary"><StatusIcon name="share" class="h-4 w-4" />Partager le suivi</a>
-        <RouterLink :to="`/marchand/courses/${created.id}`" class="m-btn-secondary">Voir la course</RouterLink>
+        <a :href="shareLink" target="_blank" class="m-btn-secondary whitespace-nowrap px-3 py-3.5"><StatusIcon name="share" class="h-4 w-4 shrink-0" />Partager</a>
+        <RouterLink :to="`/marchand/courses/${created.id}`" class="m-btn-secondary whitespace-nowrap px-3 py-3.5">Voir la course</RouterLink>
       </div>
     </div>
   </div>
