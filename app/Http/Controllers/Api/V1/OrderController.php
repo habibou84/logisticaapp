@@ -78,6 +78,9 @@ class OrderController extends Controller
             ->when($queue === 'unassigned', fn ($q) => $q->orderBy('status_changed_at'))
             ->when($request->filled('merchant_id'), fn ($q) => $q->where('merchant_id', $request->integer('merchant_id')))
             ->when($request->filled('activity'), fn ($q) => $q->where('activity', $request->string('activity')))
+            // Courses d'un contrat ou d'un lot (distribution, MAD), ou une liste précise (feuille de route)
+            ->when($request->filled('billing_plan_id'), fn ($q) => $q->where('billing_plan_id', $request->integer('billing_plan_id')))
+            ->when($request->filled('ids'), fn ($q) => $q->whereIn('id', array_map('intval', array_slice((array) $request->input('ids'), 0, 500))))
             ->when($request->filled('hub_id'), fn ($q) => $q->where('pickup_hub_id', $request->integer('hub_id')))
             ->when($request->filled('courier_id'), fn ($q) => $q->where(fn ($q) => $q
                 ->where('pickup_courier_id', $request->integer('courier_id'))

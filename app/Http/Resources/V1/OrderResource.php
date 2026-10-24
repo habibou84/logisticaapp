@@ -110,6 +110,11 @@ class OrderResource extends JsonResource
                 array_flip(['proof_name', 'proof_signature', 'proof_photo']),
             )),
             'received_by_name' => $this->received_by_name,
+            // Distribution ponctuelle : le lot de la course (missions du livreur regroupées)
+            'lot' => $this->when($this->relationLoaded('billingPlan') && $this->billingPlan?->formula->isLot(), fn () => [
+                'id' => $this->billingPlan->id,
+                'name' => $this->billingPlan->lotName(),
+            ]),
             // Facturée sur la facture du mois du client (distribution, MAD) : comment
             'billing' => $this->billing_plan_id ? [
                 'basis' => $this->billing_basis,

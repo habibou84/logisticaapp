@@ -17,6 +17,14 @@
 
     <InstallBanner app="livreur" />
 
+    <!-- Mise à disposition (MAD) : chez quel client aujourd'hui -->
+    <div v-if="mad" class="rounded-2xl bg-violet-50 ring-1 ring-violet-200 p-4 text-violet-900">
+      <p class="font-semibold">Aujourd'hui, vous êtes à la disposition de {{ mad.merchant }}</p>
+      <p class="text-sm">
+        {{ mad.reserved_now ? 'Ses courses vous sont confiées en priorité' : 'Pas en ce moment' }}<template v-if="mad.from"> · {{ mad.from }}–{{ mad.to }}</template>.
+      </p>
+    </div>
+
     <!-- Invitation à activer les notifications push -->
     <div v-if="showPushInvite" class="rounded-2xl bg-amber-50 ring-1 ring-amber-200 p-4 space-y-2">
       <p class="font-semibold text-amber-900">🔔 Soyez prévenu même téléphone en veille</p>
@@ -71,8 +79,9 @@
       text="Les nouvelles missions apparaissent ici automatiquement."
     />
 
-    <!-- Plusieurs colis chez la même boutique : une seule mission -->
+    <!-- Plusieurs colis chez la même boutique : une seule mission ; livraisons d'un même lot à la suite -->
     <template v-for="c in cards" :key="c.key">
+      <p v-if="c.lotHeader" class="px-1 pt-1 text-xs font-bold uppercase tracking-wide text-slate-600">Lot · {{ c.lotHeader.name }} ({{ c.lotHeader.count }})</p>
       <RouterLink v-if="c.group" :to="`/livreur/ramassage/${c.key}`" class="block m-card p-4 active:bg-slate-50">
         <div class="flex items-start gap-3">
           <span class="h-11 w-11 shrink-0 rounded-xl grid place-items-center text-xl bg-indigo-100">🏪</span>
@@ -109,6 +118,7 @@
               <StatusBadge v-else :status="c.first.order.status" :label="c.first.order.status_label" />
               <span v-if="c.first.offline" class="rounded-full bg-sky-100 text-sky-800 text-xs font-semibold px-2 py-0.5">⏳ À envoyer</span>
               <span v-if="c.first.order.package.is_express" class="rounded-full bg-red-100 text-red-700 text-xs font-semibold px-2 py-0.5">⚡ Express</span>
+              <span v-if="c.first.order.billed_monthly" :class="['rounded-full text-xs font-semibold px-2 py-0.5', c.first.order.activity === 'mad' ? 'bg-violet-100 text-violet-800' : 'bg-amber-100 text-amber-800']">{{ c.first.order.activity_label }}</span>
               <span v-if="c.first.order.is_shipping && c.first.type === 'delivery'" class="rounded-full bg-indigo-100 text-indigo-800 text-xs font-semibold px-2 py-0.5">🚌 À expédier</span>
               <span v-if="c.first.gain" class="rounded-full bg-emerald-100 text-emerald-800 text-xs font-semibold px-2 py-0.5" title="Votre gain prévu">💰 + {{ money(c.first.gain) }}</span>
             </div>
@@ -153,7 +163,14 @@ const tabs = [
   { value: 'return', label: 'Retours' },
 ]
 
-const visible = computed(() => missions.value.filter((m) => m.type === tab.value))
+// Livraisons d'un même lot (distribution ponctuelle) à la suite, les autres ensuite
+const visible = computed(() => {
+  const list = missions.value.filter((m) => m.type === tab.value)
+  if (tab.value !== 'delivery') return list
+  const lotOf = (m) => m.order.lot?.id ?? 0
+  return [...list].sort((a, b) => (lotOf(a) === lotOf(b) ? 0 : lotOf(a) === 0 ? 1 : lotOf(b) === 0 ? -1 : lotOf(a) - lotOf(b)))
+})
+const mad = ref(null)
 // Ramassages : colis d'une même boutique (même adresse) regroupés en une carte
 const cards = computed(() => {
   const groups = new Map()
@@ -162,17 +179,25 @@ const cards = computed(() => {
     if (!groups.has(key)) groups.set(key, [])
     groups.get(key).push(m)
   }
-  return [...groups].map(([key, list]) => ({
-    key,
-    group: list.length > 1,
-    first: list[0],
-    missions: list,
-    toAccept: list.filter((m) => m.status === 'assigned').length,
-    started: list.some((m) => m.order.status === 'pickup_in_progress'),
-    offline: list.some((m) => m.offline),
-    express: list.some((m) => m.order.package.is_express),
-    gain: list.reduce((sum, m) => sum + (m.gain || 0), 0),
-  }))
+  const lotCount = (id) => visible.value.filter((m) => m.order.lot?.id === id).length
+  let previousLot = null
+  return [...groups].map(([key, list]) => {
+    const lot = list[0].type === 'delivery' ? list[0].order.lot : null
+    const header = lot && lot.id !== previousLot && lotCount(lot.id) > 1 ? { name: lot.name, count: lotCount(lot.id) } : null
+    previousLot = lot?.id ?? null
+    return {
+      lotHeader: header,
+      key,
+      group: list.length > 1,
+      first: list[0],
+      missions: list,
+      toAccept: list.filter((m) => m.status === 'assigned').length,
+      started: list.some((m) => m.order.status === 'pickup_in_progress'),
+      offline: list.some((m) => m.offline),
+      express: list.some((m) => m.order.package.is_express),
+      gain: list.reduce((sum, m) => sum + (m.gain || 0), 0),
+    }
+  })
 })
 const count = (type) => missions.value.filter((m) => m.type === type).length
 
@@ -182,6 +207,7 @@ async function load() {
     returnSlips.value = r?.data.data || []
     missions.value = withPending(m.data.data)
     messages.setUnread(m.data.meta?.unread_messages)
+    mad.value = m.data.meta?.mad || null
     wallet.value = w.data.data
     stale.value = m.stale || w.stale
     error.value = ''

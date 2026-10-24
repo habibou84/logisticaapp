@@ -3,10 +3,13 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Enums\AssignmentType;
+use App\Enums\BillingFormula;
 use App\Enums\OrderStatus;
 use App\Exceptions\BusinessRuleException;
 use App\Http\Controllers\Controller;
+use App\Models\BillingPlan;
 use App\Models\Company;
+use App\Models\Courier;
 use App\Models\CourierAbsence;
 use App\Models\CourierRule;
 use App\Models\Merchant;
@@ -14,6 +17,7 @@ use App\Models\Order;
 use App\Models\User;
 use App\Models\Zone;
 use App\Services\Assignment\CourierPlanning;
+use App\Services\Orders\ActivityOptions;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -61,7 +65,53 @@ class PlanningController extends Controller
             'rules' => $rules,
             'absences' => $absences,
             'gaps' => $this->gaps($company->id, $date),
+            'mad' => $this->mad($company, $date, $absent),
         ]]);
+    }
+
+    /**
+     * Mises à disposition (MAD) du jour : client, livreurs attitrés, jours et horaires ; livreur attitré
+     * absent ce jour-là signalé, avec des remplaçants possibles (en service, ni absents ni déjà en MAD).
+     *
+     * @param  list<int>  $absent
+     * @return list<array<string, mixed>>
+     */
+    private function mad(Company $company, string $date, array $absent): array
+    {
+        $options = app(ActivityOptions::class);
+        $day = CarbonImmutable::parse($date)->dayOfWeekIso;
+        $plans = BillingPlan::query()->where('formula', BillingFormula::MadContract->value)->activeOn($date)
+            ->with(['couriers.user', 'merchant:id,business_name'])->orderBy('starts_on')->get();
+        $busy = $plans->flatMap(fn (BillingPlan $p) => $p->couriers->pluck('id'))->merge($absent)->unique()->all();
+        $spare = Courier::query()->with('user')->whereNotIn('id', $busy)
+            ->whereHas('user', fn ($q) => $q->where('status', 'active'))->get()
+            ->sortBy(fn (Courier $c) => $c->user->name)->take(3)
+            ->map(fn (Courier $c) => ['id' => $c->id, 'name' => $c->user->name])->values();
+
+        return $plans->map(function (BillingPlan $plan) use ($options, $company, $day, $absent, $spare) {
+            $o = $options->plan($plan, $company);
+            $reserved = in_array($day, array_map('intval', $o['mad_days']), true);
+            $couriers = $plan->couriers->map(fn (Courier $c) => [
+                'id' => $c->id,
+                'name' => $c->user?->name,
+                'absent' => in_array($c->id, $absent, true),
+            ])->values();
+
+            return [
+                'billing_plan_id' => $plan->id,
+                'merchant' => ['id' => $plan->merchant_id, 'name' => $plan->merchant?->business_name],
+                'ends_on' => $plan->ends_on?->toDateString(),
+                'days' => $o['mad_days'],
+                'from' => $o['mad_from'],
+                'to' => $o['mad_to'],
+                'exclusive' => (bool) $o['mad_exclusive'],
+                'reserved_today' => $reserved,
+                'couriers' => $couriers,
+                // Ce jour-là, un livreur attitré manque : remplaçants possibles
+                'missing' => $reserved && $couriers->contains('absent', true),
+                'replacements' => $reserved && $couriers->contains('absent', true) ? $spare : [],
+            ];
+        })->values()->all();
     }
 
     /**

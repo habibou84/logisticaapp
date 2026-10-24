@@ -110,6 +110,14 @@
               <option v-for="(label, value) in STATUS_LABELS" :key="value" :value="value">{{ label }}</option>
             </select>
           </div>
+          <!-- Distribution, MAD : les courses d'un contrat ou d'un lot -->
+          <div v-if="isStaff && plans.length">
+            <label class="label" for="f-plan">Contrat / lot</label>
+            <select id="f-plan" v-model="filters.billing_plan_id" class="input" @change="syncQuery(); load(1)">
+              <option value="">Tous</option>
+              <option v-for="p in plans" :key="p.id" :value="String(p.id)">{{ p.merchant?.business_name }} · {{ p.formula === 'distribution_lot' ? p.lot_name : p.formula_label }}</option>
+            </select>
+          </div>
           <div v-if="isStaff">
             <label class="label" for="f-merchant">Client</label>
             <select id="f-merchant" v-model="filters.merchant_id" class="input" @change="load(1)">
@@ -182,6 +190,8 @@
         <button v-if="auth.can('orders.dispatch') && withCourierSelected.length" class="btn-secondary text-red-700" :disabled="assigning" @click="bulkUnassign">
           Retirer le livreur ({{ withCourierSelected.length }})
         </button>
+        <!-- Distribution : liste à faire signer à chaque remise -->
+        <a :href="`/feuille-de-route?ids=${selected.join(',')}`" target="_blank" class="btn-secondary">🖨 Feuille de route</a>
         <button class="btn-secondary" @click="selected = []">Annuler</button>
       </div>
 
@@ -360,6 +370,7 @@ const filters = reactive({
   status: '',
   merchant_id: route.query.merchant_id || '',
   activity: route.query.activity || '',
+  billing_plan_id: route.query.billing_plan_id || '',
   courier_id: route.query.courier_id || '',
   // File « Sans livreur » : pickup, delivery ou les deux
   awaiting: route.query.awaiting || '',
@@ -386,6 +397,8 @@ function setActivity(value) {
 const meta = ref(null)
 const loading = ref(false)
 const merchants = ref([])
+// Contrats et lots en cours (filtre « Contrat / lot »)
+const plans = ref([])
 const couriers = ref([])
 const selected = ref([])
 const bulk = reactive({ type: route.query.queue === 'unassigned' ? 'auto' : 'pickup', courier_id: null })
@@ -487,6 +500,7 @@ function syncQuery() {
   if (filters.queue === 'unassigned' && filters.awaiting) query.awaiting = filters.awaiting
   if (isStaff.value && filters.day !== todayIso) query.day = filters.day || 'all'
   if (filters.activity) query.activity = filters.activity
+  if (filters.billing_plan_id) query.billing_plan_id = filters.billing_plan_id
   router.replace({ query })
 }
 
@@ -652,6 +666,9 @@ onMounted(async () => {
     ])
     merchants.value = m.data.data
     couriers.value = c.data.data
+    if (myActivities(auth.user).some((a) => a.value !== 'ecommerce') && auth.can('merchants.view')) {
+      plans.value = (await http.get('/billing-plans', { params: { state: 'current' } }).catch(() => empty)).data.data
+    }
   }
 })
 </script>

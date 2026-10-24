@@ -13,6 +13,7 @@ use App\Models\CourierEarning;
 use App\Models\CourierMessage;
 use App\Models\OrderAssignment;
 use App\Services\Assignment\AutoAssigner;
+use App\Services\Assignment\MadCouriers;
 use App\Services\Couriers\CourierTracker;
 use App\Services\Finance\CourierPay;
 use App\Services\Orders\OrderDispatcher;
@@ -40,6 +41,7 @@ class CourierSpaceController extends Controller
             // Frais déjà déclarés par ce livreur sur la course
             ->with(['order' => fn ($q) => $q->with([
                 ...OrderController::LIST_RELATIONS,
+                'billingPlan',
                 'expenses' => fn ($e) => $e->active()->where('courier_id', $courier->id)->orderBy('id'),
             ])])
             ->orderByRaw("CASE type WHEN 'pickup' THEN 0 WHEN 'delivery' THEN 1 ELSE 2 END")
@@ -73,6 +75,8 @@ class CourierSpaceController extends Controller
 
         return OrderAssignmentResource::collection($assignments)->additional(['meta' => [
             'acceptance' => $courier->acceptanceMode(),
+            // Mis à disposition d'un client aujourd'hui (bandeau de l'application)
+            'mad' => app(MadCouriers::class)->of($courier),
             // Toutes consignes non lues (y compris sur des missions terminées)
             'unread_messages' => CourierMessage::where('courier_id', $courier->id)->whereNull('read_at')->where('created_at', '>=', now()->subDays(2))->count(),
         ]]);

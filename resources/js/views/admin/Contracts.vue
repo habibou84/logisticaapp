@@ -83,7 +83,7 @@
             <td data-label="Facture estimée" class="p-2 text-right font-semibold">{{ p.usage?.estimate !== null && p.usage?.estimate !== undefined ? money(p.usage.estimate) : '—' }}</td>
             <td class="p-2 text-right whitespace-nowrap">
               <button class="text-blue-600 mr-3" @click="open = p.merchant">{{ canManage ? 'Modifier' : 'Voir' }}</button>
-              <RouterLink :to="{ path: '/admin/courses', query: { merchant_id: p.merchant?.id, activity: p.activity, day: 'all' } }" class="text-blue-600 mr-3">Courses</RouterLink>
+              <RouterLink :to="{ path: '/admin/courses', query: { billing_plan_id: p.id, activity: p.activity, day: 'all' } }" class="text-blue-600 mr-3">Courses</RouterLink>
               <button v-if="p.state === 'current'" type="button" class="text-blue-600 mr-3" @click="supplementFor = p">Suppléments</button>
               <RouterLink v-if="canManage" :to="{ path: '/admin/formules', query: { client: p.merchant?.id } }" class="text-blue-600 mr-3">Prix négociés</RouterLink>
               <RouterLink v-if="auth.can('invoices.view')" to="/admin/factures" class="text-blue-600">Factures</RouterLink>

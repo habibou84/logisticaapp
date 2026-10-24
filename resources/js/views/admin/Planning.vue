@@ -63,6 +63,34 @@
         </div>
       </section>
 
+      <!-- Mises à disposition (MAD) ce jour-là : livreurs réservés à un client -->
+      <section v-if="board.mad?.length" class="card p-4 space-y-3">
+        <h2 class="font-semibold">Mises à disposition ce jour-là</h2>
+        <ul class="divide-y">
+          <li v-for="m in board.mad" :key="m.billing_plan_id" class="py-2 space-y-1">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <span class="min-w-0">
+                <span class="block font-medium">{{ m.merchant.name }}</span>
+                <span class="block text-xs text-gray-500">
+                  {{ m.reserved_today ? (m.exclusive ? 'Réservés au client' : 'Chez le client, non réservés') : 'Pas de mise à disposition ce jour-là' }}<template v-if="m.reserved_today && m.from"> · {{ m.from }}–{{ m.to }}</template><template v-if="m.ends_on"> · jusqu'au {{ shortDate(m.ends_on) }}</template>
+                </span>
+              </span>
+              <span class="flex flex-wrap gap-1">
+                <span
+                  v-for="c in m.couriers" :key="c.id"
+                  :class="['rounded-full px-2 py-0.5 text-sm font-medium', c.absent && m.reserved_today ? 'bg-red-50 text-red-700' : m.reserved_today ? 'bg-violet-50 text-violet-800' : 'bg-slate-100 text-slate-600']"
+                >{{ c.absent ? '⚠️' : '🛵' }} {{ c.name }}{{ c.absent ? ' (absent)' : '' }}</span>
+              </span>
+            </div>
+            <p v-if="m.missing" class="rounded bg-red-50 p-2 text-sm text-red-800">
+              Livreur attitré absent : ses courses restent à l'équipe.
+              <template v-if="m.replacements.length">Disponibles : {{ m.replacements.map((r) => r.name).join(', ') }}.</template>
+              <RouterLink :to="{ path: '/admin/contrats', query: { activity: 'mad' } }" class="ml-1 font-medium underline">Changer les livreurs du contrat</RouterLink>
+            </p>
+          </li>
+        </ul>
+      </section>
+
       <!-- Toutes les règles -->
       <section class="card p-4 space-y-3">
         <h2 class="font-semibold">Règles</h2>

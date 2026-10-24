@@ -47,6 +47,12 @@ const routes = [
     meta: { roles: [...SPACES.admin, ...SPACES.marchand] },
   },
   {
+    path: '/feuille-de-route',
+    name: 'route-sheet',
+    component: () => import('../views/RouteSheet.vue'),
+    meta: { roles: SPACES.admin },
+  },
+  {
     path: '/bon-de-retour/:id',
     name: 'return-slip',
     component: () => import('../views/ReturnSlipPrint.vue'),

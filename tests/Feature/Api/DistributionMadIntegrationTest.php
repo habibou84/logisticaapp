@@ -6,6 +6,7 @@ use App\Enums\AssignmentType;
 use App\Enums\OrderStatus;
 use App\Models\BillingPlan;
 use App\Models\CourierRule;
+use App\Models\DistributionRate;
 use App\Models\Merchant;
 use App\Models\Order;
 use App\Models\OutboundMessage;
@@ -202,5 +203,36 @@ class DistributionMadIntegrationTest extends TestCase
         // Réservé à l'administrateur
         Sanctum::actingAs($this->dispatcher);
         $this->patchJson("/api/v1/companies/{$this->company->id}", ['activity_options' => ['mad' => ['mad_exclusive' => true]]])->assertForbidden();
+    }
+
+    public function test_courses_of_a_lot_planning_and_courier_space(): void
+    {
+        DistributionRate::create(['company_id' => $this->company->id, 'delivery_delay' => '48h', 'shipment_type' => 'pli', 'price' => 1500]);
+        $lot = $this->plan($this->merchant, ['formula' => 'distribution_lot', 'lot_label' => 'Cartes de vœux', 'lot_quantity' => 3, 'lot_price' => 15000]);
+        $a = $this->createOrder(['activity' => 'distribution', 'shipment_type' => 'pli', 'billing_plan_id' => $lot->id]);
+        $b = $this->createOrder(['activity' => 'distribution', 'shipment_type' => 'pli', 'billing_plan_id' => $lot->id]);
+        $other = $this->createOrder();
+        Sanctum::actingAs($this->dispatcher);
+
+        // Courses du lot ; liste précise (feuille de route)
+        $this->assertEqualsCanonicalizing([$a->id, $b->id], array_column($this->getJson("/api/v1/orders?billing_plan_id={$lot->id}")->assertOk()->json('data'), 'id'));
+        $this->assertSame([$other->id], array_column($this->getJson("/api/v1/orders?ids[]={$other->id}")->assertOk()->json('data'), 'id'));
+
+        // Planning : la MAD du jour, livreur attitré absent signalé avec des remplaçants
+        $this->plan($this->madClient, ['formula' => 'mad_contract', 'courier_ids' => [$this->courierB->id], 'options' => ['mad_days' => [1, 2, 3, 4, 5]]]);
+        $this->postJson('/api/v1/planning/absences', ['courier_id' => $this->courierB->id, 'starts_on' => self::MONDAY, 'ends_on' => self::MONDAY, 'reason' => 'Malade'])->assertCreated();
+        $mad = $this->getJson('/api/v1/planning?date='.self::MONDAY)->assertOk()->json('data.mad.0');
+        $this->assertSame(['Ivoire Assurances', true, true], [$mad['merchant']['name'], $mad['reserved_today'], $mad['missing']]);
+        $this->assertContains($this->courierA->id, array_column($mad['replacements'], 'id'));
+        $this->assertFalse($this->getJson('/api/v1/planning?date=2026-11-28')->json('data.mad.0.reserved_today'), 'le samedi : pas de MAD');
+
+        // Application du livreur : la MAD du jour, le lot de ses livraisons
+        $b->forceFill(['status' => OrderStatus::PickedUp])->save();
+        app(OrderDispatcher::class)->assign($this->dispatcher, $b, AssignmentType::Delivery, $this->courierB);
+        Sanctum::actingAs($this->courierB->user);
+        $this->getJson('/api/v1/courier/missions')->assertOk()
+            ->assertJsonPath('meta.mad.merchant', 'Ivoire Assurances')
+            ->assertJsonPath('data.0.order.lot.name', 'Cartes de vœux')
+            ->assertJsonPath('data.0.order.billed_monthly', true);
     }
 }
