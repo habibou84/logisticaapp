@@ -9,7 +9,10 @@
       <div v-for="c in couriers" :key="c.id" class="card p-4 space-y-2">
         <div class="flex items-center justify-between">
           <div>
-            <p class="font-semibold">{{ c.name }} <MadBadge :mad="c.mad" /></p>
+            <p class="font-semibold">
+              {{ c.name }} <MadBadge :mad="c.mad" />
+              <RouterLink v-if="scores[c.id]" :to="{ path: '/admin/qualite-livreurs', query: { livreur: c.id } }" class="ml-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800" title="Note sur 5 (Qualité des livreurs)">⭐ {{ scores[c.id].toFixed(1) }}</RouterLink>
+            </p>
             <a :href="telLink(c.phone)" class="text-sm text-blue-600">{{ c.phone }}</a>
           </div>
           <span :class="['text-xs rounded-full px-2 py-0.5', c.is_available ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600']">
@@ -121,7 +124,15 @@ async function customize() {
   }
 }
 
+// Notes des livreurs (Qualité des livreurs)
+const scores = ref({})
+async function loadScores() {
+  const rows = (await http.get('/courier-quality').catch(() => ({ data: { data: [] } }))).data.data
+  scores.value = Object.fromEntries(rows.filter((r) => r.score !== null).map((r) => [r.id, r.score]))
+}
+
 async function load() {
+  loadScores()
   couriers.value = (await http.get('/couriers')).data.data
 }
 

@@ -17,6 +17,7 @@ use App\Models\OrderAssignment;
 use App\Models\User;
 use App\Services\Orders\OrderDispatcher;
 use App\Services\Orders\OrderJournal;
+use App\Services\Ratings\ClientChoices;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Cache;
 use Throwable;
@@ -51,7 +52,43 @@ class AutoAssigner
         private readonly OrderDispatcher $dispatcher,
         private readonly OrderJournal $journal,
         private readonly MadCouriers $mad,
+        private readonly ClientChoices $choices,
     ) {}
+
+    /** Livreur préféré par le client : prioritaire s'il est disponible */
+    public const SOURCE_PREFERRED = 'preferred';
+
+    /**
+     * Livreurs à ne pas proposer pour cette course : écartés (refus, injoignable), réservés à un autre
+     * client (MAD), écartés par le client lui-même.
+     *
+     * @return list<int>
+     */
+    private function unavailableFor(Order $order, AssignmentType $type): array
+    {
+        return [...self::excluded($order, $type), ...$this->mad->reservedElsewhere($order), ...$this->choices->excluded($order)];
+    }
+
+    private function assignPreferred(Company $company, Order $order, AssignmentType $type, Courier $courier, ?string $after): ?OrderAssignment
+    {
+        $actor = User::forCompany($company->id)->where('status', 'active')->role(Role::Admin->value)->first();
+        if ($actor === null) {
+            return null;
+        }
+        try {
+            $assignment = $this->dispatcher->assign($actor, $order, $type, $courier, self::SOURCE_PREFERRED);
+        } catch (BusinessRuleException) {
+            return null;
+        }
+        $what = $type === AssignmentType::Pickup ? 'Ramassage' : 'Livraison';
+        $this->journal->record($order->fresh(), null, OrderEventType::Note, [
+            'note' => "{$what} confié(e) automatiquement à {$courier->user->name}, livreur préféré du client".($after ? " ({$after})" : '').'.',
+            'visible_to_merchant' => false,
+            'meta' => ['auto' => $type->value, 'courier_id' => $courier->id, 'preferred' => true],
+        ]);
+
+        return $assignment;
+    }
 
     /**
      * @param  string|null  $after  pourquoi la course revient (refus, empêchement, livreur injoignable) : noté sur la course
@@ -185,8 +222,11 @@ class AutoAssigner
         if ($mode === Company::AUTO_OFF) {
             return null;
         }
-        // Livreurs réservés à un autre client (MAD) : pas pour cette course
-        $choice = $this->chooser->choose($order, $company, $now, [...self::excluded($order, AssignmentType::Delivery), ...$this->mad->reservedElsewhere($order)]);
+        // Livreur préféré du client (si l'entreprise le permet), sinon le choix habituel sans les livreurs écartés
+        if ($mode === Company::AUTO_ON && ($preferred = $this->choices->preferred($order, $this->unavailableFor($order, AssignmentType::Delivery)))) {
+            return $this->assignPreferred($company, $order, AssignmentType::Delivery, $preferred, $after);
+        }
+        $choice = $this->chooser->choose($order, $company, $now, $this->unavailableFor($order, AssignmentType::Delivery));
         if ($choice === null) {
             return null;
         }
@@ -248,7 +288,10 @@ class AutoAssigner
         }
 
         $today = CarbonImmutable::now($company->timezone ?: config('app.timezone'))->toDateString();
-        $choice = $this->planning->resolve($order, CourierRule::PICKUP, $today, [...self::excluded($order, AssignmentType::Pickup), ...$this->mad->reservedElsewhere($order)]);
+        if ($mode === Company::AUTO_ON && ($preferred = $this->choices->preferred($order, $this->unavailableFor($order, AssignmentType::Pickup)))) {
+            return $this->assignPreferred($company, $order, AssignmentType::Pickup, $preferred, $after);
+        }
+        $choice = $this->planning->resolve($order, CourierRule::PICKUP, $today, $this->unavailableFor($order, AssignmentType::Pickup));
         if ($choice === null) {
             return null;
         }

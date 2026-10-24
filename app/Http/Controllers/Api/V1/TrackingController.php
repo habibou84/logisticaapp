@@ -5,8 +5,11 @@ namespace App\Http\Controllers\Api\V1;
 use App\Enums\OrderEventType;
 use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
+use App\Models\Company;
+use App\Models\CourierRating;
 use App\Models\Order;
 use App\Models\OrderEvent;
+use App\Services\Ratings\RatingSettings;
 use Illuminate\Http\JsonResponse;
 
 /**
@@ -57,6 +60,10 @@ class TrackingController extends Controller
             'scheduled_date' => $order->delivery_scheduled_date?->toDateString(),
             'courier_first_name' => $courierFirstName ?: null,
             'delivered_at' => $order->delivered_at,
+            // Le destinataire peut noter la livraison (réglage de l'entreprise, 7 jours, une fois)
+            'rating_open' => $order->status === OrderStatus::Delivered && $order->delivered_at?->gte(now()->subDays(7))
+                && app(RatingSettings::class)->for(Company::query()->find($order->company_id))['recipient_rating']
+                && ! CourierRating::withoutGlobalScopes()->where('order_id', $order->id)->where('source', CourierRating::RECIPIENT)->exists(),
             'timeline' => $timeline,
         ]]);
     }

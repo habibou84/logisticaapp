@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\V1\CompanyController;
 use App\Http\Controllers\Api\V1\CourierAvailabilityController;
 use App\Http\Controllers\Api\V1\CourierController;
 use App\Http\Controllers\Api\V1\CourierMessageController;
+use App\Http\Controllers\Api\V1\CourierRatingController;
 use App\Http\Controllers\Api\V1\CourierSpaceController;
 use App\Http\Controllers\Api\V1\DeliveryDayController;
 use App\Http\Controllers\Api\V1\FieldReportController;
@@ -152,6 +153,10 @@ Route::prefix('v1')->name('v1.')->group(function () {
     Route::get('tracking/{code}', TrackingController::class)
         ->middleware('throttle:30,1')
         ->name('tracking.show');
+    // Note du destinataire sur la livraison (si l'entreprise le propose), avec le code de livraison
+    Route::post('tracking/{code}/rating', [CourierRatingController::class, 'rateByRecipient'])
+        ->middleware('throttle:10,1')
+        ->name('tracking.rating');
 
     Route::middleware(['auth:sanctum', 'active', 'throttle:tenant'])->group(function () {
         Route::get('auth/me', [AuthController::class, 'me'])->name('auth.me');
@@ -263,6 +268,24 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::get('merchant/stats', [StatisticsController::class, 'merchant'])->middleware('can:orders.view')->name('merchant.stats');
         // Espace client : forfait du mois, factures à payer, livreurs MAD
         Route::get('merchant/space', ClientSpaceController::class)->name('merchant.space');
+
+        // Notation des livreurs
+        Route::controller(CourierRatingController::class)->group(function () {
+            Route::get('ratings/criteria', 'criteria')->name('ratings.criteria');
+            Route::get('orders/{order}/rating', 'showForOrder')->name('orders.rating.show');
+            Route::post('orders/{order}/rating', 'rateOrder')->name('orders.rating.store');
+            Route::get('orders/{order}/ratings', 'orderRatings')->name('orders.ratings');
+            Route::get('merchant/ratings/pending', 'pending')->name('merchant.ratings.pending');
+            Route::post('merchant/couriers/{courier}/rating', 'rateMadCourier')->name('merchant.couriers.rating');
+            Route::get('merchant/courier-preferences', 'preferences')->name('merchant.courier-preferences');
+            Route::put('merchant/courier-preferences/{courier}', 'setPreference')->name('merchant.courier-preferences.update');
+            Route::get('courier-quality', 'quality')->name('courier-quality');
+            Route::get('couriers/{courier}/score', 'courier')->name('couriers.score');
+            Route::post('couriers/{courier}/ratings', 'rateByTeam')->name('couriers.ratings.store');
+            Route::post('courier-ratings/{rating}/neutralize', 'neutralize')->name('courier-ratings.neutralize');
+            Route::post('courier-ratings/{rating}/restore', 'restore')->name('courier-ratings.restore');
+            Route::get('courier/rating', 'mine')->name('courier.rating');
+        });
         Route::put('merchant/pickup-location', [MerchantLocationController::class, 'updateMine'])->name('merchant.pickup-location.update');
         // Lien Google Maps collé → coordonnées
         Route::post('geo/link', [MerchantLocationController::class, 'resolveLink'])->middleware('throttle:20,1')->name('geo.link');

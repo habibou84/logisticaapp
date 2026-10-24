@@ -12,6 +12,8 @@ use App\Models\Order;
 use App\Models\OrderAssignment;
 use App\Models\Zone;
 use App\Services\Finance\CourierCash;
+use App\Services\Ratings\CourierScores;
+use App\Services\Ratings\RatingSettings;
 use App\Support\PhoneNumber;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
@@ -93,6 +95,11 @@ class DeliveryChooser
         $top = fn (?int $id) => $id ? $this->top($id, $parents) : null;
         $area = $top($order->delivery_zone_id);
 
+        // À égalité : le mieux noté d'abord (si l'entreprise le veut, Réglages › Notation)
+        $scores = app(RatingSettings::class)->for($company)['assignment_preference']
+            ? $candidates->mapWithKeys(fn (Courier $c) => [$c->id => app(CourierScores::class)->for($c)['score'] ?? 0])->all()
+            : [];
+
         $best = $candidates
             ->map(function (Courier $c) use ($chain, $area, $top) {
                 $rank = $this->zoneRank($c, $chain);
@@ -106,7 +113,7 @@ class DeliveryChooser
                 ];
             })
             ->filter()
-            ->sortBy([['rank', 'asc'], [fn ($m) => $m['here'] > 0 ? 0 : 1, 'asc'], ['load', 'asc'], [fn ($m) => $m['courier']->id, 'asc']])
+            ->sortBy([['rank', 'asc'], [fn ($m) => $m['here'] > 0 ? 0 : 1, 'asc'], ['load', 'asc'], [fn ($m) => -($scores[$m['courier']->id] ?? 0), 'asc'], [fn ($m) => $m['courier']->id, 'asc']])
             ->first();
         if ($best === null) {
             return null;

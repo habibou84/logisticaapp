@@ -7,12 +7,15 @@ use App\Enums\NotificationEvent;
 use App\Enums\OrderEventType;
 use App\Enums\OrderStatus;
 use App\Enums\WhatsAppTemplate;
+use App\Models\Courier;
+use App\Models\Merchant;
 use App\Models\MerchantLedgerEntry;
 use App\Models\Order;
 use App\Models\OrderEvent;
 use App\Models\User;
 use App\Services\Orders\ActivityOptions;
 use App\Services\Orders\DeliveryDay;
+use App\Services\Ratings\RatingSettings;
 use App\Support\Money;
 use Carbon\CarbonImmutable;
 
@@ -105,6 +108,7 @@ class OrderMessages
                     $this->shipped($order, $recipient);
                     break;
                 }
+                $this->inviteToRate($order, $merchant);
                 // Distribution, MAD : pas de montant, le nom de la personne qui a reçu
                 if ($this->activityOptions->order($order) !== null) {
                     $at = ($order->delivered_at ?? now())->setTimezone($order->company->timezone ?: config('app.timezone'));
@@ -193,5 +197,19 @@ class OrderMessages
         $name = $order->recipient_name ?: $order->recipient_phone;
 
         return $order->deliveryZone ? "{$name} ({$order->deliveryZone->name})" : (string) $name;
+    }
+
+    /**
+     * Notation des livreurs : invitation WhatsApp du client à noter la course (Réglages › Notation).
+     */
+    private function inviteToRate(Order $order, Merchant $merchant): void
+    {
+        $s = app(RatingSettings::class)->for($order->company);
+        if (! $s['whatsapp_invite'] || ! $s['client_course'] || $order->delivery_courier_id === null) {
+            return;
+        }
+        $courier = strtok((string) Courier::withoutGlobalScopes()->with('user')->find($order->delivery_courier_id)?->user?->name, ' ') ?: 'notre livreur';
+        $this->messenger->toMerchant($merchant, NotificationEvent::OrderDelivered, WhatsAppTemplate::RateCourse,
+            [$merchant->business_name, $order->tracking_code, $courier, $order->company->url("/marchand/courses/{$order->id}")], $order);
     }
 }

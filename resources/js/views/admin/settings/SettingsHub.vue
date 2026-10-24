@@ -105,6 +105,12 @@ const ALL = computed(() => {
       keywords: 'inscription en ligne créer compte client',
     },
     {
+      key: 'ratings', icon: '⭐', title: 'Notation des livreurs', to: '/admin/reglages/notation', permission: 'settings.manage',
+      description: 'Notes des clients, de l\'équipe et automatique ; poids, alertes, ce que voit le livreur, choix des livreurs par les clients.',
+      summary: c?.rating_settings && `Automatique ${c.rating_settings.weight_auto} % · clients ${c.rating_settings.weight_client} % · équipe ${c.rating_settings.weight_team} %`,
+      keywords: 'note notation étoiles avis qualité livreur classement',
+    },
+    {
       key: 'team', icon: '🛵', title: 'Équipe et paie',
       description: 'Rémunération des livreurs, comptes et rôles de l\'équipe.',
       links: [{ to: '/admin/paie-livreurs', label: 'Paie des livreurs', permission: 'settings.manage' }, { to: '/admin/utilisateurs', label: 'Utilisateurs et rôles', permission: 'users.view' }],

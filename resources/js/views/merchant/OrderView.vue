@@ -37,6 +37,24 @@
       </div>
     </section>
 
+    <!-- Course terminée : noter le livreur (si l'entreprise le propose) -->
+    <section v-if="myRating && (myRating.can_rate || myRating.rating)" class="m-card p-4 flex items-center gap-3">
+      <div class="min-w-0 flex-1">
+        <p class="text-sm text-slate-600">{{ myRating.rating ? 'Votre note' : 'Comment s\'est passée la course ?' }}<template v-if="myRating.courier"> · {{ myRating.courier.name }}</template></p>
+        <StarRating :model-value="myRating.rating?.stars ?? 0" readonly size="h-6 w-6" />
+      </div>
+      <button v-if="myRating.can_rate" type="button" class="tap shrink-0 rounded-xl px-4 py-2.5 text-sm font-semibold text-white" :style="{ backgroundColor: 'var(--app-color)' }" @click="rater.openSheet()">
+        {{ myRating.rating ? 'Modifier' : 'Noter' }}
+      </button>
+    </section>
+    <RatingSheet
+      v-if="myRating"
+      :open="rater.state.open" :criteria="rater.state.criteria" :rating="myRating.rating" :activity="order.activity"
+      :courier-id="myRating.courier?.id" :preference="myRating.preference" :saving="rater.state.saving" :error="rater.state.error"
+      :title="myRating.courier ? `Noter ${myRating.courier.name}` : 'Noter le livreur'"
+      @close="rater.state.open = false" @save="saveRating" @preference="setPreference"
+    />
+
     <!-- Code à donner au livreur (tant que la course n'est pas terminée) -->
     <section v-if="!isFinal" class="m-card p-4 flex items-center justify-between">
       <div>
@@ -206,6 +224,9 @@ import { orderChanges, lastOrderChange } from '../../composables/useRealtime'
 import { localPhone, money, telLink, today } from '../../utils/format'
 import { BEFORE_PICKUP, FINAL } from '../../utils/workflow'
 import { siteOrigin } from '../../native'
+import StarRating from '../../components/StarRating.vue'
+import RatingSheet from '../../components/client/RatingSheet.vue'
+import { useCourierRating } from '../../composables/useCourierRating'
 
 const route = useRoute()
 const auth = useAuthStore()
@@ -291,9 +312,28 @@ const whatsappShare = computed(() => {
   return `https://wa.me/${o.recipient.phone.replace(/\D/g, '')}?text=${encodeURIComponent(text)}`
 })
 
+// Note du livreur par le client (course terminée)
+const myRating = ref(null)
+const rater = useCourierRating()
+async function loadRating() {
+  if (!['delivered', 'returned'].includes(order.value?.status)) return
+  myRating.value = (await http.get(`/orders/${order.value.id}/rating`).catch(() => null))?.data.data ?? null
+}
+async function saveRating(payload) {
+  if (await rater.save(`/orders/${order.value.id}/rating`, payload)) {
+    toasts.success('Merci pour votre note !')
+    await loadRating()
+  }
+}
+async function setPreference(kind) {
+  const result = await rater.prefer(myRating.value.courier.id, kind)
+  if (result !== undefined) myRating.value.preference = result
+}
+
 async function load() {
   try {
     order.value = (await http.get(`/orders/${route.params.id}`)).data.data
+    loadRating()
     // « Reporter » depuis la liste des courses : le report s'ouvre directement
     if (route.query.action === 'reporter' && order.value.needs_decision && !sheet.value) openReschedule()
   } catch (e) {

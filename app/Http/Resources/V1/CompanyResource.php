@@ -5,6 +5,7 @@ namespace App\Http\Resources\V1;
 use App\Enums\Activity;
 use App\Models\Company;
 use App\Services\Orders\ActivityOptions;
+use App\Services\Ratings\RatingSettings;
 use App\Support\Branding;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -63,6 +64,8 @@ class CompanyResource extends JsonResource
             // Distribution et MAD : réglages de l'entreprise, valeurs par défaut comprises
             'activity_options' => collect(ActivityOptions::ACTIVITIES)
                 ->mapWithKeys(fn (Activity $a) => [$a->value => app(ActivityOptions::class)->company($this->resource, $a)]),
+            // Notation des livreurs (valeurs par défaut comprises)
+            'rating_settings' => app(RatingSettings::class)->for($this->resource),
             'merchant_signup' => $this->merchant_signup,
             'weekly_report' => $this->weekly_report,
             'logo_url' => Branding::logoUrl($this->resource),

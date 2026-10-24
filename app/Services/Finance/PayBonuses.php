@@ -6,6 +6,7 @@ use App\Enums\PayBonusMetric;
 use App\Models\Courier;
 use App\Models\PayPlan;
 use App\Models\PayPlanBonus;
+use App\Services\Ratings\CourierScores;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
 
@@ -24,10 +25,14 @@ class PayBonuses
      */
     public function measure(Courier $courier, CarbonInterface $start, CarbonInterface $end): array
     {
-        return $this->activity->measures(
+        $measures = $this->activity->measures(
             $this->activity->events($courier->company_id, [$courier->id], $start, $end),
             $this->activity->timezone($courier->company_id),
         );
+        // Note du livreur sur la période (sur 100) ; pas encore notée : 0
+        $score = app(CourierScores::class)->for($courier, $start, $end)['score'];
+
+        return [...$measures, PayBonusMetric::Rating->value => $score === null ? 0 : (int) round($score * 20)];
     }
 
     /**

@@ -7,6 +7,7 @@ use App\Http\Requests\V1\UpdateCompanyRequest;
 use App\Http\Resources\V1\CompanyResource;
 use App\Models\Company;
 use App\Services\Orders\ActivityOptions;
+use App\Services\Ratings\RatingSettings;
 use App\Support\InvoicePayments;
 use Illuminate\Support\Facades\Gate;
 
@@ -28,6 +29,9 @@ class CompanyController extends Controller
         if (array_key_exists('activity_options', $data)) {
             $data['activity_options'] = collect($data['activity_options'] ?? [])
                 ->map(fn ($options) => ActivityOptions::clean((array) $options))->all();
+        }
+        if (array_key_exists('rating_settings', $data)) {
+            $data['rating_settings'] = RatingSettings::clean((array) ($data['rating_settings'] ?? []));
         }
         $company->update($data);
 

@@ -30,10 +30,15 @@
         <MenuRow to="/marchand/mes-notifications" icon="bell" tone="amber" label="Mes notifications" sub="WhatsApp, téléphone, point d'activité" />
         <MenuRow v-if="auth.can('finance.view') && merchant.activities?.includes('ecommerce') !== false" to="/marchand/paiements" icon="wallet" tone="green" label="Mon argent" sub="Encaissements et reversements" />
         <MenuRow to="/marchand/statistiques" icon="chart" tone="blue" label="Mes statistiques" />
+        <MenuRow to="/marchand/a-noter" icon="user" tone="amber" label="Noter les livreurs" sub="Vos dernières courses, votre livreur attitré" />
+        <MenuRow to="/marchand/mes-livreurs" icon="user" tone="slate" label="Mes livreurs" sub="Préféré ou écarté" />
         <MenuRow v-if="auth.can('orders.create')" to="/marchand/courses/import" icon="upload" tone="blue" label="Importer des courses" sub="Fichier Excel ou CSV" />
         <MenuRow v-if="auth.can('integrations.manage')" to="/marchand/integrations" icon="plug" tone="violet" label="Intégrations" sub="Jibiat Marchand, API, webhooks" />
       </div>
     </template>
+
+    <!-- Livreur : sa note (si l'entreprise la montre) -->
+    <CourierScoreCard v-if="app === 'livreur'" />
 
     <PushSettings v-if="app === 'livreur'" />
 
@@ -56,6 +61,7 @@ import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import InstallBanner from '../../components/mobile/InstallBanner.vue'
 import MenuRow from '../../components/mobile/MenuRow.vue'
+import CourierScoreCard from '../../components/mobile/CourierScoreCard.vue'
 import StatusIcon from '../../components/mobile/StatusIcon.vue'
 import PushSettings from '../../components/mobile/PushSettings.vue'
 import { forgetPushDevice } from '../../composables/usePush'

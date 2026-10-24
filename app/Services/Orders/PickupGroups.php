@@ -11,6 +11,7 @@ use App\Exceptions\BusinessRuleException;
 use App\Models\Order;
 use App\Models\OrderAssignment;
 use App\Models\User;
+use App\Services\Ratings\ClientChoices;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
@@ -118,7 +119,9 @@ class PickupGroups
             ->latest('assigned_at')
             ->first();
 
-        if ($sibling === null || ! $sibling->courier?->user?->isActive()) {
+        // Livreur écarté par le client (Réglages › Notation) : pas de nouveau colis pour lui
+        if ($sibling === null || ! $sibling->courier?->user?->isActive()
+            || in_array($sibling->courier_id, app(ClientChoices::class)->excluded($order), true)) {
             return null;
         }
 

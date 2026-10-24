@@ -124,6 +124,9 @@
           </ul>
         </div>
 
+        <!-- Notation du livreur (équipe) : notes de la course, note de l'équipe -->
+        <OrderRatings v-if="isDispatcher && (order.delivery_courier || order.pickup_courier)" :order="order" />
+
         <div class="card p-4">
           <h2 class="font-semibold mb-3">Historique</h2>
           <OrderTimeline :events="order.events" />
@@ -254,6 +257,7 @@ import { orderChanges, lastOrderChange } from '../../composables/useRealtime'
 import { date, dateTime, money, telLink } from '../../utils/format'
 import { activityBadge } from '../../utils/activities'
 import SupplementsModal from '../../components/SupplementsModal.vue'
+import OrderRatings from '../../components/OrderRatings.vue'
 import { ASSIGNABLE, ASSIGNMENT_LABELS, BEFORE_PICKUP, FINAL, TRANSITIONS, isWarehouseStep } from '../../utils/workflow'
 
 const STOCK_STATES = {

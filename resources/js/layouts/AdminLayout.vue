@@ -280,6 +280,7 @@ const menu = computed(() => {
       label: 'Équipe',
       items: [
         { to: '/admin/livreurs', icon: '🛵', label: 'Livreurs', permission: 'orders.dispatch' },
+        { to: '/admin/qualite-livreurs', icon: '⭐', label: 'Qualité des livreurs', permission: 'orders.dispatch' },
         { to: '/admin/utilisateurs', icon: '👥', label: 'Utilisateurs', permission: 'users.view' },
       ],
     },

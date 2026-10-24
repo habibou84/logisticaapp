@@ -33,6 +33,18 @@
           </li>
         </ol>
       </div>
+
+      <!-- Le destinataire note la livraison (si l'entreprise le propose) -->
+      <form v-if="tracking?.rating_open && !rated" class="card p-5 space-y-3 text-center" @submit.prevent="rate">
+        <p class="font-semibold">Comment s'est passée la livraison ?</p>
+        <StarRating v-model="review.stars" size="h-9 w-9" gap="gap-1.5" label="Votre note" />
+        <textarea v-model="review.comment" rows="2" maxlength="500" class="input" placeholder="Un mot sur la livraison (facultatif)" />
+        <input v-model="review.delivery_code" class="input text-center font-mono tracking-widest" inputmode="numeric" maxlength="10" placeholder="Code de livraison reçu" aria-label="Code de livraison" required>
+        <p class="text-xs text-gray-500">Le code reçu par WhatsApp ou SMS confirme que c'est bien vous.</p>
+        <p v-if="reviewError" class="text-sm text-red-600">{{ reviewError }}</p>
+        <button class="btn-primary w-full" :disabled="!review.stars || sending">Envoyer mon avis</button>
+      </form>
+      <p v-if="rated" class="card p-4 text-center text-emerald-700 font-medium">Merci pour votre avis !</p>
     </div>
   </div>
 </template>
@@ -42,6 +54,7 @@ import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import StatusBadge from '../components/StatusBadge.vue'
+import StarRating from '../components/StarRating.vue'
 import { date, dateTime } from '../utils/format'
 import { siteOrigin } from '../native'
 
@@ -60,6 +73,25 @@ async function load() {
     tracking.value = data.data
   } catch (e) {
     error.value = e.response?.status === 404 ? 'Aucun colis trouvé avec ce code.' : 'Service momentanément indisponible.'
+  }
+}
+
+// Note du destinataire
+const review = ref({ stars: null, comment: '', delivery_code: '' })
+const rated = ref(false)
+const sending = ref(false)
+const reviewError = ref('')
+async function rate() {
+  sending.value = true
+  reviewError.value = ''
+  try {
+    await axios.post(`${siteOrigin()}/api/v1/tracking/${encodeURIComponent(tracking.value.tracking_code)}/rating`, review.value, { headers: { Accept: 'application/json' } })
+    rated.value = true
+  } catch (e) {
+    const errors = e.response?.data?.errors
+    reviewError.value = errors ? Object.values(errors)[0][0] : (e.response?.data?.message || 'Service momentanément indisponible.')
+  } finally {
+    sending.value = false
   }
 }
 

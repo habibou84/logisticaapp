@@ -39,6 +39,12 @@
             </span>
             <StatusIcon name="right" class="h-5 w-5 shrink-0 text-slate-400" />
           </RouterLink>
+          <!-- Notation des livreurs : courses récentes, livreur attitré de la période -->
+          <RouterLink v-if="toRate" to="/marchand/a-noter" class="tap flex items-center gap-3 p-4 active:bg-slate-50">
+            <span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-amber-50 text-amber-700"><StatusIcon name="user" class="h-5 w-5" /></span>
+            <span class="min-w-0 flex-1"><strong class="block">{{ toRateText }}</strong><span class="text-sm text-slate-600">Votre avis en quelques secondes</span></span>
+            <StatusIcon name="right" class="h-5 w-5 shrink-0 text-slate-400" />
+          </RouterLink>
           <RouterLink v-if="stock.low" to="/marchand/stock?filtre=bas" class="tap flex items-center gap-3 p-4 active:bg-slate-50">
             <span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-amber-50 text-amber-700"><StatusIcon name="box" class="h-5 w-5" /></span>
             <span class="min-w-0 flex-1"><strong class="block">{{ stock.low }} produit{{ stock.low > 1 ? 's' : '' }} en stock bas</strong><span class="text-sm text-slate-600">À réapprovisionner</span></span>
@@ -252,7 +258,23 @@ const invoices = computed(() => space.space?.invoices || {})
 const invoiceDue = computed(() => space.showsBilled && auth.can('finance.view') && !!invoices.value.to_pay)
 const lots = computed(() => (space.showsBilled && space.current !== 'mad' ? space.space?.lots || [] : []))
 const couriers = computed(() => (space.showsBilled && space.current !== 'distribution' ? space.space?.couriers || [] : []))
-const todoCount = computed(() => (needsPickupLocation.value ? 1 : 0) + alertsTotal.value + (invoiceDue.value ? 1 : 0) + (stock.low ? 1 : 0))
+// Livreurs à noter : courses récentes et livreurs attitrés (MAD) pas encore notés sur la période
+const rating = reactive({ orders: 0, mad: [] })
+const toRate = computed(() => rating.orders + rating.mad.length)
+const toRateText = computed(() => {
+  if (rating.mad.length && !rating.orders) return `Notez ${rating.mad.map((m) => m.name).join(', ')} (${rating.mad[0].period})`
+  return `${rating.orders} course${rating.orders > 1 ? 's' : ''} à noter${rating.mad.length ? ' et votre livreur attitré' : ''}`
+})
+async function loadRatings() {
+  try {
+    const { data } = await cachedGet('/merchant/ratings/pending')
+    rating.orders = data.data.length
+    rating.mad = (data.mad || []).filter((m) => !m.rating)
+  } catch {
+    // Notation facultative
+  }
+}
+const todoCount = computed(() => (needsPickupLocation.value ? 1 : 0) + alertsTotal.value + (invoiceDue.value ? 1 : 0) + (stock.low ? 1 : 0) + (toRate.value ? 1 : 0))
 // Sous la salutation : ce qui demande l'attention, sinon le nombre de courses du jour
 const subtitle = computed(() => {
   if (todoCount.value) return `${todoCount.value} chose${todoCount.value > 1 ? 's' : ''} demande${todoCount.value > 1 ? 'nt' : ''} votre attention`
@@ -380,6 +402,7 @@ async function loadBalance() {
 
 onMounted(() => {
   load()
+  loadRatings()
   loadStock()
   loadBalance()
   space.load()

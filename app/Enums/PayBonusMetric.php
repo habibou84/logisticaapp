@@ -11,6 +11,8 @@ enum PayBonusMetric: string
     case Pickups = 'pickups';
     case SuccessRate = 'success_rate';
     case WorkedDays = 'worked_days';
+    // Note du livreur sur la période, sur 100 (90 = 4,5 / 5) : Qualité des livreurs
+    case Rating = 'rating';
 
     public function label(): string
     {
@@ -19,6 +21,7 @@ enum PayBonusMetric: string
             self::Pickups => 'Ramassages',
             self::SuccessRate => 'Taux de livraisons réussies (%)',
             self::WorkedDays => 'Jours travaillés',
+            self::Rating => 'Note du livreur (sur 100 : 90 = 4,5 / 5)',
         };
     }
 
@@ -32,6 +35,7 @@ enum PayBonusMetric: string
             self::Pickups => "{$threshold} ramassages",
             self::SuccessRate => "{$threshold} % de livraisons réussies",
             self::WorkedDays => "{$threshold} jours travaillés",
+            self::Rating => 'note de '.number_format($threshold / 20, 1, ',', '').' / 5',
         };
     }
 }

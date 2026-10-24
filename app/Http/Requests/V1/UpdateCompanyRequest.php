@@ -4,6 +4,7 @@ namespace App\Http\Requests\V1;
 
 use App\Rules\PhoneNumber;
 use App\Services\Orders\ActivityOptions;
+use App\Services\Ratings\RatingSettings;
 use App\Support\InvoicePayments;
 use App\Support\PhoneNumber as Phone;
 use Illuminate\Foundation\Http\FormRequest;
@@ -54,6 +55,8 @@ class UpdateCompanyRequest extends FormRequest
             'activity_options' => ['sometimes', 'nullable', 'array:distribution,mad'],
             ...ActivityOptions::rules('activity_options.distribution'),
             ...ActivityOptions::rules('activity_options.mad'),
+            // Notation des livreurs : poids, seuils, invitations, usages
+            ...RatingSettings::rules(),
             'merchant_signup' => ['sometimes', 'boolean'],
             'weekly_report' => ['sometimes', 'boolean'],
             'pickup_assign_alert_minutes' => ['sometimes', 'integer', 'min:0', 'max:1440'],

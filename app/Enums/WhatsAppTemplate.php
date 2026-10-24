@@ -28,6 +28,7 @@ enum WhatsAppTemplate: string
     case ForfaitUsage = 'forfait_consomme';
     case ParcelOnTheWay = 'envoi_en_route';
     case OrderHandedOver = 'course_remise';
+    case RateCourse = 'course_a_noter';
 
     public const LANGUAGE = 'fr';
 
@@ -53,6 +54,7 @@ enum WhatsAppTemplate: string
             self::ForfaitUsage => 'Bonjour {{1}}, votre forfait {{2}} de {{3}} est utilisé à {{4}} : {{5}} sur {{6}} inclus. Au-delà : {{7}} chacun, sur la facture du mois. Merci.',
             self::ParcelOnTheWay => 'Bonjour {{1}}, un envoi de {{2}} est en route vers vous. Code de remise à donner au livreur : {{3}}. Suivi : {{4}} . Merci.',
             self::OrderHandedOver => 'Bonjour {{1}}, la course {{2}} pour {{3}} a été remise le {{4}}. Reçue par : {{5}}. Merci de votre confiance.',
+            self::RateCourse => 'Bonjour {{1}}, votre course {{2}} a été faite par {{3}}. Donnez votre avis en un clic : {{4}} . Merci, il nous aide à nous améliorer.',
         };
     }
 
@@ -80,6 +82,7 @@ enum WhatsAppTemplate: string
             self::ForfaitUsage => '📦 Votre forfait du mois',
             self::ParcelOnTheWay => '🛵 Envoi en route',
             self::OrderHandedOver => '✅ Course remise',
+            self::RateCourse => '⭐ Notez votre livreur',
         };
     }
 
@@ -105,6 +108,7 @@ enum WhatsAppTemplate: string
             self::ForfaitUsage => 'Au client sous contrat, quand son forfait du mois est utilisé à 80 % puis à 100 %',
             self::ParcelOnTheWay => 'Au destinataire d\'une course de distribution ou de MAD, quand le livreur part (sans montant ; selon les réglages)',
             self::OrderHandedOver => 'Au client, quand sa course de distribution ou de MAD est remise (avec le nom de la personne qui a reçu)',
+            self::RateCourse => 'Au client, après la livraison, pour noter le livreur (si l\'entreprise le veut : Réglages › Notation)',
         };
     }
 
@@ -135,6 +139,7 @@ enum WhatsAppTemplate: string
             self::ForfaitUsage => ['Boutique Chic', 'Distribution sous contrat', 'octobre 2026', '80 %', '80', '100', '800 F'],
             self::ParcelOnTheWay => ['Jean', 'Ivoire Assurances', '4821', 'https://exemple.ci/suivi/LV-7K2M-9PQX'],
             self::OrderHandedOver => ['Ivoire Assurances', 'LV-7K2M-9PQX', 'Jean Kouadio (Plateau)', '24/10 à 10:42', 'Mme Bamba, secrétariat'],
+            self::RateCourse => ['Boutique Chic', 'LV-7K2M-9PQX', 'Koffi', 'https://exemple.ci/marchand/courses/12'],
         };
     }
 

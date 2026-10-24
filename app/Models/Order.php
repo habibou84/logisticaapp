@@ -292,6 +292,12 @@ class Order extends Model
         return $this->hasMany(OrderExpense::class);
     }
 
+    /** Notes du livreur sur cette course (client, équipe, destinataire) */
+    public function courierRatings(): HasMany
+    {
+        return $this->hasMany(CourierRating::class);
+    }
+
     public function attachments(): HasMany
     {
         return $this->hasMany(OrderAttachment::class);
