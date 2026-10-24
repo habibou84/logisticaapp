@@ -249,7 +249,8 @@ const headline = computed(() => {
 })
 const subline = computed(() => {
   const o = order.value
-  if (o.status === 'delivered' && o.delivered_at) return `${dayWord(o.delivered_at)} à ${hour(o.delivered_at)}${o.delivery_courier ? ` par ${o.delivery_courier.name}` : ''}`.replace(/^./, (c) => c.toUpperCase())
+  // Distribution, MAD : qui a reçu la course (preuve de remise relevée par le livreur)
+  if (o.status === 'delivered' && o.delivered_at) return `${dayWord(o.delivered_at)} à ${hour(o.delivered_at)}${o.delivery_courier ? ` par ${o.delivery_courier.name}` : ''}${o.received_by_name ? ` · reçue par ${o.received_by_name}` : ''}`.replace(/^./, (c) => c.toUpperCase())
   if (o.status === 'out_for_delivery' && o.delivery_courier) return `Livreur : ${o.delivery_courier.name}`
   if (['pickup_assigned', 'pickup_in_progress'].includes(o.status) && o.pickup_courier) return `Livreur : ${o.pickup_courier.name}`
   return ''

@@ -23,7 +23,7 @@
     <section v-for="c in visible" :key="c.id" class="card p-4 flex flex-wrap items-center gap-4">
       <div class="min-w-0 flex-1">
         <p class="font-semibold">
-          🛵 {{ c.name }}
+          🛵 {{ c.name }} <MadBadge :mad="c.mad" />
           <span :class="['ml-1 rounded-full px-2 py-0.5 text-xs font-medium', STATES[c.state].class]">{{ STATES[c.state].label }}</span>
         </p>
         <p class="text-sm text-gray-600">
@@ -107,6 +107,7 @@
 </template>
 
 <script setup>
+import MadBadge from '../../components/MadBadge.vue'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'

@@ -38,6 +38,7 @@ class Order extends Model
         'source',
         'activity',
         'merchant_alerts_muted',
+        'received_by_name',
         'created_by',
         'pickup_zone_id',
         'pickup_hub_id',

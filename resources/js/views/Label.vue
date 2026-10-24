@@ -28,7 +28,11 @@
         <p v-if="order.delivery.landmark" class="text-sm">Repère : {{ order.delivery.landmark }}</p>
       </div>
       <div class="border-t border-black pt-2 flex justify-between items-end">
-        <div>
+        <div v-if="order.billed_monthly">
+          <p class="text-xs uppercase">{{ order.activity_label }}</p>
+          <p class="text-lg font-bold">Rien à encaisser</p>
+        </div>
+        <div v-else>
           <p class="text-xs uppercase">À encaisser</p>
           <p class="text-2xl font-bold">{{ money(order.amounts.cod_amount) }}</p>
         </div>

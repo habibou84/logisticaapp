@@ -27,18 +27,20 @@
           </p>
           <p v-if="p.internal_delay_hours" class="text-gray-600">Délai interne : {{ p.internal_delay_hours }} h (équipe)</p>
           <p v-if="p.couriers?.length" class="text-gray-600">Livreurs mis à disposition : {{ p.couriers.map((c) => c.name).join(', ') }}</p>
+          <p v-if="p.effective_options" class="text-gray-600">{{ describeOptions(p) }}</p>
           <div v-if="canManage && !p.ends_on" class="flex flex-wrap gap-3 pt-1">
             <button type="button" class="text-blue-600" @click="endPlan(p)">Terminer…</button>
             <button v-if="p.has_forfait" type="button" class="text-blue-600" @click="editZones(p)">Changer les zones</button>
             <button type="button" class="text-blue-600" @click="editInternalDelay(p)">Délai interne…</button>
             <button v-if="p.formula === 'mad_contract'" type="button" class="text-blue-600" @click="editCouriers(p)">Changer les livreurs</button>
+            <button type="button" class="text-blue-600" @click="editOptions(p)">Réglages…</button>
           </div>
         </li>
       </ul>
       <p v-else class="text-sm text-gray-500">Aucune formule : courses ordinaires.</p>
 
       <form v-if="canManage" class="space-y-3 border-t pt-3" @submit.prevent="save">
-        <h3 class="font-semibold">{{ editing ? (editMode === 'zones' ? 'Zones couvertes par le forfait' : 'Livreurs mis à disposition') : 'Nouveau contrat' }}</h3>
+        <h3 class="font-semibold">{{ editing ? EDIT_TITLES[editMode] : 'Nouveau contrat' }}</h3>
         <div v-if="error" class="rounded bg-red-50 border border-red-200 text-red-700 text-sm px-3 py-2">{{ error }}</div>
 
         <template v-if="!editing">
@@ -119,6 +121,12 @@
           <ZoneCoverage v-model="form.zone_ids" :zones="zones" />
         </fieldset>
 
+        <!-- Réglages propres au contrat : preuve de remise, messages, réservation MAD (vide : ceux de l'entreprise) -->
+        <fieldset v-if="editMode === 'options'" class="border rounded p-3 space-y-2">
+          <legend class="text-sm font-medium px-1">Réglages du contrat</legend>
+          <ActivityOptionsFields v-model="form.options" :activity="editing.activity" :inherit="editing.default_options" />
+        </fieldset>
+
         <fieldset v-if="(form.formula === 'mad_contract' && !editing) || editMode === 'couriers'" class="border rounded p-3 space-y-2">
           <legend class="text-sm font-medium px-1">Livreurs mis à disposition</legend>
           <p class="text-xs text-gray-500">Les courses du client leur sont confiées (ramassage et livraison), au moins chargé des disponibles.</p>
@@ -143,6 +151,7 @@
 import { computed, reactive, ref, watch } from 'vue'
 import http, { apiErrorMessage } from '../bootstrap/axios'
 import Modal from './Modal.vue'
+import ActivityOptionsFields from './settings/ActivityOptionsFields.vue'
 import ZoneCoverage from './ZoneCoverage.vue'
 import { useAuthStore } from '../stores/auth'
 import { useToastStore } from '../stores/toasts'
@@ -190,7 +199,7 @@ function reset() {
   error.value = ''
   Object.assign(form, {
     formula: formulas.value.find((f) => f.value === props.initialFormula)?.value ?? formulas.value[0]?.value ?? 'distribution_contract', monthly_fee: 0, included_quantity: 0, overage_price: 0, delivery_delay: '24h',
-    cheque_price: 0, extra_kg_price: 0, internal_delay_hours: null, lot_label: '', lot_quantity: null, lot_price: null, lot_due_on: '', starts_on: today(), ends_on: '', notes: '', courier_ids: [], zone_ids: defaultZones(),
+    cheque_price: 0, extra_kg_price: 0, internal_delay_hours: null, lot_label: '', lot_quantity: null, lot_price: null, lot_due_on: '', starts_on: today(), ends_on: '', notes: '', courier_ids: [], zone_ids: defaultZones(), options: null,
   })
 }
 
@@ -221,6 +230,28 @@ function editZones(plan) {
   editMode.value = 'zones'
   form.formula = plan.formula
   form.zone_ids = plan.zones?.length ? plan.zones.map((z) => z.id) : defaultZones()
+}
+
+function editOptions(plan) {
+  reset()
+  editing.value = plan
+  editMode.value = 'options'
+  form.formula = plan.formula
+  form.options = { ...(plan.options || {}) }
+}
+
+const EDIT_TITLES = { zones: 'Zones couvertes par le forfait', couriers: 'Livreurs mis à disposition', options: 'Réglages du contrat' }
+const DAY_SHORT = ['lun', 'mar', 'mer', 'jeu', 'ven', 'sam', 'dim']
+// « Preuve : nom, signature · WhatsApp au destinataire · réservé lun–ven 08:00–17:00 »
+function describeOptions(plan) {
+  const o = plan.effective_options
+  const proofs = [o.proof_name && 'nom', o.proof_signature && 'signature', o.proof_photo && 'photo'].filter(Boolean)
+  const parts = [`Preuve : ${proofs.length ? proofs.join(', ') : 'aucune'}`, o.notify_recipient ? 'WhatsApp au destinataire' : 'pas de message au destinataire']
+  if (plan.formula === 'mad_contract') {
+    const days = o.mad_days.length === 7 ? 'tous les jours' : o.mad_days.map((d) => DAY_SHORT[d - 1]).join(', ')
+    parts.push(`${o.mad_exclusive ? 'réservé' : 'non réservé'} ${days}${o.mad_from ? ` ${o.mad_from}–${o.mad_to}` : ''}`)
+  }
+  return parts.join(' · ')
 }
 
 function editCouriers(plan) {
@@ -263,7 +294,8 @@ async function save() {
   error.value = ''
   try {
     if (editing.value) {
-      await http.patch(`/billing-plans/${editing.value.id}`, editMode.value === 'zones' ? { zone_ids: form.zone_ids } : { courier_ids: form.courier_ids })
+      const changes = { zones: { zone_ids: form.zone_ids }, couriers: { courier_ids: form.courier_ids }, options: { options: form.options } }
+      await http.patch(`/billing-plans/${editing.value.id}`, changes[editMode.value])
     } else {
       const payload = { ...form, ends_on: form.ends_on || null, notes: form.notes || null }
       if (form.formula !== 'mad_contract') delete payload.courier_ids

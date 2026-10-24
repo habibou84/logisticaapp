@@ -26,6 +26,8 @@ enum WhatsAppTemplate: string
     case InvoiceReminder = 'facture_rappel';
     case InvoiceOverdue = 'facture_en_retard';
     case ForfaitUsage = 'forfait_consomme';
+    case ParcelOnTheWay = 'envoi_en_route';
+    case OrderHandedOver = 'course_remise';
 
     public const LANGUAGE = 'fr';
 
@@ -49,6 +51,8 @@ enum WhatsAppTemplate: string
             self::InvoiceReminder => 'Bonjour {{1}}, rappel : votre facture {{2}} arrive à échéance le {{3}}. Reste à payer : {{4}}. Merci.',
             self::InvoiceOverdue => 'Bonjour {{1}}, votre facture {{2}} était à payer le {{3}}. Reste à payer : {{4}}. Merci de la régler ou de nous contacter.',
             self::ForfaitUsage => 'Bonjour {{1}}, votre forfait {{2}} de {{3}} est utilisé à {{4}} : {{5}} sur {{6}} inclus. Au-delà : {{7}} chacun, sur la facture du mois. Merci.',
+            self::ParcelOnTheWay => 'Bonjour {{1}}, un envoi de {{2}} est en route vers vous. Code de remise à donner au livreur : {{3}}. Suivi : {{4}} . Merci.',
+            self::OrderHandedOver => 'Bonjour {{1}}, la course {{2}} pour {{3}} a été remise le {{4}}. Reçue par : {{5}}. Merci de votre confiance.',
         };
     }
 
@@ -74,6 +78,8 @@ enum WhatsAppTemplate: string
             self::InvoiceReminder => '⏰ Facture bientôt à échéance',
             self::InvoiceOverdue => '⚠️ Facture en retard',
             self::ForfaitUsage => '📦 Votre forfait du mois',
+            self::ParcelOnTheWay => '🛵 Envoi en route',
+            self::OrderHandedOver => '✅ Course remise',
         };
     }
 
@@ -97,6 +103,8 @@ enum WhatsAppTemplate: string
             self::InvoiceReminder => 'Au client, trois jours avant l\'échéance d\'une facture non payée',
             self::InvoiceOverdue => 'Au client, quand une facture n\'est pas payée à l\'échéance (puis chaque semaine)',
             self::ForfaitUsage => 'Au client sous contrat, quand son forfait du mois est utilisé à 80 % puis à 100 %',
+            self::ParcelOnTheWay => 'Au destinataire d\'une course de distribution ou de MAD, quand le livreur part (sans montant ; selon les réglages)',
+            self::OrderHandedOver => 'Au client, quand sa course de distribution ou de MAD est remise (avec le nom de la personne qui a reçu)',
         };
     }
 
@@ -125,6 +133,8 @@ enum WhatsAppTemplate: string
             self::InvoiceReminder => ['Boutique Chic', 'DIS-202610-0001', '15/11/2026', '53 800 F'],
             self::InvoiceOverdue => ['Boutique Chic', 'DIS-202610-0001', '15/11/2026', '53 800 F'],
             self::ForfaitUsage => ['Boutique Chic', 'Distribution sous contrat', 'octobre 2026', '80 %', '80', '100', '800 F'],
+            self::ParcelOnTheWay => ['Jean', 'Ivoire Assurances', '4821', 'https://exemple.ci/suivi/LV-7K2M-9PQX'],
+            self::OrderHandedOver => ['Ivoire Assurances', 'LV-7K2M-9PQX', 'Jean Kouadio (Plateau)', '24/10 à 10:42', 'Mme Bamba, secrétariat'],
         };
     }
 

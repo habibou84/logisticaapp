@@ -12,6 +12,7 @@ use App\Exceptions\BusinessRuleException;
 use App\Models\IncidentReason;
 use App\Models\Order;
 use App\Models\OrderAssignment;
+use App\Models\OrderAttachment;
 use App\Models\User;
 use App\Services\Assignment\AutoAssigner;
 use App\Services\Finance\FinanceRecorder;
@@ -20,6 +21,7 @@ use App\Services\Stock\StockKeeper;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * Machine à états des courses : vérifie qui peut faire quelle transition,
@@ -34,6 +36,7 @@ class OrderWorkflow
         private readonly MerchantLocation $locations,
         private readonly PickupGroups $pickups,
         private readonly AutoAssigner $autoAssigner,
+        private readonly ActivityOptions $activityOptions,
     ) {}
 
     /**
@@ -78,7 +81,7 @@ class OrderWorkflow
             $this->finance->onTransition($order, $to, $assignment, $context, $actor);
             $this->stock->onTransition($order, $to, $actor);
 
-            $this->journal->record($order, $actor, $reason ? OrderEventType::Incident : OrderEventType::StatusChanged, [
+            $event = $this->journal->record($order, $actor, $reason ? OrderEventType::Incident : OrderEventType::StatusChanged, [
                 // Action faite hors connexion : à son heure réelle dans le journal
                 ...(isset($context['occurred_at']) ? ['created_at' => $context['occurred_at']] : []),
                 'assignment_id' => $assignment?->id,
@@ -98,8 +101,24 @@ class OrderWorkflow
                     'shipping_reference' => $to === OrderStatus::Delivered && $order->is_shipping ? $order->shipping_reference : null,
                     'offline' => ! empty($context['offline']) ? true : null,
                     'delivery_code_unverified' => $to === OrderStatus::Delivered && $order->delivery_code_unverified_at ? true : null,
+                    'received_by_name' => $to === OrderStatus::Delivered ? $order->received_by_name : null,
                 ], fn ($v) => $v !== null),
             ]);
+
+            // Distribution, MAD : signature de la personne qui a reçu, gardée avec la course
+            if ($to === OrderStatus::Delivered && ($signature = $this->decodeSignature($context['signature'] ?? null)) !== null) {
+                $path = "orders/{$order->id}/signature-".now()->format('YmdHis').'.png';
+                Storage::disk('local')->put($path, $signature);
+                OrderAttachment::create([
+                    'order_id' => $order->id,
+                    'event_id' => $event->id,
+                    'type' => 'signature_delivery',
+                    'disk' => 'local',
+                    'path' => $path,
+                    'mime_type' => 'image/png',
+                    'uploaded_by' => $actor->id,
+                ]);
+            }
 
             // Course validée : le colis va au livreur déjà prévu chez ce client, sinon au livreur du planning
             if ($from === OrderStatus::Pending && $to === OrderStatus::Confirmed
@@ -290,6 +309,8 @@ class OrderWorkflow
             }
         }
 
+        $this->validateProof($order, $context);
+
         $collected = $context['collected_amount'] ?? null;
 
         if ($collected !== null && (! is_int($collected) || $collected < 0)) {
@@ -301,6 +322,41 @@ class OrderWorkflow
         if (! empty($context['received_by_company']) && $method === PaymentMethod::Cash) {
             throw new BusinessRuleException('Des espèces ne peuvent pas être reçues directement sur le compte de l\'entreprise.', 'received_by_company');
         }
+    }
+
+    /**
+     * Distribution, MAD : preuve de remise demandée par les réglages (entreprise ou contrat) — nom de la
+     * personne qui a reçu, signature, photo de la décharge. Hors connexion, la livraison est gardée telle quelle.
+     */
+    private function validateProof(Order $order, array $context): void
+    {
+        $options = $this->activityOptions->order($order);
+        if ($options === null || ! empty($context['offline'])) {
+            return;
+        }
+        if ($options['proof_name'] && blank($context['received_by_name'] ?? null)) {
+            throw new BusinessRuleException('Indiquez le nom de la personne qui a reçu la course.', 'received_by_name');
+        }
+        if ($options['proof_signature'] && $this->decodeSignature($context['signature'] ?? null) === null) {
+            throw new BusinessRuleException('Faites signer la personne qui reçoit la course.', 'signature');
+        }
+        if ($options['proof_photo'] && ! $order->attachments()->where('type', 'photo_delivery')->exists()) {
+            throw new BusinessRuleException('Prenez une photo de la décharge (ou du cachet) avant de valider.', 'photo');
+        }
+    }
+
+    /** Signature dessinée sur le téléphone (image PNG en base64), ou null */
+    private function decodeSignature(?string $signature): ?string
+    {
+        if (blank($signature)) {
+            return null;
+        }
+        if (! preg_match('#^data:image/png;base64,([A-Za-z0-9+/=]+)$#', $signature, $m)) {
+            throw new BusinessRuleException('Signature illisible.', 'signature');
+        }
+        $data = base64_decode($m[1], true);
+
+        return $data === false || $data === '' ? null : $data;
     }
 
     /**
@@ -367,6 +423,9 @@ class OrderWorkflow
                 $order->delivered_at = $now;
                 $order->handTo(null);
                 $order->collected_amount = $context['collected_amount'] ?? $order->cod_amount;
+                if (filled($context['received_by_name'] ?? null)) {
+                    $order->received_by_name = trim((string) $context['received_by_name']);
+                }
                 if ($order->is_shipping) {
                     $order->shipping_fee = $context['shipping_fee'];
                     $order->shipping_carrier = trim($context['shipping_carrier']);

@@ -32,7 +32,7 @@ class PayPlan extends Model
 
     protected $fillable = [
         'company_id', 'courier_id', 'name', 'is_default', 'pickup_mode', 'pickup_extra_parcel_amount', 'min_amount', 'max_amount',
-        'base_salary', 'pay_period', 'deduction_cap_percent',
+        'base_salary', 'pay_period', 'deduction_cap_percent', 'mad_daily_rate',
     ];
 
     protected function casts(): array
@@ -43,6 +43,7 @@ class PayPlan extends Model
             'min_amount' => 'integer',
             'max_amount' => 'integer',
             'base_salary' => 'integer',
+            'mad_daily_rate' => 'integer',
             'deduction_cap_percent' => 'integer',
         ];
     }

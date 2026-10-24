@@ -14,6 +14,7 @@ use App\Models\OrderAssignment;
 use App\Models\User;
 use App\Models\Zone;
 use App\Notifications\CourierAvailableAlert;
+use App\Services\Assignment\MadCouriers;
 use App\Services\Orders\OrderDispatcher;
 use App\Services\Orders\OrderJournal;
 use App\Services\Orders\PickupGroups;
@@ -126,6 +127,8 @@ class CourierAvailability
             'phone' => $courier->user->phone,
             'is_available' => $courier->is_available,
             'zones' => $courier->zones->pluck('name')->values(),
+            // En MAD chez un client aujourd'hui (réservé ou non en ce moment)
+            'mad' => app(MadCouriers::class)->of($courier),
             'state' => $state,
             'remaining' => [
                 'total' => $remaining,

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\CompanyStatus;
 use App\Services\Connect\Directory;
+use App\Services\Orders\ActivityOptions;
 use Carbon\CarbonImmutable;
 use Database\Factories\CompanyFactory;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -27,6 +28,7 @@ class Company extends Model
         'invoice_payment_info',
         'invoice_payment_methods',
         'internal_delays',
+        'activity_options',
         'currency',
         'timezone',
         'auto_confirm_orders',
@@ -88,6 +90,7 @@ class Company extends Model
             'appearance' => 'array',
             'invoice_payment_methods' => 'array',
             'internal_delays' => 'array',
+            'activity_options' => 'array',
             'weekly_report' => 'boolean',
             'weekly_report_sent_at' => 'datetime',
             'field_alert_reminder_minutes' => 'integer',
@@ -187,6 +190,8 @@ class Company extends Model
 
         // Annuaire : une fiche modifiée (nom, présentation, inscriptions, retrait) y apparaît aussitôt
         static::saved(function (Company $company) {
+            // Réglages de la distribution et de la MAD : relus à la prochaine course
+            app(ActivityOptions::class)->forget();
             if ($company->directory_listed || $company->wasChanged('directory_listed')) {
                 Directory::forget();
             }

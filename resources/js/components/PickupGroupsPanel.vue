@@ -26,7 +26,7 @@
           <div class="flex flex-wrap items-center gap-2">
             <select v-model="courier[g.key]" class="input w-auto" :aria-label="`Livreur pour ${g.merchant?.business_name}`">
               <option :value="undefined" disabled>Livreur…</option>
-              <option v-for="c in couriers" :key="c.id" :value="c.id">{{ c.name }} ({{ c.active_assignments_count }} en cours){{ c.is_available ? '' : ' · indisponible' }}</option>
+              <option v-for="c in couriers" :key="c.id" :value="c.id">{{ c.name }} ({{ c.active_assignments_count }} en cours){{ c.is_available ? '' : ' · indisponible' }}{{ madSuffix(c) }}</option>
             </select>
             <button class="btn-primary" :disabled="!courier[g.key] || !chosen(g).length || busy === g.key" @click="assign(g)">
               {{ busy === g.key ? 'Assignation…' : `Assigner ${chosen(g).length === visible(g).length ? 'les' : ''} ${chosen(g).length}` }}
@@ -66,6 +66,7 @@
 </template>
 
 <script setup>
+import { madSuffix } from '../utils/mad'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import http, { apiErrorMessage } from '../bootstrap/axios'
 import { useAuthStore } from '../stores/auth'

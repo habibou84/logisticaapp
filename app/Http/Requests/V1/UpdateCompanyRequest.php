@@ -3,6 +3,7 @@
 namespace App\Http\Requests\V1;
 
 use App\Rules\PhoneNumber;
+use App\Services\Orders\ActivityOptions;
 use App\Support\InvoicePayments;
 use App\Support\PhoneNumber as Phone;
 use Illuminate\Foundation\Http\FormRequest;
@@ -49,6 +50,10 @@ class UpdateCompanyRequest extends FormRequest
             // Délai interne de distribution par activité, en heures (vide : aucun)
             'internal_delays' => ['sometimes', 'nullable', 'array:ecommerce,distribution,mad'],
             'internal_delays.*' => ['nullable', 'integer', 'min:1', 'max:2000'],
+            // Distribution et MAD : preuve de remise, messages aux destinataires, réservation des livreurs en MAD
+            'activity_options' => ['sometimes', 'nullable', 'array:distribution,mad'],
+            ...ActivityOptions::rules('activity_options.distribution'),
+            ...ActivityOptions::rules('activity_options.mad'),
             'merchant_signup' => ['sometimes', 'boolean'],
             'weekly_report' => ['sometimes', 'boolean'],
             'pickup_assign_alert_minutes' => ['sometimes', 'integer', 'min:0', 'max:1440'],

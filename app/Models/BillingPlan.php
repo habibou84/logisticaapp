@@ -7,6 +7,7 @@ use App\Enums\BillingFormula;
 use App\Enums\DeliveryDelay;
 use App\Models\Concerns\BelongsToCompany;
 use App\Models\Scopes\ActivityScope;
+use App\Services\Orders\ActivityOptions;
 use App\Support\Money;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
@@ -26,7 +27,7 @@ class BillingPlan extends Model
     protected $fillable = [
         'company_id', 'merchant_id', 'formula', 'activity', 'monthly_fee', 'included_quantity', 'overage_price',
         'delivery_delay', 'cheque_price', 'extra_kg_price', 'starts_on', 'ends_on', 'notes', 'usage_alert', 'internal_delay_hours',
-        'lot_label', 'lot_quantity', 'lot_price', 'lot_due_on',
+        'lot_label', 'lot_quantity', 'lot_price', 'lot_due_on', 'options',
     ];
 
     protected function casts(): array
@@ -44,6 +45,7 @@ class BillingPlan extends Model
             'lot_quantity' => 'integer',
             'lot_price' => 'integer',
             'lot_due_on' => 'date:Y-m-d',
+            'options' => 'array',
             'starts_on' => 'date:Y-m-d',
             'ends_on' => 'date:Y-m-d',
         ];
@@ -55,6 +57,8 @@ class BillingPlan extends Model
         static::addGlobalScope(new ActivityScope);
         // L'activité suit la formule : distribution ou MAD
         static::saving(fn (self $plan) => $plan->activity = $plan->formula->activity());
+        // Réglages du contrat changés : relus à la prochaine course
+        static::saved(fn () => app(ActivityOptions::class)->forget());
     }
 
     public function merchant(): BelongsTo

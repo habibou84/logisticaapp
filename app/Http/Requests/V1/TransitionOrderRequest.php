@@ -39,6 +39,9 @@ class TransitionOrderRequest extends FormRequest
             // Frais de gare payés par le livreur (défaut) ou directement par l'agence
             'shipping_paid_by' => ['nullable', Rule::in(['courier', 'company'])],
             'cancel_reason' => ['nullable', 'string', 'max:1000'],
+            // Distribution, MAD : preuve de remise (nom de la personne qui a reçu, signature dessinée)
+            'received_by_name' => ['nullable', 'string', 'max:120'],
+            'signature' => ['nullable', 'string', 'max:700000'],
             'lat' => ['nullable', 'numeric', 'between:-90,90'],
             'lng' => ['nullable', 'numeric', 'between:-180,180'],
         ];
@@ -52,6 +55,7 @@ class TransitionOrderRequest extends FormRequest
             'rescheduled_to' => 'date de report',
             'delivery_code' => 'code de livraison',
             'collected_amount' => 'montant encaissé',
+            'received_by_name' => 'nom de la personne qui a reçu',
             'payment_method' => 'mode de paiement',
             'transaction_ref' => 'référence de transaction',
             'shipping_fee' => 'frais d\'expédition',

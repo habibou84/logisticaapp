@@ -44,7 +44,7 @@
         <select id="dec-courier" v-model="form.courier_id" class="input">
           <option :value="null">Assigner plus tard</option>
           <option v-for="c in couriers" :key="c.id" :value="c.id">
-            {{ c.name }}{{ order.held_by?.id === c.id ? ' · a le colis' : '' }} ({{ c.active_assignments_count }} en cours){{ c.is_available ? '' : ' · indisponible' }}
+            {{ c.name }}{{ order.held_by?.id === c.id ? ' · a le colis' : '' }} ({{ c.active_assignments_count }} en cours){{ c.is_available ? '' : ' · indisponible' }}{{ madSuffix(c) }}
           </option>
         </select>
         <p v-if="form.decision === 'redeliver' && form.date !== today && form.courier_id" class="text-xs text-amber-700 mt-1">La mission apparaîtra dès maintenant dans l'application du livreur.</p>
@@ -63,6 +63,7 @@
 </template>
 
 <script setup>
+import { madSuffix } from '../utils/mad'
 import { computed, reactive, ref, watch } from 'vue'
 import http, { apiErrorMessage } from '../bootstrap/axios'
 import Modal from './Modal.vue'

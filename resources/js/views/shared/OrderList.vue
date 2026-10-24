@@ -176,7 +176,7 @@
         </select>
         <select v-model="bulk.courier_id" class="input w-auto">
           <option :value="null" disabled>Livreur…</option>
-          <option v-for="c in couriers" :key="c.id" :value="c.id">{{ c.name }} ({{ c.active_assignments_count }} en cours){{ c.is_available ? '' : ' · indisponible' }}</option>
+          <option v-for="c in couriers" :key="c.id" :value="c.id">{{ c.name }} ({{ c.active_assignments_count }} en cours){{ c.is_available ? '' : ' · indisponible' }}{{ madSuffix(c) }}</option>
         </select>
         <button class="btn-primary" :disabled="!bulk.courier_id || assigning" @click="bulkAssign">Assigner</button>
         <button v-if="auth.can('orders.dispatch') && withCourierSelected.length" class="btn-secondary text-red-700" :disabled="assigning" @click="bulkUnassign">
@@ -203,7 +203,8 @@
               <span v-if="activityChoices.length > 1" :class="['rounded-full px-1.5 text-[11px] font-medium', activityBadge(o.activity)]">{{ activityShort(o.activity) }}</span>
             </label>
             <span v-else class="font-mono text-xs">{{ o.tracking_code }}<span v-if="activityChoices.length > 1" :class="['ml-1 rounded-full px-1.5 text-[11px] font-medium font-sans', activityBadge(o.activity)]">{{ activityShort(o.activity) }}</span></span>
-            <span class="font-semibold whitespace-nowrap">{{ money(o.amounts.cod_amount) }}</span>
+            <span v-if="o.billed_monthly" class="text-xs text-indigo-700 whitespace-nowrap">Facturé au mois</span>
+            <span v-else class="font-semibold whitespace-nowrap">{{ money(o.amounts.cod_amount) }}</span>
           </div>
           <div class="flex items-center justify-between gap-2">
             <div class="min-w-0">
@@ -269,7 +270,11 @@
                 <div v-if="o.delivery_courier">↓ {{ o.delivery_courier.name }}</div>
                 <div v-if="o.held_by" class="text-amber-700" :title="`Colis chez ${o.held_by.name}`">🎒 {{ o.held_by.name }}</div>
               </td>
-              <td class="p-2 text-right whitespace-nowrap">{{ money(o.amounts.cod_amount) }}</td>
+              <!-- Distribution, MAD : rien à encaisser, la course passe sur la facture du mois -->
+              <td class="p-2 text-right whitespace-nowrap">
+                <span v-if="o.billed_monthly" class="text-xs text-indigo-700">Facturé au mois</span>
+                <template v-else>{{ money(o.amounts.cod_amount) }}</template>
+              </td>
               <td class="p-2 text-xs whitespace-nowrap">
                 <!-- Jour de livraison : la date prévue, sinon le jour de création -->
                 <div class="font-medium text-gray-800">{{ date(o.delivery.scheduled_date || o.created_at) }}</div>
@@ -287,6 +292,7 @@
 </template>
 
 <script setup>
+import { madSuffix } from '../../utils/mad'
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'

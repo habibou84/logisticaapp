@@ -3,6 +3,7 @@
 namespace App\Http\Resources\V1;
 
 use App\Models\BillingPlan;
+use App\Services\Orders\ActivityOptions;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -17,6 +18,7 @@ class BillingPlanResource extends JsonResource
             'id' => $this->id,
             'merchant_id' => $this->merchant_id,
             'formula' => $this->formula->value,
+            'activity' => $this->formula->activity()->value,
             'formula_label' => $this->formula->label(),
             'has_forfait' => $this->formula->hasForfait(),
             'monthly_fee' => $this->monthly_fee,
@@ -40,6 +42,10 @@ class BillingPlanResource extends JsonResource
             'starts_on' => $this->starts_on?->toDateString(),
             'ends_on' => $this->ends_on?->toDateString(),
             'notes' => $this->when($request->user()?->merchant_id === null, $this->notes),
+            // Réglages propres au contrat (vides : ceux de l'entreprise) et réglages qui s'appliquent
+            'options' => $this->when($request->user()?->merchant_id === null, fn () => (object) ($this->options ?? [])),
+            'default_options' => $this->when($request->user()?->merchant_id === null, fn () => app(ActivityOptions::class)->company($request->user()->company, $this->activity)),
+            'effective_options' => $this->when($request->user()?->merchant_id === null, fn () => app(ActivityOptions::class)->plan($this->resource)),
             'summary' => $this->describe(),
             'couriers' => $this->whenLoaded('couriers', fn () => $this->couriers->map(fn ($c) => [
                 'id' => $c->id,

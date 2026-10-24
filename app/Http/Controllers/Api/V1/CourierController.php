@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\V1\CourierResource;
 use App\Models\Company;
 use App\Models\Courier;
+use App\Services\Assignment\MadCouriers;
 use App\Services\Couriers\CourierTracker;
 use App\Services\Orders\AwaitingCourier;
 use Illuminate\Http\JsonResponse;
@@ -61,6 +62,7 @@ class CourierController extends Controller
                 'lat' => $c->current_lat,
                 'lng' => $c->current_lng,
                 'last_location_at' => $c->last_location_at,
+                'mad' => app(MadCouriers::class)->of($c),
                 'missions' => $c->activeAssignments->map(fn ($a) => [
                     'order_id' => $a->order_id,
                     'tracking_code' => $a->order?->tracking_code,

@@ -5,7 +5,10 @@
     <!-- Où aller -->
     <section class="m-card p-4 space-y-2">
       <div class="flex items-center justify-between">
-        <span class="text-xs font-semibold uppercase tracking-wide text-[var(--app-color)]">{{ mission.type_label }}</span>
+        <span class="text-xs font-semibold uppercase tracking-wide text-[var(--app-color)]">
+          {{ mission.type_label }}
+          <span v-if="billed" :class="['ml-1 rounded-full px-2 py-0.5 normal-case tracking-normal', order.activity === 'mad' ? 'bg-violet-100 text-violet-800' : 'bg-amber-100 text-amber-800']">{{ order.activity_label }}</span>
+        </span>
         <StatusBadge :status="order.status" :label="order.status_label" />
       </div>
       <p v-if="mission.offline" class="rounded-xl bg-sky-50 text-sky-900 p-3 text-sm">
@@ -36,7 +39,11 @@
 
     <!-- Argent et colis -->
     <section class="m-card p-4 space-y-2">
-      <div v-if="mission.type !== 'pickup' && !(shipping && !order.amounts.cod_amount)" class="flex items-center justify-between">
+      <p v-if="billed && mission.type !== 'pickup'" class="rounded-xl bg-slate-50 p-3 text-slate-700">
+        Rien à encaisser : course facturée au client chaque mois.
+        <span v-if="proofList" class="block text-sm">À la remise : {{ proofList }}.</span>
+      </p>
+      <div v-else-if="mission.type !== 'pickup' && !(shipping && !order.amounts.cod_amount)" class="flex items-center justify-between">
         <span class="text-slate-600">À encaisser</span>
         <span class="text-3xl font-bold">{{ money(order.amounts.cod_amount) }}</span>
       </div>
@@ -120,7 +127,23 @@
             <input type="file" accept="image/*" capture="environment" class="hidden" @change="uploadPhoto">
           </label>
         </template>
-        <div v-if="!shipping || order.amounts.cod_amount > 0">
+        <!-- Distribution, MAD : pas d'encaissement, la preuve de remise demandée par les réglages -->
+        <template v-if="billed">
+          <div>
+            <label class="m-label" for="received-by">Reçu par{{ order.proof?.proof_name ? ' *' : '' }}</label>
+            <input id="received-by" v-model="delivery.received_by_name" class="m-input" maxlength="120" placeholder="Nom et fonction (ex. : Mme Bamba, secrétariat)">
+          </div>
+          <div v-if="order.proof?.proof_signature || delivery.signature">
+            <p class="m-label">Signature{{ order.proof?.proof_signature ? ' *' : '' }}</p>
+            <SignaturePad v-model="delivery.signature" />
+          </div>
+          <button v-else type="button" class="text-sm font-medium text-[var(--app-color)]" @click="delivery.signature = ''">+ Faire signer</button>
+          <label :class="['m-btn-secondary cursor-pointer', order.proof?.proof_photo && !photoTaken ? 'ring-2 ring-amber-400' : '']">
+            📷 {{ photoTaken ? 'Photo envoyée ✓ (en reprendre une)' : `Photographier la décharge${order.proof?.proof_photo ? ' *' : ''}` }}
+            <input type="file" accept="image/*" capture="environment" class="hidden" @change="uploadPhoto">
+          </label>
+        </template>
+        <div v-else-if="!shipping || order.amounts.cod_amount > 0">
           <label class="m-label" for="collected">Montant encaissé</label>
           <div class="relative">
             <input id="collected" v-model.number="delivery.collected_amount" type="number" min="0" inputmode="numeric" class="m-input text-2xl font-bold pr-12">
@@ -128,11 +151,11 @@
           </div>
           <p v-if="delivery.collected_amount !== order.amounts.cod_amount" class="text-sm text-amber-700 mt-1">Attendu : {{ money(order.amounts.cod_amount) }}</p>
         </div>
-        <div v-if="delivery.collected_amount > 0">
+        <div v-if="!billed && delivery.collected_amount > 0">
           <p class="m-label">Le client a payé en</p>
           <ChoiceChips v-model="delivery.payment_method" :options="paymentOptions" :columns="2" label="Mode de paiement" />
         </div>
-        <template v-if="delivery.collected_amount > 0 && delivery.payment_method !== 'cash'">
+        <template v-if="!billed && delivery.collected_amount > 0 && delivery.payment_method !== 'cash'">
           <ChoiceChips
             v-model="delivery.received_by_company"
             :options="[
@@ -219,6 +242,7 @@ import StatusBadge from '../../components/StatusBadge.vue'
 import DispatchMessages from '../../components/mobile/DispatchMessages.vue'
 import BottomSheet from '../../components/mobile/BottomSheet.vue'
 import ChoiceChips from '../../components/mobile/ChoiceChips.vue'
+import SignaturePad from '../../components/mobile/SignaturePad.vue'
 import { useAuthStore } from '../../stores/auth'
 import { cachedGet } from '../../composables/useCachedApi'
 import { useToastStore } from '../../stores/toasts'
@@ -246,6 +270,13 @@ const delivery = reactive({
   shipping_carrier: '', shipping_fee: 0, shipping_reference: '',
 })
 const shipping = computed(() => order.value?.is_shipping && mission.value?.type === 'delivery')
+// Distribution, MAD : rien à encaisser ; preuve de remise selon les réglages (entreprise ou contrat)
+const billed = computed(() => !!order.value?.billed_monthly)
+const proofList = computed(() => {
+  const p = order.value?.proof || {}
+  return [p.proof_name && 'nom de la personne', p.proof_signature && 'signature', p.proof_photo && 'photo de la décharge'].filter(Boolean).join(', ')
+})
+const photoTaken = ref(false)
 const CARRIERS_KEY = 'recent_carriers'
 const recentCarriers = ref(readCarriers())
 
@@ -363,7 +394,8 @@ async function move(status) {
 
 function openDelivered() {
   Object.assign(delivery, {
-    collected_amount: order.value.amounts.cod_amount, payment_method: 'cash', received_by_company: false, transaction_ref: '', delivery_code: '',
+    collected_amount: billed.value ? 0 : order.value.amounts.cod_amount, payment_method: 'cash', received_by_company: false, transaction_ref: '', delivery_code: '',
+    received_by_name: '', signature: order.value.proof?.proof_signature ? '' : null,
     shipping_carrier: recentCarriers.value[0] || '', shipping_fee: order.value.shipping?.fee_estimate ?? 0, shipping_reference: '',
   })
   sheetError.value = ''
@@ -383,6 +415,14 @@ async function confirmDelivered() {
       }
     }
     if (delivery.delivery_code) extra.delivery_code = delivery.delivery_code
+    if (billed.value) {
+      const p = order.value.proof || {}
+      if (p.proof_name && !delivery.received_by_name.trim()) throw new Error('Indiquez le nom de la personne qui a reçu la course.')
+      if (p.proof_signature && !delivery.signature) throw new Error('Faites signer la personne qui reçoit la course.')
+      if (p.proof_photo && !photoTaken.value) throw new Error('Prenez une photo de la décharge avant de valider.')
+      if (delivery.received_by_name.trim()) extra.received_by_name = delivery.received_by_name.trim()
+      if (delivery.signature) extra.signature = delivery.signature
+    }
     if (shipping.value) {
       Object.assign(extra, {
         shipping_carrier: delivery.shipping_carrier.trim(),
@@ -396,7 +436,7 @@ async function confirmDelivered() {
     toasts.success(result.offline ? OFFLINE_SAVED : (shipping.value ? 'Expédition enregistrée. Bravo !' : 'Livraison enregistrée. Bravo !'))
     if (!result.offline) await load()
   } catch (e) {
-    sheetError.value = apiErrorMessage(e)
+    sheetError.value = e.isAxiosError || e.response ? apiErrorMessage(e) : e.message
   } finally {
     busy.value = false
   }
@@ -516,6 +556,7 @@ async function uploadPhoto(e) {
   form.append('type', mission.value.type === 'pickup' ? 'photo_pickup' : 'photo_delivery')
   try {
     await http.post(`/orders/${order.value.id}/attachments`, form)
+    if (mission.value.type !== 'pickup') photoTaken.value = true
     toasts.success('Photo envoyée.')
   } catch (err) {
     toasts.error(apiErrorMessage(err))

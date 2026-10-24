@@ -9,7 +9,7 @@
       <div v-for="c in couriers" :key="c.id" class="card p-4 space-y-2">
         <div class="flex items-center justify-between">
           <div>
-            <p class="font-semibold">{{ c.name }}</p>
+            <p class="font-semibold">{{ c.name }} <MadBadge :mad="c.mad" /></p>
             <a :href="telLink(c.phone)" class="text-sm text-blue-600">{{ c.phone }}</a>
           </div>
           <span :class="['text-xs rounded-full px-2 py-0.5', c.is_available ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600']">
@@ -90,6 +90,7 @@
 
 import { ACCEPT_MODES } from './settings/options'
 <script setup>
+import MadBadge from '../../components/MadBadge.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'

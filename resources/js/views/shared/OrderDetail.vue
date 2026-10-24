@@ -64,7 +64,7 @@
         </p>
 
         <div class="card p-4 text-sm grid sm:grid-cols-4 gap-3">
-          <div><p class="text-gray-500">Articles</p><p class="font-semibold">{{ money(order.amounts.items_amount) }}</p></div>
+          <div v-if="!order.billed_monthly"><p class="text-gray-500">Articles</p><p class="font-semibold">{{ money(order.amounts.items_amount) }}</p></div>
           <div v-if="order.billing">
             <p class="text-gray-500">Facture du mois</p>
             <p class="font-semibold">{{ order.billing.basis === 'forfait' ? 'Forfait' : money(order.billing.amount) }}</p>
@@ -73,8 +73,19 @@
             <p class="text-gray-500">Frais ({{ order.amounts.fee_payer === 'recipient' ? 'client' : 'marchand' }})</p>
             <p class="font-semibold">{{ money(order.amounts.total_fees) }}</p>
           </div>
-          <div><p class="text-gray-500">À encaisser</p><p class="font-semibold text-lg">{{ money(order.amounts.cod_amount) }}</p></div>
-          <div><p class="text-gray-500">Encaissé</p><p class="font-semibold">{{ money(order.amounts.collected_amount) }}</p></div>
+          <template v-if="order.billed_monthly">
+            <div><p class="text-gray-500">À encaisser</p><p class="font-semibold">Rien</p></div>
+            <!-- Preuve de remise : nom relevé par le livreur ; signature et photo dans l'historique -->
+            <div class="sm:col-span-2">
+              <p class="text-gray-500">Reçu par</p>
+              <p class="font-semibold">{{ order.received_by_name || (order.status === 'delivered' ? 'Non précisé' : '—') }}</p>
+              <p v-if="order.proof" class="text-xs text-gray-500">Demandé au livreur : {{ proofLabel || 'rien' }}</p>
+            </div>
+          </template>
+          <template v-else>
+            <div><p class="text-gray-500">À encaisser</p><p class="font-semibold text-lg">{{ money(order.amounts.cod_amount) }}</p></div>
+            <div><p class="text-gray-500">Encaissé</p><p class="font-semibold">{{ money(order.amounts.collected_amount) }}</p></div>
+          </template>
           <div v-if="order.billing" class="sm:col-span-4 rounded bg-indigo-50 text-indigo-900 p-2">
             📄 {{ order.package.shipment_type_label }}<template v-if="order.package.delivery_delay"> en {{ order.package.delivery_delay.replace('h', ' h') }}</template> ·
             {{ order.billing.label }} : sur la facture du mois du client.
@@ -144,7 +155,7 @@
               <select v-model="assignment[type]" class="input">
                 <option :value="null">Choisir un livreur…</option>
                 <option v-for="c in sortedCouriers(type)" :key="c.id" :value="c.id">
-                  {{ c.name }} · {{ c.active_assignments_count }} en cours{{ c.is_available ? '' : ' · indisponible' }}{{ servesZone(c, type) ? ' · ★ zone' : '' }}
+                  {{ c.name }} · {{ c.active_assignments_count }} en cours{{ c.is_available ? '' : ' · indisponible' }}{{ servesZone(c, type) ? ' · ★ zone' : '' }}{{ madSuffix(c) }}
                 </option>
               </select>
               <button class="btn-primary" :disabled="!assignment[type]" @click="assign(type)">OK</button>
@@ -224,6 +235,7 @@
 </template>
 
 <script setup>
+import { madSuffix } from '../../utils/mad'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
@@ -263,6 +275,10 @@ const toasts = useToastStore()
 const order = ref(null)
 const error = ref('')
 const supplementOpen = ref(false)
+const proofLabel = computed(() => {
+  const p = order.value?.proof || {}
+  return [p.proof_name && 'nom', p.proof_signature && 'signature', p.proof_photo && 'photo de la décharge'].filter(Boolean).join(', ')
+})
 const canSupplement = computed(() => !auth.user?.merchant_id && ['distribution', 'mad'].includes(order.value?.activity)
   && auth.can(['invoices.manage', 'rates.manage']))
 const couriers = ref([])

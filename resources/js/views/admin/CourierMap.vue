@@ -91,7 +91,7 @@
           <button type="button" class="w-full text-left" @click="focus(c)">
             <div class="flex items-center justify-between gap-2">
               <span class="font-medium flex items-center gap-2">
-                <i :class="['legend', dotClass(c)]" />{{ c.name }}
+                <i :class="['legend', dotClass(c)]" />{{ c.name }} <MadBadge :mad="c.mad" />
               </span>
               <span :class="['text-xs', isStale(c) ? 'text-amber-700' : 'text-gray-500']">{{ c.lat === null ? 'position inconnue' : ago(c.last_location_at) }}</span>
             </div>
@@ -111,6 +111,8 @@
 </template>
 
 <script setup>
+import MadBadge from '../../components/MadBadge.vue'
+import { madTitle } from '../../utils/mad'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import L from 'leaflet'
@@ -203,7 +205,7 @@ function popup(c) {
     ? `<ul style="margin:4px 0 0;padding-left:16px">${c.missions.map((m) => `<li>${escape(m.type_label)} · <a href="/admin/courses/${m.order_id}" data-order="${m.order_id}">${escape(m.tracking_code)}</a> · ${escape(m.zone_name)}</li>`).join('')}</ul>`
     : '<p style="margin:4px 0 0">Aucune mission en cours</p>'
 
-  return `<strong>${escape(c.name)}</strong><br>
+  return `<strong>${escape(c.name)}</strong><br>${c.mad ? `<span style="color:#6d28d9">${escape(madTitle(c.mad))}</span><br>` : ''}
     <a href="tel:${escape(c.phone)}">${escape(c.phone)}</a> · ${c.is_available ? 'en service' : 'hors service'}<br>
     <span style="color:${isStale(c) ? '#b45309' : '#6b7280'}">Position ${escape(ago(c.last_location_at))}</span>${missions}`
 }

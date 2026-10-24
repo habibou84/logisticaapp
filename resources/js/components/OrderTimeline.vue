@@ -21,7 +21,7 @@
       </ul>
       <p v-if="event.note" class="text-sm bg-slate-50 rounded px-2 py-1 mt-1 whitespace-pre-line">{{ event.note }}</p>
       <div v-if="event.attachments?.length" class="flex gap-2 mt-1">
-        <button v-for="a in event.attachments" :key="a.id" class="text-sm text-blue-600 underline" @click="openAttachment(a)">📷 Voir la photo</button>
+        <button v-for="a in event.attachments" :key="a.id" class="text-sm text-blue-600 underline" @click="openAttachment(a)">{{ a.type === 'signature_delivery' ? '✍️ Voir la signature' : '📷 Voir la photo' }}</button>
       </div>
     </li>
   </ol>

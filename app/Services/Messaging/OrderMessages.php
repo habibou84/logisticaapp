@@ -11,6 +11,7 @@ use App\Models\MerchantLedgerEntry;
 use App\Models\Order;
 use App\Models\OrderEvent;
 use App\Models\User;
+use App\Services\Orders\ActivityOptions;
 use App\Services\Orders\DeliveryDay;
 use App\Support\Money;
 use Carbon\CarbonImmutable;
@@ -21,7 +22,10 @@ use Carbon\CarbonImmutable;
  */
 class OrderMessages
 {
-    public function __construct(private readonly Messenger $messenger) {}
+    public function __construct(
+        private readonly Messenger $messenger,
+        private readonly ActivityOptions $activityOptions,
+    ) {}
 
     public function handle(Order $order, OrderEvent $event, ?User $actor): void
     {
@@ -75,6 +79,18 @@ class OrderMessages
                 if ($order->is_shipping) {
                     break;
                 }
+                // Distribution, MAD : rien à payer, message au destinataire seulement si les réglages le veulent
+                if ($billed = $this->activityOptions->order($order)) {
+                    if ($billed['notify_recipient']) {
+                        $this->messenger->toRecipient($order, 'order.out_for_delivery', WhatsAppTemplate::ParcelOnTheWay, [
+                            $order->recipient_name ?: 'cher client',
+                            $merchant->business_name,
+                            $order->delivery_code,
+                            $order->company->url('/suivi/'.$code),
+                        ]);
+                    }
+                    break;
+                }
                 $this->messenger->toRecipient($order, 'order.out_for_delivery', WhatsAppTemplate::OutForDelivery, [
                     $order->recipient_name ?: 'cher client',
                     $merchant->business_name,
@@ -87,6 +103,13 @@ class OrderMessages
             case OrderStatus::Delivered:
                 if ($order->is_shipping) {
                     $this->shipped($order, $recipient);
+                    break;
+                }
+                // Distribution, MAD : pas de montant, le nom de la personne qui a reçu
+                if ($this->activityOptions->order($order) !== null) {
+                    $at = ($order->delivered_at ?? now())->setTimezone($order->company->timezone ?: config('app.timezone'));
+                    $this->messenger->toMerchant($merchant, NotificationEvent::OrderDelivered, WhatsAppTemplate::OrderHandedOver,
+                        [$merchant->business_name, $code, $recipient, $at->format('d/m à H:i'), $order->received_by_name ?: 'non précisé'], $order);
                     break;
                 }
                 $this->messenger->toMerchant($merchant, NotificationEvent::OrderDelivered, WhatsAppTemplate::OrderDelivered,

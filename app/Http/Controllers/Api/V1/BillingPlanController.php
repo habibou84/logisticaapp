@@ -13,6 +13,7 @@ use App\Models\BillingPlan;
 use App\Models\Merchant;
 use App\Models\Order;
 use App\Services\Finance\ClientSpace;
+use App\Services\Orders\ActivityOptions;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -204,6 +205,8 @@ class BillingPlanController extends Controller
             'notes' => ['sometimes', 'nullable', 'string', 'max:1000'],
             'courier_ids' => ['sometimes', 'array', 'max:20'],
             'courier_ids.*' => ['integer', Rule::exists('couriers', 'id')->where('company_id', $request->user()->company_id)],
+            // Réglages propres au contrat (preuve de remise, messages, réservation MAD) ; vide : ceux de l'entreprise
+            ...ActivityOptions::rules('options'),
         ], [], [
             'formula' => 'formule',
             'monthly_fee' => 'forfait mensuel',
@@ -221,7 +224,12 @@ class BillingPlanController extends Controller
             'lot_quantity' => 'nombre de colis',
             'lot_price' => 'prix du lot',
             'lot_due_on' => 'date limite',
+            'options.mad_from' => 'début de la mise à disposition',
+            'options.mad_to' => 'fin de la mise à disposition',
         ]);
+        if (array_key_exists('options', $data)) {
+            $data['options'] = ActivityOptions::clean((array) ($data['options'] ?? [])) ?: null;
+        }
 
         // Sans forfait : rien d'inclus
         if ($formula !== null && ! $forfait) {

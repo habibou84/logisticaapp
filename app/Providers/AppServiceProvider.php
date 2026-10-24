@@ -9,6 +9,7 @@ use App\Services\Messaging\Gateways\MetaCloudGateway;
 use App\Services\Messaging\Gateways\SmsGateway;
 use App\Services\Messaging\Gateways\TwilioSmsGateway;
 use App\Services\Messaging\Gateways\WhatsAppGateway;
+use App\Services\Orders\ActivityOptions;
 use App\Services\WhatsApp\ClaudeOrderParser;
 use App\Services\WhatsApp\HeuristicOrderParser;
 use App\Services\WhatsApp\OrderMessageParser;
@@ -26,6 +27,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        // Réglages distribution / MAD : lus une fois par requête (ou tâche)
+        $this->app->scoped(ActivityOptions::class);
         // WhatsApp : réel pour les numéros connectés (auto), forcé (meta) ou simulé partout (log)
         $this->app->bind(WhatsAppGateway::class, fn () => match (config('messaging.whatsapp.driver')) {
             'meta' => new MetaCloudGateway,

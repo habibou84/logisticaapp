@@ -5,6 +5,7 @@ namespace App\Http\Resources\V1;
 use App\Enums\OrderEventType;
 use App\Enums\OrderStatus;
 use App\Models\Order;
+use App\Services\Orders\ActivityOptions;
 use App\Services\Orders\AwaitingCourier;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -101,6 +102,14 @@ class OrderResource extends JsonResource
                 'shipment_type_label' => $this->shipment_type?->label(),
                 'delivery_delay' => $this->delivery_delay?->value,
             ],
+            // Distribution, MAD : rien à encaisser, la course passe sur la facture du mois
+            'billed_monthly' => in_array($this->activity, ActivityOptions::ACTIVITIES, true),
+            // Preuve de remise demandée au livreur (réglages de l'entreprise ou du contrat), et celle reçue
+            'proof' => $this->when(in_array($this->activity, ActivityOptions::ACTIVITIES, true), fn () => array_intersect_key(
+                app(ActivityOptions::class)->order($this->resource) ?? [],
+                array_flip(['proof_name', 'proof_signature', 'proof_photo']),
+            )),
+            'received_by_name' => $this->received_by_name,
             // Facturée sur la facture du mois du client (distribution, MAD) : comment
             'billing' => $this->billing_plan_id ? [
                 'basis' => $this->billing_basis,

@@ -31,7 +31,8 @@ use Throwable;
  * Automatisation suspendue (bouton du planning) : plus rien n'est confié.
  * Livraison du jour même (réglage à part) : le colis prêt va au livreur choisi par DeliveryChooser.
  * Client en mise à disposition (MAD) : ses courses vont à ses livreurs attitrés, que l'assignation automatique
- * soit active ou non (seule la suspension de l'automatisation l'arrête).
+ * soit active ou non (seule la suspension de l'automatisation l'arrête) ; ceux d'un contrat réservé ne reçoivent
+ * pas les courses des autres clients pendant la mise à disposition.
  * Ne fait jamais échouer la création ou la validation d'une course.
  */
 class AutoAssigner
@@ -184,7 +185,8 @@ class AutoAssigner
         if ($mode === Company::AUTO_OFF) {
             return null;
         }
-        $choice = $this->chooser->choose($order, $company, $now, self::excluded($order, AssignmentType::Delivery));
+        // Livreurs réservés à un autre client (MAD) : pas pour cette course
+        $choice = $this->chooser->choose($order, $company, $now, [...self::excluded($order, AssignmentType::Delivery), ...$this->mad->reservedElsewhere($order)]);
         if ($choice === null) {
             return null;
         }
@@ -246,7 +248,7 @@ class AutoAssigner
         }
 
         $today = CarbonImmutable::now($company->timezone ?: config('app.timezone'))->toDateString();
-        $choice = $this->planning->resolve($order, CourierRule::PICKUP, $today, self::excluded($order, AssignmentType::Pickup));
+        $choice = $this->planning->resolve($order, CourierRule::PICKUP, $today, [...self::excluded($order, AssignmentType::Pickup), ...$this->mad->reservedElsewhere($order)]);
         if ($choice === null) {
             return null;
         }

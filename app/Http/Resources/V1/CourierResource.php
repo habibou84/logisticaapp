@@ -3,6 +3,7 @@
 namespace App\Http\Resources\V1;
 
 use App\Models\Courier;
+use App\Services\Assignment\MadCouriers;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -41,6 +42,8 @@ class CourierResource extends JsonResource
             'shift_ends_at' => $this->shift_ends_at,
             'active_assignments_count' => $this->whenCounted('activeAssignments'),
             'notes' => $this->notes,
+            // Mise à disposition (MAD) du jour : client, jusqu'à quand, réservé en ce moment
+            'mad' => app(MadCouriers::class)->of($this->resource),
         ];
     }
 }

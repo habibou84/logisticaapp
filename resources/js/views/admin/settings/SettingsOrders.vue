@@ -175,6 +175,21 @@
         </div>
       </section>
 
+      <!-- Distribution et MAD : au choix de l'administrateur ; chaque contrat peut faire autrement -->
+      <section v-if="form.activity_options" class="card p-4 space-y-4">
+        <div>
+          <h2 class="font-semibold">Distribution et MAD</h2>
+          <p class="text-sm text-gray-600">
+            Ce que le livreur doit relever à la remise, les messages aux destinataires et la réservation des livreurs en
+            mise à disposition. Un contrat peut changer chacun de ces choix (Contrats › Modifier).
+          </p>
+        </div>
+        <div v-for="a in OPTION_ACTIVITIES" :key="a.value" class="space-y-2">
+          <h3 class="text-sm font-semibold">{{ a.label }}</h3>
+          <ActivityOptionsFields v-model="form.activity_options[a.value]" :activity="a.value" />
+        </div>
+      </section>
+
       <SaveBar :dirty="dirty" :saving="saving" :error="error" @save="save" @reset="reset" />
     </template>
   </SettingsPage>
@@ -184,6 +199,7 @@
 import SettingsPage from '../../../components/settings/SettingsPage.vue'
 import SaveBar from '../../../components/settings/SaveBar.vue'
 import MoreHelp from '../../../components/settings/MoreHelp.vue'
+import ActivityOptionsFields from '../../../components/settings/ActivityOptionsFields.vue'
 import { useCompanySettings } from '../../../composables/useCompanySettings'
 import { ACCEPT_MODES, AUTO_MODES, CUSTODY_MODES, DELIVERY_MODES, VALIDATION_MODES, WEEKDAYS } from './options'
 
@@ -191,7 +207,12 @@ const { form, dirty, saving, error, save, reset } = useCompanySettings([
   'validation_mode', 'daily_cutoff_time', 'default_max_attempts', 'require_delivery_code', 'offline_courier_actions', 'pickup_mission_custody', 'depot_closes_at', 'auto_pickup',
   'mission_acceptance', 'unreachable_minutes', 'late_pickup_alert_minutes', 'courier_available_alert',
   'auto_delivery', 'auto_delivery_max_cod', 'same_courier_delivery', 'cutoff_by_day', 'internal_delays',
+  'activity_options',
 ])
+const OPTION_ACTIVITIES = [
+  { value: 'distribution', label: 'Distribution' },
+  { value: 'mad', label: 'Mise à disposition (MAD)' },
+]
 const INTERNAL_ACTIVITIES = [
   { value: 'distribution', label: 'Distribution' },
   { value: 'mad', label: 'MAD' },
