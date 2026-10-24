@@ -40,7 +40,7 @@ class MerchantController extends Controller
         ]);
 
         $merchants = Merchant::query()
-            ->with(['pickupZone', 'activityRows', 'billingPlans' => fn ($q) => $q->activeOn(now())])
+            ->with(['pickupZone', 'activityRows', 'billingPlans' => fn ($q) => $q->activeOn(now())->with('couriers.user')])
             ->withCount('orders')
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
             ->when($request->filled('activity'), fn ($q) => $q->withActivity([$request->string('activity')->toString()]))
@@ -82,7 +82,7 @@ class MerchantController extends Controller
             return $merchant;
         });
 
-        return MerchantResource::make($merchant->load(['pickupZone', 'users.roles', 'billingPlans' => fn ($q) => $q->activeOn(now())]))
+        return MerchantResource::make($merchant->load(['pickupZone', 'users.roles', 'billingPlans' => fn ($q) => $q->activeOn(now())->with('couriers.user')]))
             ->response()
             ->setStatusCode(201);
     }
@@ -91,7 +91,7 @@ class MerchantController extends Controller
     {
         Gate::authorize('view', $merchant);
 
-        return MerchantResource::make($merchant->load(['pickupZone', 'users.roles', 'billingPlans' => fn ($q) => $q->activeOn(now())])->loadCount('orders'));
+        return MerchantResource::make($merchant->load(['pickupZone', 'users.roles', 'billingPlans' => fn ($q) => $q->activeOn(now())->with('couriers.user')])->loadCount('orders'));
     }
 
     public function update(UpdateMerchantRequest $request, Merchant $merchant): MerchantResource
@@ -123,7 +123,7 @@ class MerchantController extends Controller
             }
         }
 
-        return MerchantResource::make($merchant->load(['pickupZone', 'users.roles', 'billingPlans' => fn ($q) => $q->activeOn(now())]));
+        return MerchantResource::make($merchant->load(['pickupZone', 'users.roles', 'billingPlans' => fn ($q) => $q->activeOn(now())->with('couriers.user')]));
     }
 
     /**

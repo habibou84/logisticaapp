@@ -100,11 +100,22 @@
       </div>
     </section>
 
+    <!-- Distribution, MAD sans contrat ni lot en cours : la course ne peut pas être facturée -->
+    <p v-if="billed && client && !billingPlan" class="card p-4 bg-amber-50 border-amber-200 text-sm text-amber-900">
+      {{ client.business_name }} n'a pas de {{ form.activity === 'mad' ? 'contrat MAD' : 'contrat ni de lot de distribution' }} en cours :
+      créez-le d'abord dans <RouterLink :to="{ path: '/admin/contrats', query: { activity: form.activity } }" class="font-semibold underline">Contrats</RouterLink>.
+    </p>
+
     <!-- Client sous formule (distribution, MAD) : l'envoi passe sur la facture du mois -->
     <section v-if="billingPlan" class="card p-4 space-y-3">
       <div>
         <h3 class="font-semibold">Envoi</h3>
-        <p class="text-sm text-gray-600">{{ billingPlan.lot_name || billingPlan.formula_label }} : rien à payer sur la course, elle passe sur la facture du mois.</p>
+        <p class="text-sm text-gray-600">{{ billingPlan.lot_name || billingPlan.formula_label }} : rien à encaisser, la course passe sur la facture du mois du client.</p>
+        <!-- Ce qui attend le livreur : preuve de remise (réglages), livreurs attitrés (MAD) -->
+        <p v-if="proofText" class="text-sm text-gray-600">À la remise, le livreur relèvera : {{ proofText }}.</p>
+        <p v-if="billingPlan.couriers?.length" class="text-sm text-violet-800">
+          Confiée à {{ billingPlan.couriers.length > 1 ? 'ses livreurs attitrés' : 'son livreur attitré' }} : {{ billingPlan.couriers.map((c) => c.name).join(', ') }} (aux jours et horaires de la mise à disposition).
+        </p>
       </div>
       <!-- Lots ponctuels du client : la course en fait partie, ou relève du contrat du mois -->
       <div v-if="lots.length">
@@ -147,13 +158,13 @@
     </section>
 
     <section class="card p-4 space-y-3">
-      <h3 class="font-semibold">Paiement</h3>
+      <h3 class="font-semibold">{{ billed ? 'Instruction' : 'Paiement' }}</h3>
       <div class="grid sm:grid-cols-2 gap-3">
-        <div>
+        <div v-if="!billed">
           <label class="label" for="items">Montant des articles à encaisser (F) <span v-if="parsed.items_amount" class="check">à vérifier</span></label>
           <input id="items" v-model.number="form.items_amount" type="number" min="0" step="50" :class="['input', mark('items_amount')]" @input="touched('items_amount')">
         </div>
-        <div>
+        <div v-if="!billed">
           <label class="label" for="payer">Frais de livraison payés par <span class="text-red-600">*</span> <span v-if="parsed.fee_payer" class="check">à vérifier</span></label>
           <select id="payer" v-model="form.fee_payer" :class="['input', errors.fee_payer ? 'border-red-500 ring-1 ring-red-500' : mark('fee_payer')]" required @change="touched('fee_payer')">
             <option :value="null" disabled>Choisissez…</option>
@@ -243,7 +254,7 @@
         <p v-if="quoteError" class="text-red-600">{{ quoteError }}</p>
         <template v-else-if="quote?.billing">
           <p>Facture du mois : <strong>{{ quote.billing.label }}</strong><template v-if="quote.billing.amount"> · {{ money(quote.billing.amount) }}</template></p>
-          <p class="text-gray-600">À encaisser auprès du destinataire : <strong>{{ money(codAmount) }}</strong></p>
+          <p class="text-gray-600">Rien à encaisser auprès du destinataire</p>
         </template>
         <template v-else-if="quote">
           <p>Frais de livraison : <strong>{{ money(quote.total) }}</strong></p>
@@ -401,11 +412,20 @@ watch([lots, contractPlan], () => {
   }
 }, { immediate: true })
 const billingPlan = computed(() => lots.value.find((l) => l.id === form.billing_plan_id) || contractPlan.value)
+// Distribution, MAD : rien à encaisser (pas de montant, frais sur la facture du mois)
+const billed = computed(() => !!form.activity && form.activity !== 'ecommerce')
+const proofText = computed(() => {
+  const p = billingPlan.value?.proof || {}
+  return [p.proof_name && 'le nom de la personne qui reçoit', p.proof_signature && 'sa signature', p.proof_photo && 'une photo de la décharge'].filter(Boolean).join(', ')
+})
 watch(billingPlan, (plan) => {
   form.shipment_type = plan ? (form.shipment_type || 'colis') : null
   form.delivery_delay = plan && !plan.has_forfait ? (form.delivery_delay || plan.delivery_delay) : null
-  // Rien à payer sur la course : les frais ne changent pas l'encaissement
-  if (plan && !form.fee_payer) form.fee_payer = 'merchant'
+}, { immediate: true })
+watch(billed, (value) => {
+  if (!value) return
+  form.items_amount = 0
+  form.fee_payer = 'merchant'
 }, { immediate: true })
 const hubZoneId = computed(() => hubs.value.find((h) => h.id === form.pickup_hub_id)?.zone_id)
 
@@ -427,7 +447,8 @@ async function loadProducts() {
 }
 
 watch(itemsTotal, (total) => {
-  if (items.value.length) form.items_amount = total
+  // Distribution, MAD : les articles sortent du stock, sans montant à encaisser
+  if (items.value.length && !billed.value) form.items_amount = total
 })
 watch(() => form.pickup_hub_id, (hub) => {
   if (hub) items.value = items.value.filter((i) => i.product_id !== undefined)

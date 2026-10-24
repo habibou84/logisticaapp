@@ -43,10 +43,10 @@ class MerchantResource extends JsonResource
             // Activités du client (e-commerce, distribution, MAD) et formules en cours (une par activité facturée)
             'activities' => array_map(fn (Activity $a) => $a->value, $this->resource->activityList()),
             'billing_plans' => $this->whenLoaded('billingPlans', fn () => $this->billingPlans->reject(fn ($p) => $p->formula->isLot())
-                ->unique(fn ($p) => $p->activity->value)->map(fn ($p) => $p->brief())->values()),
+                ->unique(fn ($p) => $p->activity->value)->map(fn ($p) => [...$p->brief(), ...($isStaff ? $p->operations() : [])])->values()),
             // Lots ponctuels ouverts (distribution) : choisis sur la course
             'lots' => $this->whenLoaded('billingPlans', fn () => $this->billingPlans->filter(fn ($p) => $p->formula->isLot())
-                ->map(fn ($p) => $p->brief())->values()),
+                ->map(fn ($p) => [...$p->brief(), ...($isStaff ? $p->operations() : [])])->values()),
             'users' => UserResource::collection($this->whenLoaded('users')),
             'created_at' => $this->created_at,
         ];

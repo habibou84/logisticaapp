@@ -163,6 +163,23 @@ class BillingPlan extends Model
         ];
     }
 
+    /**
+     * Pour l'équipe qui crée la course : preuve de remise demandée, livreurs attitrés (MAD).
+     *
+     * @return array<string, mixed>
+     */
+    public function operations(): array
+    {
+        $options = app(ActivityOptions::class)->plan($this);
+
+        return [
+            'proof' => array_intersect_key($options, array_flip(['proof_name', 'proof_signature', 'proof_photo'])),
+            'couriers' => $this->formula === BillingFormula::MadContract
+                ? $this->couriers->map(fn ($c) => ['id' => $c->id, 'name' => $c->user?->name])->values()->all()
+                : [],
+        ];
+    }
+
     public function describe(): string
     {
         if ($this->formula->isLot()) {
