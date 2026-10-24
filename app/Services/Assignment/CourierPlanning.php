@@ -8,6 +8,7 @@ use App\Models\CourierRule;
 use App\Models\Merchant;
 use App\Models\Order;
 use App\Models\Zone;
+use App\Services\Vehicles\Fleet;
 use Illuminate\Support\Collection;
 
 /**
@@ -93,13 +94,15 @@ class CourierPlanning
     }
 
     /**
-     * Le livreur peut-il recevoir des missions : compte actif, disponible, pas absent.
+     * Le livreur peut-il recevoir des missions : compte actif, disponible, pas absent, et un véhicule en état
+     * si l'entreprise le demande (Réglages › Véhicules).
      *
      * @param  list<int>  $absent
      */
     public function available(?Courier $courier, array $absent): bool
     {
-        return $courier !== null && $courier->is_available && (bool) $courier->user?->isActive() && ! in_array($courier->id, $absent, true);
+        return $courier !== null && $courier->is_available && (bool) $courier->user?->isActive() && ! in_array($courier->id, $absent, true)
+            && app(Fleet::class)->canWork($courier);
     }
 
     /**

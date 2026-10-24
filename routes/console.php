@@ -29,6 +29,8 @@ Schedule::command('billing:remind')->dailyAt('09:10')->withoutOverlapping();
 Schedule::command('orders:internal-delays')->everyFiveMinutes()->withoutOverlapping();
 // Notation des livreurs : note sous le seuil, mauvaises notes répétées (une alerte par semaine au plus)
 Schedule::command('couriers:rating-alerts')->dailyAt('08:20')->withoutOverlapping();
+// Véhicules : rappels des papiers et de l'entretien, location-vente, dotations carburant de la veille
+Schedule::command('vehicles:daily')->dailyAt('06:40')->withoutOverlapping();
 // Accès WhatsApp du bouton « Connecter WhatsApp » (60 jours) : relais par la plateforme ou alerte avant l'échéance
 Schedule::command('whatsapp:tokens')->dailyAt('08:15')->withoutOverlapping();
 Schedule::command('model:prune', ['--model' => [IdempotencyKey::class, WebhookDelivery::class, CourierLocation::class]])->daily();

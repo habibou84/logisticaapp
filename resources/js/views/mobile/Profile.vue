@@ -37,7 +37,10 @@
       </div>
     </template>
 
-    <!-- Livreur : sa note (si l'entreprise la montre) -->
+    <!-- Livreur : son véhicule ; sa note (si l'entreprise la montre) -->
+    <div v-if="app === 'livreur'" class="m-card divide-y">
+      <MenuRow to="/livreur/vehicule" icon="truck" tone="blue" label="Mon véhicule" sub="État des lieux, plein, papiers, entretien" />
+    </div>
     <CourierScoreCard v-if="app === 'livreur'" />
 
     <PushSettings v-if="app === 'livreur'" />

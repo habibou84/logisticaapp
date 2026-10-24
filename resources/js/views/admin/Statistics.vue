@@ -177,6 +177,7 @@
     <ZonesTab v-if="tab === 'zones' && data.zones" :data="data.zones" :with-amounts="withAmounts" exportable />
     <FinancesTab v-if="tab === 'finances' && data.finances" :data="data.finances" />
     <FieldTab v-if="tab === 'field' && data.field" :data="data.field" />
+    <VehiclesTab v-if="tab === 'vehicles' && data.vehicles" :data="data.vehicles" />
   </div>
 </template>
 
@@ -189,6 +190,7 @@ import ColumnChart from '../../components/stats/ColumnChart.vue'
 import Heatmap from '../../components/stats/Heatmap.vue'
 import FinancesTab from '../../components/stats/FinancesTab.vue'
 import FieldTab from '../../components/stats/FieldTab.vue'
+import VehiclesTab from '../../components/stats/VehiclesTab.vue'
 import KpiTile from '../../components/stats/KpiTile.vue'
 import LineChart from '../../components/stats/LineChart.vue'
 import MerchantsTab from '../../components/stats/MerchantsTab.vue'
@@ -242,12 +244,13 @@ const tabs = computed(() => [
   ...(auth.can('merchants.view') ? [{ key: 'merchants', label: 'Clients' }] : []),
   { key: 'zones', label: 'Zones' },
   ...(auth.can('finance.view') ? [{ key: 'finances', label: 'Finances' }] : []),
-  ...(auth.can('orders.dispatch') ? [{ key: 'field', label: 'Terrain' }] : []),
+  ...(auth.can('orders.dispatch') ? [{ key: 'field', label: 'Terrain' }, { key: 'vehicles', label: 'Véhicules' }] : []),
 ])
 const ENDPOINTS = {
   ...Object.fromEntries(['overview', 'deliveries', 'couriers', 'merchants', 'zones', 'finances'].map((k) => [k, `/stats/${k}`])),
   // Événements terrain (panne, accident…)
   field: '/field-events/stats',
+  vehicles: '/vehicles/stats',
 }
 
 const preset = ref(PRESETS[route.query.periode] ? route.query.periode : 'month')

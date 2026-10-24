@@ -14,6 +14,7 @@ use App\Models\Zone;
 use App\Services\Finance\CourierCash;
 use App\Services\Ratings\CourierScores;
 use App\Services\Ratings\RatingSettings;
+use App\Services\Vehicles\Fleet;
 use App\Support\PhoneNumber;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
@@ -37,6 +38,7 @@ class DeliveryChooser
     public function __construct(
         private readonly CourierPlanning $planning,
         private readonly CourierCash $cash,
+        private readonly Fleet $fleet,
     ) {}
 
     /**
@@ -145,7 +147,7 @@ class DeliveryChooser
             ->filter(fn (Courier $c) => $this->planning->available($c, $absent)
                 && ($c->shift_ends_at === null || $now->format('H:i') < $c->shift_ends_at)
                 && $this->fits($c, $order)
-                && ($c->max_parcels === null || $c->getRelation('activeAssignments')->count() < $c->max_parcels));
+                && (($max = $this->fleet->maxParcels($c)) === null || $c->getRelation('activeAssignments')->count() < $max));
 
         // Argent en main : ce qu'il doit déjà à la caisse, plus ce qu'il encaissera sur ses livraisons en cours et celle-ci
         $capped = $couriers->filter(fn (Courier $c) => $c->max_cash !== null);

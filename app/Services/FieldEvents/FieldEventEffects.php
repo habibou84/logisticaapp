@@ -12,9 +12,13 @@ use App\Models\CourierAbsence;
 use App\Models\FieldEvent;
 use App\Models\Order;
 use App\Models\User;
+use App\Models\Vehicle;
 use App\Services\Assignment\AutoAssigner;
 use App\Services\Messaging\Messenger;
 use App\Services\Orders\OrderDispatcher;
+use App\Services\Vehicles\Fleet;
+use App\Services\Vehicles\VehicleLogs;
+use App\Services\Vehicles\VehicleSettings;
 use Throwable;
 
 /**
@@ -26,6 +30,7 @@ use Throwable;
  *  - les clients des courses touchées sont prévenus d'un retard (message neutre).
  * À la reprise (ou à la résolution par l'équipe), le livreur revient en service et l'absence du jour est retirée.
  * Ce qui a été fait est noté sur l'événement (effects). Un effet qui échoue ne bloque jamais le signalement.
+ * Panne ou accident : le véhicule du livreur passe « en panne » et l'événement entre à son carnet (Réglages › Véhicules).
  */
 class FieldEventEffects
 {
@@ -38,6 +43,7 @@ class FieldEventEffects
 
     public function onReported(FieldEvent $event): void
     {
+        $this->vehicleDown($event);
         if (! $event->blocksCourier()) {
             return;
         }
@@ -83,6 +89,10 @@ class FieldEventEffects
      */
     public function onResolved(FieldEvent $event, bool $resumed = false): void
     {
+        // Véhicule mis « en panne » par cet événement : de nouveau en service
+        Vehicle::withoutGlobalScopes()->where('field_event_id', $event->id)->where('status', 'broken')
+            ->update(['status' => 'active', 'field_event_id' => null]);
+
         $event->loadMissing('courier');
         $effects = $event->effects ?? [];
         $courier = $event->courier;
@@ -100,6 +110,41 @@ class FieldEventEffects
         }
 
         $event->forceFill(['effects' => $effects])->saveQuietly();
+    }
+
+    /**
+     * Panne ou accident (Réglages › Véhicules) : le véhicule du livreur passe « en panne » et l'événement entre au
+     * carnet (réparation ou sinistre, avec le coût de dépannage indiqué).
+     */
+    private function vehicleDown(FieldEvent $event): void
+    {
+        if (! in_array($event->type, ['breakdown', 'accident'], true)) {
+            return;
+        }
+        $event->loadMissing(['courier', 'company']);
+        if (! app(VehicleSettings::class)->for($event->company)['link_field_events']) {
+            return;
+        }
+        $vehicle = app(Fleet::class)->currentFor($event->courier);
+        if ($vehicle === null) {
+            return;
+        }
+        try {
+            if ($event->blocksCourier()) {
+                $vehicle->forceFill(['status' => 'broken', 'field_event_id' => $event->id])->save();
+            }
+            app(VehicleLogs::class)->add(null, $vehicle, [
+                'kind' => $event->type === 'accident' ? 'claim' : 'repair',
+                'done_on' => $event->created_at->toDateString(),
+                'courier_id' => $event->courier_id,
+                'label' => "{$event->type_label} signalée par le livreur".($event->note ? " : {$event->note}" : ''),
+                'amount' => (int) $event->cost,
+                'paid_by' => $event->cost ? 'courier' : 'company',
+                'field_event_id' => $event->id,
+            ]);
+        } catch (Throwable $e) {
+            report($e);
+        }
     }
 
     /**

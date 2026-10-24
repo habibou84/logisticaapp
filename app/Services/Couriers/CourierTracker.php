@@ -6,6 +6,7 @@ use App\Enums\OrderStatus;
 use App\Models\Courier;
 use App\Models\CourierLocation;
 use App\Models\OrderEvent;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Carbon;
 
 /**
@@ -113,6 +114,17 @@ class CourierTracker
                 ->map(fn ($d) => substr((string) $d, 0, 10))
                 ->values(),
         ];
+    }
+
+    /**
+     * Kilomètres du trajet GPS entre deux instants (véhicules : comparaison avec le compteur).
+     */
+    public function kilometers(Courier $courier, CarbonInterface $from, CarbonInterface $to): float
+    {
+        $points = CourierLocation::forCompany($courier->company_id)->where('courier_id', $courier->id)
+            ->whereBetween('recorded_at', [$from, $to])->orderBy('recorded_at')->get(['lat', 'lng', 'recorded_at']);
+
+        return round($this->distance($points) / 1000, 1);
     }
 
     /**

@@ -6,6 +6,7 @@ use App\Enums\AssignmentStatus;
 use App\Enums\AssignmentType;
 use App\Enums\EarningType;
 use App\Events\CourierLocationUpdated;
+use App\Exceptions\BusinessRuleException;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\V1\CourierResource;
 use App\Http\Resources\V1\OrderAssignmentResource;
@@ -17,6 +18,7 @@ use App\Services\Assignment\MadCouriers;
 use App\Services\Couriers\CourierTracker;
 use App\Services\Finance\CourierPay;
 use App\Services\Orders\OrderDispatcher;
+use App\Services\Vehicles\VehicleChecks;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
@@ -79,6 +81,8 @@ class CourierSpaceController extends Controller
             'mad' => app(MadCouriers::class)->of($courier),
             // Toutes consignes non lues (y compris sur des missions terminées)
             'unread_messages' => CourierMessage::where('courier_id', $courier->id)->whereNull('read_at')->where('created_at', '>=', now()->subDays(2))->count(),
+            // Véhicule du jour, état des lieux à faire, entretien à prévoir
+            'vehicle' => app(VehicleChecks::class)->summary($courier),
         ]]);
     }
 
@@ -124,6 +128,10 @@ class CourierSpaceController extends Controller
         ]);
 
         if (array_key_exists('is_available', $data)) {
+            // État des lieux du véhicule à faire avant de se mettre en service (si l'entreprise le veut)
+            if ($data['is_available'] && ! $courier->is_available && app(VehicleChecks::class)->blocksService($courier)) {
+                throw new BusinessRuleException('Faites d\'abord l\'état des lieux de votre véhicule.', 'vehicle');
+            }
             $courier->is_available = $data['is_available'];
         }
 

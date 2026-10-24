@@ -20,6 +20,7 @@ use App\Http\Controllers\Api\V1\CourierFieldEventController;
 use App\Http\Controllers\Api\V1\CourierMessageController;
 use App\Http\Controllers\Api\V1\CourierRatingController;
 use App\Http\Controllers\Api\V1\CourierSpaceController;
+use App\Http\Controllers\Api\V1\CourierVehicleController;
 use App\Http\Controllers\Api\V1\DeliveryDayController;
 use App\Http\Controllers\Api\V1\FieldEventController;
 use App\Http\Controllers\Api\V1\FieldReportController;
@@ -60,6 +61,7 @@ use App\Http\Controllers\Api\V1\StockMovementController;
 use App\Http\Controllers\Api\V1\StorageContractController;
 use App\Http\Controllers\Api\V1\TrackingController;
 use App\Http\Controllers\Api\V1\UserController;
+use App\Http\Controllers\Api\V1\VehicleController;
 use App\Http\Controllers\Api\V1\VerificationController;
 use App\Http\Controllers\Api\V1\WebhookController;
 use App\Http\Controllers\Api\V1\WhatsAppSettingsController;
@@ -236,6 +238,34 @@ Route::prefix('v1')->name('v1.')->group(function () {
             Route::get('counts', [FieldReportController::class, 'counts'])->name('counts');
             Route::post('{event}/handle', [FieldReportController::class, 'handle'])->name('handle');
             Route::post('{event}/reopen', [FieldReportController::class, 'reopen'])->name('reopen');
+        });
+
+        // Véhicules : parc, papiers, entretien, carnet, location-vente, échéances, statistiques
+        Route::middleware('can:orders.dispatch')->prefix('vehicles')->name('vehicles.')->controller(VehicleController::class)->group(function () {
+            Route::get('catalog', 'catalog')->name('catalog');
+            Route::get('counts', 'counts')->name('counts');
+            Route::get('deadlines', 'deadlines')->name('deadlines');
+            Route::get('stats', 'stats')->name('stats');
+            Route::get('courier-documents', 'courierDocuments')->name('courier-documents');
+            Route::post('documents', 'storeDocument')->name('documents.store');
+            Route::post('documents/{document}', 'updateDocument')->name('documents.update');
+            Route::delete('documents/{document}', 'destroyDocument')->name('documents.destroy');
+            Route::get('documents/{document}/file', 'showDocumentFile')->name('documents.file');
+            Route::delete('logs/{log}', 'destroyLog')->name('logs.destroy');
+            Route::get('logs/{log}/photos/{index}', 'logPhoto')->whereNumber('index')->name('logs.photo');
+            Route::get('checks/{check}/photos/{index}', 'checkPhoto')->whereNumber('index')->name('checks.photo');
+            Route::post('leases/{lease}/payments', 'payLease')->middleware('can:finance.manage')->name('leases.pay');
+            Route::post('leases/{lease}/cancel', 'cancelLease')->middleware('can:finance.manage')->name('leases.cancel');
+            Route::get('/', 'index')->name('index');
+            Route::post('/', 'store')->name('store');
+            Route::get('{vehicle}', 'show')->whereNumber('vehicle')->name('show');
+            Route::patch('{vehicle}', 'update')->name('update');
+            Route::post('{vehicle}/photo', 'photo')->name('photo');
+            Route::get('{vehicle}/photo', 'showPhoto')->name('photo.show');
+            Route::post('{vehicle}/assign', 'assign')->name('assign');
+            Route::put('{vehicle}/plan', 'setPlan')->name('plan');
+            Route::post('{vehicle}/logs', 'storeLog')->name('logs.store');
+            Route::post('{vehicle}/leases', 'storeLease')->middleware('can:finance.manage')->name('leases.store');
         });
 
         // Événements terrain des livreurs (panne, accident, contrôle…)
@@ -483,6 +513,13 @@ Route::prefix('v1')->name('v1.')->group(function () {
             Route::get('messages', [CourierMessageController::class, 'mine'])->name('messages');
             Route::post('messages/{message}/ack', [CourierMessageController::class, 'acknowledge'])->name('messages.ack');
             Route::get('return-slips', [ReturnSlipController::class, 'mine'])->name('return-slips');
+            // Mon véhicule : état des lieux, pleins, papiers
+            Route::controller(CourierVehicleController::class)->prefix('vehicle')->name('vehicle.')->group(function () {
+                Route::get('/', 'show')->name('show');
+                Route::post('checks', 'check')->middleware('throttle:30,1')->name('checks');
+                Route::post('fuel', 'fuel')->middleware('throttle:30,1')->name('fuel');
+                Route::get('documents/{document}', 'document')->name('document');
+            });
             // Événements terrain (panne, accident…) signalés par le livreur
             Route::controller(CourierFieldEventController::class)->prefix('field-events')->name('field-events.')->group(function () {
                 Route::get('setup', 'setup')->name('setup');

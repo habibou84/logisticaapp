@@ -15,6 +15,29 @@
       </span>
     </button>
 
+    <!-- Véhicule du jour : état des lieux à faire, entretien à prévoir -->
+    <template v-if="vehicle">
+      <div v-if="vehicle.vehicle && vehicle.check_needed" class="rounded-2xl bg-indigo-50 p-4 ring-1 ring-indigo-200">
+        <p class="font-semibold text-indigo-900">{{ VEHICLE_TYPES[vehicle.vehicle.type]?.icon }} Votre véhicule du jour : {{ vehicle.vehicle.plate }}</p>
+        <p class="text-sm text-indigo-800">{{ vehicle.vehicle.name }} · dernier relevé {{ km(vehicle.vehicle.odometer) }}</p>
+        <RouterLink to="/livreur/vehicule/etat-des-lieux" class="m-btn-primary mt-3">📋 Faire l'état des lieux{{ vehicle.blocks_service ? ' pour commencer' : '' }}</RouterLink>
+      </div>
+      <RouterLink v-else-if="vehicle.vehicle" to="/livreur/vehicule" class="tap flex items-center gap-3 rounded-2xl bg-white p-3 ring-1 ring-slate-200">
+        <span class="grid h-10 w-10 place-items-center rounded-xl bg-slate-100 text-xl">{{ VEHICLE_TYPES[vehicle.vehicle.type]?.icon }}</span>
+        <span class="flex-1"><span class="block font-semibold">{{ vehicle.vehicle.plate }}</span><span class="block text-sm text-slate-500">Mon véhicule · plein, papiers, entretien</span></span>
+        <span class="text-xl text-slate-400">›</span>
+      </RouterLink>
+      <RouterLink v-else-if="vehicle.free" to="/livreur/vehicule/etat-des-lieux" class="tap block rounded-2xl bg-indigo-50 p-4 ring-1 ring-indigo-200">
+        <span class="block font-semibold text-indigo-900">🔑 Prendre un véhicule pour la journée</span>
+        <span class="block text-sm text-indigo-800">{{ vehicle.free }} véhicule{{ vehicle.free > 1 ? 's' : '' }} libre{{ vehicle.free > 1 ? 's' : '' }} · état des lieux en 1 minute →</span>
+      </RouterLink>
+      <p v-if="vehicle.problems?.length" class="rounded-2xl bg-red-50 p-4 text-sm text-red-800 ring-1 ring-red-200">⛔ Votre véhicule ne peut pas rouler : {{ vehicle.problems.join(', ') }}. Voyez avec l'agence.</p>
+      <div v-if="vehicle.maintenance" class="rounded-2xl bg-amber-50 p-4 text-amber-900 ring-1 ring-amber-200">
+        <p class="font-semibold">{{ vehicle.maintenance.icon }} {{ vehicle.maintenance.label }} {{ remainingText(vehicle.maintenance) }}</p>
+        <p class="text-sm">Prévenez l'agence pour prendre rendez-vous au garage.</p>
+      </div>
+    </template>
+
     <!-- Événement sur la route : panne, accident, contrôle… -->
     <button type="button" class="tap w-full rounded-2xl bg-white ring-1 ring-red-200 p-3 flex items-center gap-3 text-left active:bg-red-50" @click="reporting = true">
       <span class="h-10 w-10 shrink-0 rounded-xl grid place-items-center text-xl bg-red-100">⚠️</span>
@@ -159,6 +182,7 @@ import EmptyState from '../../components/mobile/EmptyState.vue'
 import InstallBanner from '../../components/mobile/InstallBanner.vue'
 import FieldEventSheet from '../../components/courier/FieldEventSheet.vue'
 import { fieldEventQueue } from '../../composables/useFieldEvents'
+import { VEHICLE_TYPES, km, remainingText } from '../../utils/vehicles'
 import { useAuthStore } from '../../stores/auth'
 import { useNotificationStore } from '../../stores/notifications'
 import { currentPosition } from '../../composables/useGeolocation'
@@ -191,6 +215,7 @@ const visible = computed(() => {
   return [...list].sort((a, b) => (lotOf(a) === lotOf(b) ? 0 : lotOf(a) === 0 ? 1 : lotOf(b) === 0 ? -1 : lotOf(a) - lotOf(b)))
 })
 const mad = ref(null)
+const vehicle = ref(null)
 // Événements terrain signalés et pas encore réglés
 const reporting = ref(false)
 const openEvents = ref([])
@@ -247,6 +272,7 @@ async function load() {
     missions.value = withPending(m.data.data)
     messages.setUnread(m.data.meta?.unread_messages)
     mad.value = m.data.meta?.mad || null
+    vehicle.value = m.data.meta?.vehicle || null
     wallet.value = w.data.data
     stale.value = m.stale || w.stale
     error.value = ''

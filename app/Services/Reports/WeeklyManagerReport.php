@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Notifications\WeeklyReportReady;
 use App\Services\FieldEvents\FieldEventStats;
 use App\Services\Messaging\Messenger;
+use App\Services\Vehicles\VehicleStats;
 use App\Support\Money;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
@@ -97,7 +98,10 @@ class WeeklyManagerReport
         }
 
         if ($admins->isNotEmpty()) {
-            $field = app(FieldEventStats::class)->weeklyLine($company->id, $from->toDateString(), $to->toDateString());
+            $field = collect([
+                app(FieldEventStats::class)->weeklyLine($company->id, $from->toDateString(), $to->toDateString()),
+                app(VehicleStats::class)->weeklyLine($company->id),
+            ])->filter()->implode(' · ');
             Notification::send($admins, new WeeklyReportReady($period, $kpis, $previous, $toRelaunch, $field));
         }
 

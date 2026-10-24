@@ -117,6 +117,12 @@ const ALL = computed(() => {
       keywords: 'événement terrain panne accident contrôle police vol agression météo signaler incident route pause',
     },
     {
+      key: 'vehicles', icon: '🏍️', title: 'Véhicules', to: '/admin/reglages/vehicules', permission: 'settings.manage',
+      description: 'État des lieux, papiers et entretien, carburant (dotation ou remboursement), location-vente, amendes, indemnité véhicule personnel.',
+      summary: c?.vehicle_settings && `État des lieux ${{ daily: 'chaque jour', weekly: 'chaque lundi', never: 'désactivé' }[c.vehicle_settings.check_mode]} · carburant ${{ allowance: 'en dotation', refund: 'remboursé', courier: 'à la charge du livreur' }[c.vehicle_settings.fuel_mode]}`,
+      keywords: 'véhicule moto parc assurance visite technique vignette carte grise permis entretien vidange carburant essence plein dotation location vente amende sinistre',
+    },
+    {
       key: 'team', icon: '🛵', title: 'Équipe et paie',
       description: 'Rémunération des livreurs, comptes et rôles de l\'équipe.',
       links: [{ to: '/admin/paie-livreurs', label: 'Paie des livreurs', permission: 'settings.manage' }, { to: '/admin/utilisateurs', label: 'Utilisateurs et rôles', permission: 'users.view' }],

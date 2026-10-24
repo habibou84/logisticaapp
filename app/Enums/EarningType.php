@@ -22,6 +22,14 @@ enum EarningType: string
     case Bonus = 'bonus';
     // Jours de mise à disposition (MAD) chez un client sur la période (plan de paie)
     case MadDays = 'mad_days';
+    // Véhicules : dotation carburant par jour travaillé, remboursement d'un plein, indemnité pour un véhicule personnel
+    case FuelAllowance = 'fuel_allowance';
+    case FuelRefund = 'fuel_refund';
+    case VehicleAllowance = 'vehicle_allowance';
+    // Versement de location-vente ou de location retenu sur la paie (négatif)
+    case VehicleLease = 'vehicle_lease';
+    // Amende ou part des dégâts retenue au livreur (négatif)
+    case VehicleCharge = 'vehicle_charge';
 
     public function label(): string
     {
@@ -37,6 +45,11 @@ enum EarningType: string
             self::Carryover => 'Retenue reportée',
             self::Bonus => 'Prime d\'objectif',
             self::MadDays => 'Mise à disposition',
+            self::FuelAllowance => 'Dotation carburant',
+            self::FuelRefund => 'Remboursement carburant',
+            self::VehicleAllowance => 'Indemnité véhicule personnel',
+            self::VehicleLease => 'Versement véhicule',
+            self::VehicleCharge => 'Retenue véhicule (amende, dégâts)',
         };
     }
 }

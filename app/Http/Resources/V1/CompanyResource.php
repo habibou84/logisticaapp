@@ -7,6 +7,7 @@ use App\Models\Company;
 use App\Services\FieldEvents\FieldEventSettings;
 use App\Services\Orders\ActivityOptions;
 use App\Services\Ratings\RatingSettings;
+use App\Services\Vehicles\VehicleSettings;
 use App\Support\Branding;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -68,6 +69,7 @@ class CompanyResource extends JsonResource
             // Notation des livreurs (valeurs par défaut comprises)
             'rating_settings' => app(RatingSettings::class)->for($this->resource),
             'field_event_settings' => app(FieldEventSettings::class)->for($this->resource),
+            'vehicle_settings' => app(VehicleSettings::class)->for($this->resource),
             'merchant_signup' => $this->merchant_signup,
             'weekly_report' => $this->weekly_report,
             'logo_url' => Branding::logoUrl($this->resource),

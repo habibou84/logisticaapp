@@ -168,6 +168,12 @@ onBeforeUnmount(() => document.documentElement.style.removeProperty('--admin-col
 // Remontées terrain à traiter : badge du menu, rafraîchi chaque minute
 // Colis restés trop longtemps chez un livreur : badge du menu
 const fieldReports = useFieldReportStore()
+// Véhicules : échéances dépassées et véhicules immobilisés (badge du menu)
+const vehicleUrgent = ref(0)
+async function loadVehicleCounts() {
+  if (!auth.can('orders.dispatch')) return
+  vehicleUrgent.value = (await http.get('/vehicles/counts').catch(() => null))?.data.data.urgent || 0
+}
 const heldParcels = useHeldParcelStore()
 // Courses qui attendent un livreur au-delà du délai : badge du menu « Courses »
 const dispatchCounts = useDispatchCountStore()
@@ -176,6 +182,7 @@ const isDispatch = computed(() => auth.can('orders.dispatch'))
 let countsTimer
 function fetchCounts() {
   fieldReports.fetchCounts().catch(() => {})
+  loadVehicleCounts()
   heldParcels.fetchCounts().catch(() => {})
   dispatchCounts.fetchCounts().catch(() => {})
 }
@@ -280,6 +287,7 @@ const menu = computed(() => {
       label: 'Équipe',
       items: [
         { to: '/admin/livreurs', icon: '🛵', label: 'Livreurs', permission: 'orders.dispatch' },
+        { to: '/admin/vehicules', icon: '🏍️', label: 'Véhicules', permission: 'orders.dispatch', badge: vehicleUrgent.value },
         { to: '/admin/qualite-livreurs', icon: '⭐', label: 'Qualité des livreurs', permission: 'orders.dispatch' },
         { to: '/admin/utilisateurs', icon: '👥', label: 'Utilisateurs', permission: 'users.view' },
       ],

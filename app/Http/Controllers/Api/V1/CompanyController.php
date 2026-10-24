@@ -9,6 +9,7 @@ use App\Models\Company;
 use App\Services\FieldEvents\FieldEventSettings;
 use App\Services\Orders\ActivityOptions;
 use App\Services\Ratings\RatingSettings;
+use App\Services\Vehicles\VehicleSettings;
 use App\Support\InvoicePayments;
 use Illuminate\Support\Facades\Gate;
 
@@ -36,6 +37,9 @@ class CompanyController extends Controller
         }
         if (array_key_exists('field_event_settings', $data)) {
             $data['field_event_settings'] = FieldEventSettings::clean((array) ($data['field_event_settings'] ?? []));
+        }
+        if (array_key_exists('vehicle_settings', $data)) {
+            $data['vehicle_settings'] = VehicleSettings::clean((array) ($data['vehicle_settings'] ?? []));
         }
         $company->update($data);
 
