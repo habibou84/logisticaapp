@@ -15,6 +15,7 @@ import OfflineQueueBanner from '../../components/mobile/OfflineQueueBanner.vue'
 import { RouteIcon, UserIcon, WalletIcon } from '../../components/mobile/icons'
 import { currentPosition } from '../../composables/useGeolocation'
 import { loadOfflineQueue, startOfflineSync } from '../../composables/useOfflineQueue'
+import { loadFieldEventQueue, startFieldEventSync } from '../../composables/useFieldEvents'
 import { useAuthStore } from '../../stores/auth'
 
 const auth = useAuthStore()
@@ -22,6 +23,9 @@ const auth = useAuthStore()
 // Actions faites hors connexion : relues sur le téléphone, envoyées dès que le réseau revient
 loadOfflineQueue(auth.user?.id)
 startOfflineSync(() => window.dispatchEvent(new CustomEvent('offline-synced')))
+// Signalements d'événements terrain faits sans réseau
+loadFieldEventQueue(auth.user?.id)
+startFieldEventSync(() => window.dispatchEvent(new CustomEvent('offline-synced')))
 
 // Position envoyée toutes les 30 secondes pendant le service, quel que soit l'écran ouvert
 // (carte des livreurs du dispatch)

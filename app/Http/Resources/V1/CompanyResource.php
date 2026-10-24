@@ -4,6 +4,7 @@ namespace App\Http\Resources\V1;
 
 use App\Enums\Activity;
 use App\Models\Company;
+use App\Services\FieldEvents\FieldEventSettings;
 use App\Services\Orders\ActivityOptions;
 use App\Services\Ratings\RatingSettings;
 use App\Support\Branding;
@@ -66,6 +67,7 @@ class CompanyResource extends JsonResource
                 ->mapWithKeys(fn (Activity $a) => [$a->value => app(ActivityOptions::class)->company($this->resource, $a)]),
             // Notation des livreurs (valeurs par défaut comprises)
             'rating_settings' => app(RatingSettings::class)->for($this->resource),
+            'field_event_settings' => app(FieldEventSettings::class)->for($this->resource),
             'merchant_signup' => $this->merchant_signup,
             'weekly_report' => $this->weekly_report,
             'logo_url' => Branding::logoUrl($this->resource),

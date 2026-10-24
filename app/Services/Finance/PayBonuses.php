@@ -3,12 +3,14 @@
 namespace App\Services\Finance;
 
 use App\Enums\PayBonusMetric;
+use App\Enums\PayEvent;
 use App\Models\Courier;
 use App\Models\PayPlan;
 use App\Models\PayPlanBonus;
 use App\Services\Ratings\CourierScores;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Primes d'objectifs : pour chaque indicateur, le palier le plus élevé atteint sur la
@@ -25,10 +27,13 @@ class PayBonuses
      */
     public function measure(Courier $courier, CarbonInterface $start, CarbonInterface $end): array
     {
-        $measures = $this->activity->measures(
-            $this->activity->events($courier->company_id, [$courier->id], $start, $end),
-            $this->activity->timezone($courier->company_id),
-        );
+        $events = $this->activity->events($courier->company_id, [$courier->id], $start, $end);
+        // Échecs sur des courses touchées par un événement terrain aux retards excusés (panne, accident…) : pas comptés
+        $excused = DB::table('field_event_order')->join('field_events', 'field_events.id', '=', 'field_event_order.field_event_id')
+            ->where('field_events.courier_id', $courier->id)->where('field_events.excused', true)
+            ->whereIn('field_event_order.order_id', $events->pluck('order_id')->unique())->pluck('field_event_order.order_id')->all();
+        $events = $events->reject(fn ($e) => $e['event'] === PayEvent::FailedAttempt && in_array($e['order_id'], $excused))->values();
+        $measures = $this->activity->measures($events, $this->activity->timezone($courier->company_id));
         // Note du livreur sur la période (sur 100) ; pas encore notée : 0
         $score = app(CourierScores::class)->for($courier, $start, $end)['score'];
 

@@ -15,6 +15,24 @@
       </span>
     </button>
 
+    <!-- Événement sur la route : panne, accident, contrôle… -->
+    <button type="button" class="tap w-full rounded-2xl bg-white ring-1 ring-red-200 p-3 flex items-center gap-3 text-left active:bg-red-50" @click="reporting = true">
+      <span class="h-10 w-10 shrink-0 rounded-xl grid place-items-center text-xl bg-red-100">⚠️</span>
+      <span class="flex-1">
+        <span class="block font-semibold text-red-700">Signaler un problème</span>
+        <span class="block text-sm text-slate-500">Panne, accident, contrôle, vol…</span>
+      </span>
+      <span class="text-slate-400 text-xl">›</span>
+    </button>
+    <p v-if="fieldEventQueue.pending.length" class="rounded-xl bg-sky-50 text-sky-800 text-sm px-4 py-3">
+      ⏳ {{ fieldEventQueue.pending.length }} signalement{{ fieldEventQueue.pending.length > 1 ? 's' : '' }} en attente de réseau : envoi automatique dès que possible.
+    </p>
+    <RouterLink v-for="e in openEvents" :key="e.id" :to="`/livreur/evenements/${e.id}`" class="tap block rounded-2xl bg-orange-50 ring-1 ring-orange-200 p-4 active:bg-orange-100">
+      <span class="block font-semibold text-orange-900">{{ e.icon }} {{ e.type_label }} · {{ e.status === 'taken' ? 'pris en charge par l\'agence' : 'envoyé à l\'agence' }}</span>
+      <span class="block text-sm text-orange-800">{{ e.status === 'open' ? 'En attente de réponse' : 'Voir l\'échange' }} · « C'est réglé » quand vous reprenez →</span>
+    </RouterLink>
+    <FieldEventSheet :open="reporting" @close="reporting = false" @sent="fieldEventSent" />
+
     <InstallBanner app="livreur" />
 
     <!-- Mise à disposition (MAD) : chez quel client aujourd'hui -->
@@ -139,6 +157,8 @@ import { useToastStore } from '../../stores/toasts'
 import StatusBadge from '../../components/StatusBadge.vue'
 import EmptyState from '../../components/mobile/EmptyState.vue'
 import InstallBanner from '../../components/mobile/InstallBanner.vue'
+import FieldEventSheet from '../../components/courier/FieldEventSheet.vue'
+import { fieldEventQueue } from '../../composables/useFieldEvents'
 import { useAuthStore } from '../../stores/auth'
 import { useNotificationStore } from '../../stores/notifications'
 import { currentPosition } from '../../composables/useGeolocation'
@@ -171,6 +191,25 @@ const visible = computed(() => {
   return [...list].sort((a, b) => (lotOf(a) === lotOf(b) ? 0 : lotOf(a) === 0 ? 1 : lotOf(b) === 0 ? -1 : lotOf(a) - lotOf(b)))
 })
 const mad = ref(null)
+// Événements terrain signalés et pas encore réglés
+const reporting = ref(false)
+const openEvents = ref([])
+async function loadEvents() {
+  openEvents.value = ((await http.get('/courier/field-events').catch(() => null))?.data.data || []).filter((e) => e.status !== 'resolved')
+}
+function fieldEventSent(result) {
+  if (result.offline) {
+    toasts.success('Pas de réseau : le signalement partira dès que possible.')
+    return
+  }
+  toasts.success('Signalement envoyé : l\'agence est prévenue.')
+  if (result.data?.capacity !== 'continue') {
+    available.value = false
+    if (auth.user.courier) auth.user.courier.is_available = false
+  }
+  loadEvents()
+  load()
+}
 // Ramassages : colis d'une même boutique (même adresse) regroupés en une carte
 const cards = computed(() => {
   const groups = new Map()
@@ -242,7 +281,10 @@ function dismissPushInvite() {
   try { localStorage.setItem('push-invite-hidden', String(pushInviteHiddenUntil.value)) } catch { /* stockage indisponible */ }
 }
 
-watch(() => notifications.unread, load)
+watch(() => notifications.unread, () => {
+  load()
+  loadEvents()
+})
 
 // Actions faites hors connexion envoyées : liste rechargée
 window.addEventListener('offline-synced', load)
@@ -250,6 +292,7 @@ onBeforeUnmount(() => window.removeEventListener('offline-synced', load))
 
 onMounted(() => {
   load()
+  loadEvents()
   initPush()
 })
 </script>

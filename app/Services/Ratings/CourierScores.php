@@ -15,6 +15,7 @@ use App\Models\OrderAssignment;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Note d'un livreur sur 5 : note automatique (faits enregistrés par l'application), moyenne des notes des
@@ -102,18 +103,22 @@ class CourierScores
     {
         $assignments = OrderAssignment::query()->where('courier_id', $courier->id)
             ->whereBetween('assigned_at', [$from, $to])->get(['id', 'order_id', 'type', 'status', 'assigned_at', 'completed_at', 'unreachable_at', 'late_alerted_at']);
+        // Courses touchées par un événement terrain aux retards excusés (panne, accident…) : ni retard ni échec comptés
+        $excused = DB::table('field_event_order')->join('field_events', 'field_events.id', '=', 'field_event_order.field_event_id')
+            ->where('field_events.courier_id', $courier->id)->where('field_events.excused', true)
+            ->whereIn('field_event_order.order_id', $assignments->pluck('order_id'))->pluck('field_event_order.order_id')->all();
         $deliveries = $assignments->where('type', AssignmentType::Delivery);
         $done = $deliveries->where('status', AssignmentStatus::Completed);
-        $failed = $deliveries->where('status', AssignmentStatus::Failed);
-        $pickups = $assignments->where('type', AssignmentType::Pickup)->where('status', AssignmentStatus::Completed);
+        $failed = $deliveries->where('status', AssignmentStatus::Failed)->whereNotIn('order_id', $excused);
+        $pickups = $assignments->where('type', AssignmentType::Pickup)->where('status', AssignmentStatus::Completed)->whereNotIn('order_id', $excused);
         $orders = Order::withoutGlobalScopes()->whereIn('id', $done->pluck('order_id'))
             ->get(['id', 'activity', 'internal_due_at', 'delivered_at', 'delivery_code_unverified_at', 'received_by_name']);
         $incidents = CourierEarning::withoutGlobalScopes()->where('courier_id', $courier->id)
             ->whereIn('type', [EarningType::Shortfall->value, EarningType::LostParcel->value])
             ->whereBetween('created_at', [$from, $to])->count();
-        $timed = $orders->filter(fn ($o) => $o->internal_due_at !== null);
+        $timed = $orders->filter(fn ($o) => $o->internal_due_at !== null && ! in_array($o->id, $excused, true));
         $billed = $orders->filter(fn ($o) => in_array($o->activity, [Activity::Distribution, Activity::Mad], true));
-        $bad = $assignments->filter(fn ($a) => $a->status === AssignmentStatus::Refused || $a->unreachable_at !== null)->count();
+        $bad = $assignments->filter(fn ($a) => ($a->status === AssignmentStatus::Refused || $a->unreachable_at !== null) && ! in_array($a->order_id, $excused))->count();
 
         $pct = fn (int $ok, int $all) => $all > 0 ? (int) round(100 * $ok / $all) : null;
         $values = [

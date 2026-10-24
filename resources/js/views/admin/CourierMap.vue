@@ -91,7 +91,7 @@
           <button type="button" class="w-full text-left" @click="focus(c)">
             <div class="flex items-center justify-between gap-2">
               <span class="font-medium flex items-center gap-2">
-                <i :class="['legend', dotClass(c)]" />{{ c.name }} <MadBadge :mad="c.mad" />
+                <i :class="['legend', dotClass(c)]" />{{ c.name }} <MadBadge :mad="c.mad" /> <FieldEventBadge :event="c.field_event" />
               </span>
               <span :class="['text-xs', isStale(c) ? 'text-amber-700' : 'text-gray-500']">{{ c.lat === null ? 'position inconnue' : ago(c.last_location_at) }}</span>
             </div>
@@ -112,6 +112,7 @@
 
 <script setup>
 import MadBadge from '../../components/MadBadge.vue'
+import FieldEventBadge from '../../components/FieldEventBadge.vue'
 import { madTitle } from '../../utils/mad'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -205,7 +206,7 @@ function popup(c) {
     ? `<ul style="margin:4px 0 0;padding-left:16px">${c.missions.map((m) => `<li>${escape(m.type_label)} · <a href="/admin/courses/${m.order_id}" data-order="${m.order_id}">${escape(m.tracking_code)}</a> · ${escape(m.zone_name)}</li>`).join('')}</ul>`
     : '<p style="margin:4px 0 0">Aucune mission en cours</p>'
 
-  return `<strong>${escape(c.name)}</strong><br>${c.mad ? `<span style="color:#6d28d9">${escape(madTitle(c.mad))}</span><br>` : ''}
+  return `<strong>${escape(c.name)}</strong><br>${c.mad ? `<span style="color:#6d28d9">${escape(madTitle(c.mad))}</span><br>` : ''}${c.field_event ? `<a href="/admin/terrain?evenement=${c.field_event.id}" style="color:#b91c1c">${escape(c.field_event.icon || '')} ${escape(c.field_event.label)} en cours</a><br>` : ''}
     <a href="tel:${escape(c.phone)}">${escape(c.phone)}</a> · ${c.is_available ? 'en service' : 'hors service'}<br>
     <span style="color:${isStale(c) ? '#b45309' : '#6b7280'}">Position ${escape(ago(c.last_location_at))}</span>${missions}`
 }

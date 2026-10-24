@@ -97,6 +97,7 @@ const routes = [
       { path: 'reglages/entreprise', component: () => import('../views/admin/settings/SettingsCompany.vue'), meta: { permission: 'settings.manage' } },
       { path: 'reglages/courses', component: () => import('../views/admin/settings/SettingsOrders.vue'), meta: { permission: 'settings.manage' } },
       { path: 'reglages/notation', component: () => import('../views/admin/settings/SettingsRatings.vue'), meta: { permission: 'settings.manage' } },
+      { path: 'reglages/evenements-terrain', component: () => import('../views/admin/settings/SettingsFieldEvents.vue'), meta: { permission: 'settings.manage' } },
       { path: 'qualite-livreurs', component: () => import('../views/admin/CourierQuality.vue'), meta: { permission: 'orders.dispatch' } },
       { path: 'reglages/alertes', component: () => import('../views/admin/settings/SettingsAlerts.vue'), meta: { permission: 'settings.manage' } },
       { path: 'reglages/e-commercants', component: () => import('../views/admin/settings/SettingsMerchants.vue'), meta: { permission: 'settings.manage' } },
@@ -121,6 +122,7 @@ const routes = [
       { path: 'caisse', component: () => import('../views/courier/Wallet.vue'), meta: { title: 'Ma caisse' } },
       { path: 'messages', component: () => import('../views/courier/Messages.vue'), meta: { title: 'Consignes de l\'agence', back: true } },
       { path: 'retours/:id(\\d+)', component: () => import('../views/courier/ReturnHandOver.vue'), meta: { title: 'Remise au client', back: true } },
+      { path: 'evenements/:id(\\d+)', component: () => import('../views/courier/FieldEvent.vue'), meta: { title: 'Mon signalement', back: true } },
       { path: 'notifications', component: mobile.notifications, meta: { title: 'Notifications', back: true } },
       { path: 'profil', component: mobile.profile, meta: { title: 'Mon profil' } },
       // Les notifications pointent vers /livreur/courses/:id : on renvoie vers la liste des missions

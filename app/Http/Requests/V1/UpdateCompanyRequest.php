@@ -3,6 +3,7 @@
 namespace App\Http\Requests\V1;
 
 use App\Rules\PhoneNumber;
+use App\Services\FieldEvents\FieldEventSettings;
 use App\Services\Orders\ActivityOptions;
 use App\Services\Ratings\RatingSettings;
 use App\Support\InvoicePayments;
@@ -57,6 +58,7 @@ class UpdateCompanyRequest extends FormRequest
             ...ActivityOptions::rules('activity_options.mad'),
             // Notation des livreurs : poids, seuils, invitations, usages
             ...RatingSettings::rules(),
+            ...FieldEventSettings::rules(),
             'merchant_signup' => ['sometimes', 'boolean'],
             'weekly_report' => ['sometimes', 'boolean'],
             'pickup_assign_alert_minutes' => ['sometimes', 'integer', 'min:0', 'max:1440'],

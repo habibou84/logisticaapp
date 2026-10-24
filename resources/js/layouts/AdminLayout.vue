@@ -242,7 +242,7 @@ const menu = computed(() => {
         { to: '/admin/carte', icon: '📍', label: 'Carte des livreurs', permission: 'orders.dispatch' },
         { to: '/admin/disponibilites', icon: '🟢', label: 'Livreurs disponibles', permission: 'orders.dispatch' },
         { to: '/admin/planning', icon: '📅', label: 'Planning des livreurs', permission: 'orders.dispatch' },
-        { to: '/admin/terrain', icon: '📣', label: 'Remontées terrain', permission: 'orders.dispatch', badge: fieldReports.open.total },
+        { to: '/admin/terrain', icon: '📣', label: 'Remontées terrain', permission: 'orders.dispatch', badge: fieldReports.badge },
         { to: '/admin/colis-livreurs', icon: '🎒', label: 'Colis chez les livreurs', permission: 'orders.dispatch', badge: heldParcels.counts.overdue },
         { to: '/admin/retours', icon: '📮', label: 'Retours clients', permission: 'orders.dispatch' },
       ],
@@ -311,7 +311,7 @@ const tabs = computed(() => {
     ? [
         { to: '/admin/courses', icon: '📦', label: 'Courses', badge: dispatchCounts.counts.late.total },
         { to: '/admin/carte', icon: '📍', label: 'Carte' },
-        { to: '/admin/terrain', icon: '📣', label: 'Alertes', badge: fieldReports.open.total },
+        { to: '/admin/terrain', icon: '📣', label: 'Alertes', badge: fieldReports.badge },
       ]
     : [
         { to: '/admin/courses', icon: '📦', label: 'Courses', permission: 'orders.view' },

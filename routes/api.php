@@ -16,10 +16,12 @@ use App\Http\Controllers\Api\V1\ClientSupplementController;
 use App\Http\Controllers\Api\V1\CompanyController;
 use App\Http\Controllers\Api\V1\CourierAvailabilityController;
 use App\Http\Controllers\Api\V1\CourierController;
+use App\Http\Controllers\Api\V1\CourierFieldEventController;
 use App\Http\Controllers\Api\V1\CourierMessageController;
 use App\Http\Controllers\Api\V1\CourierRatingController;
 use App\Http\Controllers\Api\V1\CourierSpaceController;
 use App\Http\Controllers\Api\V1\DeliveryDayController;
+use App\Http\Controllers\Api\V1\FieldEventController;
 use App\Http\Controllers\Api\V1\FieldReportController;
 use App\Http\Controllers\Api\V1\FinanceController;
 use App\Http\Controllers\Api\V1\HubController;
@@ -234,6 +236,23 @@ Route::prefix('v1')->name('v1.')->group(function () {
             Route::get('counts', [FieldReportController::class, 'counts'])->name('counts');
             Route::post('{event}/handle', [FieldReportController::class, 'handle'])->name('handle');
             Route::post('{event}/reopen', [FieldReportController::class, 'reopen'])->name('reopen');
+        });
+
+        // Événements terrain des livreurs (panne, accident, contrôle…)
+        Route::middleware('can:orders.dispatch')->prefix('field-events')->name('field-events.')->controller(FieldEventController::class)->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::get('counts', 'counts')->name('counts');
+            Route::get('stats', 'stats')->name('stats');
+            Route::get('{event}', 'show')->whereNumber('event')->name('show');
+            Route::post('{event}/take', 'take')->name('take');
+            Route::post('{event}/resolve', 'resolve')->name('resolve');
+            Route::post('{event}/reopen', 'reopen')->name('reopen');
+            Route::post('{event}/messages', 'message')->name('messages');
+            Route::get('{event}/candidates', 'candidates')->name('candidates');
+            Route::post('{event}/reassign', 'reassign')->name('reassign');
+            Route::post('{event}/release', 'release')->name('release');
+            Route::post('{event}/notify-clients', 'notifyClients')->name('notify-clients');
+            Route::get('{event}/files/{file}', 'file')->name('files');
         });
 
         // Bons de retour groupés par marchand (droits vérifiés dans le contrôleur)
@@ -464,6 +483,16 @@ Route::prefix('v1')->name('v1.')->group(function () {
             Route::get('messages', [CourierMessageController::class, 'mine'])->name('messages');
             Route::post('messages/{message}/ack', [CourierMessageController::class, 'acknowledge'])->name('messages.ack');
             Route::get('return-slips', [ReturnSlipController::class, 'mine'])->name('return-slips');
+            // Événements terrain (panne, accident…) signalés par le livreur
+            Route::controller(CourierFieldEventController::class)->prefix('field-events')->name('field-events.')->group(function () {
+                Route::get('setup', 'setup')->name('setup');
+                Route::get('/', 'index')->name('index');
+                Route::post('/', 'store')->middleware('throttle:30,1')->name('store');
+                Route::get('{event}', 'show')->whereNumber('event')->name('show');
+                Route::post('{event}/messages', 'message')->name('messages');
+                Route::post('{event}/resume', 'resume')->name('resume');
+                Route::get('{event}/files/{file}', 'file')->name('files');
+            });
         });
     });
 });

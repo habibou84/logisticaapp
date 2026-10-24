@@ -29,6 +29,7 @@ enum WhatsAppTemplate: string
     case ParcelOnTheWay = 'envoi_en_route';
     case OrderHandedOver = 'course_remise';
     case RateCourse = 'course_a_noter';
+    case CourseDelayed = 'course_retardee';
 
     public const LANGUAGE = 'fr';
 
@@ -55,6 +56,7 @@ enum WhatsAppTemplate: string
             self::ParcelOnTheWay => 'Bonjour {{1}}, un envoi de {{2}} est en route vers vous. Code de remise à donner au livreur : {{3}}. Suivi : {{4}} . Merci.',
             self::OrderHandedOver => 'Bonjour {{1}}, la course {{2}} pour {{3}} a été remise le {{4}}. Reçue par : {{5}}. Merci de votre confiance.',
             self::RateCourse => 'Bonjour {{1}}, votre course {{2}} a été faite par {{3}}. Donnez votre avis en un clic : {{4}} . Merci, il nous aide à nous améliorer.',
+            self::CourseDelayed => 'Bonjour {{1}}, votre course {{2}} pour {{3}} aura du retard à la suite d\'un imprévu sur le terrain. Nous faisons le nécessaire et vous tenons informé. Merci de votre compréhension.',
         };
     }
 
@@ -83,6 +85,7 @@ enum WhatsAppTemplate: string
             self::ParcelOnTheWay => '🛵 Envoi en route',
             self::OrderHandedOver => '✅ Course remise',
             self::RateCourse => '⭐ Notez votre livreur',
+            self::CourseDelayed => '⏳ Course retardée',
         };
     }
 
@@ -109,6 +112,7 @@ enum WhatsAppTemplate: string
             self::ParcelOnTheWay => 'Au destinataire d\'une course de distribution ou de MAD, quand le livreur part (sans montant ; selon les réglages)',
             self::OrderHandedOver => 'Au client, quand sa course de distribution ou de MAD est remise (avec le nom de la personne qui a reçu)',
             self::RateCourse => 'Au client, après la livraison, pour noter le livreur (si l\'entreprise le veut : Réglages › Notation)',
+            self::CourseDelayed => 'Au client, quand un imprévu sur le terrain (panne, accident…) retarde sa course (Réglages › Événements terrain)',
         };
     }
 
@@ -140,6 +144,7 @@ enum WhatsAppTemplate: string
             self::ParcelOnTheWay => ['Jean', 'Ivoire Assurances', '4821', 'https://exemple.ci/suivi/LV-7K2M-9PQX'],
             self::OrderHandedOver => ['Ivoire Assurances', 'LV-7K2M-9PQX', 'Jean Kouadio (Plateau)', '24/10 à 10:42', 'Mme Bamba, secrétariat'],
             self::RateCourse => ['Boutique Chic', 'LV-7K2M-9PQX', 'Koffi', 'https://exemple.ci/marchand/courses/12'],
+            self::CourseDelayed => ['Boutique Chic', 'LV-7K2M-9PQX', 'Awa Koné (Yopougon)'],
         };
     }
 

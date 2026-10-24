@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\V1\CourierResource;
 use App\Models\Company;
 use App\Models\Courier;
+use App\Models\FieldEvent;
 use App\Services\Assignment\MadCouriers;
 use App\Services\Couriers\CourierTracker;
 use App\Services\Orders\AwaitingCourier;
@@ -49,6 +50,7 @@ class CourierController extends Controller
      */
     public function map(Request $request, AwaitingCourier $awaiting): JsonResponse
     {
+        $events = FieldEvent::currentByCourier();
         $couriers = Courier::query()
             ->with(['user', 'activeAssignments' => fn ($q) => $q->with(['order.pickupZone', 'order.deliveryZone'])->orderBy('id')])
             ->whereHas('user', fn ($q) => $q->where('status', 'active'))
@@ -63,6 +65,8 @@ class CourierController extends Controller
                 'lng' => $c->current_lng,
                 'last_location_at' => $c->last_location_at,
                 'mad' => app(MadCouriers::class)->of($c),
+                // Événement terrain en cours (panne, accident…)
+                'field_event' => $events[$c->id] ?? null,
                 'missions' => $c->activeAssignments->map(fn ($a) => [
                     'order_id' => $a->order_id,
                     'tracking_code' => $a->order?->tracking_code,

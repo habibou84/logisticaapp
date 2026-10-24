@@ -5,17 +5,20 @@ namespace App\Services\Couriers;
 use App\Enums\OrderEventType;
 use App\Enums\Role;
 use App\Models\Company;
+use App\Models\FieldEvent;
 use App\Models\FieldReportReminder;
 use App\Models\OrderEvent;
 use App\Models\User;
 use App\Notifications\OrderAlert;
+use App\Services\FieldEvents\FieldEventAlerts;
 use Illuminate\Support\Facades\Notification;
 
 /**
  * Relance des problèmes signalés par les livreurs et restés sans suite :
  * 1re relance au dispatch après le délai de l'entreprise, 2e aux administrateurs
  * après trois fois ce délai. Rien n'est relancé si un dispatcher a répondu au
- * livreur ou traité la remontée, ni si la course est terminée.
+ * livreur ou traité la remontée, ni si la course est terminée. Les événements terrain (panne, accident…)
+ * restés sans prise en charge sont relancés de la même façon.
  */
 class FieldReportReminders
 {
@@ -83,6 +86,38 @@ class FieldReportReminders
             }
 
             $reminder->fill(['count' => $level, 'last_reminded_at' => now()])->save();
+            $sent++;
+        }
+
+        return $sent + $this->fieldEvents($company, $delay);
+    }
+
+    /**
+     * Événements terrain que personne n'a pris en charge (ni réponse au livreur) : mêmes délais.
+     */
+    private function fieldEvents(Company $company, int $delay): int
+    {
+        $sent = 0;
+        $events = FieldEvent::withoutGlobalScopes()->where('company_id', $company->id)
+            ->where('status', FieldEvent::OPEN)
+            ->where('created_at', '>=', now()->subDay())
+            ->where('created_at', '<=', now()->subMinutes($delay))
+            ->where('reminders', '<', 2)
+            ->whereDoesntHave('messages', fn ($q) => $q->where('from_courier', false))
+            ->get();
+
+        foreach ($events as $event) {
+            $minutes = (int) $event->created_at->diffInMinutes(now());
+            $level = match ($event->reminders) {
+                0 => 1,
+                1 => $minutes >= 3 * $delay ? 2 : null,
+                default => null,
+            };
+            if ($level === null) {
+                continue;
+            }
+            app(FieldEventAlerts::class)->remind($event, $level, $minutes);
+            $event->forceFill(['reminders' => $level, 'last_reminded_at' => now()])->saveQuietly();
             $sent++;
         }
 

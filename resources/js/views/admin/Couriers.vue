@@ -12,6 +12,7 @@
             <p class="font-semibold">
               {{ c.name }} <MadBadge :mad="c.mad" />
               <RouterLink v-if="scores[c.id]" :to="{ path: '/admin/qualite-livreurs', query: { livreur: c.id } }" class="ml-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800" title="Note sur 5 (Qualité des livreurs)">⭐ {{ scores[c.id].toFixed(1) }}</RouterLink>
+              <FieldEventBadge :event="fieldEvents.current[c.id]" class="ml-1" />
             </p>
             <a :href="telLink(c.phone)" class="text-sm text-blue-600">{{ c.phone }}</a>
           </div>
@@ -26,6 +27,10 @@
         <p class="text-sm">Zones : {{ c.zones.map((z) => z.name).join(', ') || 'aucune précisée' }}<span v-if="c.backup_zones?.length" class="text-gray-500"> · secours : {{ c.backup_zones.map((z) => z.name).join(', ') }}</span></p>
         <p v-if="c.last_location_at" class="text-xs text-gray-500">
           Position du {{ dateTime(c.last_location_at) }} · <a :href="mapsLink(c.current_lat, c.current_lng)" target="_blank" class="text-blue-600">voir</a>
+        </p>
+        <p v-if="fieldEvents.month[c.id]" class="text-xs text-gray-500">
+          🚨 {{ fieldEvents.month[c.id].count }} événement(s) terrain sur 30 jours<template v-if="fieldEvents.month[c.id].immobilised_minutes"> · immobilisé {{ waitDuration(fieldEvents.month[c.id].immobilised_minutes) }}</template><template v-if="fieldEvents.month[c.id].cost"> · dépannages {{ money(fieldEvents.month[c.id].cost) }}</template>
+          ({{ Object.entries(fieldEvents.month[c.id].types).map(([k, n]) => `${k} ${n}`).join(', ') }})
         </p>
         <div class="flex gap-3 text-sm">
           <RouterLink :to="{ path: '/admin/courses', query: { courier_id: c.id } }" class="text-blue-600">Courses</RouterLink>
@@ -98,8 +103,9 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import Modal from '../../components/Modal.vue'
+import FieldEventBadge from '../../components/FieldEventBadge.vue'
 import { useAuthStore } from '../../stores/auth'
-import { dateTime, mapsLink, telLink } from '../../utils/format'
+import { dateTime, mapsLink, money, telLink, today, waitDuration } from '../../utils/format'
 
 const VEHICLES = { moto: 'Moto', velo: 'Vélo', voiture: 'Voiture', tricycle: 'Tricycle', pieton: 'À pied' }
 
@@ -131,8 +137,24 @@ async function loadScores() {
   scores.value = Object.fromEntries(rows.filter((r) => r.score !== null).map((r) => [r.id, r.score]))
 }
 
+// Événements terrain : en cours (badge) et sur 30 jours (pannes, immobilisation)
+const fieldEvents = ref({ current: {}, month: {} })
+async function loadFieldEvents() {
+  const from = new Date(Date.now() - 29 * 86400000).toISOString().slice(0, 10)
+  const [open, stats] = await Promise.all([
+    http.get('/field-events', { params: { state: 'open', per_page: 100 } }).catch(() => null),
+    http.get('/field-events/stats', { params: { from, to: today() } }).catch(() => null),
+  ])
+  const current = {}
+  for (const e of open?.data.data || []) {
+    current[e.courier.id] ??= { id: e.id, icon: e.icon, label: e.type_label, capacity: e.capacity }
+  }
+  fieldEvents.value = { current, month: Object.fromEntries((stats?.data.data.by_courier || []).map((c) => [c.id, c])) }
+}
+
 async function load() {
   loadScores()
+  loadFieldEvents()
   couriers.value = (await http.get('/couriers')).data.data
 }
 

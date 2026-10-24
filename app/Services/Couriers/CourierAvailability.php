@@ -9,6 +9,7 @@ use App\Enums\OrderStatus;
 use App\Enums\Role;
 use App\Models\Company;
 use App\Models\Courier;
+use App\Models\FieldEvent;
 use App\Models\Order;
 use App\Models\OrderAssignment;
 use App\Models\User;
@@ -60,13 +61,15 @@ class CourierAvailability
         $zones = Zone::withoutGlobalScopes()->where('company_id', $company->id)->get(['id', 'name', 'parent_id'])->keyBy('id');
         $candidates = $this->pickupCandidates($company);
         [$since, $today] = $this->day($company);
+        $events = FieldEvent::currentByCourier();
 
         return Courier::withoutGlobalScopes()
             ->where('company_id', $company->id)
             ->whereHas('user', fn ($q) => $q->where('status', 'active'))
             ->with(['user', 'zones:id,name,parent_id', 'activeAssignments:id,courier_id,order_id,type'])
             ->get()
-            ->map(fn (Courier $courier) => $this->row($courier, $zones, $candidates, $since, $today))
+            // Événement terrain en cours (panne, accident…)
+            ->map(fn (Courier $courier) => [...$this->row($courier, $zones, $candidates, $since, $today), 'field_event' => $events[$courier->id] ?? null])
             ->sortBy(fn (array $r) => [array_search($r['state'], ['free', 'soon', 'busy', 'off'], true), -$r['nearby']['count'], $r['name']])
             ->values();
     }

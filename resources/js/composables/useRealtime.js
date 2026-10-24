@@ -41,6 +41,22 @@ export function useRealtime() {
   echo.private(userChannel).notification((n) => {
     notifications.receive(n)
 
+    // Événement terrain (panne, accident…) : à l'équipe, son selon la gravité ; au livreur, réponse de l'agence
+    if (n.field_event) {
+      if (auth.role === 'courier') {
+        playAlertSound('alert')
+        navigator.vibrate?.([300, 150, 300])
+        toasts.push(n.body, 'info', { title: n.title, timeout: 15000, href: n.href })
+        return
+      }
+      const alert = n.severity === 'alert'
+      playAlertSound(n.severity)
+      desktopNotify(n.title, n.body, () => router.push(n.href))
+      fieldReports.eventReceived(n.kind === 'field_event')
+      toasts.push(n.body, alert ? 'error' : 'info', { title: n.title, href: n.href, timeout: alert ? 25000 : 12000 })
+      return
+    }
+
     // Remontée terrain d'un livreur (note, problème) : son, notification du bureau, toast prolongé
     if (n.field) {
       const alert = n.severity === 'alert'

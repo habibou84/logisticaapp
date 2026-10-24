@@ -25,6 +25,7 @@
         <p class="font-semibold">
           🛵 {{ c.name }} <MadBadge :mad="c.mad" />
           <span :class="['ml-1 rounded-full px-2 py-0.5 text-xs font-medium', STATES[c.state].class]">{{ STATES[c.state].label }}</span>
+          <FieldEventBadge :event="c.field_event" class="ml-1" />
         </p>
         <p class="text-sm text-gray-600">
           <a v-if="c.phone" :href="telLink(c.phone)" class="text-blue-600">{{ c.phone }}</a>
@@ -108,6 +109,7 @@
 
 <script setup>
 import MadBadge from '../../components/MadBadge.vue'
+import FieldEventBadge from '../../components/FieldEventBadge.vue'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'

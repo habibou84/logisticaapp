@@ -111,6 +111,12 @@ const ALL = computed(() => {
       keywords: 'note notation étoiles avis qualité livreur classement',
     },
     {
+      key: 'field-events', icon: '🚨', title: 'Événements terrain', to: '/admin/reglages/evenements-terrain', permission: 'settings.manage',
+      description: 'Ce que les livreurs signalent sur la route (panne, accident, contrôle…) et les effets automatiques : pause, courses retirées, clients prévenus.',
+      summary: c?.field_event_settings && (c.field_event_settings.enabled ? `${c.field_event_settings.types.filter((t) => t.active).length} types proposés · mise hors service : ${onOff(c.field_event_settings.pause_courier)} · clients prévenus : ${onOff(c.field_event_settings.notify_clients)}` : 'Désactivé'),
+      keywords: 'événement terrain panne accident contrôle police vol agression météo signaler incident route pause',
+    },
+    {
       key: 'team', icon: '🛵', title: 'Équipe et paie',
       description: 'Rémunération des livreurs, comptes et rôles de l\'équipe.',
       links: [{ to: '/admin/paie-livreurs', label: 'Paie des livreurs', permission: 'settings.manage' }, { to: '/admin/utilisateurs', label: 'Utilisateurs et rôles', permission: 'users.view' }],

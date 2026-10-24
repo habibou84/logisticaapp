@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\V1\UpdateCompanyRequest;
 use App\Http\Resources\V1\CompanyResource;
 use App\Models\Company;
+use App\Services\FieldEvents\FieldEventSettings;
 use App\Services\Orders\ActivityOptions;
 use App\Services\Ratings\RatingSettings;
 use App\Support\InvoicePayments;
@@ -32,6 +33,9 @@ class CompanyController extends Controller
         }
         if (array_key_exists('rating_settings', $data)) {
             $data['rating_settings'] = RatingSettings::clean((array) ($data['rating_settings'] ?? []));
+        }
+        if (array_key_exists('field_event_settings', $data)) {
+            $data['field_event_settings'] = FieldEventSettings::clean((array) ($data['field_event_settings'] ?? []));
         }
         $company->update($data);
 

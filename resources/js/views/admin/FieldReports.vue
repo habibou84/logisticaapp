@@ -3,7 +3,7 @@
     <div class="flex flex-wrap items-center justify-between gap-2">
       <div>
         <h1 class="text-xl font-bold">Remontées terrain</h1>
-        <p class="text-sm text-gray-600">Notes et problèmes enregistrés par les livreurs. Marquez-les comme traités pour que l'équipe sache qui s'en est occupé.</p>
+        <p class="text-sm text-gray-600">Événements sur la route (panne, accident…) et notes ou problèmes enregistrés sur les courses. Prenez-les en charge pour que l'équipe sache qui s'en occupe.</p>
       </div>
       <!-- Place réservée : la page ne bouge pas quand le son s'active au premier clic -->
       <p :class="['text-xs rounded bg-amber-50 text-amber-900 px-2 py-1', alertSound.unlocked || !alertSound.enabled ? 'invisible' : '']" :aria-hidden="alertSound.unlocked">
@@ -11,6 +11,25 @@
       </p>
     </div>
 
+    <!-- Événements terrain ou remontées des courses -->
+    <div class="flex border-b border-slate-200" role="tablist">
+      <button
+        v-for="t in TABS"
+        :key="t.value"
+        type="button"
+        role="tab"
+        :aria-selected="tab === t.value"
+        :class="['px-4 py-2 -mb-px border-b-2 text-sm font-medium', tab === t.value ? 'border-slate-900 text-slate-900' : 'border-transparent text-gray-500 hover:text-gray-800']"
+        @click="setTab(t.value)"
+      >
+        {{ t.label }}
+        <span v-if="t.value === 'events' ? store.events : store.open.total" class="ml-1 rounded-full bg-red-600 text-white px-1.5 text-xs">{{ t.value === 'events' ? store.events : store.open.total }}</span>
+      </button>
+    </div>
+
+    <FieldEventsPanel v-if="tab === 'events'" :couriers="couriers" :focus="route.query.evenement || null" />
+
+    <template v-else>
     <!-- État -->
     <div class="flex gap-2 overflow-x-auto">
       <button
@@ -121,6 +140,7 @@
         <button class="btn-secondary" :disabled="meta.current_page >= meta.last_page" @click="load(meta.current_page + 1)">Suivant</button>
       </div>
     </div>
+    </template>
   </div>
 </template>
 
@@ -129,6 +149,8 @@ import { onMounted, reactive, ref, watch } from 'vue'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import { alertSound } from '../../composables/useAlertSound'
 import CourierMessageThread from '../../components/CourierMessageThread.vue'
+import FieldEventsPanel from '../../components/FieldEventsPanel.vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useFieldReportStore } from '../../stores/fieldReports'
 import { useToastStore } from '../../stores/toasts'
 import { date, dateTime, money, telLink } from '../../utils/format'
@@ -145,7 +167,19 @@ const states = [
   { value: 'all', label: 'Toutes' },
 ]
 
+const TABS = [
+  { value: 'events', label: '🚨 Événements terrain' },
+  { value: 'reports', label: '📦 Remontées des courses' },
+]
+const route = useRoute()
+const router = useRouter()
 const store = useFieldReportStore()
+// Onglet : celui du lien (alerte d'un événement), sinon les événements s'il y en a en cours
+const tab = ref(route.query.evenement ? 'events' : (route.query.onglet || null))
+function setTab(value) {
+  tab.value = value
+  router.replace({ query: { ...route.query, onglet: value, evenement: undefined } })
+}
 const toasts = useToastStore()
 const reports = ref([])
 const meta = ref(null)
@@ -212,7 +246,13 @@ async function reopen(r) {
 // Nouvelle remontée reçue en direct
 watch(() => store.version, () => load(meta.value?.current_page || 1))
 
+watch(() => route.query.evenement, (id) => { if (id) tab.value = 'events' })
+
 onMounted(async () => {
+  if (!tab.value) {
+    await store.fetchCounts().catch(() => {})
+    tab.value = store.events || !store.open.total ? 'events' : 'reports'
+  }
   load()
   couriers.value = (await http.get('/couriers')).data.data
 })

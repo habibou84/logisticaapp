@@ -11,6 +11,7 @@ use App\Models\Merchant;
 use App\Models\Order;
 use App\Models\User;
 use App\Notifications\WeeklyReportReady;
+use App\Services\FieldEvents\FieldEventStats;
 use App\Services\Messaging\Messenger;
 use App\Support\Money;
 use Carbon\CarbonImmutable;
@@ -96,7 +97,8 @@ class WeeklyManagerReport
         }
 
         if ($admins->isNotEmpty()) {
-            Notification::send($admins, new WeeklyReportReady($period, $kpis, $previous, $toRelaunch));
+            $field = app(FieldEventStats::class)->weeklyLine($company->id, $from->toDateString(), $to->toDateString());
+            Notification::send($admins, new WeeklyReportReady($period, $kpis, $previous, $toRelaunch, $field));
         }
 
         return true;
