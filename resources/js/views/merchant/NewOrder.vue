@@ -524,6 +524,8 @@ function validate() {
   missing.feePayer = !form.fee_payer
   missing.date = !dateChosen.value
   const first = [
+    // Distribution, MAD sans formule en cours : la course ne peut pas être facturée
+    [billed.value && !plan.value, 'step-shipment', `Aucune formule ${activityLabel(form.activity)} en cours : contactez l'agence pour l'ouvrir.`],
     [missing.phone, 'phone', 'Indiquez le numéro de téléphone du destinataire.'],
     [missing.zone, 'zone-field', 'Choisissez la commune ou le quartier de livraison.'],
     [source.value && !pickedItems.value.length, 'amount', 'Choisissez les articles à prendre à l\'entrepôt.'],
