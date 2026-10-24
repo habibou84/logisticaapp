@@ -1,8 +1,8 @@
 <template>
   <Teleport to="body">
     <Transition name="sheet">
-      <div v-if="open" class="fixed inset-0 z-50 flex items-end justify-center bg-black/40 tap" @click.self="$emit('close')">
-        <div class="w-full max-w-lg max-h-[90dvh] overflow-y-auto rounded-t-3xl bg-white pb-safe shadow-2xl" role="dialog" aria-modal="true" :aria-label="title">
+      <div v-if="open" class="fixed inset-0 z-50 flex items-end justify-center bg-black/40 tap lg:items-center lg:p-6" @click.self="$emit('close')">
+        <div class="w-full max-w-lg max-h-[90dvh] overflow-y-auto rounded-t-3xl bg-white pb-safe shadow-2xl lg:rounded-3xl" role="dialog" aria-modal="true" :aria-label="title">
           <div class="sticky top-0 bg-white rounded-t-3xl pt-2 pb-3 px-5 z-10">
             <div class="mx-auto mb-3 h-1.5 w-10 rounded-full bg-slate-300" />
             <div class="flex items-center justify-between gap-3">

@@ -12,7 +12,7 @@ const TONES = {
   amber: { color: 'text-amber-700', bg: 'bg-amber-50' },
   violet: { color: 'text-violet-700', bg: 'bg-violet-50' },
   red: { color: 'text-red-700', bg: 'bg-red-50' },
-  slate: { color: 'text-slate-500', bg: 'bg-slate-100' },
+  slate: { color: 'text-slate-600', bg: 'bg-slate-100' },
 }
 
 const hour = (value) => (value ? new Date(value).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '')

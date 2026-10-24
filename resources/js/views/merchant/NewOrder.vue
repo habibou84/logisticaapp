@@ -1,23 +1,28 @@
 <template>
-  <!-- Course enregistrée -->
-  <div v-if="created" class="text-center space-y-5 pt-6">
-    <div class="mx-auto h-20 w-20 rounded-full bg-emerald-100 grid place-items-center text-4xl">✅</div>
+  <!-- Course envoyée : c'est fait, le n° de suivi, et l'action suivante la plus probable -->
+  <div v-if="created" class="mx-auto max-w-md space-y-6 pt-6 text-center">
+    <span class="mx-auto grid h-24 w-24 place-items-center rounded-full bg-emerald-100 text-emerald-700 ring-8 ring-emerald-50" aria-hidden="true"><StatusIcon name="check" class="h-12 w-12" /></span>
     <div>
-      <p class="text-2xl font-bold">Course enregistrée</p>
-      <p class="text-slate-500">{{ created.from_warehouse ? 'L\'agence prépare votre commande à l\'entrepôt.' : 'Nous allons envoyer un livreur récupérer le colis.' }}</p>
-      <p v-if="created.delivery?.scheduled_date" class="mt-1 font-semibold text-slate-700">📅 Livraison prévue le {{ longDay(created.delivery.scheduled_date) }}</p>
-      <p v-if="created.delivery?.scheduled_date && created.delivery.scheduled_date > today()" class="mt-1 text-sm text-slate-500">Elle est dans « Prévues plus tard » et passera dans « Aujourd'hui » le jour de la livraison.</p>
+      <p class="text-2xl font-bold">Course envoyée</p>
+      <p class="mt-1 text-slate-600">{{ created.from_warehouse ? 'L\'agence prépare votre commande à l\'entrepôt.' : 'Nous allons envoyer un livreur récupérer le colis.' }}</p>
+      <p v-if="created.delivery?.scheduled_date && created.delivery.scheduled_date > today()" class="mt-1 text-sm text-slate-600">Elle est dans « Prévues plus tard » et passera dans « Aujourd'hui » le jour de la livraison.</p>
     </div>
-    <div class="m-card p-4 space-y-1">
-      <p class="text-sm text-slate-500">Code de suivi</p>
-      <p class="font-mono text-xl font-bold tracking-wider">{{ created.tracking_code }}</p>
-      <p class="text-sm text-slate-500 pt-2">Code de livraison à donner au destinataire</p>
-      <p class="font-mono text-2xl font-bold tracking-[0.3em]">{{ created.delivery_code }}</p>
+    <div class="m-card divide-y divide-slate-100 text-left">
+      <div class="flex items-center justify-between gap-3 p-4"><span class="text-slate-600">N° de suivi</span><strong class="font-mono tracking-wider">{{ created.tracking_code }}</strong></div>
+      <div class="flex items-center justify-between gap-3 p-4">
+        <span class="text-slate-600">Code de livraison<span class="block text-xs">à donner au destinataire</span></span>
+        <strong class="font-mono text-xl tracking-[0.25em]">{{ created.delivery_code }}</strong>
+      </div>
+      <div v-if="created.delivery?.scheduled_date" class="flex items-center justify-between gap-3 p-4"><span class="text-slate-600">Livraison</span><strong class="first-letter:uppercase">{{ longDay(created.delivery.scheduled_date) }}</strong></div>
+      <div v-if="created.amounts?.cod_amount" class="flex items-center justify-between gap-3 p-4"><span class="text-slate-600">À encaisser</span><strong>{{ money(created.amounts.cod_amount) }}</strong></div>
+      <div v-if="created.amounts?.total_fees" class="flex items-center justify-between gap-3 p-4"><span class="text-slate-600">Frais de livraison</span><strong>{{ money(created.amounts.total_fees) }}</strong></div>
     </div>
-    <a :href="shareLink" target="_blank" class="m-btn-success">💬 Envoyer le suivi au destinataire sur WhatsApp</a>
-    <div class="grid grid-cols-2 gap-2">
-      <RouterLink :to="`/marchand/courses/${created.id}`" class="m-btn-secondary">Voir la course</RouterLink>
-      <button class="m-btn-primary" @click="reset">+ Nouvelle</button>
+    <div class="space-y-3">
+      <button class="m-btn-primary" @click="reset"><StatusIcon name="plus" class="h-5 w-5" />Envoyer une autre course</button>
+      <div class="grid grid-cols-2 gap-3">
+        <a :href="shareLink" target="_blank" class="m-btn-secondary"><StatusIcon name="share" class="h-4 w-4" />Partager le suivi</a>
+        <RouterLink :to="`/marchand/courses/${created.id}`" class="m-btn-secondary">Voir la course</RouterLink>
+      </div>
     </div>
   </div>
 
@@ -252,6 +257,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import ChoiceChips from '../../components/mobile/ChoiceChips.vue'
+import StatusIcon from '../../components/mobile/StatusIcon.vue'
 import PasteMessage from '../../components/PasteMessage.vue'
 import ZoneSelect from '../../components/ZoneSelect.vue'
 import { keyboardOpen } from '../../composables/useKeyboard'

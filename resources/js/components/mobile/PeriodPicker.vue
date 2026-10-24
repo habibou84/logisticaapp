@@ -1,6 +1,12 @@
 <template>
   <div>
-    <div class="-mx-4 px-4 flex gap-2 overflow-x-auto no-scrollbar" role="radiogroup" aria-label="Période">
+    <!-- Menu : un bouton « Aujourd'hui ▾ », les choix dans un panneau -->
+    <button v-if="menu" type="button" class="tap flex h-11 w-full items-center gap-2 rounded-xl bg-white px-3 text-sm font-semibold ring-1 ring-slate-200 active:bg-slate-50" aria-haspopup="dialog" @click="listOpen = true">
+      <StatusIcon name="calendar" class="h-4 w-4 shrink-0 text-slate-500" />
+      <span class="flex-1 truncate text-left">{{ modelValue.label }}</span>
+      <StatusIcon name="down" class="h-4 w-4 shrink-0 text-slate-500" />
+    </button>
+    <div v-else class="-mx-4 px-4 flex gap-2 overflow-x-auto no-scrollbar" role="radiogroup" aria-label="Période">
       <button
         v-for="p in presets"
         :key="p.key"
@@ -24,6 +30,21 @@
         📅 {{ modelValue.key === 'custom' ? modelValue.label : 'Autre date' }}
       </button>
     </div>
+
+    <BottomSheet v-if="menu" :open="listOpen" title="Période" @close="listOpen = false">
+      <div class="m-card divide-y" role="radiogroup" aria-label="Période">
+        <button
+          v-for="p in presets" :key="p.key" type="button" role="radio" :aria-checked="modelValue.key === p.key"
+          class="tap flex w-full items-center justify-between p-4 text-left font-medium active:bg-slate-50"
+          @click="listOpen = false; choose(p)"
+        >
+          {{ p.label }}<StatusIcon v-if="modelValue.key === p.key" name="check" class="h-5 w-5 text-[var(--app-color)]" />
+        </button>
+        <button type="button" role="radio" :aria-checked="modelValue.key === 'custom'" class="tap flex w-full items-center justify-between p-4 text-left font-medium active:bg-slate-50" @click="listOpen = false; openPicker()">
+          {{ modelValue.key === 'custom' ? modelValue.label : 'Autre date…' }}<StatusIcon :name="modelValue.key === 'custom' ? 'check' : 'right'" :class="['h-5 w-5', modelValue.key === 'custom' ? 'text-[var(--app-color)]' : 'text-slate-400']" />
+        </button>
+      </div>
+    </BottomSheet>
 
     <BottomSheet :open="picker.open" title="Choisir les dates" @close="picker.open = false">
       <form class="space-y-4" @submit.prevent="applyPicker">
@@ -54,8 +75,9 @@
 </template>
 
 <script setup>
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
 import BottomSheet from './BottomSheet.vue'
+import StatusIcon from './StatusIcon.vue'
 import ChoiceChips from './ChoiceChips.vue'
 import { date as formatDate, today } from '../../utils/format'
 import { PERIOD_PRESETS } from '../../utils/periods'
@@ -65,11 +87,14 @@ const props = defineProps({
   modelValue: { type: Object, required: true },
   // Clés des raccourcis proposés, dans l'ordre
   keys: { type: Array, default: () => ['today', 'later', 'yesterday', 'week', 'month'] },
+  // Un bouton qui ouvre la liste des périodes, au lieu d'une rangée de pastilles
+  menu: Boolean,
 })
 const emit = defineEmits(['update:modelValue'])
 
 const presets = props.keys.map((k) => PERIOD_PRESETS[k])
 const picker = reactive({ open: false, mode: 'day', from: today(), to: today() })
+const listOpen = ref(false)
 
 const chip = (on) => ['tap shrink-0 rounded-full px-3.5 py-1.5 text-sm font-medium ring-1', on ? 'text-white ring-transparent' : 'bg-white ring-slate-200 text-slate-700']
 // 2026-10-03 → « 03/10 »

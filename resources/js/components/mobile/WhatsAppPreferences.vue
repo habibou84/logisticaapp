@@ -1,6 +1,5 @@
 <template>
   <section v-if="settings" class="space-y-2">
-    <h2 class="px-1 text-sm font-semibold text-slate-500 uppercase tracking-wide">Mes notifications</h2>
 
     <!-- Notifications sur ce téléphone : remplacent WhatsApp quand elles sont activées -->
     <PushSettings v-if="settings.push_first" audience="merchant" />
@@ -9,7 +8,7 @@
 
     <div class="m-card divide-y">
       <button type="button" class="tap w-full p-4 flex items-center gap-3 text-left active:bg-slate-50" @click="openPhone">
-        <span class="text-2xl">💬</span>
+        <span class="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-emerald-50 text-emerald-700" aria-hidden="true"><StatusIcon name="message" class="h-5 w-5" /></span>
         <span class="flex-1">
           <span class="block text-sm text-slate-500">{{ onPhone ? 'WhatsApp de secours' : 'Messages WhatsApp envoyés au' }}</span>
           <span class="block font-medium">{{ localPhone(settings.messaging_phone) || 'Aucun numéro' }}</span>
@@ -71,6 +70,7 @@ import http, { apiErrorMessage } from '../../bootstrap/axios'
 import BottomSheet from './BottomSheet.vue'
 import ChoiceChips from './ChoiceChips.vue'
 import PushSettings from './PushSettings.vue'
+import StatusIcon from './StatusIcon.vue'
 import ToggleRow from './ToggleRow.vue'
 import { push } from '../../composables/usePush'
 import { useAuthStore } from '../../stores/auth'

@@ -8,14 +8,16 @@
         <span class="block font-medium truncate">{{ c.name }}</span>
         <span :class="['inline-flex items-center gap-1 text-xs', COLORS[c.status]]"><span class="h-2 w-2 rounded-full bg-current" />{{ c.status_label }}</span>
       </span>
-      <a v-if="c.phone" :href="`tel:${c.phone}`" class="tap shrink-0 grid h-10 w-10 place-items-center rounded-full bg-slate-100 text-lg" :aria-label="`Appeler ${c.name}`">📞</a>
+      <a v-if="c.phone" :href="`tel:${c.phone}`" class="tap shrink-0 grid h-10 w-10 place-items-center rounded-full bg-slate-100 text-slate-700" :aria-label="`Appeler ${c.name}`"><StatusIcon name="phone" class="h-5 w-5" /></a>
     </div>
   </div>
 </template>
 
 <script setup>
+import StatusIcon from '../mobile/StatusIcon.vue'
+
 defineProps({ couriers: { type: Array, required: true } })
 
-const COLORS = { available: 'text-emerald-700', busy: 'text-sky-700', unavailable: 'text-slate-500', absent: 'text-amber-700' }
+const COLORS = { available: 'text-emerald-700', busy: 'text-blue-700', unavailable: 'text-slate-600', absent: 'text-amber-700' }
 const initials = (name) => name.split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase()).join('')
 </script>

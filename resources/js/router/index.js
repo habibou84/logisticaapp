@@ -140,6 +140,7 @@ const routes = [
       { path: 'factures', component: () => import('../views/merchant/Invoices.vue'), meta: { title: 'Mes factures', back: true, permission: 'finance.view' } },
       { path: 'factures/:id(\\d+)', component: shared.clientInvoice, meta: { title: 'Facture', back: true, permission: 'finance.view' } },
       { path: 'notifications', component: mobile.notifications, meta: { title: 'Notifications', back: true } },
+      { path: 'mes-notifications', component: () => import('../views/merchant/NotificationSettings.vue'), meta: { title: 'Mes notifications', back: true } },
       { path: 'profil', component: mobile.profile, meta: { title: 'Mon profil' } },
     ],
   },

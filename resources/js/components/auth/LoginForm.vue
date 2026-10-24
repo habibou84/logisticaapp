@@ -32,7 +32,7 @@
           :class="['w-full rounded-xl border border-slate-300 bg-white px-4 py-3 pr-12 text-base focus:outline-none focus:ring-2 focus:border-transparent', ring]"
         >
         <button type="button" class="absolute inset-y-0 right-0 px-3 text-slate-500" :aria-label="showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'" @click="showPassword = !showPassword">
-          {{ showPassword ? '🙈' : '👁️' }}
+          <StatusIcon :name="showPassword ? 'eye-off' : 'eye'" class="h-5 w-5" />
         </button>
       </span>
     </label>
@@ -41,7 +41,7 @@
       <RouterLink :to="{ path: '/mot-de-passe-oublie', query: { espace: tone } }" class="text-sm text-slate-600 hover:underline">Mot de passe oublié ?</RouterLink>
     </p>
 
-    <button type="submit" :disabled="loading" :class="['w-full rounded-xl py-3 font-semibold text-white shadow-sm disabled:opacity-60 transition', button]">
+    <button type="submit" :disabled="loading" :class="['w-full rounded-xl py-3.5 text-base font-bold text-white shadow-sm disabled:opacity-60 transition', button]">
       {{ loading ? 'Connexion…' : 'Se connecter' }}
     </button>
   </form>
@@ -49,6 +49,7 @@
 
 <script setup>
 import { computed, ref } from 'vue'
+import StatusIcon from '../mobile/StatusIcon.vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 import { apiErrorMessage } from '../../bootstrap/axios'

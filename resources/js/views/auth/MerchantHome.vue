@@ -11,8 +11,9 @@
     <!-- Présentation et connexion -->
     <!-- Application : la connexion seule, en plein écran -->
     <section :class="['text-white', { 'min-h-screen': nativeApp }]" :style="{ paddingTop: nativeApp ? 'env(safe-area-inset-top)' : null, background: `linear-gradient(135deg, rgba(0,0,0,.12), rgba(255,255,255,.08)), ${spaceColor('marchand')}` }">
-      <div class="max-w-6xl mx-auto px-4 py-10 md:py-16 grid md:grid-cols-2 gap-10 items-center">
-        <div v-if="!nativeApp" class="space-y-6">
+      <div class="max-w-6xl mx-auto px-4 py-6 md:py-16 grid md:grid-cols-2 gap-8 md:gap-10 items-center">
+        <!-- Téléphone : la connexion d'abord, la présentation ensuite -->
+        <div v-if="!nativeApp" class="order-2 md:order-1 space-y-6">
           <p class="inline-block rounded-full bg-white/15 px-3 py-1 text-sm font-medium">Espace clients</p>
           <h1 class="text-3xl md:text-5xl font-extrabold leading-tight">
             {{ branding.tagline || 'Vos colis livrés vite, vos clients satisfaits.' }}
@@ -32,12 +33,12 @@
           </ul>
         </div>
 
-        <div class="w-full max-w-md md:justify-self-end">
+        <div class="order-1 md:order-2 w-full max-w-md mx-auto md:mx-0 md:justify-self-end">
           <div class="rounded-3xl bg-white text-slate-900 shadow-2xl p-6 md:p-8 space-y-6">
             <div class="text-center space-y-2">
               <BrandLogo size="lg" :with-name="false" class="justify-center" />
-              <h2 class="text-2xl font-bold">Connexion</h2>
-              <p class="text-sm text-slate-500">Accédez à vos courses, à vos encaissements et à vos reversements.</p>
+              <h2 class="text-2xl font-bold">Connectez-vous</h2>
+              <p class="text-sm text-slate-600">Pour suivre vos courses, vos encaissements et vos factures.</p>
             </div>
             <LoginForm tone="merchant" />
             <InstallBanner app="marchand" class="md:hidden" />

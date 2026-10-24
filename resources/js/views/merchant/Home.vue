@@ -1,172 +1,156 @@
 <template>
-  <div class="space-y-5">
+  <div class="space-y-5 pb-14 lg:pb-0">
     <div>
-      <p class="text-2xl font-bold">Bonjour {{ firstName }} 👋</p>
-      <p class="text-slate-500 first-letter:uppercase">{{ todayLabel }}<span v-if="todayCount !== null"> · {{ todayCount ? `${todayCount} course${todayCount > 1 ? 's' : ''} aujourd'hui` : 'aucune course aujourd\'hui' }}</span></p>
+      <p class="text-2xl font-bold lg:text-3xl">Bonjour {{ firstName }} 👋</p>
+      <p class="text-slate-600 first-letter:uppercase">{{ todayLabel }}<span v-if="subtitle"> · {{ subtitle }}</span></p>
     </div>
 
     <ActivitySwitch @change="reload" />
 
-    <!-- L'action principale : créer une course -->
-    <div v-if="auth.can('orders.create')" class="flex gap-2">
-      <RouterLink to="/marchand/courses/nouvelle" class="tap flex-1 rounded-2xl p-4 text-white flex items-center gap-3 active:opacity-90" :style="{ backgroundColor: 'var(--app-color)' }">
-        <span class="h-10 w-10 shrink-0 rounded-xl bg-white/20 grid place-items-center text-2xl leading-none">+</span>
-        <span><strong class="block text-base">Nouvelle course</strong><span class="text-xs opacity-85">En quelques secondes</span></span>
-      </RouterLink>
-      <RouterLink to="/marchand/courses/nouvelle?coller=1" class="tap w-28 shrink-0 m-card p-3 grid place-items-center text-center text-xs font-semibold text-[var(--app-color)] active:bg-slate-50">
-        <span class="text-2xl leading-none">💬</span>Coller un message WhatsApp
-      </RouterLink>
-    </div>
+    <!-- Mobile : à faire, puis les courses, puis le compte. Ordinateur : le compte en haut, les courses à côté du « À faire » -->
+    <div class="flex flex-col gap-5 lg:grid lg:grid-cols-3 lg:gap-6">
+      <!-- Ce qui attend le client : décisions, lieu de ramassage, facture, stock bas -->
+      <section v-if="todoCount" class="space-y-2 lg:col-start-3 lg:row-start-2 lg:self-start">
+        <h2 class="px-1 text-base font-bold text-slate-800">À faire</h2>
+        <div class="m-card divide-y divide-slate-100 overflow-hidden ring-amber-200">
+          <RouterLink v-if="needsPickupLocation" to="/marchand/lieu-de-ramassage" class="tap flex items-center gap-3 p-4 active:bg-slate-50">
+            <span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-amber-50 text-amber-700"><StatusIcon name="pin" class="h-5 w-5" /></span>
+            <span class="min-w-0 flex-1"><strong class="block">Indiquez où récupérer vos colis</strong><span class="text-sm text-slate-600">En un geste, depuis votre boutique</span></span>
+            <StatusIcon name="right" class="h-5 w-5 shrink-0 text-slate-400" />
+          </RouterLink>
+          <RouterLink v-for="o in visibleAlerts" :key="o.id" :to="`/marchand/courses/${o.id}`" class="tap flex items-center gap-3 p-4 active:bg-slate-50">
+            <span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-amber-50 text-amber-700"><StatusIcon name="alert" class="h-5 w-5" /></span>
+            <span class="min-w-0 flex-1">
+              <strong class="block truncate">{{ o.last_incident?.label || o.status_label }}</strong>
+              <span class="block truncate text-sm text-slate-600">{{ o.recipient.name || localPhone(o.recipient.phone) }} · {{ o.delivery.zone_name }}</span>
+            </span>
+            <span class="shrink-0 rounded-lg px-3 py-2 text-sm font-semibold text-white" :style="{ backgroundColor: 'var(--app-color)' }">Décider</span>
+          </RouterLink>
+          <button v-if="alerts.length > visibleAlerts.length" type="button" class="w-full py-3 text-sm font-semibold text-amber-800" @click="showAllAlerts = true">
+            Voir les {{ alerts.length - visibleAlerts.length }} autres
+          </button>
+          <RouterLink v-if="invoiceDue" to="/marchand/factures" class="tap flex items-center gap-3 p-4 active:bg-slate-50">
+            <span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-red-50 text-red-700"><StatusIcon name="file" class="h-5 w-5" /></span>
+            <span class="min-w-0 flex-1">
+              <strong class="block">{{ invoices.overdue ? 'Facture en retard' : 'Facture à payer' }}</strong>
+              <span :class="['text-sm', invoices.overdue ? 'font-medium text-red-700' : 'text-slate-600']">
+                {{ money(invoices.to_pay) }}<template v-if="invoices.next_due"> · {{ invoices.overdue ? 'à payer depuis le' : 'avant le' }} {{ date(invoices.next_due) }}</template>
+              </span>
+            </span>
+            <StatusIcon name="right" class="h-5 w-5 shrink-0 text-slate-400" />
+          </RouterLink>
+          <RouterLink v-if="stock.low" to="/marchand/stock?filtre=bas" class="tap flex items-center gap-3 p-4 active:bg-slate-50">
+            <span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-amber-50 text-amber-700"><StatusIcon name="box" class="h-5 w-5" /></span>
+            <span class="min-w-0 flex-1"><strong class="block">{{ stock.low }} produit{{ stock.low > 1 ? 's' : '' }} en stock bas</strong><span class="text-sm text-slate-600">À réapprovisionner</span></span>
+            <StatusIcon name="right" class="h-5 w-5 shrink-0 text-slate-400" />
+          </RouterLink>
+        </div>
+      </section>
 
-    <!-- Ce qui attend une décision du client (quelle que soit la date) -->
-    <section v-if="todo" class="space-y-2">
-      <h2 class="text-xs font-bold uppercase tracking-wide text-slate-500">À faire maintenant</h2>
-      <RouterLink
-        v-if="needsPickupLocation"
-        to="/marchand/lieu-de-ramassage"
-        class="tap m-card p-4 flex items-center gap-3 border-l-4 border-amber-400 active:bg-slate-50"
-      >
-        <span class="h-10 w-10 shrink-0 rounded-xl bg-amber-50 grid place-items-center text-xl">📍</span>
-        <span class="flex-1 text-sm"><strong class="block">Indiquez où récupérer vos colis</strong>En un geste, depuis votre boutique : vos ramassages seront plus rapides.</span>
-        <span class="text-slate-400">›</span>
-      </RouterLink>
-      <RouterLink
-        v-for="o in visibleAlerts"
-        :key="o.id"
-        :to="`/marchand/courses/${o.id}`"
-        class="tap m-card p-4 flex items-center gap-3 border-l-4 border-amber-400 active:bg-slate-50"
-      >
-        <span class="h-10 w-10 shrink-0 rounded-xl bg-amber-50 grid place-items-center text-xl">⚠️</span>
-        <span class="min-w-0 flex-1 text-sm">
-          <strong class="block truncate">{{ o.last_incident?.label || o.status_label }}</strong>
-          <span class="block truncate text-slate-500">{{ o.recipient.name || localPhone(o.recipient.phone) }} · {{ o.delivery.zone_name }}</span>
-        </span>
-        <span class="shrink-0 rounded-lg px-3 py-2 text-xs font-semibold text-white" :style="{ backgroundColor: 'var(--app-color)' }">Décider</span>
-      </RouterLink>
-      <button v-if="alerts.length > visibleAlerts.length" type="button" class="w-full text-sm font-medium text-amber-700 py-1" @click="showAllAlerts = true">
-        Voir les {{ alerts.length - visibleAlerts.length }} autres →
-      </button>
-    </section>
+      <!-- Mes courses : période, compteurs, liste -->
+      <section :class="['space-y-3 lg:row-start-2 lg:col-start-1', todoCount ? 'lg:col-span-2' : 'lg:col-span-3']">
+        <div class="flex items-center justify-between px-1">
+          <h2 class="text-base font-bold text-slate-800">{{ isToday ? 'Mes courses du jour' : 'Mes courses' }}</h2>
+          <RouterLink :to="{ path: '/marchand/courses', query: coursesQuery }" class="text-sm font-semibold text-[var(--app-color)]">Tout voir</RouterLink>
+        </div>
 
-    <!-- Distribution, MAD : facture à payer, forfait du mois, livreurs attitrés -->
-    <template v-if="space.showsBilled && space.space">
-      <RouterLink
-        v-if="space.space.invoices?.to_pay"
-        to="/marchand/factures"
-        :class="['tap block rounded-2xl p-5 text-white active:opacity-90', space.space.invoices.overdue ? 'bg-red-600' : '']"
-        :style="space.space.invoices.overdue ? {} : { backgroundColor: 'var(--app-color)' }"
-      >
-        <p class="text-sm opacity-85">{{ space.space.invoices.overdue ? 'Facture en retard' : 'Facture à payer' }}</p>
-        <p class="text-3xl font-bold mt-0.5">{{ money(space.space.invoices.to_pay) }}</p>
-        <p v-if="space.space.invoices.next_due" class="mt-1 text-sm opacity-90">
-          {{ space.space.invoices.overdue ? 'Elle était à payer le' : 'À payer avant le' }} {{ date(space.space.invoices.next_due) }}
+        <PeriodPicker menu :model-value="period" @update:model-value="setPeriod" />
+
+        <!-- Catégories de la période : on choisit ici, la liste en dessous suit (on reste sur l'accueil) -->
+        <div class="grid grid-cols-5 gap-1.5" role="radiogroup" aria-label="Catégorie">
+          <button
+            v-for="f in ORDER_FILTERS"
+            :key="f.value"
+            type="button"
+            role="radio"
+            :aria-checked="homeFilter === f.value"
+            :class="['tap rounded-xl bg-white py-2.5 text-center ring-1 transition', homeFilter === f.value ? 'ring-2 ring-[var(--app-color)] bg-[color-mix(in_srgb,var(--app-color)_8%,white)]' : f.warn && counts[f.value] ? 'ring-amber-300' : 'ring-slate-200']"
+            @click="setFilter(f.value)"
+          >
+            <p :class="['text-lg font-bold leading-tight', counts[f.value] ? f.color : 'text-slate-300']">{{ counts[f.value] ?? '–' }}</p>
+            <p class="text-xs leading-tight text-slate-600">{{ f.short }}</p>
+          </button>
+        </div>
+
+        <!-- Argent de la période, en une phrase -->
+        <p v-if="summary && summary.amounts.collected && space.showsEcommerce" class="m-card px-4 py-3 text-sm text-slate-600">
+          Les livreurs ont encaissé <strong class="text-slate-900">{{ money(summary.amounts.collected) }}</strong>,
+          moins <strong class="text-slate-900">{{ money(fees) }}</strong> de frais :
+          <strong :class="summary.amounts.net_to_merchant < 0 ? 'text-red-600' : 'text-[var(--app-color)]'">{{ money(summary.amounts.net_to_merchant) }} pour vous</strong>.
         </p>
-        <p class="mt-2 text-xs font-semibold opacity-90">Voir mes factures ›</p>
-      </RouterLink>
-      <ForfaitCard v-for="p in space.plans" :key="p.id" :plan="p" />
-      <!-- Lots de colis en cours : avancement de la distribution -->
-      <div v-for="l in (space.current === 'mad' ? [] : space.space.lots || [])" :key="`lot-${l.id}`" class="m-card p-4 space-y-2">
-        <div class="flex items-start justify-between gap-3">
-          <div class="min-w-0">
-            <p class="text-xs font-bold uppercase tracking-wide text-slate-500">Lot de colis</p>
-            <p class="font-semibold truncate">📦 {{ l.lot_name }}</p>
-          </div>
-          <span v-if="l.lot_due_on" class="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">avant le {{ date(l.lot_due_on) }}</span>
-        </div>
-        <div class="flex justify-between text-sm">
-          <span><strong class="text-lg">{{ l.delivered }}</strong> livré(s) sur {{ l.lot_quantity }}</span>
-          <span class="text-slate-500">{{ l.in_progress }} en cours<template v-if="l.remaining"> · {{ l.remaining }} à envoyer</template></span>
-        </div>
-        <div class="h-2.5 rounded-full bg-slate-100 overflow-hidden">
-          <div class="h-full rounded-full bg-[var(--app-color)]" :style="{ width: `${Math.min(100, Math.round(100 * l.delivered / Math.max(1, l.lot_quantity)))}%` }" />
-        </div>
-        <p v-if="l.over" class="text-xs text-slate-500">{{ l.over }} colis en plus du lot, facturés à l'unité.</p>
-        <p v-if="l.done" class="text-sm font-medium text-emerald-700">✓ Lot entièrement distribué</p>
-      </div>
-      <MadCouriers v-if="space.space.couriers?.length && space.current !== 'distribution'" :couriers="space.space.couriers" />
-    </template>
 
-    <!-- L'argent (e-commerce) : un seul montant, en mots simples -->
-    <RouterLink v-if="balance && space.showsEcommerce" to="/marchand/paiements" class="tap block rounded-2xl p-5 text-white active:opacity-90" :style="{ backgroundColor: 'var(--app-color)' }">
-      <p class="text-sm opacity-85">{{ balance.available < 0 ? 'Vous devez à l\'agence' : 'On vous doit' }}</p>
-      <p class="text-3xl font-bold mt-0.5">{{ money(Math.abs(balance.available)) }}</p>
-      <div v-if="balance.pending_cash" class="mt-3 pt-3 border-t border-white/20 flex justify-between text-sm">
-        <span class="opacity-85">Encore chez les livreurs</span><strong>{{ money(balance.pending_cash) }}</strong>
-      </div>
-      <p class="mt-2 text-xs font-semibold opacity-90">Voir mes paiements ›</p>
-    </RouterLink>
-
-    <!-- Mes courses : période, compteurs, liste -->
-    <section class="space-y-3">
-      <div class="flex justify-between items-center">
-        <h2 class="text-xs font-bold uppercase tracking-wide text-slate-500">Mes courses</h2>
-        <RouterLink :to="{ path: '/marchand/courses', query: coursesQuery }" class="text-sm font-semibold text-[var(--app-color)]">Plus de détails</RouterLink>
-      </div>
-
-      <PeriodPicker :model-value="period" @update:model-value="setPeriod" />
-
-      <!-- Catégories de la période : on choisit ici, la liste en dessous suit (on reste sur l'accueil) -->
-      <div class="grid grid-cols-5 gap-1.5" role="radiogroup" aria-label="Catégorie">
-        <button
-          v-for="f in ORDER_FILTERS"
-          :key="f.value"
-          type="button"
-          role="radio"
-          :aria-checked="homeFilter === f.value"
-          :class="['tap rounded-xl bg-white py-2.5 text-center ring-1 transition', homeFilter === f.value ? 'ring-2 ring-[var(--app-color)] bg-[color-mix(in_srgb,var(--app-color)_8%,white)]' : f.warn && counts[f.value] ? 'ring-amber-300' : 'ring-slate-200']"
-          @click="setFilter(f.value)"
-        >
-          <p :class="['text-lg font-bold leading-tight', counts[f.value] ? f.color : 'text-slate-300']">{{ counts[f.value] ?? '–' }}</p>
-          <p class="text-[11px] leading-tight text-slate-500">{{ f.short }}</p>
+        <SkeletonList v-if="!loaded" :rows="3" />
+        <OrderCard v-for="o in orders" :key="o.id" :order="o" :to="`/marchand/courses/${o.id}`" />
+        <!-- Courses à livrer après aujourd'hui : elles arriveront dans « Aujourd'hui » le jour venu -->
+        <button v-if="isToday && laterCount" type="button" class="tap w-full m-card px-4 py-3 flex items-center gap-3 text-sm text-left active:bg-slate-50" @click="setPeriod(laterPeriod())">
+          <span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-700"><StatusIcon name="calendar" class="h-5 w-5" /></span>
+          <span class="flex-1"><strong>Prévues plus tard ({{ laterCount }})</strong><span class="block text-slate-600">Courses à livrer les prochains jours</span></span>
+          <StatusIcon name="right" class="h-5 w-5 text-slate-400" />
         </button>
-      </div>
+        <button v-if="hasMore" type="button" class="m-btn-secondary" :disabled="loadingMore" @click="loadOrders(page + 1)">Voir plus</button>
+        <EmptyState
+          v-if="loaded && !orders.length"
+          icon="package"
+          :title="homeFilter !== 'all' ? 'Aucune course dans cette catégorie' : isToday ? 'Aucune course aujourd\'hui' : 'Aucune course sur cette période'"
+          :text="isToday ? 'Créez une course en un instant.' : 'Choisissez d\'autres dates.'"
+        >
+          <RouterLink v-if="isToday && homeFilter === 'all' && auth.can('orders.create')" to="/marchand/courses/nouvelle" class="m-btn-primary">+ Nouvelle course</RouterLink>
+        </EmptyState>
+      </section>
 
-      <!-- Argent de la période, en une phrase -->
-      <p v-if="summary && summary.amounts.collected && space.showsEcommerce" class="m-card px-4 py-3 text-sm text-slate-600">
-        Les livreurs ont encaissé <strong class="text-slate-900">{{ money(summary.amounts.collected) }}</strong>,
-        moins <strong class="text-slate-900">{{ money(fees) }}</strong> de frais :
-        <strong :class="summary.amounts.net_to_merchant < 0 ? 'text-red-600' : 'text-[var(--app-color)]'">{{ money(summary.amounts.net_to_merchant) }} pour vous</strong>.
-      </p>
-
-      <OrderCard v-for="o in orders" :key="o.id" :order="o" :to="`/marchand/courses/${o.id}`" />
-      <!-- Courses à livrer après aujourd'hui : elles arriveront dans « Aujourd'hui » le jour venu -->
-      <button v-if="isToday && laterCount" type="button" class="tap w-full m-card px-4 py-3 flex items-center gap-3 text-sm text-left active:bg-slate-50" @click="setPeriod(laterPeriod())">
-        <span class="text-xl">📅</span>
-        <span class="flex-1"><strong>Prévues plus tard ({{ laterCount }})</strong><span class="block text-slate-500">Courses à livrer les prochains jours</span></span>
-        <span class="text-slate-400">›</span>
-      </button>
-      <button v-if="hasMore" type="button" class="m-btn-secondary" :disabled="loadingMore" @click="loadOrders(page + 1)">Voir plus</button>
-      <EmptyState
-        v-if="loaded && !orders.length"
-        icon="📦"
-        :title="homeFilter !== 'all' ? 'Aucune course dans cette catégorie' : isToday ? 'Aucune course aujourd\'hui' : 'Aucune course sur cette période'"
-        :text="isToday ? 'Créez une course en un instant.' : 'Choisissez d\'autres dates.'"
-      >
-        <RouterLink v-if="isToday && homeFilter === 'all' && auth.can('orders.create')" to="/marchand/courses/nouvelle" class="m-btn-primary">+ Nouvelle course</RouterLink>
-      </EmptyState>
-    </section>
-
-    <!-- Pour aller plus loin -->
-    <section class="space-y-2">
-      <RouterLink v-if="space.hasBilled && auth.can('finance.view')" to="/marchand/factures" class="tap m-card p-4 flex items-center gap-3 text-sm active:bg-slate-50">
-        <span class="text-2xl">📄</span>
-        <span class="flex-1"><strong class="block">Mes factures</strong><span class="text-slate-500">Factures du mois, paiements, PDF</span></span>
-        <span class="text-slate-400">›</span>
-      </RouterLink>
-      <RouterLink to="/marchand/statistiques" class="tap m-card p-4 flex items-center gap-3 text-sm active:bg-slate-50">
-        <span class="text-2xl">📊</span>
-        <span class="flex-1"><strong class="block">Mes statistiques</strong><span class="text-slate-500">Taux de livraison, motifs d'échec, communes</span></span>
-        <span class="text-slate-400">›</span>
-      </RouterLink>
-      <RouterLink
-        v-if="stock.total"
-        :to="stock.low ? '/marchand/stock?filtre=bas' : '/marchand/stock'"
-        :class="['tap block m-card p-4 flex items-center justify-between text-sm active:bg-slate-50', stock.low ? 'ring-2 ring-amber-300' : '']"
-      >
-        <span>📦 Mon stock · {{ stock.total }} produit{{ stock.total > 1 ? 's' : '' }}</span>
-        <span :class="stock.low ? 'font-semibold text-amber-700' : 'text-slate-500'">{{ stock.low ? `⚠️ ${stock.low} en stock bas` : 'Voir' }} →</span>
-      </RouterLink>
-    </section>
+      <!-- Mon compte : argent, facture, forfait, lots, livreurs MAD, statistiques, stock -->
+      <section class="space-y-2 lg:col-span-3 lg:row-start-1">
+        <h2 class="px-1 text-base font-bold text-slate-800 lg:sr-only">Mon compte</h2>
+        <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <template v-if="!loaded">
+            <div v-for="i in 4" :key="`sk-${i}`" class="m-card space-y-2 p-3.5"><span class="skeleton block h-9 w-9 rounded-lg" /><span class="skeleton block h-3 w-20" /><span class="skeleton block h-5 w-24" /></div>
+          </template>
+          <AccountTile
+            v-if="balance && space.showsEcommerce"
+            to="/marchand/paiements" icon="wallet" :tone="balance.available < 0 ? 'red' : 'green'"
+            :label="balance.available < 0 ? 'Vous devez à l\'agence' : 'On vous doit'"
+            :value="money(Math.abs(balance.available))"
+            :sub="balance.pending_cash ? `+ ${money(balance.pending_cash)} chez les livreurs` : 'Voir mes paiements'"
+          />
+          <AccountTile
+            v-if="space.showsBilled && space.space && auth.can('finance.view')"
+            to="/marchand/factures" icon="file" :tone="invoices.to_pay ? 'red' : 'slate'"
+            :label="invoices.to_pay ? (invoices.overdue ? 'Facture en retard' : 'Facture à payer') : 'Mes factures'"
+            :value="invoices.to_pay ? money(invoices.to_pay) : 'À jour'"
+            :sub="invoices.to_pay && invoices.next_due ? `${invoices.overdue ? 'depuis le' : 'avant le'} ${date(invoices.next_due)}` : 'aucune facture à payer'"
+            :sub-class="invoices.overdue ? 'font-medium text-red-700' : ''"
+          />
+          <AccountTile
+            v-for="p in (space.showsBilled ? space.plans : [])" :key="`plan-${p.id}`"
+            icon="box" :tone="p.has_forfait && p.percent >= 80 ? 'amber' : 'violet'"
+            :label="p.has_forfait ? `Forfait ${p.activity === 'mad' ? 'MAD' : p.activity_label.toLowerCase()}` : p.formula_label"
+            :value="p.has_forfait ? `${p.used} / ${p.included}` : `${p.orders} envoi${p.orders > 1 ? 's' : ''}`"
+            :sub="p.has_forfait ? (p.over ? `${p.over} en plus du forfait` : `${p.unit_label} ce mois-ci`) : 'ce mois-ci'"
+            :percent="p.has_forfait ? p.percent : null"
+            @click="sheet = { type: 'plan', plan: p }"
+          />
+          <AccountTile
+            v-for="l in lots" :key="`lot-${l.id}`"
+            icon="package" tone="blue" :label="`Lot · ${l.lot_name}`"
+            :value="`${l.delivered} / ${l.lot_quantity}`" :sub="l.done ? 'entièrement distribué' : 'colis livrés'"
+            :percent="Math.round(100 * l.delivered / Math.max(1, l.lot_quantity))"
+            @click="sheet = { type: 'lot', lot: l }"
+          />
+          <AccountTile
+            v-if="couriers.length"
+            icon="phone" tone="violet" :label="couriers.length > 1 ? 'Mes livreurs MAD' : 'Mon livreur MAD'"
+            :value="couriers.length > 1 ? `${couriers.length} livreurs` : couriers[0].name" :sub="couriers.length > 1 ? 'les appeler' : couriers[0].status_label"
+            @click="sheet = { type: 'couriers' }"
+          />
+          <AccountTile v-if="loaded" to="/marchand/statistiques" icon="chart" tone="blue" label="Statistiques" :value="month ? `${month.counts.total} course${month.counts.total > 1 ? 's' : ''}` : 'Voir'" sub="ce mois-ci" />
+          <AccountTile
+            v-if="stock.total" :to="stock.low ? '/marchand/stock?filtre=bas' : '/marchand/stock'" icon="box" :tone="stock.low ? 'amber' : 'slate'"
+            label="Mon stock" :value="`${stock.total} produit${stock.total > 1 ? 's' : ''}`" :sub="stock.low ? `${stock.low} en stock bas` : 'voir le stock'"
+            :sub-class="stock.low ? 'font-medium text-amber-800' : ''"
+          />
+        </div>
+      </section>
+    </div>
 
     <!-- Installation et notifications : proposées une fois l'application utilisée -->
     <template v-if="month && month.counts.total">
@@ -174,6 +158,33 @@
       <PushInvite />
     </template>
 
+    <!-- Un seul bouton ＋ (en bas) ; le raccourci « coller un message » reste sous le pouce -->
+    <RouterLink
+      v-if="auth.can('orders.create')"
+      to="/marchand/courses/nouvelle?coller=1"
+      class="tap fixed left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-xl active:scale-95 lg:hidden"
+      style="bottom: calc(5.5rem + env(safe-area-inset-bottom))"
+    >
+      <StatusIcon name="message" class="h-4 w-4" />Coller un message WhatsApp
+    </RouterLink>
+
+    <!-- Détail d'une tuile -->
+    <BottomSheet :open="!!sheet" :title="sheetTitle" @close="sheet = null">
+      <ForfaitCard v-if="sheet?.type === 'plan'" :plan="sheet.plan" />
+      <div v-else-if="sheet?.type === 'lot'" class="m-card p-4 space-y-2">
+        <div class="flex justify-between text-sm">
+          <span><strong class="text-lg">{{ sheet.lot.delivered }}</strong> livré(s) sur {{ sheet.lot.lot_quantity }}</span>
+          <span class="text-slate-600">{{ sheet.lot.in_progress }} en cours<template v-if="sheet.lot.remaining"> · {{ sheet.lot.remaining }} à envoyer</template></span>
+        </div>
+        <div class="h-2.5 rounded-full bg-slate-100 overflow-hidden">
+          <div class="h-full rounded-full bg-[var(--app-color)]" :style="{ width: `${Math.min(100, Math.round(100 * sheet.lot.delivered / Math.max(1, sheet.lot.lot_quantity)))}%` }" />
+        </div>
+        <p v-if="sheet.lot.lot_due_on" class="text-sm text-slate-600">À distribuer avant le {{ date(sheet.lot.lot_due_on) }}</p>
+        <p v-if="sheet.lot.over" class="text-sm text-slate-600">{{ sheet.lot.over }} colis en plus du lot, facturés à l'unité.</p>
+        <p v-if="sheet.lot.done" class="text-sm font-medium text-emerald-700">Lot entièrement distribué</p>
+      </div>
+      <MadCouriers v-else-if="sheet?.type === 'couriers'" :couriers="couriers" />
+    </BottomSheet>
   </div>
 </template>
 
@@ -183,6 +194,10 @@ import { useRoute, useRouter } from 'vue-router'
 import { cachedGet } from '../../composables/useCachedApi'
 import OrderCard from '../../components/mobile/OrderCard.vue'
 import EmptyState from '../../components/mobile/EmptyState.vue'
+import BottomSheet from '../../components/mobile/BottomSheet.vue'
+import SkeletonList from '../../components/mobile/SkeletonList.vue'
+import StatusIcon from '../../components/mobile/StatusIcon.vue'
+import AccountTile from '../../components/client/AccountTile.vue'
 import InstallBanner from '../../components/mobile/InstallBanner.vue'
 import PushInvite from '../../components/mobile/PushInvite.vue'
 import PeriodPicker from '../../components/mobile/PeriodPicker.vue'
@@ -229,8 +244,27 @@ const visibleAlerts = computed(() => (showAllAlerts.value ? alerts.value : alert
 const balance = ref(null)
 const todayCount = ref(null)
 
+// Résumé du stock (seulement si le client a des produits)
+const stock = reactive({ total: 0, low: 0 })
 const needsPickupLocation = computed(() => !!auth.user?.merchant && !auth.user.merchant.has_pickup_location)
-const todo = computed(() => needsPickupLocation.value || alerts.value.length > 0)
+// Facture à payer (distribution, MAD), lots en cours et livreurs attitrés de l'activité regardée
+const invoices = computed(() => space.space?.invoices || {})
+const invoiceDue = computed(() => space.showsBilled && auth.can('finance.view') && !!invoices.value.to_pay)
+const lots = computed(() => (space.showsBilled && space.current !== 'mad' ? space.space?.lots || [] : []))
+const couriers = computed(() => (space.showsBilled && space.current !== 'distribution' ? space.space?.couriers || [] : []))
+const todoCount = computed(() => (needsPickupLocation.value ? 1 : 0) + alertsTotal.value + (invoiceDue.value ? 1 : 0) + (stock.low ? 1 : 0))
+// Sous la salutation : ce qui demande l'attention, sinon le nombre de courses du jour
+const subtitle = computed(() => {
+  if (todoCount.value) return `${todoCount.value} chose${todoCount.value > 1 ? 's' : ''} demande${todoCount.value > 1 ? 'nt' : ''} votre attention`
+  if (todayCount.value === null) return ''
+  return todayCount.value ? `${todayCount.value} course${todayCount.value > 1 ? 's' : ''} aujourd'hui` : 'aucune course aujourd\'hui'
+})
+const sheet = ref(null)
+const sheetTitle = computed(() => {
+  if (sheet.value?.type === 'plan') return `${sheet.value.plan.formula_label} · ${sheet.value.plan.month_label}`
+  if (sheet.value?.type === 'lot') return `Lot · ${sheet.value.lot.lot_name}`
+  return couriers.value.length > 1 ? 'Mes livreurs MAD' : 'Mon livreur MAD'
+})
 const fees = computed(() => {
   const a = summary.value?.amounts || {}
   return (a.fees || 0) + (a.shipping_fees || 0) + (a.other_fees || 0)
@@ -320,8 +354,6 @@ watch(orderChanges, () => {
 function reload() {
   load()
 }
-// Résumé du stock (seulement si le client a des produits)
-const stock = reactive({ total: 0, low: 0 })
 async function loadStock() {
   // Stock : seulement si la formule de l'entreprise l'inclut
   try {

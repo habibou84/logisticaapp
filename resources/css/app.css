@@ -112,6 +112,11 @@
     @apply m-btn bg-emerald-600 text-white;
 }
 
+/* Bloc gris qui pulse : forme du contenu pendant le chargement */
+@utility skeleton {
+    @apply animate-pulse rounded bg-slate-200 motion-reduce:animate-none;
+}
+
 /* Défilement horizontal sans barre visible (rangées de pastilles) */
 @utility no-scrollbar {
     scrollbar-width: none;

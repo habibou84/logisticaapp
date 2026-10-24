@@ -1,50 +1,57 @@
 <template>
   <div class="space-y-3">
-    <div class="relative">
-      <input v-model="search" type="search" class="m-input pl-11" placeholder="Nom, téléphone ou n° de course" aria-label="Rechercher une course" @input="debouncedLoad">
-      <svg viewBox="0 0 24 24" class="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" stroke-linecap="round" /></svg>
-    </div>
+    <!-- Recherche et filtres restent en haut pendant le défilement -->
+    <div class="sticky z-20 -mx-4 -mt-4 space-y-2 bg-slate-50/95 px-4 pt-3 pb-2 backdrop-blur lg:-mx-8 lg:-mt-8 lg:px-8 lg:pt-6" style="top: calc(3.5rem + env(safe-area-inset-top))">
+      <div class="relative">
+        <input v-model="search" type="search" class="m-input pl-11" placeholder="Nom, téléphone ou n° de course" aria-label="Rechercher une course" @input="debouncedLoad">
+        <StatusIcon name="search" class="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+      </div>
 
-    <ActivitySwitch @change="reload" />
+      <!-- Période (aujourd'hui par défaut, comme sur l'accueil) et activité : deux menus sur une ligne -->
+      <div class="flex gap-2">
+        <PeriodPicker menu class="min-w-0 flex-1" :model-value="period" @update:model-value="setPeriod" />
+        <ActivitySwitch v-if="space.activities.length > 1" menu class="min-w-0 flex-1" @change="reload" />
+      </div>
 
-    <!-- Période : aujourd'hui par défaut, comme sur l'accueil ; seules les courses de ces dates s'affichent -->
-    <PeriodPicker :model-value="period" @update:model-value="setPeriod" />
-
-    <!-- Catégories, avec le nombre de courses de chacune (sur la période) -->
-    <div class="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 pb-1" role="radiogroup" aria-label="Catégorie">
-      <button
-        v-for="f in filters"
-        :key="f.value"
-        type="button"
-        role="radio"
-        :aria-checked="filter === f.value"
-        :class="['tap shrink-0 rounded-full px-4 py-2 text-sm font-medium ring-1', filter === f.value ? 'text-white ring-transparent' : 'bg-white ring-slate-200 text-slate-700']"
-        :style="filter === f.value ? { backgroundColor: 'var(--app-color)' } : {}"
-        @click="setFilter(f.value)"
-      >
-        {{ f.label }}
-        <span
-          v-if="counts[f.value] !== undefined"
-          :class="['ml-1 rounded-full px-1.5 text-xs', filter === f.value ? 'bg-white/25' : f.warn && counts[f.value] ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-600']"
-        >{{ counts[f.value] }}</span>
-      </button>
+      <!-- Catégories, avec le nombre de courses de chacune (sur la période) -->
+      <div class="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 lg:mx-0 lg:px-0" role="radiogroup" aria-label="Catégorie">
+        <button
+          v-for="f in filters"
+          :key="f.value"
+          type="button"
+          role="radio"
+          :aria-checked="filter === f.value"
+          :class="['tap shrink-0 rounded-full px-4 py-2 text-sm font-medium ring-1', filter === f.value ? 'text-white ring-transparent' : 'bg-white ring-slate-200 text-slate-700']"
+          :style="filter === f.value ? { backgroundColor: 'var(--app-color)' } : {}"
+          @click="setFilter(f.value)"
+        >
+          {{ f.label }}
+          <span
+            v-if="counts[f.value] !== undefined"
+            :class="['ml-1 rounded-full px-1.5 text-xs', filter === f.value ? 'bg-white/25' : f.warn && counts[f.value] ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-600']"
+          >{{ counts[f.value] }}</span>
+        </button>
+      </div>
     </div>
 
     <!-- Courses de la période choisie -->
-    <section class="space-y-2">
-      <OrderCard v-for="o in orders" :key="o.id" :order="o" :to="`/marchand/courses/${o.id}`">
+    <SkeletonList v-if="loading && !orders.length" />
+    <!-- Groupées par jour de livraison quand la période en couvre plusieurs -->
+    <section v-for="g in groups" :key="g.day" class="space-y-2">
+      <h2 v-if="groups.length > 1" class="px-1 pt-1 text-xs font-bold uppercase tracking-wide text-slate-600">{{ g.label }}</h2>
+      <OrderCard v-for="o in g.orders" :key="o.id" :order="o" :to="`/marchand/courses/${o.id}`">
         <template v-if="needsDecision(o)" #actions>
-          <a :href="telLink(o.recipient.phone)" class="tap flex-1 rounded-xl py-2.5 text-center text-sm font-semibold ring-1 ring-slate-200 active:bg-slate-50">📞 Appeler</a>
-          <RouterLink v-if="o.status === 'delivery_failed'" :to="`/marchand/courses/${o.id}?action=reporter`" class="tap flex-1 rounded-xl py-2.5 text-center text-sm font-semibold ring-1 ring-slate-200 active:bg-slate-50">📅 Reporter</RouterLink>
+          <a :href="telLink(o.recipient.phone)" class="tap flex-1 rounded-xl py-2.5 text-center text-sm font-semibold ring-1 ring-slate-200 active:bg-slate-50 inline-flex items-center justify-center gap-1.5"><StatusIcon name="phone" class="h-4 w-4" />Appeler</a>
+          <RouterLink v-if="o.status === 'delivery_failed'" :to="`/marchand/courses/${o.id}?action=reporter`" class="tap flex-1 rounded-xl py-2.5 text-center text-sm font-semibold ring-1 ring-slate-200 active:bg-slate-50 inline-flex items-center justify-center gap-1.5"><StatusIcon name="calendar" class="h-4 w-4" />Reporter</RouterLink>
           <RouterLink :to="`/marchand/courses/${o.id}`" class="tap flex-1 rounded-xl py-2.5 text-center text-sm font-semibold text-white" :style="{ backgroundColor: 'var(--app-color)' }">Décider</RouterLink>
         </template>
       </OrderCard>
     </section>
 
-    <EmptyState v-if="!loading && !orders.length" icon="🔎" :title="search ? 'Aucune course trouvée' : emptyTitle" :text="search ? 'Essayez un autre nom, numéro ou n° de course.' : emptyText">
+    <EmptyState v-if="!loading && !orders.length" icon="search" :title="search ? 'Aucune course trouvée' : emptyTitle" :text="search ? 'Essayez un autre nom, numéro ou n° de course.' : emptyText">
       <RouterLink v-if="!search && filter === 'all' && auth.can('orders.create')" to="/marchand/courses/nouvelle" class="m-btn-primary">+ Nouvelle course</RouterLink>
     </EmptyState>
-    <p v-if="loading" class="text-center text-slate-400 py-6">Chargement…</p>
+    <p v-if="loading && orders.length" class="text-center text-slate-500 py-6">Chargement…</p>
     <button v-if="hasMore && !loading" class="m-btn-secondary" @click="load(page + 1)">Voir plus</button>
 
   </div>
@@ -56,9 +63,11 @@ import { useRoute, useRouter } from 'vue-router'
 import { cachedGet } from '../../composables/useCachedApi'
 import OrderCard from '../../components/mobile/OrderCard.vue'
 import EmptyState from '../../components/mobile/EmptyState.vue'
+import SkeletonList from '../../components/mobile/SkeletonList.vue'
+import StatusIcon from '../../components/mobile/StatusIcon.vue'
 import { orderChanges } from '../../composables/useRealtime'
 import { useAuthStore } from '../../stores/auth'
-import { telLink } from '../../utils/format'
+import { telLink, today } from '../../utils/format'
 import { needsDecision } from '../../utils/merchantStatus'
 import PeriodPicker from '../../components/mobile/PeriodPicker.vue'
 import ActivitySwitch from '../../components/client/ActivitySwitch.vue'
@@ -91,6 +100,35 @@ const counts = reactive({})
 const page = ref(1)
 const hasMore = ref(false)
 const loading = ref(false)
+
+// Jour de livraison d'une course : date prévue, sinon jour de création
+function dayOf(o) {
+  if (o.delivery?.scheduled_date) return o.delivery.scheduled_date
+  const d = new Date(o.created_at)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+function shiftDay(iso, days) {
+  const d = new Date(`${iso}T12:00:00`)
+  d.setDate(d.getDate() + days)
+  return d.toISOString().slice(0, 10)
+}
+function dayLabel(day) {
+  const now = today()
+  if (day === now) return 'Aujourd\'hui'
+  if (day === shiftDay(now, -1)) return 'Hier'
+  if (day === shiftDay(now, 1)) return 'Demain'
+  return new Date(`${day}T12:00:00`).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
+}
+const groups = computed(() => {
+  const list = []
+  for (const o of orders.value) {
+    const day = dayOf(o)
+    let g = list.find((x) => x.day === day)
+    if (!g) list.push(g = { day, label: dayLabel(day), orders: [] })
+    g.orders.push(o)
+  }
+  return list
+})
 
 const emptyTitle = computed(() => EMPTY[filter.value][0])
 const emptyText = computed(() => EMPTY[filter.value][1])
