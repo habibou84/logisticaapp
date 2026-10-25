@@ -16,7 +16,7 @@
       <!-- Catégories, avec le nombre de courses de chacune (sur la période) -->
       <div class="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 lg:mx-0 lg:px-0" role="radiogroup" aria-label="Catégorie">
         <button
-          v-for="f in filters"
+          v-for="f in filters.filter((x) => !x.hideEmpty || counts[x.value] || filter === x.value)"
           :key="f.value"
           type="button"
           role="radio"

@@ -30,6 +30,7 @@ use App\Http\Controllers\Api\V1\FieldReportController;
 use App\Http\Controllers\Api\V1\FinanceController;
 use App\Http\Controllers\Api\V1\HubController;
 use App\Http\Controllers\Api\V1\LegacyImportController;
+use App\Http\Controllers\Api\V1\MerchantAccountController;
 use App\Http\Controllers\Api\V1\MerchantController;
 use App\Http\Controllers\Api\V1\MerchantLocationController;
 use App\Http\Controllers\Api\V1\MerchantNotificationController;
@@ -330,7 +331,10 @@ Route::prefix('v1')->name('v1.')->group(function () {
 
         // Marchands
         Route::apiResource('merchants', MerchantController::class)->except('destroy');
-        Route::post('merchants/{merchant}/users', [MerchantController::class, 'storeUser'])->name('merchants.users.store');
+        // Comptes du client (équipe, ou le client lui-même)
+        Route::get('merchants/{merchant}/users', [MerchantAccountController::class, 'index'])->name('merchants.users.index');
+        Route::post('merchants/{merchant}/users', [MerchantAccountController::class, 'store'])->name('merchants.users.store');
+        Route::patch('merchants/{merchant}/users/{user}', [MerchantAccountController::class, 'update'])->name('merchants.users.update');
         // Départements du client (distribution, MAD)
         Route::controller(DepartmentController::class)->group(function () {
             Route::get('merchant/departments', 'mine')->name('merchant.departments');
@@ -433,6 +437,7 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::post('orders/{order}/assign', [OrderActionController::class, 'assign'])->name('orders.assign');
         Route::post('orders/{order}/unassign', [OrderActionController::class, 'unassign'])->name('orders.unassign');
         Route::post('orders/{order}/decision', [OrderActionController::class, 'decide'])->name('orders.decision');
+        Route::post('orders/{order}/approval', [OrderActionController::class, 'approval'])->name('orders.approval');
         Route::post('orders/{order}/lost', [OrderActionController::class, 'declareLost'])->name('orders.lost');
         Route::post('orders/{order}/notes', [OrderActionController::class, 'note'])->name('orders.notes');
         Route::post('orders/{order}/verify-delivery-code', [OrderActionController::class, 'verifyDeliveryCode'])->name('orders.verify-delivery-code');

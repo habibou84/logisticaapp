@@ -61,9 +61,16 @@
         </thead>
         <tbody class="divide-y">
           <tr v-for="u in users" :key="u.id">
-            <td class="p-2"><b>{{ u.name }}</b><span class="block text-xs text-gray-500">{{ u.owner ? 'Gérant : voit tout' : u.department_ids.length ? (settings.staff_own_only ? 'Ne voit que ses départements' : 'Voit tout le client') : 'Sans département : voit tout' }}</span></td>
+            <td class="p-2">
+              <b>{{ u.name }}</b><span v-if="u.role_label" class="text-xs text-gray-500"> · {{ u.role_label }}</span>
+              <span class="block text-xs text-gray-500">{{ u.owner ? 'Voit tout le client et valide ses demandes' : u.department_ids.length ? (settings.staff_own_only ? 'Ne voit que ses départements' : 'Voit tout le client') : 'Sans département : voit tout' }}</span>
+            </td>
             <td v-for="d in activeDepartments" :key="d.id" class="p-2 text-center">
               <input type="checkbox" :checked="u.department_ids.includes(d.id)" :disabled="u.owner || !canManage" :aria-label="`${u.name} · ${d.name}`" @change="toggleUser(u, d.id, $event.target.checked)">
+              <!-- Chef de service : valide les demandes des agents du département (réglage « validation par le chef ») -->
+              <label v-if="settings.head_approval && u.department_ids.includes(d.id) && !u.owner" class="mt-1 flex items-center justify-center gap-1 text-[11px] text-gray-600">
+                <input type="checkbox" :checked="(u.head_department_ids || []).includes(d.id)" :disabled="!canManage" @change="toggleHead(u, d.id, $event.target.checked)"> chef
+              </label>
             </td>
           </tr>
           <tr v-if="!users.length"><td :colspan="activeDepartments.length + 1" class="p-6 text-center text-gray-500">Aucun compte pour ce client.</td></tr>
@@ -175,14 +182,24 @@ async function remove(d) {
   }
 }
 
-async function toggleUser(u, id, on) {
-  const ids = on ? [...u.department_ids, id] : u.department_ids.filter((x) => x !== id)
+async function saveMembership(u, departmentIds, headIds) {
   try {
-    const { data } = await http.put(`/merchants/${props.merchantId}/users/${u.id}/departments`, { department_ids: ids })
+    const { data } = await http.put(`/merchants/${props.merchantId}/users/${u.id}/departments`, { department_ids: departmentIds, head_department_ids: headIds })
     u.department_ids = data.data.department_ids
+    u.head_department_ids = data.data.head_department_ids
   } catch (e) {
     toasts.error(apiErrorMessage(e))
   }
+}
+
+function toggleUser(u, id, on) {
+  const ids = on ? [...u.department_ids, id] : u.department_ids.filter((x) => x !== id)
+  return saveMembership(u, ids, (u.head_department_ids || []).filter((x) => ids.includes(x)))
+}
+
+function toggleHead(u, id, on) {
+  const heads = u.head_department_ids || []
+  return saveMembership(u, u.department_ids, on ? [...heads, id] : heads.filter((x) => x !== id))
 }
 
 const overrideValue = (key) => (overrides.value?.[key] === undefined || overrides.value?.[key] === null ? '' : String(overrides.value[key]))

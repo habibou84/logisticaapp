@@ -63,9 +63,13 @@
         <PeriodPicker menu :model-value="period" @update:model-value="setPeriod" />
 
         <!-- Catégories de la période : on choisit ici, la liste en dessous suit (on reste sur l'accueil) -->
+        <!-- Chef de service : demandes de ses agents à valider -->
+        <RouterLink v-if="counts.approval" :to="{ path: '/marchand/courses', query: { filtre: 'approval' } }" class="tap mb-2 flex items-center justify-between rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-900 ring-1 ring-amber-200">
+          <span>✋ {{ counts.approval }} demande{{ counts.approval > 1 ? 's' : '' }} à valider</span><span aria-hidden="true">›</span>
+        </RouterLink>
         <div class="grid grid-cols-5 gap-1.5" role="radiogroup" aria-label="Catégorie">
           <button
-            v-for="f in ORDER_FILTERS"
+            v-for="f in ORDER_FILTERS.filter((x) => !x.hideEmpty)"
             :key="f.value"
             type="button"
             role="radio"

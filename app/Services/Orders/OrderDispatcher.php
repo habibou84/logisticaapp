@@ -46,6 +46,10 @@ class OrderDispatcher
             $order = Order::query()->lockForUpdate()->findOrFail($order->id);
             $from = $order->status;
 
+            if ($order->awaitingApproval()) {
+                throw new BusinessRuleException('Cette course attend la validation du chef de service du client.', 'status');
+            }
+
             if ($courier->company_id !== $order->company_id || ! $courier->user?->isActive()) {
                 throw new BusinessRuleException('Ce livreur n\'est pas disponible pour cette entreprise.', 'courier_id');
             }

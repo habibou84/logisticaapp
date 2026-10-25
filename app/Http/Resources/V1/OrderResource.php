@@ -6,6 +6,7 @@ use App\Enums\OrderEventType;
 use App\Enums\OrderStatus;
 use App\Models\Department;
 use App\Models\Order;
+use App\Services\Departments\Departments;
 use App\Services\Departments\DepartmentSettings;
 use App\Services\Orders\ActivityOptions;
 use App\Services\Orders\AwaitingCourier;
@@ -170,6 +171,14 @@ class OrderResource extends JsonResource
             'max_attempts' => $this->max_attempts,
             // Colis non livré : décision attendue, ou décision déjà prise par le client
             'needs_decision' => $this->needsDecision(),
+            // Demande d'un agent : validation par le chef de son service (départements)
+            'approval' => $this->approval_requested_at ? [
+                'awaiting' => $this->resource->awaitingApproval(),
+                'requested_at' => $this->approval_requested_at,
+                'approved_at' => $this->approved_at,
+                'approved_by' => $this->approved_by ? $this->resource->loadMissing('approver')->approver?->name : null,
+                'can_decide' => $request->user() && $this->resource->awaitingApproval() && app(Departments::class)->canApprove($request->user(), $this->resource),
+            ] : null,
             'decision_editable' => $this->decisionEditable(),
             'merchant_decision' => $this->whenLoaded('merchantDecision', fn () => $this->merchantDecisionSummary()),
             'return_requested' => $this->return_requested,

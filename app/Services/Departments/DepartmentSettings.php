@@ -45,12 +45,14 @@ class DepartmentSettings
         'quota_block' => false,
         // Le gérant du client crée ses départements et y rattache ses employés (application client)
         'client_manages' => true,
+        // Course demandée par un agent : validée d'abord par le chef de son service (ou le gérant) avant d'être envoyée
+        'head_approval' => false,
     ];
 
     /** Réglages que chaque client peut changer */
     public const CLIENT_KEYS = [
         'required', 'staff_own_only', 'internal_mail', 'requested_by', 'handover_name', 'handover_signature',
-        'received_role', 'slips', 'invoice_mode', 'forfait_split', 'quota_alerts', 'quota_block', 'client_manages',
+        'received_role', 'slips', 'invoice_mode', 'forfait_split', 'quota_alerts', 'quota_block', 'client_manages', 'head_approval',
     ];
 
     /**
@@ -102,6 +104,7 @@ class DepartmentSettings
             "{$prefix}.quota_alerts" => $bool,
             "{$prefix}.quota_block" => $bool,
             "{$prefix}.client_manages" => $bool,
+            "{$prefix}.head_approval" => $bool,
         ];
     }
 

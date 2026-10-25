@@ -3,7 +3,7 @@
 export const SPACES = {
   admin: ['admin', 'activity_manager', 'dispatcher', 'cashier', 'hub_agent', 'staff_custom'],
   livreur: ['courier'],
-  marchand: ['merchant_owner', 'merchant_staff'],
+  marchand: ['merchant_owner', 'merchant_manager', 'merchant_staff', 'merchant_viewer'],
 }
 
 export function homeFor(role) {

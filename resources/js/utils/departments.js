@@ -18,6 +18,7 @@ export const DEPARTMENT_OPTIONS = [
   { group: 'Sur la course', key: 'internal_mail', type: 'bool', label: 'Courrier interne : course vers un autre département', hint: 'Adresse et responsable du département destinataire remplis tout seuls.' },
   { group: 'Comptes', key: 'staff_own_only', type: 'bool', label: 'Chaque employé ne voit et ne commande que pour ses départements', hint: 'Le gérant du client voit tout.' },
   { group: 'Comptes', key: 'client_manages', type: 'bool', label: 'Le gérant du client gère ses départements et ses employés', hint: 'Dans son application ; sinon seulement l\'agence.' },
+  { group: 'Comptes', key: 'head_approval', type: 'bool', label: 'Validation par le chef de service', hint: 'La course demandée par un agent attend l\'accord du chef de son département (ou du gérant) avant de partir. Désignez les chefs dans l\'onglet Comptes.' },
   { group: 'Remise', key: 'handover_name', type: 'level', label: 'Au ramassage : nom et fonction de la personne qui remet' },
   { group: 'Remise', key: 'handover_signature', type: 'level', label: 'Au ramassage : signature de la personne qui remet' },
   { group: 'Remise', key: 'received_role', type: 'level', label: 'À la remise : fonction de la personne qui reçoit', hint: 'Le nom, la signature et la photo suivent la preuve de remise (Réglages › Courses).' },

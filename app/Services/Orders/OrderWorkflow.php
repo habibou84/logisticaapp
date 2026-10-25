@@ -75,6 +75,11 @@ class OrderWorkflow
                 throw new BusinessRuleException("Transition impossible : « {$from->label()} » → « {$to->label()} ».", 'status');
             }
 
+            // Demande d'un agent pas encore validée par le chef de son service : elle ne part pas
+            if ($order->awaitingApproval() && in_array($to, [OrderStatus::Confirmed, OrderStatus::PickupAssigned], true)) {
+                throw new BusinessRuleException('Cette course attend la validation du chef de service du client.', 'status');
+            }
+
             $this->authorizeActor($actor, $order, $from, $to);
             $this->validate($order, $from, $to, $reason, $context);
 
@@ -194,7 +199,8 @@ class OrderWorkflow
         }
 
         if ($actor->merchant_id !== null) {
-            $merchantAllowed = $actor->merchant_id === $order->merchant_id && match ($to) {
+            // Lecteur du client : il suit les courses sans agir
+            $merchantAllowed = $actor->merchant_id === $order->merchant_id && $actor->can(Permission::OrdersCreate->value) && match ($to) {
                 OrderStatus::Cancelled => $from->isBeforePickup(),
                 // Report, ou nouvelle date tant qu'aucun livreur n'est reparti avec le colis
                 OrderStatus::Rescheduled => $from === OrderStatus::DeliveryFailed

@@ -55,6 +55,19 @@ class OrderActionController extends Controller
     /**
      * Suite donnée à un colis non livré : relivrer, retourner au client, remettre en stock.
      */
+    /**
+     * Demande d'un agent : le chef de son service (ou le gérant du client) la valide ou la refuse.
+     */
+    public function approval(Request $request, Order $order, OrderService $orders): OrderResource
+    {
+        $data = $request->validate([
+            'approve' => ['required', 'boolean'],
+            'reason' => ['nullable', 'string', 'max:255'],
+        ], [], ['reason' => 'motif']);
+
+        return OrderResource::make($orders->decideApproval($request->user(), $order, $data['approve'], $data['reason'] ?? null)->load(OrderController::loadDetailRelations($request)));
+    }
+
     public function decide(Request $request, Order $order): OrderResource
     {
         Gate::authorize('dispatch', Order::class);

@@ -17,6 +17,16 @@
       <OrderProgress :status="order.status" :incident="order.last_incident?.label" :rescheduled-to="order.delivery.scheduled_date" :shipping="order.is_shipping" />
       <p v-if="plannedDay" class="flex items-center gap-2 rounded-xl bg-sky-50 px-3 py-2 text-sm text-sky-900"><StatusIcon name="calendar" class="h-4 w-4 shrink-0" /><span>Livraison prévue le <strong>{{ plannedDay }}</strong></span></p>
 
+      <!-- Demande d'un agent : en attente du chef de service, qui la valide ou la refuse ici -->
+      <div v-if="order.approval?.awaiting" class="rounded-xl bg-amber-50 p-3 text-sm text-amber-900 space-y-2">
+        <p>✋ <strong>En attente de validation</strong> par le chef de service<template v-if="order.department"> ({{ order.department.name }})</template>. Elle part à l'agence dès qu'elle est validée.</p>
+        <div v-if="order.approval.can_decide" class="grid grid-cols-2 gap-2">
+          <button class="m-btn-primary py-2" :disabled="busy" @click="approve(true)">✅ Valider</button>
+          <button class="m-btn-secondary py-2" :disabled="busy" @click="approve(false)">Refuser</button>
+        </div>
+      </div>
+      <p v-else-if="order.approval?.approved_at" class="text-xs text-slate-500">Validée par {{ order.approval.approved_by || 'le chef de service' }}.</p>
+
       <!-- Échec de livraison : la décision d'abord (seulement si elle est encore attendue) -->
       <div v-if="order.needs_decision" class="grid grid-cols-2 gap-2">
         <button class="m-btn-primary py-3" @click="openReschedule">📅 Reporter</button>
@@ -358,6 +368,12 @@ async function run(action, success) {
   } finally {
     busy.value = false
   }
+}
+
+function approve(ok) {
+  const reason = ok ? null : window.prompt('Pourquoi refuser cette demande ? (facultatif)')
+  if (reason === null && !ok) return
+  run(() => http.post(`/orders/${order.value.id}/approval`, { approve: ok, reason: reason || null }), ok ? 'Course validée.' : 'Demande refusée.')
 }
 
 const doReschedule = () => run(() => http.post(`/orders/${order.value.id}/status`, {

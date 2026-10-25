@@ -26,12 +26,8 @@ const moneyTab = computed(() => {
 const tabs = computed(() => [
   { to: '/marchand', label: 'Accueil', icon: HomeIcon, exact: true },
   { to: '/marchand/courses', label: 'Courses', icon: BoxIcon, exact: true },
-  {
-    to: '/marchand/courses/nouvelle',
-    label: 'Nouvelle course',
-    // Bouton ＋ : directement le formulaire (l'import Excel reste dans Moi)
-    primary: true,
-  },
+  // Bouton ＋ : directement le formulaire (l'import Excel reste dans Moi) ; pas pour le lecteur
+  ...(auth.can('orders.create') ? [{ to: '/marchand/courses/nouvelle', label: 'Nouvelle course', primary: true }] : []),
   ...(moneyTab.value ? [moneyTab.value] : []),
   { to: '/marchand/profil', label: 'Moi', icon: UserIcon },
 ])

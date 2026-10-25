@@ -95,6 +95,10 @@ class Order extends Model
         'cod_amount',
         'max_attempts',
         'delivery_code',
+        // Validation par le chef de service (départements)
+        'approval_requested_at',
+        'approved_at',
+        'approved_by',
     ];
 
     protected $hidden = ['delivery_code'];
@@ -103,6 +107,8 @@ class Order extends Model
     {
         return [
             'merchant_alerts_muted' => 'boolean',
+            'approval_requested_at' => 'datetime',
+            'approved_at' => 'datetime',
             'status' => OrderStatus::class,
             'fee_payer' => FeePayer::class,
             'pricing_details' => 'array',
@@ -249,6 +255,18 @@ class Order extends Model
         return $this->belongsTo(Zone::class, 'delivery_zone_id');
     }
 
+    /** Compte du client qui a validé la demande (chef de service, gérant) */
+    public function approver(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    /** Demande d'un agent qui attend l'accord du chef de son service */
+    public function awaitingApproval(): bool
+    {
+        return $this->approval_requested_at !== null && $this->approved_at === null && $this->status === OrderStatus::Pending;
+    }
+
     public function pickupHub(): BelongsTo
     {
         return $this->belongsTo(Hub::class, 'pickup_hub_id');
@@ -344,7 +362,7 @@ class Order extends Model
     public function merchantDecision(): HasOne
     {
         return $this->hasOne(OrderEvent::class)->ofMany(['id' => 'max'], fn (Builder $q) => $q
-            ->whereIn('actor_role', [Role::MerchantOwner->value, Role::MerchantStaff->value])
+            ->whereIn('actor_role', Role::values(Role::merchant()))
             ->where(fn (Builder $q) => $q->where('type', OrderEventType::ReturnRequested->value)
                 ->orWhere(fn (Builder $q) => $q->where('type', OrderEventType::StatusChanged->value)->where('to_status', OrderStatus::Rescheduled->value))));
     }

@@ -61,6 +61,7 @@
             <td class="p-2 text-right whitespace-nowrap">
               <RouterLink :to="{ path: '/admin/courses', query: { merchant_id: m.id } }" class="text-blue-600 mr-3">Courses</RouterLink>
               <button class="text-blue-600 mr-3" @click="billing = m">Contrat</button>
+              <RouterLink :to="`/admin/marchands/${m.id}/comptes`" class="text-blue-600 mr-3">Comptes</RouterLink>
               <RouterLink v-if="m.activities?.some((a) => a !== 'ecommerce')" :to="`/admin/marchands/${m.id}/departements`" class="text-blue-600 mr-3">Départements</RouterLink>
               <button v-if="auth.can('merchants.manage')" class="text-blue-600" @click="openForm(m)">Modifier</button>
             </td>

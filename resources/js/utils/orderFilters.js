@@ -8,6 +8,8 @@ export const ORDER_FILTERS = [
   { value: 'all', label: 'Toutes', short: 'Toutes', statuses: [], color: 'text-slate-900' },
   { value: 'active', label: 'En cours', short: 'En cours', statuses: ACTIVE, color: 'text-blue-700' },
   { value: 'problems', label: 'À régler', short: 'À régler', statuses: [], queue: 'to_decide', warn: true, color: 'text-amber-700' },
+  // Demandes des agents à valider par le chef de service (départements)
+  { value: 'approval', label: 'À valider', short: 'À valider', statuses: [], queue: 'to_approve', warn: true, color: 'text-amber-700', hideEmpty: true, anyDay: true },
   { value: 'delivered', label: 'Livrées', short: 'Livrées', statuses: ['delivered'], color: 'text-emerald-700' },
   { value: 'other', label: 'Retournées / annulées', short: 'Retours', statuses: ['returned', 'cancelled', 'rejected'], color: 'text-slate-600' },
 ]
@@ -18,6 +20,8 @@ export const ORDER_FILTERS = [
  * mercredi passe au mercredi.
  */
 export function filterParams(filter, period) {
+  // Demandes à valider : quel que soit leur jour
+  if (filter.anyDay) period = null
   return {
     status: filter.statuses.length ? filter.statuses : undefined,
     queue: filter.queue,

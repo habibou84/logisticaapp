@@ -3,7 +3,6 @@
 namespace App\Policies;
 
 use App\Enums\Permission;
-use App\Enums\Role;
 use App\Models\Merchant;
 use App\Models\User;
 use App\Services\Departments\DepartmentSettings;
@@ -39,7 +38,7 @@ class MerchantPolicy
             return $user->can(Permission::DepartmentsManage->value);
         }
 
-        return $user->merchant_id === $merchant->id && $user->hasRole(Role::MerchantOwner->value)
+        return $user->merchant_id === $merchant->id && $user->isMerchantLead()
             && app(DepartmentSettings::class)->for($merchant)['client_manages'];
     }
 

@@ -7,6 +7,7 @@ use App\Enums\FeePayer;
 use App\Enums\OrderEventType;
 use App\Enums\OrderStatus;
 use App\Exceptions\BusinessRuleException;
+use App\Models\Company;
 use App\Models\Hub;
 use App\Models\Merchant;
 use App\Models\Order;
@@ -22,6 +23,7 @@ use App\Services\Pricing\ClientPricing;
 use App\Services\Pricing\PricingService;
 use App\Services\Stock\StockKeeper;
 use App\Support\PhoneNumber;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
@@ -181,21 +183,14 @@ class OrderService
             // Règles de validation : journée fermée (heure limite ou dispatch) → livraison au prochain jour
             $postponed = $this->deliveryDay->postponeIfClosed($order, $company);
 
-            if ($company->validatesAutomatically()) {
-                $order->forceFill(['status' => OrderStatus::Confirmed, 'confirmed_at' => now()])->save();
-                $this->journal->record($order, null, OrderEventType::StatusChanged, [
-                    'from_status' => OrderStatus::Pending,
-                    'to_status' => OrderStatus::Confirmed,
-                    'note' => $postponed
-                        ? "Validation automatique · livraison le {$order->delivery_scheduled_date->format('d/m')} ({$postponed})"
-                        : 'Validation automatique',
-                    'meta' => $postponed ? ['postponed' => $postponed] : null,
-                ]);
-
-                // Livreur déjà prévu chez ce client : le colis lui est ajouté ; sinon le planning des livreurs
-                if ($this->pickups->attachToRunningPickup($order) || $this->autoAssigner->pickup($order)) {
-                    $order = $order->fresh();
-                }
+            // Demande d'un agent : d'abord l'accord du chef de son service, puis la validation habituelle
+            if ($this->departments->needsApproval($actor, $order)) {
+                $order->forceFill(['approval_requested_at' => now()])->save();
+                $this->journal->record($order, $actor, OrderEventType::Note, ['note' => 'En attente de validation par le chef de service']);
+                $waiting = $order;
+                DB::afterCommit(fn () => $this->departments->askApproval($waiting));
+            } elseif ($company->validatesAutomatically()) {
+                $order = $this->autoValidate($order, $postponed);
             }
 
             // Forfait du client bientôt épuisé : alerte à 80 % puis à 100 %
@@ -204,6 +199,60 @@ class OrderService
             DB::afterCommit(fn () => $this->departments->afterOrder($created));
 
             return $order;
+        });
+    }
+
+    /**
+     * Validation automatique (réglage de l'entreprise) : course validée, livreur déjà prévu chez ce client ou planning.
+     */
+    public function autoValidate(Order $order, ?string $postponed = null): Order
+    {
+        $order->forceFill(['status' => OrderStatus::Confirmed, 'confirmed_at' => now()])->save();
+        $this->journal->record($order, null, OrderEventType::StatusChanged, [
+            'from_status' => OrderStatus::Pending,
+            'to_status' => OrderStatus::Confirmed,
+            'note' => $postponed
+                ? "Validation automatique · livraison le {$order->delivery_scheduled_date->format('d/m')} ({$postponed})"
+                : 'Validation automatique',
+            'meta' => $postponed ? ['postponed' => $postponed] : null,
+        ]);
+
+        // Livreur déjà prévu chez ce client : le colis lui est ajouté ; sinon le planning des livreurs
+        if ($this->pickups->attachToRunningPickup($order) || $this->autoAssigner->pickup($order)) {
+            $order = $order->fresh();
+        }
+
+        return $order;
+    }
+
+    /**
+     * Le chef de service (ou le gérant du client) valide ou refuse la demande d'un agent.
+     */
+    public function decideApproval(User $actor, Order $order, bool $approve, ?string $reason = null): Order
+    {
+        if (! $order->awaitingApproval()) {
+            throw new BusinessRuleException('Cette course n\'attend pas de validation.');
+        }
+        if (! $this->departments->canApprove($actor, $order)) {
+            throw new AuthorizationException('Seul le chef de ce service ou le gérant valide cette demande.');
+        }
+
+        if (! $approve) {
+            return app(OrderWorkflow::class)->transition($actor, $order, OrderStatus::Cancelled, [
+                'note' => 'Refusée par le chef de service'.($reason ? " : {$reason}" : ''),
+            ]);
+        }
+
+        return DB::transaction(function () use ($actor, $order) {
+            $order->forceFill(['approved_at' => now(), 'approved_by' => $actor->id])->save();
+            $this->journal->record($order, $actor, OrderEventType::Note, ['note' => 'Validée par le chef de service']);
+            $company = Company::query()->find($order->company_id);
+            if ($company?->validatesAutomatically()) {
+                $postponed = $this->deliveryDay->postponeIfClosed($order, $company);
+                $order = $this->autoValidate($order, $postponed);
+            }
+
+            return $order->fresh();
         });
     }
 

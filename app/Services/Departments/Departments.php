@@ -55,7 +55,7 @@ class Departments
      */
     public function scopeFor(User $user): ?array
     {
-        if ($user->merchant_id === null || $user->hasRole(Role::MerchantOwner->value)) {
+        if ($user->merchant_id === null || $user->isMerchantLead()) {
             return null;
         }
         if (array_key_exists($user->id, $this->scopes)) {
@@ -65,6 +65,64 @@ class Departments
         $merchant = Merchant::withoutGlobalScopes()->find($user->merchant_id);
 
         return $this->scopes[$user->id] = $ids !== [] && $merchant && $this->settings->for($merchant)['staff_own_only'] ? $ids : null;
+    }
+
+    /**
+     * Course demandée par un agent d'un département qui a un chef, réglage « validation par le chef de service » :
+     * elle attend son accord (ou celui du gérant) avant de partir à l'entreprise de livraison.
+     */
+    public function needsApproval(User $actor, Order $order): bool
+    {
+        if ($actor->merchant_id === null || $order->department_id === null || $actor->isMerchantLead()) {
+            return false;
+        }
+        $merchant = $this->merchantOf($order);
+        if (! $this->settings->for($merchant)['head_approval']) {
+            return false;
+        }
+        $heads = Department::query()->whereKey($order->department_id)->first()?->users()->wherePivot('is_head', true)
+            ->where('status', 'active')->pluck('users.id')->all() ?? [];
+
+        return $heads !== [] && ! in_array($actor->id, $heads, true);
+    }
+
+    /** Valider ou refuser la demande : le chef du département de la course, ou le gérant du client */
+    public function canApprove(User $actor, Order $order): bool
+    {
+        if ($actor->merchant_id === null || $actor->merchant_id !== $order->merchant_id) {
+            return false;
+        }
+
+        return $actor->isMerchantLead()
+            || ($order->department_id !== null && $actor->departments()->whereKey($order->department_id)->wherePivot('is_head', true)->exists());
+    }
+
+    /**
+     * Qui valide : chefs du département de la course, à défaut gérants du client.
+     *
+     * @return Collection<int, User>
+     */
+    public function approvers(Order $order): Collection
+    {
+        $heads = User::withoutGlobalScopes()->where('merchant_id', $order->merchant_id)->where('status', 'active')
+            ->whereHas('departments', fn ($d) => $d->whereKey($order->department_id)->where('department_user.is_head', true))->get();
+
+        return $heads->isNotEmpty() ? $heads : User::withoutGlobalScopes()->where('merchant_id', $order->merchant_id)->where('status', 'active')
+            ->whereHas('roles', fn ($r) => $r->whereIn('name', [Role::MerchantOwner->value, Role::MerchantManager->value]))->get();
+    }
+
+    /** Prévenir les chefs qu'une demande attend leur accord */
+    public function askApproval(Order $order): void
+    {
+        try {
+            $name = $order->department_id ? Department::query()->whereKey($order->department_id)->value('name') : null;
+            Notification::send($this->approvers($order), new ClientBillingAlert('order_approval',
+                '✋ Course à valider'.($name ? " · {$name}" : ''),
+                trim(($order->requested_by ? "{$order->requested_by} · " : '')."{$order->tracking_code} pour {$order->recipient_name}"),
+                "/marchand/courses/{$order->id}"));
+        } catch (Throwable $e) {
+            Log::warning('Demande de validation non envoyée', ['order_id' => $order->id, 'error' => $e->getMessage()]);
+        }
     }
 
     /** Comptes et rattachements changés : relus à la prochaine demande */
@@ -229,7 +287,7 @@ class Departments
             $department->forceFill(['quota_alert' => "{$month}:{$reached}"])->save();
 
             $users = User::withoutGlobalScopes()->where('merchant_id', $department->merchant_id)->where('status', 'active')
-                ->where(fn ($q) => $q->whereHas('roles', fn ($r) => $r->where('name', Role::MerchantOwner->value))
+                ->where(fn ($q) => $q->whereHas('roles', fn ($r) => $r->whereIn('name', [Role::MerchantOwner->value, Role::MerchantManager->value]))
                     ->orWhereHas('departments', fn ($d) => $d->whereKey($department->id)))
                 ->get();
             Notification::send($users, new ClientBillingAlert('department_quota',

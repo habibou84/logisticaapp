@@ -49,7 +49,7 @@ function migrate() {
   } catch {
     // profil illisible : session rangée d'après la page ouverte
   }
-  const space = role === 'courier' ? 'livreur' : ['merchant_owner', 'merchant_staff'].includes(role) ? 'marchand' : role ? 'admin' : (spaceForPath(window.location.pathname) || 'marchand')
+  const space = role === 'courier' ? 'livreur' : ['merchant_owner', 'merchant_manager', 'merchant_staff', 'merchant_viewer'].includes(role) ? 'marchand' : role ? 'admin' : (spaceForPath(window.location.pathname) || 'marchand')
   if (!read(`token:${space}`)) {
     write(`token:${space}`, token)
     if (read('user')) write(`user:${space}`, read('user'))

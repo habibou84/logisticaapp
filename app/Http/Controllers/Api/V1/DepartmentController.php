@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Enums\Activity;
 use App\Enums\OrderStatus;
-use App\Enums\Role;
 use App\Exceptions\BusinessRuleException;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\V1\DepartmentResource;
@@ -64,8 +63,9 @@ class DepartmentController extends Controller
             'users' => $manage ? User::query()->where('merchant_id', $merchant->id)->with(['roles', 'departments:id'])->orderBy('name')->get()
                 ->map(fn (User $u) => [
                     'id' => $u->id, 'name' => $u->name, 'phone' => $u->phone,
-                    'owner' => $u->hasRole(Role::MerchantOwner->value),
-                    'department_ids' => $u->departments->modelKeys(),
+                    'owner' => $u->isMerchantLead(),
+                    'role_label' => $u->roleLabel(),
+                    ...$this->memberships($u),
                 ]) : [],
         ]);
     }
@@ -189,11 +189,26 @@ class DepartmentController extends Controller
         $data = $request->validate([
             'department_ids' => ['present', 'array'],
             'department_ids.*' => ['integer', Rule::exists('departments', 'id')->where('merchant_id', $merchant->id)],
+            // Chef de service de ces départements (parmi ceux auxquels il est rattaché)
+            'head_department_ids' => ['sometimes', 'array'],
+            'head_department_ids.*' => ['integer'],
         ]);
-        $user->departments()->sync($data['department_ids']);
+        $heads = array_map('intval', $data['head_department_ids'] ?? $user->departments()->wherePivot('is_head', true)->pluck('departments.id')->all());
+        $user->departments()->sync(collect($data['department_ids'])->mapWithKeys(fn ($id) => [(int) $id => ['is_head' => in_array((int) $id, $heads, true)]])->all());
         $this->departments->forget();
 
-        return response()->json(['data' => ['id' => $user->id, 'department_ids' => $user->departments()->pluck('departments.id')->all()]]);
+        return response()->json(['data' => ['id' => $user->id, ...$this->memberships($user)]]);
+    }
+
+    /** @return array{department_ids: list<int>, head_department_ids: list<int>} */
+    private function memberships(User $user): array
+    {
+        $rows = $user->relationLoaded('departments') ? $user->departments : $user->departments()->get(['departments.id']);
+
+        return [
+            'department_ids' => $rows->modelKeys(),
+            'head_department_ids' => $rows->filter(fn ($d) => (bool) $d->pivot->is_head)->modelKeys(),
+        ];
     }
 
     /**

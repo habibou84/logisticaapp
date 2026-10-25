@@ -57,7 +57,12 @@ class OrderPolicy
 
     public function requestReturn(User $user, Order $order): bool
     {
-        return $user->merchant_id === $order->merchant_id || $user->can(Permission::OrdersDispatch->value);
+        if ($user->merchant_id !== null) {
+            // Lecteur : il suit sans agir
+            return $user->merchant_id === $order->merchant_id && $user->can(Permission::OrdersCreate->value);
+        }
+
+        return $user->can(Permission::OrdersDispatch->value);
     }
 
     /**

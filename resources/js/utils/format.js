@@ -95,7 +95,9 @@ export const ROLE_LABELS = {
   hub_agent: 'Agent de dépôt',
   courier: 'Livreur',
   merchant_owner: 'Client',
-  merchant_staff: 'Employé du client',
+  merchant_manager: 'Gestionnaire du client',
+  merchant_staff: 'Agent du client',
+  merchant_viewer: 'Lecteur (client)',
 }
 
 /** Numéro ivoirien tel qu'on le tape : +2250700000001 → 07 00 00 00 01 */

@@ -103,7 +103,7 @@ class User extends Authenticatable
     /** Départements du client auxquels ce compte est rattaché */
     public function departments(): BelongsToMany
     {
-        return $this->belongsToMany(Department::class);
+        return $this->belongsToMany(Department::class)->withPivot('is_head');
     }
 
     public function courier(): HasOne
@@ -259,6 +259,12 @@ class User extends Authenticatable
         $scope = $this->activityScope();
 
         return $scope === null || in_array($activity instanceof Activity ? $activity->value : $activity, $scope, true);
+    }
+
+    /** Propriétaire ou gestionnaire d'un client : voit tout le client, gère ses comptes, valide ses demandes */
+    public function isMerchantLead(): bool
+    {
+        return $this->merchant_id !== null && $this->hasAnyRole([Role::MerchantOwner->value, Role::MerchantManager->value]);
     }
 
     public function isCourier(): bool

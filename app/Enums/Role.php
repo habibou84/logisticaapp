@@ -15,7 +15,11 @@ enum Role: string
     case HubAgent = 'hub_agent';
     case Courier = 'courier';
     case MerchantOwner = 'merchant_owner';
+    // Gestionnaire du client : ses courses, sa caisse, ses comptes (sauf le propriétaire), tous ses départements
+    case MerchantManager = 'merchant_manager';
     case MerchantStaff = 'merchant_staff';
+    // Lecteur : suit les courses du client sans en créer
+    case MerchantViewer = 'merchant_viewer';
 
     public function label(): string
     {
@@ -27,7 +31,9 @@ enum Role: string
             self::HubAgent => 'Agent de dépôt',
             self::Courier => 'Livreur',
             self::MerchantOwner => 'Client',
-            self::MerchantStaff => 'Employé du client',
+            self::MerchantManager => 'Gestionnaire du client',
+            self::MerchantStaff => 'Agent du client',
+            self::MerchantViewer => 'Lecteur (client)',
         };
     }
 
@@ -98,9 +104,18 @@ enum Role: string
                 Permission::StockManage,
                 Permission::IntegrationsManage,
             ],
+            self::MerchantManager => [
+                Permission::OrdersView,
+                Permission::OrdersCreate,
+                Permission::FinanceView,
+                Permission::StockManage,
+            ],
             self::MerchantStaff => [
                 Permission::OrdersView,
                 Permission::OrdersCreate,
+            ],
+            self::MerchantViewer => [
+                Permission::OrdersView,
             ],
         };
     }
@@ -113,6 +128,35 @@ enum Role: string
     public static function staff(): array
     {
         return [self::Admin, self::ActivityManager, self::Dispatcher, self::Cashier, self::HubAgent];
+    }
+
+    /**
+     * Rôles des comptes d'un client.
+     *
+     * @return list<self>
+     */
+    public static function merchant(): array
+    {
+        return [self::MerchantOwner, self::MerchantManager, self::MerchantStaff, self::MerchantViewer];
+    }
+
+    /**
+     * Rôles qu'un compte peut donner aux comptes d'un client : l'équipe qui gère les clients et le propriétaire,
+     * tous ; le gestionnaire, tous sauf propriétaire.
+     *
+     * @return list<self>
+     */
+    public static function merchantAssignableBy(User $actor): array
+    {
+        if ($actor->merchant_id === null) {
+            return $actor->can(Permission::MerchantsManage->value) ? self::merchant() : [];
+        }
+
+        return match (true) {
+            $actor->hasRole(self::MerchantOwner->value) => self::merchant(),
+            $actor->hasRole(self::MerchantManager->value) => [self::MerchantManager, self::MerchantStaff, self::MerchantViewer],
+            default => [],
+        };
     }
 
     /**

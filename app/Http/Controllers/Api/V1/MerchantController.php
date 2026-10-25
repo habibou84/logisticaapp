@@ -9,13 +9,10 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\V1\StoreMerchantRequest;
 use App\Http\Requests\V1\UpdateMerchantRequest;
 use App\Http\Resources\V1\MerchantResource;
-use App\Http\Resources\V1\UserResource;
 use App\Models\BillingPlan;
 use App\Models\Merchant;
 use App\Models\Order;
 use App\Models\User;
-use App\Rules\PhoneNumber;
-use App\Support\PhoneNumber as Phone;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -23,7 +20,6 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Password;
 
 class MerchantController extends Controller
 {
@@ -138,42 +134,5 @@ class MerchantController extends Controller
         $merchant->forceFill($merchant->hasPickupLocation()
             ? ['pickup_location_source' => Merchant::LOCATION_STAFF, 'pickup_located_at' => now(), 'pickup_location_accuracy' => null]
             : ['pickup_location_source' => null, 'pickup_located_at' => null, 'pickup_location_accuracy' => null])->save();
-    }
-
-    /**
-     * Ajoute un compte de connexion au client (gérant ou employé).
-     */
-    public function storeUser(Request $request, Merchant $merchant): JsonResponse
-    {
-        Gate::authorize('update', $merchant);
-
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'phone' => ['required', 'string', new PhoneNumber],
-            'email' => ['nullable', 'email', 'max:255', User::uniqueIn($merchant->company_id, 'email')],
-            'password' => ['required', 'string', Password::min(8)],
-            'role' => ['required', Rule::in([Role::MerchantOwner->value, Role::MerchantStaff->value])],
-        ]);
-
-        $phone = Phone::normalize($data['phone']);
-        if (User::takenIn($merchant->company_id, 'phone', $phone)) {
-            return response()->json([
-                'message' => 'Ce téléphone est déjà utilisé.',
-                'errors' => ['phone' => ['Ce téléphone est déjà utilisé.']],
-            ], 422);
-        }
-
-        $user = DB::transaction(function () use ($data, $merchant) {
-            $user = User::create([
-                ...Arr::except($data, 'role'),
-                'company_id' => $merchant->company_id,
-                'merchant_id' => $merchant->id,
-            ]);
-            $user->assignRole($data['role']);
-
-            return $user;
-        });
-
-        return UserResource::make($user->load('roles'))->response()->setStatusCode(201);
     }
 }

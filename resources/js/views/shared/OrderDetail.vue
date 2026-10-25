@@ -10,6 +10,8 @@
         {{ order.internal_late ? '⏰ Délai interne dépassé' : order.internal_risk ? '⚠️ Risque de retard' : '⏱ Délai interne' }} · {{ dateTime(order.internal_due_at) }}
       </span>
       <span v-if="order.return_requested && !['returned', 'return_assigned', 'returning'].includes(order.status)" class="text-xs rounded-full bg-rose-100 text-rose-700 px-2 py-0.5">Retour demandé</span>
+      <!-- Demande d'un agent du client : elle attend l'accord de son chef de service -->
+      <span v-if="order.approval?.awaiting" class="text-xs rounded-full bg-amber-100 text-amber-800 px-2 py-0.5" title="Ni validable ni assignable avant l'accord du client">✋ Attend le chef de service du client</span>
       <div class="ml-auto flex gap-2">
         <!-- Client sous contrat : prestation exceptionnelle sur la facture du mois -->
         <button v-if="canSupplement" type="button" class="btn-secondary" @click="supplementOpen = true">➕ Supplément</button>
