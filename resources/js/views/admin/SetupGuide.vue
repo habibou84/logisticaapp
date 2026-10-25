@@ -23,6 +23,20 @@
         </p>
       </section>
 
+      <!-- Guide vidéo : un chapitre par étape essentielle -->
+      <section class="card p-4 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 class="font-semibold">🎬 Bien démarrer en vidéo</h2>
+          <p class="text-sm text-gray-600">Huit courtes vidéos avec voix off et sous-titres, une par étape essentielle.</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-3">
+          <button type="button" class="btn-primary" @click="video.open(firstVideo)">▶ Regarder</button>
+          <button v-if="video.videos.value.enabled && video.videos.value.hidden" type="button" class="text-sm text-blue-600 underline" @click="video.hide(false)">
+            Réafficher sur le tableau de bord
+          </button>
+        </div>
+      </section>
+
       <!-- Bilan de santé : ce qui se dérègle après la mise en route -->
       <section class="card p-4 space-y-2">
         <h2 class="font-semibold">🩺 Bilan de santé</h2>
@@ -71,6 +85,9 @@
                 </button>
               </template>
               <RouterLink v-else :to="link(s)" :class="s.status === 'done' && !s.test ? 'btn-secondary' : 'btn-primary'">{{ s.status === 'done' && !s.test ? 'Revoir' : s.action.label }}</RouterLink>
+              <button v-if="hasGuideVideo(s.key)" type="button" class="btn-secondary" @click="video.open(s.key)">
+                ▶ Voir comment faire<span v-if="video.videos.value.watched.includes(s.key)" class="ml-1 text-xs text-gray-500">(vue)</span>
+              </button>
               <button v-if="s.test" type="button" class="btn-secondary text-red-700" :disabled="busy" @click="cleanTest">Effacer la course d'essai</button>
               <button v-if="!s.essential && s.status !== 'done'" type="button" class="btn-secondary" :disabled="busy" @click="skip(s, !s.skipped)">
                 {{ s.skipped ? 'Reprendre cette étape' : 'Plus tard' }}
@@ -82,6 +99,11 @@
     </template>
 
     <p v-else-if="!error" class="text-sm text-gray-500">Chargement…</p>
+
+    <GuideVideoPlayer
+      :chapter-key="video.playing.value" :steps="video.steps.value" :watched="video.videos.value.watched"
+      @close="video.close" @select="video.open" @watched="video.watched"
+    />
   </div>
 </template>
 
@@ -89,6 +111,9 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
+import GuideVideoPlayer from '../../components/guide/GuideVideoPlayer.vue'
+import { GUIDE_CHAPTERS, hasGuideVideo } from '../../utils/guideVideos'
+import { useGuideVideos } from '../../composables/useGuideVideos'
 
 /**
  * Parcours de mise en route : étapes essentielles puis conseillées, vérifiées par le serveur sur les vraies données.
@@ -103,6 +128,9 @@ const router = useRouter()
 const guide = ref(null)
 const error = ref('')
 const busy = ref(false)
+const video = useGuideVideos(guide)
+// Le guide commence au premier chapitre dont l'étape n'est pas faite
+const firstVideo = computed(() => GUIDE_CHAPTERS.find((c) => video.steps.value[c.key]?.status !== 'done')?.key ?? GUIDE_CHAPTERS[0].key)
 
 const percent = (c) => (c.total ? Math.round((c.done / c.total) * 100) : 0)
 // Le réglage ouvert ramène au parcours (bouton « Revenir à la mise en route »)

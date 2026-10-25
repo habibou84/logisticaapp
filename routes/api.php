@@ -208,6 +208,7 @@ Route::prefix('v1')->name('v1.')->group(function () {
             Route::get('setup', [SetupGuideController::class, 'show'])->name('setup.show');
             Route::post('setup/skip', [SetupGuideController::class, 'skip'])->name('setup.skip');
             Route::post('setup/seen', [SetupGuideController::class, 'seen'])->name('setup.seen');
+            Route::post('setup/videos', [SetupGuideController::class, 'videosUpdate'])->name('setup.videos');
             Route::post('setup/test-order', [SetupGuideController::class, 'startTest'])->name('setup.test-order.start');
             Route::delete('setup/test-order', [SetupGuideController::class, 'cleanTest'])->name('setup.test-order.clean');
             Route::post('zones', [ZoneController::class, 'store'])->name('zones.store');

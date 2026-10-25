@@ -33,6 +33,9 @@ class SetupGuide
 
     public const TODO = 'todo';
 
+    /** Chapitres du guide vidéo « Bien démarrer » (public/videos/guide/<clé>.mp4), un par étape essentielle */
+    public const VIDEOS = ['company', 'zones', 'pricing', 'order_rules', 'couriers', 'pay', 'merchants', 'first_delivery'];
+
     /**
      * @return array{steps: list<array<string, mixed>>, essentials: array{done: int, total: int}, recommended: array{done: int, total: int}, ready: bool}
      */

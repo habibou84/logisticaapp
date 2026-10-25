@@ -70,9 +70,9 @@ const ALL = computed(() => {
   return [
     {
       key: 'company', icon: '🏢', title: 'Entreprise et marque', to: '/admin/reglages/entreprise', permission: 'settings.manage',
-      description: 'Nom, coordonnées, logo, couleurs et icônes des applications, adresse de l\'espace.',
-      summary: c && `${c.name}${c.logo_url ? ' · logo en place' : ' · sans logo'}`,
-      keywords: 'nom téléphone adresse accroche logo couleurs apparence icône application domaine',
+      description: 'Nom, coordonnées, logo, couleurs et icônes des applications, adresse de l\'espace, guide vidéo.',
+      summary: c && `${c.name}${c.logo_url ? ' · logo en place' : ' · sans logo'} · guide vidéo : ${onOff(c.guide_videos)}`,
+      keywords: 'nom téléphone adresse accroche logo couleurs apparence icône application domaine guide vidéo bien démarrer tutoriel',
     },
     {
       key: 'orders', icon: '📦', title: 'Courses et livraison', to: '/admin/reglages/courses', permission: 'settings.manage',

@@ -22,7 +22,43 @@ class SetupGuideController extends Controller
             ...$this->guide->for($request->user()->company),
             // Jamais ouvert par cet administrateur : il s'ouvre tout seul à sa connexion
             'seen' => $request->user()->setup_seen_at !== null,
+            'videos' => $this->videos($request),
         ]]);
+    }
+
+    /**
+     * Guide vidéo : masqué sur le tableau de bord par cet administrateur, ou chapitre regardé jusqu'au bout.
+     */
+    public function videosUpdate(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'hidden' => ['sometimes', 'boolean'],
+            'watched' => ['sometimes', 'string', Rule::in(SetupGuide::VIDEOS)],
+        ], [], ['watched' => 'chapitre']);
+        $user = $request->user();
+        if (array_key_exists('hidden', $data)) {
+            $user->guide_videos_hidden_at = $data['hidden'] ? ($user->guide_videos_hidden_at ?? now()) : null;
+        }
+        if (isset($data['watched'])) {
+            $user->guide_videos_watched = array_values(array_unique([...($user->guide_videos_watched ?? []), $data['watched']]));
+        }
+        $user->save();
+
+        return response()->json(['data' => $this->videos($request)]);
+    }
+
+    /** @return array{enabled: bool, hidden: bool, watched: list<string>, chapters: list<string>} */
+    private function videos(Request $request): array
+    {
+        $user = $request->user();
+
+        return [
+            // Réglage de l'entreprise : carte « Bien démarrer » sur le tableau de bord des administrateurs
+            'enabled' => (bool) $user->company->guide_videos,
+            'hidden' => $user->guide_videos_hidden_at !== null,
+            'watched' => array_values(array_intersect(SetupGuide::VIDEOS, $user->guide_videos_watched ?? [])),
+            'chapters' => SetupGuide::VIDEOS,
+        ];
     }
 
     /** Lancer la course d'essai (ou retrouver celle en cours) */

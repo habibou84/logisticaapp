@@ -85,6 +85,30 @@ class SetupGuideTest extends TestCase
         $this->getJson('/api/v1/setup')->assertForbidden();
     }
 
+    public function test_the_video_guide(): void
+    {
+        Sanctum::actingAs($this->admin);
+        $this->getJson('/api/v1/setup')->assertOk()
+            ->assertJsonPath('data.videos.enabled', true)->assertJsonPath('data.videos.hidden', false)
+            ->assertJsonPath('data.videos.watched', [])->assertJsonCount(8, 'data.videos.chapters');
+
+        // Chapitres regardés (sans doublon), carte masquée puis réaffichée par cet administrateur
+        $this->postJson('/api/v1/setup/videos', ['watched' => 'zones'])->assertOk();
+        $this->postJson('/api/v1/setup/videos', ['watched' => 'company'])->assertOk();
+        $this->postJson('/api/v1/setup/videos', ['watched' => 'zones'])->assertOk()->assertJsonPath('data.watched', ['company', 'zones']);
+        $this->postJson('/api/v1/setup/videos', ['watched' => 'messages'])->assertJsonValidationErrors('watched');
+        $this->postJson('/api/v1/setup/videos', ['hidden' => true])->assertOk()->assertJsonPath('data.hidden', true);
+        $this->postJson('/api/v1/setup/videos', ['hidden' => false])->assertOk()->assertJsonPath('data.hidden', false);
+
+        // Réglage de l'entreprise : plus de carte sur le tableau de bord
+        $this->patchJson("/api/v1/companies/{$this->admin->company_id}", ['guide_videos' => false])->assertOk()->assertJsonPath('data.guide_videos', false);
+        $this->admin->company->refresh();
+        $this->getJson('/api/v1/setup')->assertJsonPath('data.videos.enabled', false);
+
+        Sanctum::actingAs($this->dispatcher);
+        $this->postJson('/api/v1/setup/videos', ['hidden' => true])->assertForbidden();
+    }
+
     public function test_the_test_course_is_followed_then_erased(): void
     {
         Sanctum::actingAs($this->admin);

@@ -76,6 +76,7 @@ class CompanyResource extends JsonResource
             'destination_settings' => app(DestinationSettings::class)->for($this->resource),
             'merchant_signup' => $this->merchant_signup,
             'weekly_report' => $this->weekly_report,
+            'guide_videos' => $this->guide_videos,
             'logo_url' => Branding::logoUrl($this->resource),
             'status' => $this->status,
             'users_count' => $this->whenCounted('users'),

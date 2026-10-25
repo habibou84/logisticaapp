@@ -59,6 +59,8 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'last_login_at' => 'datetime',
             'setup_seen_at' => 'datetime',
+            'guide_videos_hidden_at' => 'datetime',
+            'guide_videos_watched' => 'array',
             'password' => 'hashed',
             'activities' => 'array',
             'denied_permissions' => 'array',

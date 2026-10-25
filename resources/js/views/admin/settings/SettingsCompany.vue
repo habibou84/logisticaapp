@@ -52,6 +52,16 @@
     </section>
 
     <AppearanceSettings v-if="company" />
+
+    <!-- Guide vidéo « Bien démarrer » sur le tableau de bord -->
+    <section v-if="guide.form.value" class="card p-4 space-y-3">
+      <h2 class="font-semibold">Guide vidéo</h2>
+      <label class="flex items-start gap-2 text-sm">
+        <input v-model="guide.form.value.guide_videos" type="checkbox" class="mt-1">
+        <span>Afficher « Bien démarrer » sur le tableau de bord des administrateurs<span class="block text-gray-500">Huit vidéos, une par étape essentielle de la mise en route. Chacun peut aussi la masquer pour lui ; elle reste toujours dans Mise en route.</span></span>
+      </label>
+      <SaveBar :dirty="guide.dirty.value" :saving="guide.saving.value" :error="guide.error.value" @save="guide.save" @reset="guide.reset" />
+    </section>
   </SettingsPage>
 </template>
 
@@ -70,6 +80,7 @@ import { loadBranding } from '../../../composables/useBranding'
 const { form, company, dirty, saving, error, save, reset } = useCompanySettings(['name', 'phone', 'address', 'tagline'])
 // Moyens de paiement des factures : enregistrés à part
 const payments = useCompanySettings(['invoice_payment_methods', 'invoice_payment_info'])
+const guide = useCompanySettings(['guide_videos'])
 const toasts = useToastStore()
 const logoUrl = ref(null)
 const uploading = ref(false)

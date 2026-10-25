@@ -19,6 +19,9 @@
       </button>
     </div>
 
+    <!-- Guide vidéo « Bien démarrer » (administrateurs ; réglable dans Réglages › Entreprise) -->
+    <GuideVideosCard v-if="!isMerchant && auth.can('settings.manage')" />
+
     <!-- Distribution et MAD : ce qui demande l'attention sur les contrats -->
     <section v-if="contracts" class="card p-4 space-y-3">
       <div class="flex flex-wrap items-center justify-between gap-2">
@@ -169,6 +172,7 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import http from '../../bootstrap/axios'
 import StatCard from '../../components/StatCard.vue'
+import GuideVideosCard from '../../components/guide/GuideVideosCard.vue'
 import StatusBadge from '../../components/StatusBadge.vue'
 import { useAuthStore } from '../../stores/auth'
 import { useDispatchCountStore } from '../../stores/dispatchCounts'
