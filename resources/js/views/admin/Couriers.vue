@@ -61,7 +61,7 @@
             · <RouterLink to="/admin/paie-livreurs" class="text-blue-600">Gérer les plans</RouterLink>
           </p>
         </div>
-        <div v-if="canPay">
+        <div v-if="auth.can('planning.manage')">
           <label class="label" for="courier-accept">Acceptation des missions</label>
           <select id="courier-accept" v-model="form.data.mission_acceptance" class="input">
             <option :value="null">Comme l'entreprise</option>
@@ -87,6 +87,18 @@
           <div><label class="label" for="c-cash">Argent en main au plus</label><input id="c-cash" v-model.number="form.data.max_cash" type="number" min="0" step="1000" class="input" placeholder="Sans limite"></div>
           <div><label class="label" for="c-shift">Fin de service</label><input id="c-shift" v-model="form.data.shift_ends_at" type="time" class="input"></div>
         </div>
+        <!-- Capacités propres au livreur : il ne reçoit pas les courses qu'il ne fait pas -->
+        <fieldset class="rounded border p-3 space-y-2">
+          <legend class="px-1 text-sm font-medium">Ce qu'il fait</legend>
+          <div v-for="(label, key) in CAPABILITIES" :key="key" class="flex items-center justify-between gap-2 text-sm">
+            <span>{{ label }}</span>
+            <select v-model="form.data.capabilities[key]" class="input w-48 py-1" :aria-label="label">
+              <option :value="null">Comme l'entreprise ({{ form.defaults[key] ? 'oui' : 'non' }})</option>
+              <option :value="true">Oui</option>
+              <option :value="false">Non</option>
+            </select>
+          </div>
+        </fieldset>
         <label class="flex items-center gap-2 text-sm"><input v-model="form.data.is_available" type="checkbox"> Disponible</label>
         <div><label class="label">Notes</label><textarea v-model="form.data.notes" rows="2" class="input" /></div>
         <p v-if="form.error" class="field-error">{{ form.error }}</p>
@@ -112,7 +124,7 @@ const VEHICLES = { moto: 'Moto', velo: 'Vélo', voiture: 'Voiture', tricycle: 'T
 const auth = useAuthStore()
 const couriers = ref([])
 const zones = ref([])
-const form = reactive({ open: false, id: null, data: {}, error: '' })
+const form = reactive({ open: false, id: null, data: {}, defaults: {}, error: '' })
 const router = useRouter()
 const plans = ref([])
 const canPay = computed(() => auth.can('pay.manage'))
@@ -163,7 +175,9 @@ function openForm(c) {
   form.data = {
     vehicle_type: c.vehicle_type,
     vehicle_plate: c.vehicle_plate,
-    ...(canPay.value ? { pay_plan_id: c.pay_plan_id, mission_acceptance: c.mission_acceptance ?? null } : {}),
+    ...(canPay.value ? { pay_plan_id: c.pay_plan_id } : {}),
+    ...(auth.can('planning.manage') ? { mission_acceptance: c.mission_acceptance ?? null } : {}),
+    capabilities: Object.fromEntries(Object.keys(CAPABILITIES).map((k) => [k, c.capabilities?.[k] ?? null])),
     is_available: c.is_available,
     notes: c.notes,
     zone_ids: c.zones.map((z) => z.id),
@@ -172,8 +186,18 @@ function openForm(c) {
     max_cash: c.max_cash,
     shift_ends_at: c.shift_ends_at,
   }
+  // Valeur de l'entreprise : celle du livreur quand il n'a rien de propre
+  form.defaults = Object.fromEntries(Object.keys(CAPABILITIES).map((k) => [k, c.capabilities?.[k] == null ? c.can?.[k] : k === 'offline' ? !!auth.user?.company?.offline_courier_actions : true]))
   form.error = ''
   form.open = true
+}
+
+const CAPABILITIES = {
+  collect_cash: 'Encaisse l\'argent des colis',
+  mad: 'Fait la mise à disposition (MAD)',
+  interior: 'Fait l\'intérieur (expéditions)',
+  offline: 'Travaille hors connexion',
+  see_gain: 'Voit son gain prévu',
 }
 
 const zoneRole = (id) => (form.data.zone_ids?.includes(id) ? 'main' : form.data.backup_zone_ids?.includes(id) ? 'backup' : '')

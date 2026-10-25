@@ -24,6 +24,9 @@ class OfflineSyncController extends Controller
             'payload' => ['sometimes', 'array'],
         ]);
 
+        // Mode hors connexion retiré à ce livreur (sa fiche) : ses actions en attente ne sont plus acceptées
+        abort_if(($request->user()->courier?->capabilities['offline'] ?? null) === false, 403, 'Le mode hors connexion n\'est pas ouvert pour vous.');
+
         return response()->json(['data' => $sync->apply($request->user(), $action)]);
     }
 }

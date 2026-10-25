@@ -331,7 +331,8 @@ const expenseOptions = [
 
 const active = computed(() => ['accepted', 'in_progress'].includes(mission.value?.status))
 // Mode hors connexion de l'entreprise : actions gardées sur le téléphone sans réseau
-const offlineEnabled = computed(() => !!auth.user?.company?.offline_courier_actions)
+// Hors connexion : réglage du livreur (sa fiche), sinon celui de l'entreprise
+const offlineEnabled = computed(() => auth.user?.courier?.can?.offline ?? !!auth.user?.company?.offline_courier_actions)
 const canReportIncident = computed(() => ['pickup_assigned', 'pickup_in_progress', 'out_for_delivery'].includes(order.value?.status))
 
 // Département du client : celui qui envoie (ramassage), celui qui reçoit (courrier interne)

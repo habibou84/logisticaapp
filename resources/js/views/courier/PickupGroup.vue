@@ -141,7 +141,8 @@ const sheet = ref(null)
 const sheetError = ref('')
 const incident = reactive({ reason: null, note: '' })
 
-const offlineEnabled = computed(() => !!auth.user?.company?.offline_courier_actions)
+// Hors connexion : réglage du livreur (sa fiche), sinon celui de l'entreprise
+const offlineEnabled = computed(() => auth.user?.courier?.can?.offline ?? !!auth.user?.company?.offline_courier_actions)
 const OFFLINE_SAVED = 'Enregistré sur le téléphone : envoi automatique au retour du réseau.'
 
 const shop = computed(() => {

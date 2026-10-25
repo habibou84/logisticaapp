@@ -4,6 +4,7 @@ namespace App\Http\Resources\V1;
 
 use App\Models\Courier;
 use App\Services\Assignment\MadCouriers;
+use App\Services\Couriers\CourierCapabilities;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -39,6 +40,9 @@ class CourierResource extends JsonResource
             'backup_zones' => ZoneResource::collection($this->whenLoaded('zones', fn () => $this->zones->filter(fn ($z) => (bool) $z->pivot?->is_backup)->values())),
             'max_parcels' => $this->max_parcels,
             'max_cash' => $this->max_cash,
+            // Capacités : propres au livreur (vide : comme l'entreprise) et effectives
+            'capabilities' => $this->capabilities ?? [],
+            'can' => app(CourierCapabilities::class)->for($this->resource),
             'shift_ends_at' => $this->shift_ends_at,
             'active_assignments_count' => $this->whenCounted('activeAssignments'),
             'notes' => $this->notes,

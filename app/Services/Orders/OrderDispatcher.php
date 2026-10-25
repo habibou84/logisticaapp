@@ -12,6 +12,7 @@ use App\Models\Courier;
 use App\Models\Order;
 use App\Models\OrderAssignment;
 use App\Models\User;
+use App\Services\Couriers\CourierCapabilities;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 
@@ -52,6 +53,11 @@ class OrderDispatcher
 
             if ($courier->company_id !== $order->company_id || ! $courier->user?->isActive()) {
                 throw new BusinessRuleException('Ce livreur n\'est pas disponible pour cette entreprise.', 'courier_id');
+            }
+
+            // Capacités du livreur : MAD, intérieur, encaissement
+            if ($refusal = app(CourierCapabilities::class)->refusal($courier, $order, $type)) {
+                throw new BusinessRuleException($refusal, 'courier_id');
             }
 
             if (! in_array($from, self::ALLOWED_FROM[$type->value], true)) {

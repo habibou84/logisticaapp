@@ -5,6 +5,7 @@ namespace App\Http\Resources\V1;
 use App\Enums\Activity;
 use App\Models\BillingPlan;
 use App\Models\User;
+use App\Services\Couriers\CourierCapabilities;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -65,6 +66,8 @@ class UserResource extends JsonResource
                 'id' => $this->courier->id,
                 'is_available' => $this->courier->is_available,
                 'vehicle_type' => $this->courier->vehicle_type,
+                // Ce que l'application livreur permet : hors connexion, gain prévu
+                'can' => app(CourierCapabilities::class)->for($this->courier),
             ] : null),
             // Équipe : périmètre (activités visibles, vide : toutes) et réglage fin des permissions
             'activities' => $this->activities ?? [],

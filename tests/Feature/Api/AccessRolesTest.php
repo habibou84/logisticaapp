@@ -203,4 +203,26 @@ class AccessRolesTest extends TestCase
         $this->assertContains('orders.cancel', $data['from_role']);
         $this->assertSame(['mad'], $data['scope']['activities']);
     }
+
+    public function test_courier_capabilities(): void
+    {
+        Sanctum::actingAs($this->admin);
+        $this->patchJson("/api/v1/couriers/{$this->courierA->id}", ['capabilities' => ['collect_cash' => false, 'see_gain' => false, 'mad' => null]])
+            ->assertOk()->assertJsonPath('data.capabilities', ['collect_cash' => false, 'see_gain' => false])
+            ->assertJsonPath('data.can.collect_cash', false)->assertJsonPath('data.can.mad', true);
+
+        // Course à encaisser : pas pour lui à la livraison ; le ramassage, oui
+        $order = $this->createOrder();
+        Sanctum::actingAs($this->dispatcher);
+        $this->postJson("/api/v1/orders/{$order->id}/assign", ['type' => 'delivery', 'courier_id' => $this->courierA->id])
+            ->assertStatus(422)->assertJsonFragment(['message' => "{$this->courierA->user->name} n'encaisse pas d'argent : la course est à encaisser."]);
+        $this->postJson("/api/v1/orders/{$order->id}/assign", ['type' => 'pickup', 'courier_id' => $this->courierA->id])->assertOk();
+
+        // Il ne voit pas son gain prévu
+        Sanctum::actingAs($this->courierA->user);
+        $missions = $this->getJson('/api/v1/courier/missions')->assertOk()->json('data');
+        $this->assertNotEmpty($missions);
+        $this->assertArrayNotHasKey('gain', $missions[0]);
+        $this->getJson('/api/v1/auth/me')->assertJsonPath('data.courier.can.see_gain', false);
+    }
 }

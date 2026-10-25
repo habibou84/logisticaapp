@@ -11,6 +11,7 @@ use App\Models\CourierRule;
 use App\Models\Order;
 use App\Models\OrderAssignment;
 use App\Models\Zone;
+use App\Services\Couriers\CourierCapabilities;
 use App\Services\Finance\CourierCash;
 use App\Services\Ratings\CourierScores;
 use App\Services\Ratings\RatingSettings;
@@ -147,6 +148,7 @@ class DeliveryChooser
             ->filter(fn (Courier $c) => $this->planning->available($c, $absent)
                 && ($c->shift_ends_at === null || $now->format('H:i') < $c->shift_ends_at)
                 && $this->fits($c, $order)
+                && app(CourierCapabilities::class)->refusal($c, $order, AssignmentType::Delivery) === null
                 && (($max = $this->fleet->maxParcels($c)) === null || $c->getRelation('activeAssignments')->count() < $max));
 
         // Argent en main : ce qu'il doit déjà à la caisse, plus ce qu'il encaissera sur ses livraisons en cours et celle-ci

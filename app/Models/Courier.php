@@ -36,6 +36,8 @@ class Courier extends Model
         // Capacité pour la livraison automatique : colis en cours, argent en main (null : sans limite), fin de service (HH:MM)
         'max_parcels',
         'max_cash',
+        // Capacités propres au livreur (vide : comme l'entreprise), voir CourierCapabilities
+        'capabilities',
         'shift_ends_at',
     ];
 
@@ -50,6 +52,7 @@ class Courier extends Model
             'last_seen_at' => 'datetime',
             'max_parcels' => 'integer',
             'max_cash' => 'integer',
+            'capabilities' => 'array',
             'availability_alerted_on' => 'date',
         ];
     }

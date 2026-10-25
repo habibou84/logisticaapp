@@ -15,6 +15,7 @@ use App\Models\CourierMessage;
 use App\Models\OrderAssignment;
 use App\Services\Assignment\AutoAssigner;
 use App\Services\Assignment\MadCouriers;
+use App\Services\Couriers\CourierCapabilities;
 use App\Services\Couriers\CourierTracker;
 use App\Services\Finance\CourierPay;
 use App\Services\Orders\OrderDispatcher;
@@ -67,7 +68,8 @@ class CourierSpaceController extends Controller
                     default => AssignmentType::Delivery->value,
                 });
             $assignments->each(fn (OrderAssignment $a) => $a->setAttribute('gain', $earned->get($a->order_id.'-'.$a->type->value)?->sum('amount') ?: null));
-        } else {
+        } elseif (app(CourierCapabilities::class)->for($courier)['see_gain']) {
+            // Gain prévu : seulement si l'entreprise le montre à ce livreur
             $assignments->each(fn (OrderAssignment $a) => $a->setAttribute('gain', $pay->expectedFor($courier, $a->type, $a->order)));
         }
 

@@ -10,6 +10,7 @@ use App\Models\Company;
 use App\Models\Courier;
 use App\Models\FieldEvent;
 use App\Services\Assignment\MadCouriers;
+use App\Services\Couriers\CourierCapabilities;
 use App\Services\Couriers\CourierTracker;
 use App\Services\Orders\AwaitingCourier;
 use Illuminate\Http\JsonResponse;
@@ -174,6 +175,9 @@ class CourierController extends Controller
             'backup_zone_ids.*' => ['integer', Rule::exists('zones', 'id')->where('company_id', $courier->company_id)],
             'max_parcels' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:200'],
             'max_cash' => ['sometimes', 'nullable', 'integer', 'min:0'],
+            // Capacités propres au livreur (vide : comme l'entreprise)
+            'capabilities' => ['sometimes', 'nullable', 'array'],
+            'capabilities.*' => ['nullable', 'boolean'],
             'shift_ends_at' => ['sometimes', 'nullable', 'date_format:H:i'],
         ], [], [
             'backup_zone_ids' => 'zones de secours', 'max_parcels' => 'colis au maximum', 'max_cash' => 'argent en main au maximum',
@@ -185,6 +189,9 @@ class CourierController extends Controller
         abort_if(array_key_exists('mission_acceptance', $data) && $data['mission_acceptance'] !== $courier->mission_acceptance
             && ! $request->user()->can(Permission::PlanningManage->value), 403, 'Changer la règle d\'acceptation des missions demande le droit « Planning et automatismes ».');
 
+        if (array_key_exists('capabilities', $data)) {
+            $data['capabilities'] = CourierCapabilities::clean((array) ($data['capabilities'] ?? []));
+        }
         $courier->update(collect($data)->except(['zone_ids', 'backup_zone_ids'])->all());
 
         // Une zone est principale ou de secours, pas les deux

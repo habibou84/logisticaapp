@@ -15,6 +15,7 @@ use App\Models\CourierRule;
 use App\Models\Order;
 use App\Models\OrderAssignment;
 use App\Models\User;
+use App\Services\Couriers\CourierCapabilities;
 use App\Services\Orders\OrderDispatcher;
 use App\Services\Orders\OrderJournal;
 use App\Services\Ratings\ClientChoices;
@@ -66,7 +67,8 @@ class AutoAssigner
      */
     private function unavailableFor(Order $order, AssignmentType $type): array
     {
-        return [...self::excluded($order, $type), ...$this->mad->reservedElsewhere($order), ...$this->choices->excluded($order)];
+        return [...self::excluded($order, $type), ...$this->mad->reservedElsewhere($order), ...$this->choices->excluded($order),
+            ...app(CourierCapabilities::class)->unableFor($order, $type)];
     }
 
     private function assignPreferred(Company $company, Order $order, AssignmentType $type, Courier $courier, ?string $after): ?OrderAssignment
