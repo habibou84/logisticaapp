@@ -63,6 +63,9 @@ class Order extends Model
         'description',
         'package_size',
         'shipment_type',
+        // Plis ou chèques remis ensemble, et envois facturés (le nombre de plis, ou 1 à la course)
+        'shipment_quantity',
+        'billing_units',
         'delivery_delay',
         'weight_kg',
         'is_fragile',
@@ -96,6 +99,8 @@ class Order extends Model
             'shipment_type' => ShipmentType::class,
             'delivery_delay' => DeliveryDelay::class,
             'billing_amount' => 'integer',
+            'shipment_quantity' => 'integer',
+            'billing_units' => 'integer',
             'internal_due_at' => 'datetime',
             'internal_alert' => 'integer',
             'delivery_code' => 'encrypted',

@@ -46,6 +46,8 @@ class UpdateOrderRequest extends FormRequest
             'package_size' => ['sometimes', 'nullable', Rule::in(['S', 'M', 'L', 'XL'])],
             'weight_kg' => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:500'],
             'shipment_type' => ['sometimes', 'nullable', Rule::enum(ShipmentType::class)],
+            // Nombre de plis ou de chèques remis ensemble
+            'shipment_quantity' => ['sometimes', 'integer', 'min:1', 'max:10000'],
             'delivery_delay' => ['sometimes', 'nullable', Rule::enum(DeliveryDelay::class)],
             'is_fragile' => ['sometimes', 'boolean'],
             'is_express' => ['sometimes', 'boolean'],

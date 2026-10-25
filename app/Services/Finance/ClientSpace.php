@@ -91,7 +91,7 @@ class ClientSpace
         $orders = $this->invoicing->orders($company->id, $merchant->id, $activity, $from, $to)->get();
         $lines = $this->invoicing->lines($merchant, $activity, $from, $to);
         $hasForfait = $plan->formula->hasForfait();
-        $used = $hasForfait ? $orders->where('billing_plan_id', $plan->id)->where('billing_basis', 'forfait')->count() : null;
+        $used = $hasForfait ? (int) $orders->where('billing_plan_id', $plan->id)->where('billing_basis', 'forfait')->sum(fn (Order $o) => max(1, (int) $o->billing_units)) : null;
         $included = $hasForfait ? (int) $plan->included_quantity : null;
 
         return [

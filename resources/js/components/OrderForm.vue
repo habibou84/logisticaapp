@@ -138,6 +138,12 @@
               {{ t.label }} <span class="opacity-70">{{ t.hint }}</span>
             </button>
           </div>
+          <!-- Plusieurs plis ou chèques remis ensemble au même destinataire -->
+          <div v-if="hasQuantity" class="mt-2">
+            <label class="label" for="quantity">Nombre de {{ form.shipment_type === 'cheque' ? 'chèques' : 'plis' }}</label>
+            <input id="quantity" v-model.number="form.shipment_quantity" type="number" min="1" max="10000" class="input w-28">
+            <p v-if="errors.shipment_quantity" class="field-error">{{ errors.shipment_quantity[0] }}</p>
+          </div>
         </div>
         <div>
           <label class="label" for="weight">Poids (kg, facultatif)</label>
@@ -253,7 +259,7 @@
       <div class="text-sm">
         <p v-if="quoteError" class="text-red-600">{{ quoteError }}</p>
         <template v-else-if="quote?.billing">
-          <p>Facture du mois : <strong>{{ quote.billing.label }}</strong><template v-if="quote.billing.amount"> · {{ money(quote.billing.amount) }}</template></p>
+          <p>Facture du mois : <strong>{{ quote.billing.label }}<template v-if="quote.billing.units > 1"> × {{ quote.billing.units }}</template></strong><template v-if="quote.billing.amount"> · {{ money(quote.billing.amount) }}</template></p>
           <p class="text-gray-600">Rien à encaisser auprès du destinataire</p>
         </template>
         <template v-else-if="quote">
@@ -315,6 +321,8 @@ const form = reactive({
   pickup_hub_id: null,
   // Clients sous formule : pli, colis ou chèque, poids, délai (distribution à l'unité)
   shipment_type: null,
+  // Plis ou chèques remis ensemble
+  shipment_quantity: 1,
   weight_kg: null,
   delivery_delay: null,
 })
@@ -414,6 +422,9 @@ watch([lots, contractPlan], () => {
 const billingPlan = computed(() => lots.value.find((l) => l.id === form.billing_plan_id) || contractPlan.value)
 // Distribution, MAD : rien à encaisser (pas de montant, frais sur la facture du mois)
 const billed = computed(() => !!form.activity && form.activity !== 'ecommerce')
+// Nombre de plis ou de chèques : seulement pour un pli ou un chèque (un colis compte pour un)
+const hasQuantity = computed(() => !!billingPlan.value && ['pli', 'cheque'].includes(form.shipment_type))
+watch(hasQuantity, (v) => { if (!v) form.shipment_quantity = 1 })
 const proofText = computed(() => {
   const p = billingPlan.value?.proof || {}
   return [p.proof_name && 'le nom de la personne qui reçoit', p.proof_signature && 'sa signature', p.proof_photo && 'une photo de la décharge'].filter(Boolean).join(', ')
@@ -476,7 +487,7 @@ watch(() => form.merchant_id, () => {
 // Devis en direct
 let quoteTimer
 watch(
-  () => [form.merchant_id, form.activity, form.billing_plan_id, form.delivery_zone_id, form.pickup_zone_id, form.pickup_hub_id, form.is_express, form.is_fragile, form.shipment_type, form.delivery_delay, form.weight_kg],
+  () => [form.merchant_id, form.activity, form.billing_plan_id, form.delivery_zone_id, form.pickup_zone_id, form.pickup_hub_id, form.is_express, form.is_fragile, form.shipment_type, form.shipment_quantity, form.delivery_delay, form.weight_kg],
   () => {
     clearTimeout(quoteTimer)
     quoteTimer = setTimeout(fetchQuote, 250)
@@ -497,6 +508,7 @@ async function fetchQuote() {
       is_express: form.is_express,
       is_fragile: form.is_fragile,
       shipment_type: form.shipment_type || undefined,
+      shipment_quantity: form.shipment_quantity > 1 ? form.shipment_quantity : undefined,
       delivery_delay: form.delivery_delay || undefined,
       weight_kg: form.weight_kg || undefined,
     })

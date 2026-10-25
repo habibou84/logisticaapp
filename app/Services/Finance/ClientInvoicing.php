@@ -120,16 +120,17 @@ class ClientInvoicing
         foreach ($plans->filter(fn (BillingPlan $p) => $p->formula->hasForfait()) as $plan) {
             // Dans l'ordre de création : les premières sont incluses, les suivantes au prix de leur destination
             $inForfait = $orders->where('billing_plan_id', $plan->id)->where('billing_basis', 'forfait')->values();
-            $count = $inForfait->count();
+            // Course de plusieurs plis facturés par pli : chacun compte dans le forfait
+            $count = (int) $inForfait->sum(fn (Order $o) => max(1, (int) $o->billing_units));
             $units = $plan->formula->unitLabel();
             $where = 'dans les zones du forfait';
 
             $lines[] = $this->line('forfait', "Forfait {$plan->formula->label()} en {$plan->delivery_delay->label()} · {$month}", 1, $plan->monthly_fee);
             $lines[] = $this->line('included', ucfirst($units)." {$where} : {$count} ({$plan->included_quantity} inclus)", $count, 0);
-            $inForfait->slice($plan->included_quantity)
+            $inForfait->flatMap(fn (Order $o) => array_fill(0, max(1, (int) $o->billing_units), $o))->slice($plan->included_quantity)
                 ->groupBy(fn (Order $o) => ($o->pricing_details['billing']['overage_label'] ?? 'Abidjan').'|'.($o->pricing_details['billing']['overage'] ?? $plan->overage_price))
                 ->sortKeys()
-                ->each(function (Collection $group, string $key) use (&$lines, $units) {
+                ->each(function (\Illuminate\Support\Collection $group, string $key) use (&$lines, $units) {
                     [$where, $price] = explode('|', $key, 2);
                     $lines[] = $this->line('overage', ucfirst($units)." au-delà du forfait · {$where}", $group->count(), (int) $price);
                 });
@@ -154,15 +155,17 @@ class ClientInvoicing
         // Envois à l'unité, regroupés par libellé et par prix (colis des lots compris)
         $titles = ['cheque' => null, 'interior' => 'Intérieur', 'unit' => null, 'outside' => null, 'lot' => null, 'lot_extra' => null];
         foreach ($titles as $basis => $prefix) {
+            // Plusieurs plis ou chèques sur une course : comptés pli par pli, au prix d'un pli
             $orders->where('billing_basis', $basis)
-                ->groupBy(fn (Order $o) => ($o->pricing_details['billing']['label'] ?? $basis).'|'.(int) $o->billing_amount)
+                ->groupBy(fn (Order $o) => ($o->pricing_details['billing']['label'] ?? $basis).'|'.$this->unitPrice($o)[1])
                 ->sortKeys()
                 ->each(function (Collection $group) use (&$lines, $basis, $prefix) {
                     $first = $group->first();
                     $label = $first->pricing_details['billing']['label'] ?? $basis;
                     // Colis compris dans le prix global de leur lot : rappelés, sans montant
                     $kind = $basis === 'lot' && (int) $first->billing_amount === 0 ? 'included' : $basis;
-                    $lines[] = $this->line($kind, $prefix ? "{$prefix} · {$label}" : $label, $group->count(), (int) $first->billing_amount);
+                    $quantity = (int) $group->sum(fn (Order $o) => $this->unitPrice($o)[0]);
+                    $lines[] = $this->line($kind, $prefix ? "{$prefix} · {$label}" : $label, $quantity, $this->unitPrice($first)[1]);
                 });
         }
 
@@ -172,6 +175,20 @@ class ClientInvoicing
         }
 
         return $lines;
+    }
+
+    /**
+     * Quantité et prix unitaire d'une course sur la facture : ses plis (ou chèques) au prix d'un pli, ou une
+     * fois son montant (prix qui ne se divise pas : kilos en plus).
+     *
+     * @return array{0: int, 1: int}
+     */
+    private function unitPrice(Order $order): array
+    {
+        $units = max(1, (int) $order->billing_units);
+        $amount = (int) $order->billing_amount;
+
+        return $units > 1 && $amount % $units === 0 ? [$units, intdiv($amount, $units)] : [1, $amount];
     }
 
     /**

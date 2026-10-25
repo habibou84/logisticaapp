@@ -15,11 +15,12 @@ use Carbon\CarbonInterface;
  * - proof_name, proof_signature, proof_photo : preuve de remise demandée au livreur ;
  * - notify_recipient : messages WhatsApp au destinataire (en route, livrée…) ;
  * - mad_exclusive : livreurs en MAD réservés au client (pas de courses d'autres clients) ;
- * - mad_days (1 = lundi … 7 = dimanche), mad_from, mad_to (« 08:00 ») : quand ils le sont.
+ * - mad_days (1 = lundi … 7 = dimanche), mad_from, mad_to (« 08:00 ») : quand ils le sont ;
+ * - quantity_billing : course de plusieurs plis ou chèques facturée par pli (per_item) ou une fois (per_course).
  */
 class ActivityOptions
 {
-    public const KEYS = ['proof_name', 'proof_signature', 'proof_photo', 'notify_recipient', 'mad_exclusive', 'mad_days', 'mad_from', 'mad_to'];
+    public const KEYS = ['proof_name', 'proof_signature', 'proof_photo', 'notify_recipient', 'mad_exclusive', 'mad_days', 'mad_from', 'mad_to', 'quantity_billing'];
 
     public const DEFAULTS = [
         'proof_name' => true,
@@ -30,7 +31,10 @@ class ActivityOptions
         'mad_days' => [1, 2, 3, 4, 5, 6, 7],
         'mad_from' => null,
         'mad_to' => null,
+        'quantity_billing' => 'per_item',
     ];
+
+    public const QUANTITY_BILLING = ['per_item', 'per_course'];
 
     /** @var array<string, array<string, mixed>> */
     private array $memo = [];
@@ -127,9 +131,11 @@ class ActivityOptions
             $out[$key] = match ($key) {
                 'mad_days' => array_values(array_unique(array_map('intval', array_filter((array) $value, fn ($d) => (int) $d >= 1 && (int) $d <= 7)))),
                 'mad_from', 'mad_to' => (string) $value,
+                'quantity_billing' => in_array($value, self::QUANTITY_BILLING, true) ? $value : null,
                 default => (bool) $value,
             };
         }
+        $out = array_filter($out, fn ($v) => $v !== null);
         if (isset($out['mad_days'])) {
             sort($out['mad_days']);
         }
@@ -155,6 +161,7 @@ class ActivityOptions
             "{$prefix}.mad_days.*" => ['integer', 'between:1,7'],
             "{$prefix}.mad_from" => ['nullable', 'date_format:H:i', "required_with:{$prefix}.mad_to"],
             "{$prefix}.mad_to" => ['nullable', 'date_format:H:i', "required_with:{$prefix}.mad_from"],
+            "{$prefix}.quantity_billing" => ['nullable', 'in:'.implode(',', self::QUANTITY_BILLING)],
         ];
     }
 

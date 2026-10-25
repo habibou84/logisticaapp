@@ -100,7 +100,7 @@
         <span>{{ money(collected ?? order.amounts.cod_amount) }}</span>
       </div>
       <div v-if="order.billing" class="flex justify-between">
-        <span class="text-slate-500">Livraison ({{ order.package.shipment_type_label }}<template v-if="order.package.delivery_delay">, {{ order.package.delivery_delay.replace('h', ' h') }}</template>)</span>
+        <span class="text-slate-500">Livraison ({{ shipmentLabel(order.package) }}<template v-if="order.package.delivery_delay">, {{ order.package.delivery_delay.replace('h', ' h') }}</template>)</span>
         <span>{{ order.billing.basis === 'forfait' ? 'forfait' : money(order.billing.amount) }} · facture du mois</span>
       </div>
       <div v-else class="flex justify-between">
@@ -221,7 +221,7 @@ import ChoiceChips from '../../components/mobile/ChoiceChips.vue'
 import { useAuthStore } from '../../stores/auth'
 import { useToastStore } from '../../stores/toasts'
 import { orderChanges, lastOrderChange } from '../../composables/useRealtime'
-import { localPhone, money, telLink, today } from '../../utils/format'
+import { localPhone, money, shipmentLabel, telLink, today } from '../../utils/format'
 import { BEFORE_PICKUP, FINAL } from '../../utils/workflow'
 import { siteOrigin } from '../../native'
 import StarRating from '../../components/StarRating.vue'

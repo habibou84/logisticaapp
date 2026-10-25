@@ -15,6 +15,7 @@ use App\Models\Order;
 use App\Models\Zone;
 use App\Services\Assignment\AutoAssigner;
 use App\Services\Finance\FinanceRecorder;
+use App\Services\Orders\ActivityOptions;
 use App\Services\Orders\OrderWorkflow;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -349,6 +350,40 @@ class ClientBillingTest extends TestCase
         $this->artisan('billing:invoice')->assertSuccessful();
         $this->assertSame(5400, ClientInvoice::sole()->total);
         $this->assertSame(['unit'], ClientInvoice::sole()->lines->pluck('kind')->unique()->values()->all());
+    }
+
+    public function test_several_plis_or_cheques_on_one_course_count_one_by_one_or_once(): void
+    {
+        // Forfait de 3 plis : une course de 5 plis en compte 5 (3 inclus, 2 au-delà) ; 4 chèques facturés 4 fois
+        $plan = $this->plan();
+        $plis = $this->createOrder(['shipment_type' => 'pli', 'shipment_quantity' => 5]);
+        $cheques = $this->createOrder(['shipment_type' => 'cheque', 'shipment_quantity' => 4]);
+        // Colis : toujours un envoi
+        $colis = $this->createOrder(['shipment_type' => 'colis', 'shipment_quantity' => 3]);
+        $this->assertSame([5, 5, 'forfait'], [$plis->shipment_quantity, $plis->billing_units, $plis->billing_basis]);
+        $this->assertSame([4, 6000], [$cheques->billing_units, $cheques->billing_amount]);
+        $this->assertSame(1, $colis->billing_units);
+
+        Sanctum::actingAs($this->merchantUser);
+        $this->getJson("/api/v1/orders/{$plis->id}")->assertOk()->assertJsonPath('data.package.shipment_quantity', 5);
+        $this->postJson('/api/v1/quotes', ['delivery_zone_id' => $this->yopougon->id, 'shipment_type' => 'cheque', 'shipment_quantity' => 2])
+            ->assertOk()->assertJsonPath('data.billing.units', 2)->assertJsonPath('data.billing.amount', 3000);
+
+        // Réglage du contrat : la remise compte une fois
+        $plan->update(['options' => ['quantity_billing' => 'per_course']]);
+        app(ActivityOptions::class)->forget();
+        $once = $this->createOrder(['shipment_type' => 'cheque', 'shipment_quantity' => 10]);
+        $this->assertSame([10, 1, 1500], [$once->shipment_quantity, $once->billing_units, $once->billing_amount]);
+
+        $this->travelTo('2026-12-01 08:00:00');
+        $this->artisan('billing:invoice')->assertSuccessful();
+        $lines = ClientInvoice::sole()->lines->map(fn ($l) => [$l->kind, $l->quantity, $l->unit_price, $l->amount])->all();
+        $this->assertSame([
+            ['forfait', 1, 50000, 50000],
+            ['included', 6, 0, 0],
+            ['overage', 3, 800, 2400],
+            ['cheque', 5, 1500, 7500],
+        ], $lines);
     }
 
     public function test_interior_rates_are_imported_with_their_cities(): void

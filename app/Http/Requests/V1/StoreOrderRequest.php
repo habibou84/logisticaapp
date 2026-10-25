@@ -94,6 +94,8 @@ class StoreOrderRequest extends FormRequest
             // Lot ponctuel de distribution (contrat d'un lot de colis)
             'billing_plan_id' => ['nullable', 'integer'],
             'shipment_type' => ['nullable', Rule::enum(ShipmentType::class)],
+            // Nombre de plis ou de chèques remis ensemble
+            'shipment_quantity' => ['nullable', 'integer', 'min:1', 'max:10000'],
             'delivery_delay' => ['nullable', Rule::enum(DeliveryDelay::class)],
             'is_fragile' => ['boolean'],
             'is_express' => ['boolean'],
@@ -135,6 +137,7 @@ class StoreOrderRequest extends FormRequest
             'weight_kg' => 'poids',
             'activity' => 'activité',
             'shipment_type' => 'type d\'envoi',
+            'shipment_quantity' => 'nombre de plis',
             'delivery_delay' => 'délai de livraison',
             'pickup_hub_id' => 'entrepôt',
             'items' => 'articles',

@@ -39,6 +39,16 @@
       </template>
     </div>
 
+    <!-- Distribution : course de plusieurs plis ou chèques (nombre saisi sur la course) -->
+    <div v-if="activity === 'distribution'" class="rounded-lg border border-slate-200 p-2">
+      <label class="block text-xs text-gray-600" :for="`${uid}-qty`">Course de plusieurs plis ou chèques</label>
+      <select :id="`${uid}-qty`" :value="modelValue.quantity_billing ?? ''" class="input mt-1" @change="$event.target.value ? set('quantity_billing', $event.target.value) : clear('quantity_billing')">
+        <option v-if="inherit" value="">Comme l'entreprise ({{ QUANTITY[inherit.quantity_billing || 'per_item'].toLowerCase() }})</option>
+        <option v-for="(label, key) in QUANTITY" :key="key" :value="key">{{ label }}</option>
+      </select>
+      <p class="mt-1 text-xs text-gray-500">Par pli : 12 plis comptent pour 12 dans le forfait ou le lot, et 12 fois le prix à l'unité. Par course : une remise compte pour un.</p>
+    </div>
+
     <!-- MAD : quand les livreurs sont réservés au client -->
     <div v-if="activity === 'mad'" class="rounded-lg border border-slate-200 p-2 space-y-2">
       <label v-if="!inherit" class="flex items-start gap-2">
@@ -96,6 +106,8 @@ const PROOFS = [
   { key: 'proof_signature', label: 'Signature', hint: 'Signée sur le téléphone du livreur.' },
   { key: 'proof_photo', label: 'Photo de la décharge', hint: 'Ou du cachet, prise avant de valider.' },
 ]
+
+const QUANTITY = { per_item: 'Chaque pli ou chèque compte et se facture', per_course: 'Comptée et facturée une fois' }
 
 const days = computed(() => props.modelValue.mad_days ?? props.inherit?.mad_days ?? [1, 2, 3, 4, 5, 6, 7])
 const hour = (key) => props.modelValue[key] ?? ''

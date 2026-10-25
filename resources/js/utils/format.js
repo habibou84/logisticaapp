@@ -144,3 +144,11 @@ export function waitDuration(minutes) {
   const rest = minutes % 60
   return rest ? `${hours} h ${String(rest).padStart(2, '0')}` : `${hours} h`
 }
+
+// Envoi d'un client sous formule : « Pli », « 12 plis », « 3 chèques »
+export function shipmentLabel(pkg) {
+  const n = pkg?.shipment_quantity || 1
+  if (!pkg?.shipment_type) return ''
+  if (n <= 1) return pkg.shipment_type_label
+  return `${n} ${{ pli: 'plis', cheque: 'chèques', colis: 'colis' }[pkg.shipment_type] || pkg.shipment_type_label}`
+}

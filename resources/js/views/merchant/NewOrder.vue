@@ -107,6 +107,15 @@
         <p class="m-label">Type d'envoi</p>
         <ChoiceChips v-model="form.shipment_type" :options="SHIPMENT_TYPES" :columns="3" label="Type d'envoi" />
       </div>
+      <!-- Plusieurs plis ou chèques remis ensemble au même destinataire -->
+      <div v-if="hasQuantity">
+        <label class="m-label" for="quantity">Nombre de {{ form.shipment_type === 'cheque' ? 'chèques' : 'plis' }}</label>
+        <div class="flex items-center gap-2">
+          <button type="button" class="tap h-11 w-11 rounded-xl ring-1 ring-slate-300 text-xl" aria-label="Un de moins" :disabled="form.shipment_quantity <= 1" @click="form.shipment_quantity = Math.max(1, form.shipment_quantity - 1)">−</button>
+          <input id="quantity" v-model.number="form.shipment_quantity" type="number" min="1" max="10000" inputmode="numeric" class="m-input w-24 text-center">
+          <button type="button" class="tap h-11 w-11 rounded-xl ring-1 ring-slate-300 text-xl" aria-label="Un de plus" @click="form.shipment_quantity = (form.shipment_quantity || 1) + 1">+</button>
+        </div>
+      </div>
       <div>
         <label class="m-label" for="weight">Poids <span class="font-normal text-slate-500">(facultatif, kg)</span></label>
         <input id="weight" v-model.number="form.weight_kg" type="number" min="0" step="0.1" inputmode="decimal" class="m-input" placeholder="Ex. : 2,5">
@@ -224,7 +233,7 @@
         <!-- Distribution, MAD : comment la course sera facturée, et le forfait du mois -->
         <div v-if="billed && quote?.billing" class="text-sm space-y-0.5">
           <div class="flex justify-between gap-3">
-            <span class="text-slate-500">{{ quote.billing.label }}</span>
+            <span class="text-slate-500">{{ quote.billing.label }}<template v-if="quote.billing.units > 1"> · × {{ quote.billing.units }}</template></span>
             <strong class="whitespace-nowrap">{{ quote.billing.basis === 'forfait' && !quote.billing.amount ? 'forfait' : money(quote.billing.amount) }}</strong>
           </div>
           <div v-if="usage?.included" class="flex justify-between text-slate-500">
@@ -297,6 +306,8 @@ const blank = () => ({
   // Lot de colis (distribution) ; vide : contrat du mois
   billing_plan_id: null,
   shipment_type: null,
+  // Plis ou chèques remis ensemble
+  shipment_quantity: 1,
   weight_kg: null,
   delivery_delay: null,
   recipient_phone: '',
@@ -317,6 +328,9 @@ const blank = () => ({
 // Un seul écran : l'essentiel visible, le reste derrière « Date, contenu du colis… »
 const form = reactive(blank())
 const billed = computed(() => form.activity !== 'ecommerce')
+// Nombre de plis ou de chèques : seulement pour un pli ou un chèque (un colis compte pour un)
+const hasQuantity = computed(() => form.activity === 'distribution' && ['pli', 'cheque'].includes(form.shipment_type))
+watch(hasQuantity, (v) => { if (!v) form.shipment_quantity = 1 })
 // Formule de l'activité choisie (auth : sans réseau ; space : consommation du mois)
 const contractPlan = computed(() => (auth.user?.merchant?.billing_plans || []).find((p) => p.activity === form.activity) || null)
 // Lots de colis en cours (distribution) ; sans contrat, la course va forcément dans un lot
@@ -425,7 +439,7 @@ const shareLink = computed(() => {
 })
 
 // Tarif recalculé à chaque changement utile
-watch(() => [form.delivery_zone_id, form.is_express, form.is_fragile, form.activity, form.billing_plan_id, form.shipment_type, form.delivery_delay, form.weight_kg], fetchQuote)
+watch(() => [form.delivery_zone_id, form.is_express, form.is_fragile, form.activity, form.billing_plan_id, form.shipment_type, form.shipment_quantity, form.delivery_delay, form.weight_kg], fetchQuote)
 
 async function fetchQuote() {
   quote.value = null
@@ -436,6 +450,7 @@ async function fetchQuote() {
       activity: form.activity,
       billing_plan_id: form.billing_plan_id || undefined,
       shipment_type: form.shipment_type || undefined,
+      shipment_quantity: form.shipment_quantity > 1 ? form.shipment_quantity : undefined,
       delivery_delay: form.delivery_delay || undefined,
       weight_kg: form.weight_kg || undefined,
       delivery_zone_id: form.delivery_zone_id,

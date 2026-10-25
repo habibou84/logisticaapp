@@ -53,7 +53,7 @@
       <ul v-if="order.items?.length" class="text-slate-700 space-y-0.5">
         <li v-for="item in order.items" :key="item.id">📦 <strong>{{ item.quantity }} ×</strong> {{ item.label }}</li>
       </ul>
-      <p v-else class="text-slate-700">📦 {{ order.package.description || 'Colis' }}</p>
+      <p v-else class="text-slate-700">📦 {{ order.package.description || 'Colis' }}<strong v-if="order.package.shipment_quantity > 1" class="ml-1 rounded-full bg-amber-100 px-2 text-amber-900">{{ shipmentLabel(order.package) }}</strong></p>
       <div class="flex flex-wrap gap-2">
         <span v-if="order.package.is_fragile" class="rounded-full bg-red-100 text-red-700 text-sm font-semibold px-3 py-1">🥚 Fragile</span>
         <span v-if="order.package.is_express" class="rounded-full bg-amber-100 text-amber-800 text-sm font-semibold px-3 py-1">⚡ Express</span>
@@ -249,7 +249,7 @@ import { useToastStore } from '../../stores/toasts'
 import { currentPosition } from '../../composables/useGeolocation'
 import { enqueue, isNetworkError, sendStatus, withPending } from '../../composables/useOfflineQueue'
 import { pwa } from '../../composables/usePwa'
-import { date, DELIVERY_PAYMENT_METHODS, mapsLink, money, PAYMENT_METHODS, telLink, today, whatsappLink } from '../../utils/format'
+import { date, DELIVERY_PAYMENT_METHODS, mapsLink, money, PAYMENT_METHODS, shipmentLabel, telLink, today, whatsappLink } from '../../utils/format'
 
 const route = useRoute()
 const router = useRouter()

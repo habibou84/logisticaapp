@@ -51,6 +51,7 @@ class OrderImporter
         // Distribution, MAD
         'activity' => ['activite', 'activity'],
         'shipment_type' => ['typedenvoi', 'typeenvoi', 'envoi', 'type', 'shipmenttype'],
+        'shipment_quantity' => ['nombre', 'nombredeplis', 'nombredecheques', 'nbplis', 'nbcheques', 'quantite', 'qte', 'quantity'],
         'weight_kg' => ['poids', 'poidskg', 'weight', 'kg'],
         'delivery_delay' => ['delai', 'delaidelivraison', 'delay'],
     ];
@@ -278,6 +279,11 @@ class OrderImporter
         if ($text('weight_kg') !== null && $weightValue === null) {
             $errors[] = 'Poids invalide : '.$text('weight_kg');
         }
+        $quantity = $text('shipment_quantity') !== null && ctype_digit(trim((string) $text('shipment_quantity'))) ? (int) $text('shipment_quantity') : null;
+        if ($text('shipment_quantity') !== null && ($quantity === null || $quantity < 1 || $quantity > 10000)) {
+            $errors[] = 'Nombre de plis invalide : '.$text('shipment_quantity');
+            $quantity = null;
+        }
         $delay = $text('delivery_delay') ? DeliveryDelay::tryFrom(preg_replace('/\D/', '', (string) $text('delivery_delay')).'h') : null;
         if ($text('delivery_delay') && $delay === null) {
             $errors[] = 'Délai inconnu (24h, 48h, 72h) : '.$text('delivery_delay');
@@ -313,6 +319,7 @@ class OrderImporter
             'merchant_note' => $text('merchant_note'),
             'activity' => $activity?->value,
             'shipment_type' => $type?->value,
+            'shipment_quantity' => $quantity,
             'weight_kg' => $weightValue,
             'delivery_delay' => $delay?->value,
             // Colis d'un lot ponctuel : tous ceux du fichier

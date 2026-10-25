@@ -41,7 +41,7 @@ class OrderService
     private const PACKAGE_FIELDS = [
         'merchant_reference', 'description', 'package_size', 'weight_kg', 'is_fragile', 'is_express', 'merchant_note',
         // Clients sous formule (distribution, MAD) : type d'envoi et délai
-        'shipment_type', 'delivery_delay',
+        'shipment_type', 'shipment_quantity', 'delivery_delay',
     ];
 
     private const MONEY_FIELDS = ['items_amount', 'fee_payer'];
@@ -228,10 +228,11 @@ class OrderService
                 $order->items_amount = (int) $data['items_amount'];
             }
 
-            if ($order->isDirty(['pickup_zone_id', 'delivery_zone_id', 'is_express', 'is_fragile', 'weight_kg', 'shipment_type', 'delivery_delay'])) {
+            if ($order->isDirty(['pickup_zone_id', 'delivery_zone_id', 'is_express', 'is_fragile', 'weight_kg', 'shipment_type', 'shipment_quantity', 'delivery_delay'])) {
                 $order->fill($this->price($order->merchant, $order->activity, [
                     ...$order->only(['pickup_zone_id', 'delivery_zone_id', 'is_express', 'is_fragile', 'weight_kg']),
                     'shipment_type' => $order->shipment_type?->value,
+                    'shipment_quantity' => $order->shipment_quantity,
                     'delivery_delay' => $order->delivery_delay?->value,
                     // Colis d'un lot : reste dans son lot (sans se compter lui-même)
                     ...($order->billing_basis !== null && str_starts_with((string) $order->billing_basis, 'lot')
@@ -410,6 +411,7 @@ class OrderService
             'billing_plan_id' => null,
             'billing_basis' => null,
             'billing_amount' => null,
+            'billing_units' => 1,
         ];
     }
 

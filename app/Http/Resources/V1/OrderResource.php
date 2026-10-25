@@ -100,6 +100,8 @@ class OrderResource extends JsonResource
                 // Clients sous formule : pli, colis ou chèque, délai souhaité
                 'shipment_type' => $this->shipment_type?->value,
                 'shipment_type_label' => $this->shipment_type?->label(),
+                // Plis ou chèques remis ensemble (1 : un seul envoi)
+                'shipment_quantity' => (int) ($this->shipment_quantity ?? 1),
                 'delivery_delay' => $this->delivery_delay?->value,
             ],
             // Distribution, MAD : rien à encaisser, la course passe sur la facture du mois

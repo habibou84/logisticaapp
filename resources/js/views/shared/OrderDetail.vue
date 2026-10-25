@@ -87,7 +87,7 @@
             <div><p class="text-gray-500">Encaissé</p><p class="font-semibold">{{ money(order.amounts.collected_amount) }}</p></div>
           </template>
           <div v-if="order.billing" class="sm:col-span-4 rounded bg-indigo-50 text-indigo-900 p-2">
-            📄 {{ order.package.shipment_type_label }}<template v-if="order.package.delivery_delay"> en {{ order.package.delivery_delay.replace('h', ' h') }}</template> ·
+            📄 {{ shipmentLabel(order.package) }}<template v-if="order.package.delivery_delay"> en {{ order.package.delivery_delay.replace('h', ' h') }}</template> ·
             {{ order.billing.label }} : sur la facture du mois du client.
           </div>
           <div v-if="order.is_shipping" class="sm:col-span-4 rounded bg-indigo-50 text-indigo-900 p-2">
@@ -254,7 +254,7 @@ import CourierMessageThread from '../../components/CourierMessageThread.vue'
 import { useAuthStore } from '../../stores/auth'
 import { useToastStore } from '../../stores/toasts'
 import { orderChanges, lastOrderChange } from '../../composables/useRealtime'
-import { date, dateTime, money, telLink } from '../../utils/format'
+import { date, dateTime, money, shipmentLabel, telLink } from '../../utils/format'
 import { activityBadge } from '../../utils/activities'
 import SupplementsModal from '../../components/SupplementsModal.vue'
 import OrderRatings from '../../components/OrderRatings.vue'

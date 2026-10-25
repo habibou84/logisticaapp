@@ -41,6 +41,7 @@ class QuoteController extends Controller
             'is_fragile' => ['sometimes', 'boolean'],
             'weight_kg' => ['nullable', 'numeric', 'min:0'],
             'shipment_type' => ['nullable', Rule::enum(ShipmentType::class)],
+            'shipment_quantity' => ['nullable', 'integer', 'min:1', 'max:10000'],
             'delivery_delay' => ['nullable', Rule::enum(DeliveryDelay::class)],
             'activity' => ['nullable', Rule::enum(Activity::class)],
             'billing_plan_id' => ['nullable', 'integer'],
