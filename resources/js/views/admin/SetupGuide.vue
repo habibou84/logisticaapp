@@ -27,7 +27,7 @@
       <section class="card p-4 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 class="font-semibold">🎬 Bien démarrer en vidéo</h2>
-          <p class="text-sm text-gray-600">Huit courtes vidéos avec voix off et sous-titres, une par étape essentielle.</p>
+          <p class="text-sm text-gray-600">Neuf courtes vidéos avec voix off et sous-titres : les étapes essentielles et le planning des livreurs.</p>
         </div>
         <div class="flex flex-wrap items-center gap-3">
           <button type="button" class="btn-primary" @click="video.open(firstVideo)">▶ Regarder</button>

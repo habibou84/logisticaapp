@@ -9,6 +9,7 @@ export const GUIDE_CHAPTERS = [
   { key: 'order_rules', title: 'Les règles des courses' },
   { key: 'couriers', title: 'Les livreurs' },
   { key: 'pay', title: 'La paie des livreurs' },
+  { key: 'automation', title: 'Le planning des livreurs' },
   { key: 'merchants', title: 'Les clients' },
   { key: 'first_delivery', title: 'Une course d\'essai' },
 ]

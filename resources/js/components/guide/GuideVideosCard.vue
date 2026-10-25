@@ -4,7 +4,7 @@
       <div>
         <h2 class="font-semibold">🎬 Bien démarrer</h2>
         <p class="text-sm text-gray-600">
-          Huit courtes vidéos, une par étape essentielle : regardez, puis faites-le vous-même.
+          Neuf courtes vidéos, des étapes essentielles au planning des livreurs : regardez, puis faites-le vous-même.
           <span v-if="guide.essentials">Étapes faites : {{ guide.essentials.done }} sur {{ guide.essentials.total }}.</span>
         </p>
       </div>

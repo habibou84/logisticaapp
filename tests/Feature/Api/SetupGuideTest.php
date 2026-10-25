@@ -90,7 +90,7 @@ class SetupGuideTest extends TestCase
         Sanctum::actingAs($this->admin);
         $this->getJson('/api/v1/setup')->assertOk()
             ->assertJsonPath('data.videos.enabled', true)->assertJsonPath('data.videos.hidden', false)
-            ->assertJsonPath('data.videos.watched', [])->assertJsonCount(8, 'data.videos.chapters');
+            ->assertJsonPath('data.videos.watched', [])->assertJsonCount(9, 'data.videos.chapters');
 
         // Chapitres regardés (sans doublon), carte masquée puis réaffichée par cet administrateur
         $this->postJson('/api/v1/setup/videos', ['watched' => 'zones'])->assertOk();

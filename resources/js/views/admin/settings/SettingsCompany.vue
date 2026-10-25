@@ -58,7 +58,7 @@
       <h2 class="font-semibold">Guide vidéo</h2>
       <label class="flex items-start gap-2 text-sm">
         <input v-model="guide.form.value.guide_videos" type="checkbox" class="mt-1">
-        <span>Afficher « Bien démarrer » sur le tableau de bord des administrateurs<span class="block text-gray-500">Huit vidéos, une par étape essentielle de la mise en route. Chacun peut aussi la masquer pour lui ; elle reste toujours dans Mise en route.</span></span>
+        <span>Afficher « Bien démarrer » sur le tableau de bord des administrateurs<span class="block text-gray-500">Neuf vidéos : les étapes essentielles de la mise en route et le planning des livreurs. Chacun peut aussi la masquer pour lui ; elle reste toujours dans Mise en route.</span></span>
       </label>
       <SaveBar :dirty="guide.dirty.value" :saving="guide.saving.value" :error="guide.error.value" @save="guide.save" @reset="guide.reset" />
     </section>

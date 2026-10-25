@@ -1,14 +1,15 @@
 # Guide vidéo « Bien démarrer »
 
-Huit courtes vidéos (45 à 60 s), une par étape essentielle de la **Mise en route** : entreprise, zones, tarifs,
-règles des courses, livreurs, paie, clients, course d'essai. Voix off en français, sous-titres affichés d'office.
+Neuf courtes vidéos (45 à 60 s) : une par étape essentielle de la **Mise en route** (entreprise, zones, tarifs,
+règles des courses, livreurs, paie, clients, course d'essai) et le **planning des livreurs** (étape conseillée
+« L'assignation automatique »). Voix off en français, sous-titres affichés d'office.
 
 ## Où on les voit
 - **Tableau de bord** des administrateurs : carte « 🎬 Bien démarrer », un aperçu par chapitre, « ✓ fait » quand
   l'étape de la mise en route est faite, « Vidéo vue » quand le chapitre a été regardé. **Masquer** la retire pour
   cet administrateur (il la réaffiche depuis la Mise en route).
 - **Mise en route** : « ▶ Regarder » (commence au premier chapitre dont l'étape n'est pas faite) et
-  « ▶ Voir comment faire » sur chaque étape essentielle.
+  « ▶ Voir comment faire » sur chaque étape qui a sa vidéo.
 - Le lecteur : liste des chapitres, **Ouvrir ce réglage** (la page de l'étape) et **Chapitre suivant**.
 - **Réglages › Entreprise › Guide vidéo** : afficher ou non la carte sur le tableau de bord de tous les
   administrateurs.

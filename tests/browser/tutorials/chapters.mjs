@@ -71,6 +71,18 @@ export const CHAPTERS = [
     ],
   },
   {
+    key: 'automation',
+    title: 'Le planning des livreurs',
+    segments: [
+      { say: 'Le planning dit quel livreur ramasse et livre, où et quand. Ouvrez Planning des livreurs.', do: async (s) => { await s.go('/admin/planning') } },
+      { say: 'Cliquez sur Nouvelle règle. Choisissez ramassage ou livraison, le livreur, et si besoin un remplaçant qui prend le relais quand il est absent.', do: async (s) => { await s.click('text=+ Nouvelle règle'); await s.click('button:has-text("Ramassages")'); await s.select('#r-courier', 'Koffi Livreur'); await s.select('#r-backup', 'Awa Livreuse') } },
+      { say: 'Indiquez où : des zones, ou des clients précis. Une règle pour un client passe avant celle de sa zone.', do: async (s) => { await s.click('label:has-text("Cocody") >> nth=0'); await s.hl('button:has-text("Des clients")') } },
+      { say: 'Puis quand : tous les jours, certains jours, une date ou une période. Il ne reste qu\'à enregistrer.', do: async (s) => { await s.click('button:has-text("Certains jours")'); await s.hl('[role="dialog"] button:has-text("Enregistrer")'); await s.click('[role="dialog"] button:has-text("Annuler")') } },
+      { say: 'Chaque jour, le planning montre qui ramasse chez quel client, et signale les clients qui n\'ont pas de ramasseur.', do: async (s) => { await s.hl('h2:has-text("Ramassages ce jour-là")'); await s.hl('text=Clients sans ramasseur') } },
+      { say: 'Notez enfin les absences : le remplaçant prend la main. Le ramassage et la livraison automatiques s\'appuient sur ce planning.', do: async (s) => { await s.scrollTo('h2:has-text("Absences")'); await s.hl('button:has-text("Ajouter")') } },
+    ],
+  },
+  {
     key: 'merchants',
     title: 'Les clients',
     segments: [
