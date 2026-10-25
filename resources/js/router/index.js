@@ -96,6 +96,7 @@ const routes = [
       { path: 'factures/:id(\\d+)', component: shared.clientInvoice, meta: { permission: 'invoices.view' } },
       // Chiffre d'affaires par activité (e-commerce, distribution, MAD)
       { path: 'chiffre-affaires', component: () => import('../views/admin/Revenue.vue'), meta: { permission: 'revenue.view' } },
+      { path: 'annuaire', component: () => import('../views/admin/Destinations.vue'), meta: { permission: 'merchants.view' } },
       { path: 'contrats', component: () => import('../views/admin/Contracts.vue'), meta: { permission: 'merchants.view' } },
       { path: 'formules', component: () => import('../views/admin/ClientFormulas.vue'), meta: { permission: ['settings.manage', 'rates.manage'] } },
       // Réglages par thèmes (l'ancienne page « Paramètres » y mène)
@@ -108,6 +109,7 @@ const routes = [
       { path: 'vehicules', component: () => import('../views/admin/Vehicles.vue'), meta: { permission: 'orders.dispatch' } },
       { path: 'vehicules/echeances', component: () => import('../views/admin/VehicleDeadlines.vue'), meta: { permission: 'orders.dispatch' } },
       { path: 'vehicules/:id(\\d+)', component: () => import('../views/admin/VehicleDetail.vue'), meta: { permission: 'orders.dispatch' } },
+      { path: 'reglages/annuaire', component: () => import('../views/admin/settings/SettingsDestinations.vue'), meta: { permission: 'settings.manage' } },
       { path: 'reglages/departements', component: () => import('../views/admin/settings/SettingsDepartments.vue'), meta: { permission: 'settings.manage' } },
       { path: 'reglages/vehicules', component: () => import('../views/admin/settings/SettingsVehicles.vue'), meta: { permission: 'settings.manage' } },
       { path: 'qualite-livreurs', component: () => import('../views/admin/CourierQuality.vue'), meta: { permission: 'orders.dispatch' } },

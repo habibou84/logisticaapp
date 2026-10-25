@@ -67,6 +67,11 @@
     <!-- 1. Le destinataire -->
     <section v-if="!internal" class="m-card p-4 space-y-4" aria-labelledby="step-client">
       <h2 id="step-client" class="m-step"><span class="m-step-num">1</span>Le destinataire</h2>
+      <!-- Annuaire des destinations (distribution, MAD) : la fiche se remplit toute seule -->
+      <DestinationSearch
+        v-if="directory" mobile :selected="destination"
+        @pick="pickDestination" @clear="destination = null; clearDestination(form)" @use-phone="(p) => (form.recipient_phone = p)"
+      />
       <div class="relative">
         <label class="m-label" for="phone">Téléphone <span class="text-red-600">*</span></label>
         <input id="phone" v-model="form.recipient_phone" :class="['m-input text-lg', missing.phone ? 'ring-2 ring-red-500' : '']" inputmode="tel" autocomplete="jibiat-off" placeholder="07 00 00 00 00" @input="searchRecipients" @blur="checkDuplicates">
@@ -295,6 +300,8 @@ import PasteMessage from '../../components/PasteMessage.vue'
 import ZoneSelect from '../../components/ZoneSelect.vue'
 import { keyboardOpen } from '../../composables/useKeyboard'
 import { useDepartments } from '../../composables/useDepartments'
+import DestinationSearch from '../../components/destinations/DestinationSearch.vue'
+import { applyDestination, clearDestination, usesDirectory } from '../../utils/destinations'
 import { longDay, useDeliveryDate } from '../../composables/useDeliveryDate'
 import { useAuthStore } from '../../stores/auth'
 import { localPhone, money, today } from '../../utils/format'
@@ -337,6 +344,8 @@ const blank = () => ({
   department_id: null,
   to_department_id: null,
   requested_by: '',
+  // Destination de l'annuaire
+  destination_id: null,
   weight_kg: null,
   delivery_delay: null,
   recipient_phone: '',
@@ -357,6 +366,14 @@ const blank = () => ({
 // Un seul écran : l'essentiel visible, le reste derrière « Date, contenu du colis… »
 const form = reactive(blank())
 const billed = computed(() => form.activity !== 'ecommerce')
+// Annuaire des destinations
+const directory = computed(() => usesDirectory(auth.user?.company, form.activity, true))
+const destination = ref(null)
+function pickDestination(d) {
+  destination.value = d
+  applyDestination(form, d)
+}
+watch(directory, (v) => { if (!v && destination.value) { destination.value = null; form.destination_id = null } })
 // Départements du client (distribution, MAD)
 const departments = useDepartments(computed(() => auth.user?.merchant_id), { mine: true })
 const hasDepartments = computed(() => billed.value && departments.all.value.length > 0)
@@ -645,6 +662,7 @@ function reset() {
   // Activité gardée d'une course à l'autre
   Object.assign(form, { ...blank(), activity: form.activity, billing_plan_id: form.billing_plan_id, department_id: form.department_id, requested_by: form.requested_by })
   internal.value = false
+  destination.value = null
   Object.keys(missing).forEach((key) => { missing[key] = false })
   showMore.value = false
   showStock.value = false

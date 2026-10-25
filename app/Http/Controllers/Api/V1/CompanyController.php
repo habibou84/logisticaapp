@@ -7,6 +7,7 @@ use App\Http\Requests\V1\UpdateCompanyRequest;
 use App\Http\Resources\V1\CompanyResource;
 use App\Models\Company;
 use App\Services\Departments\DepartmentSettings;
+use App\Services\Destinations\DestinationSettings;
 use App\Services\FieldEvents\FieldEventSettings;
 use App\Services\Orders\ActivityOptions;
 use App\Services\Ratings\RatingSettings;
@@ -38,6 +39,9 @@ class CompanyController extends Controller
         }
         if (array_key_exists('field_event_settings', $data)) {
             $data['field_event_settings'] = FieldEventSettings::clean((array) ($data['field_event_settings'] ?? []));
+        }
+        if (array_key_exists('destination_settings', $data)) {
+            $data['destination_settings'] = DestinationSettings::clean((array) ($data['destination_settings'] ?? []));
         }
         if (array_key_exists('department_settings', $data)) {
             $data['department_settings'] = DepartmentSettings::clean((array) ($data['department_settings'] ?? []));

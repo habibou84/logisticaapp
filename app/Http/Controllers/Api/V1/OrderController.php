@@ -28,7 +28,7 @@ class OrderController extends Controller
     public const LIST_RELATIONS = [
         'merchant', 'pickupZone', 'deliveryZone', 'lastIncidentReason', 'pickupHub', 'items',
         'pickupCourier.user', 'deliveryCourier.user', 'returnCourier.user', 'holder.user', 'merchantDecision',
-        'department', 'toDepartment',
+        'department', 'toDepartment', 'destination',
     ];
 
     public function __construct(private readonly OrderService $orders) {}

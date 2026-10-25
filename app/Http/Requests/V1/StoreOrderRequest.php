@@ -64,6 +64,8 @@ class StoreOrderRequest extends FormRequest
             'department_id' => ['nullable', 'integer'],
             'to_department_id' => ['nullable', 'integer'],
             'requested_by' => ['nullable', 'string', 'max:120'],
+            // Destination choisie dans l'annuaire (remplit ce qui manque)
+            'destination_id' => ['nullable', 'integer'],
 
             // Commande préparée dans un entrepôt (produits en stock chez l'entreprise)
             'pickup_hub_id' => ['nullable', 'integer', Rule::exists('hubs', 'id')->where('company_id', $companyId)->where('is_active', true)],
@@ -78,10 +80,10 @@ class StoreOrderRequest extends FormRequest
 
             'recipient_name' => ['nullable', 'string', 'max:255'],
             // Courrier interne : le département destinataire donne le téléphone et l'adresse
-            'recipient_phone' => ['required_without:to_department_id', 'nullable', 'string', new PhoneNumber],
+            'recipient_phone' => ['required_without_all:to_department_id,destination_id', 'nullable', 'string', new PhoneNumber],
             'recipient_phone2' => ['nullable', 'string', new PhoneNumber],
             // Identifiant de zone, ou son nom (« Cocody », « Yopougon Siporex »)
-            'delivery_zone_id' => ['required_without_all:delivery_zone,to_department_id', 'nullable', 'integer', $zone],
+            'delivery_zone_id' => ['required_without_all:delivery_zone,to_department_id,destination_id', 'nullable', 'integer', $zone],
             'delivery_zone' => ['nullable', 'string', 'max:150'],
             'delivery_address' => ['nullable', 'string', 'max:500'],
             'delivery_landmark' => ['nullable', 'string', 'max:255'],

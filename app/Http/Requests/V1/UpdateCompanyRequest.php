@@ -4,6 +4,7 @@ namespace App\Http\Requests\V1;
 
 use App\Rules\PhoneNumber;
 use App\Services\Departments\DepartmentSettings;
+use App\Services\Destinations\DestinationSettings;
 use App\Services\FieldEvents\FieldEventSettings;
 use App\Services\Orders\ActivityOptions;
 use App\Services\Ratings\RatingSettings;
@@ -63,6 +64,7 @@ class UpdateCompanyRequest extends FormRequest
             ...FieldEventSettings::rules(),
             ...VehicleSettings::rules(),
             ...DepartmentSettings::rules(),
+            ...DestinationSettings::rules(),
             'merchant_signup' => ['sometimes', 'boolean'],
             'weekly_report' => ['sometimes', 'boolean'],
             'pickup_assign_alert_minutes' => ['sometimes', 'integer', 'min:0', 'max:1440'],

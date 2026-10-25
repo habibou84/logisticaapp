@@ -36,6 +36,11 @@
       <p v-if="form.to_department_id" class="text-sm text-gray-600">Courrier interne : adresse et responsable du département destinataire.</p>
       <div class="grid sm:grid-cols-2 gap-3">
         <template v-if="!form.to_department_id">
+        <!-- Annuaire des destinations (distribution, MAD) -->
+        <DestinationSearch
+          v-if="directory" class="sm:col-span-2" :selected="destination" :merchant-id="merchantId"
+          @pick="pickDestination" @clear="destination = null; clearDestination(form)" @use-phone="(p) => (form.recipient_phone = p)"
+        />
         <div class="relative">
           <label class="label" for="phone">Téléphone * <span v-if="parsed.recipient_phone" class="check">à vérifier</span></label>
           <input
@@ -292,6 +297,8 @@ import PasteMessage from './PasteMessage.vue'
 import ZoneSelect from './ZoneSelect.vue'
 import DepartmentFields from './departments/DepartmentFields.vue'
 import { useDepartments } from '../composables/useDepartments'
+import DestinationSearch from './destinations/DestinationSearch.vue'
+import { applyDestination, clearDestination, usesDirectory } from '../utils/destinations'
 import { useDeliveryDate } from '../composables/useDeliveryDate'
 
 const props = defineProps({
@@ -335,6 +342,8 @@ const form = reactive({
   department_id: null,
   to_department_id: null,
   requested_by: '',
+  // Destination de l'annuaire
+  destination_id: null,
   weight_kg: null,
   delivery_delay: null,
 })
@@ -410,6 +419,14 @@ async function checkDuplicates() {
 
 const itemsTotal = computed(() => items.value.reduce((sum, i) => sum + (i.quantity || 0) * (i.unit_price || 0), 0))
 const merchantId = computed(() => (isMerchant.value ? auth.user.merchant_id : form.merchant_id))
+// Annuaire des destinations : proposé pour les activités choisies par l'administrateur
+const directory = computed(() => usesDirectory(auth.user?.company, form.activity, isMerchant.value))
+const destination = ref(null)
+function pickDestination(d) {
+  destination.value = d
+  applyDestination(form, d)
+}
+watch(directory, (v) => { if (!v && destination.value) { destination.value = null; form.destination_id = null } })
 const departments = useDepartments(computed(() => (isMerchant.value ? auth.user.merchant_id : form.merchant_id)), { mine: isMerchant.value })
 const client = computed(() => (isMerchant.value ? auth.user?.merchant : merchants.value.find((m) => m.id === form.merchant_id)) || null)
 const activityChoices = computed(() => {
@@ -562,8 +579,9 @@ function pickRecipient(r) {
 // Après « Enregistrer et nouvelle » : formulaire vidé, client gardé
 const blank = { ...form }
 function reset() {
-  Object.assign(form, { ...blank, merchant_id: form.merchant_id, activity: form.activity, billing_plan_id: form.billing_plan_id, shipment_type: form.shipment_type, delivery_delay: form.delivery_delay, department_id: form.department_id, requested_by: form.requested_by, fee_payer: billingPlan.value ? 'merchant' : null })
+  Object.assign(form, { ...blank, merchant_id: form.merchant_id, activity: form.activity, billing_plan_id: form.billing_plan_id, shipment_type: form.shipment_type, delivery_delay: form.delivery_delay, department_id: form.department_id, requested_by: form.requested_by, destination_id: null, fee_payer: billingPlan.value ? 'merchant' : null })
   items.value = []
+  destination.value = null
   zoneChoices.value = []
   duplicates.value = []
   Object.keys(parsed).forEach((k) => delete parsed[k])

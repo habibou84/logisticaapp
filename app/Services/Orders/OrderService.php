@@ -16,6 +16,7 @@ use App\Models\User;
 use App\Models\Zone;
 use App\Services\Assignment\AutoAssigner;
 use App\Services\Departments\Departments;
+use App\Services\Destinations\Destinations;
 use App\Services\Finance\ClientSpace;
 use App\Services\Pricing\ClientPricing;
 use App\Services\Pricing\PricingService;
@@ -56,6 +57,7 @@ class OrderService
         private readonly DeliveryDay $deliveryDay,
         private readonly AutoAssigner $autoAssigner,
         private readonly Departments $departments,
+        private readonly Destinations $destinations,
     ) {}
 
     /**
@@ -90,6 +92,8 @@ class OrderService
 
             // Départements du client : qui envoie, adresse d'un autre site, courrier interne
             $data = $this->departments->prepare($actor, $merchant, $activity, $data);
+            // Annuaire des destinations : la destination choisie remplit la fiche
+            $data = $this->destinations->prepare($merchant, $activity->value, $data);
 
             // Distribution et MAD : rien à encaisser auprès du destinataire, la course passe sur la facture du mois
             if ($activity !== Activity::Ecommerce) {
@@ -138,6 +142,7 @@ class OrderService
                 'department_id' => $data['department_id'] ?? null,
                 'to_department_id' => $data['to_department_id'] ?? null,
                 'requested_by' => $data['requested_by'] ?? null,
+                'destination_id' => $data['destination_id'] ?? null,
                 'fee_payer' => $feePayer,
                 'items_amount' => $itemsAmount,
                 'max_attempts' => $company->default_max_attempts,
@@ -150,6 +155,8 @@ class OrderService
             // Courrier interne : le département n'entre pas dans le carnet des destinataires
             $order->recipient_id = empty($data['to_department_id']) ? $this->rememberRecipient($merchant, $data)->id : null;
             $order->save();
+            // L'annuaire apprend de la course (destination reliée, corrigée ou ajoutée)
+            $this->destinations->learn($order, $actor);
 
             $location = $items !== [] ? $this->stock->location($merchant, $hub) : null;
             foreach ($items as $item) {

@@ -47,6 +47,8 @@ class Order extends Model
         'handed_by_name',
         'handed_by_role',
         'received_by_role',
+        // Destination de l'annuaire (distribution, MAD)
+        'destination_id',
         'created_by',
         'pickup_zone_id',
         'pickup_hub_id',
@@ -211,6 +213,12 @@ class Order extends Model
     public function department(): BelongsTo
     {
         return $this->belongsTo(Department::class);
+    }
+
+    /** Destination de l'annuaire */
+    public function destination(): BelongsTo
+    {
+        return $this->belongsTo(Destination::class);
     }
 
     /** Département destinataire (courrier interne) */

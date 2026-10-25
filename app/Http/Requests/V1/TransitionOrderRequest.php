@@ -46,6 +46,9 @@ class TransitionOrderRequest extends FormRequest
             'handed_by_name' => ['nullable', 'string', 'max:120'],
             'handed_by_role' => ['nullable', 'string', 'max:80'],
             'received_by_role' => ['nullable', 'string', 'max:80'],
+            // Livraison : position du livreur enregistrée comme celle de l'adresse (annuaire, carnet)
+            'locate' => ['nullable', 'boolean'],
+            'accuracy' => ['nullable', 'integer', 'min:0', 'max:100000'],
             'lat' => ['nullable', 'numeric', 'between:-90,90'],
             'lng' => ['nullable', 'numeric', 'between:-180,180'],
         ];

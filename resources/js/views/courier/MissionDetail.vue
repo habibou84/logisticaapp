@@ -21,6 +21,12 @@
       <p class="text-xl font-bold">{{ target.name }}</p>
       <p class="text-slate-700">📍 {{ target.zone }}<span v-if="target.address"> · {{ target.address }}</span></p>
       <p v-if="target.landmark" class="text-slate-500">Repère : {{ target.landmark }}</p>
+      <!-- Annuaire : position de l'adresse confirmée sur place (ou à enregistrer) -->
+      <div v-if="canLocate" class="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-slate-50 p-3 text-sm">
+        <span v-if="order.destination?.has_location" class="text-emerald-700">📍 Position confirmée{{ order.destination.located_at ? ` le ${date(order.destination.located_at)}` : '' }} : suivez l'itinéraire</span>
+        <span v-else class="text-slate-600">📍 Cette adresse n'a pas encore de position.</span>
+        <button type="button" class="font-semibold text-[var(--app-color)]" :disabled="locating" @click="locateHere">{{ locating ? 'Position…' : 'Je suis sur place : enregistrer' }}</button>
+      </div>
       <!-- Département du client : chez qui ramasser, à qui remettre -->
       <p v-if="targetDepartment" class="rounded-xl bg-violet-50 p-3 text-violet-900">
         🏢 <strong>{{ targetDepartment.label }}</strong><template v-if="targetDepartment.location"> · {{ targetDepartment.location }}</template>
@@ -133,6 +139,11 @@
             <input type="file" accept="image/*" capture="environment" class="hidden" @change="uploadPhoto">
           </label>
         </template>
+        <!-- Annuaire : position de l'adresse enregistrée avec la livraison -->
+        <label v-if="locateAsk" class="flex items-start gap-2 rounded-xl bg-slate-50 p-3 text-sm">
+          <input v-model="delivery.locate" type="checkbox" class="mt-1 h-5 w-5" :disabled="locateRequired">
+          <span>📍 Enregistrer ma position comme celle de cette adresse<span class="block text-xs text-slate-500">{{ locateRequired ? 'Obligatoire : l\'adresse n\'a pas encore de position.' : 'Le prochain livreur ira droit à la porte.' }}</span></span>
+        </label>
         <!-- Distribution, MAD : pas d'encaissement, la preuve de remise demandée par les réglages -->
         <template v-if="billed">
           <div>
@@ -288,7 +299,7 @@ const noteText = ref('')
 const refusal = ref(null)
 const delivery = reactive({
   collected_amount: 0, payment_method: 'cash', received_by_company: false, transaction_ref: '', delivery_code: '',
-  shipping_carrier: '', shipping_fee: 0, shipping_reference: '',
+  shipping_carrier: '', shipping_fee: 0, shipping_reference: '', locate: false,
 })
 const shipping = computed(() => order.value?.is_shipping && mission.value?.type === 'delivery')
 // Distribution, MAD : rien à encaisser ; preuve de remise selon les réglages (entreprise ou contrat)
@@ -344,6 +355,27 @@ async function confirmHandover() {
     sheetError.value = e.isAxiosError || e.response ? apiErrorMessage(e) : e.message
   } finally {
     busy.value = false
+  }
+}
+
+// Annuaire : enregistrer la position de l'adresse (destination de l'annuaire ou destinataire du carnet)
+const locateSettings = computed(() => auth.user?.company?.destination_settings || {})
+const canLocate = computed(() => mission.value?.type === 'delivery' && !!(order.value?.destination || order.value?.recipient?.id) && locateSettings.value.enabled !== false)
+const locateRequired = computed(() => !!order.value?.destination && !order.value.destination.has_location && locateSettings.value.courier_locate === 'required')
+const locateAsk = computed(() => canLocate.value && (locateSettings.value.courier_locate !== 'free' || locateRequired.value))
+const locating = ref(false)
+async function locateHere() {
+  locating.value = true
+  try {
+    const pos = await currentPosition(10000, true)
+    if (!pos) throw new Error('Position introuvable : activez la localisation du téléphone.')
+    const { data } = await http.post(`/orders/${order.value.id}/locate`, pos)
+    toasts.success(data.data.message)
+    await load()
+  } catch (e) {
+    toasts.error(e.response ? apiErrorMessage(e) : e.message)
+  } finally {
+    locating.value = false
   }
 }
 
@@ -441,6 +473,8 @@ function openDelivered() {
   Object.assign(delivery, {
     collected_amount: billed.value ? 0 : order.value.amounts.cod_amount, payment_method: 'cash', received_by_company: false, transaction_ref: '', delivery_code: '',
     received_by_name: '', received_by_role: '', signature: order.value.proof?.proof_signature ? '' : null,
+    // Proposé coché quand l'adresse n'a pas encore de position
+    locate: locateRequired.value || (locateAsk.value && !order.value.destination?.has_location),
     shipping_carrier: recentCarriers.value[0] || '', shipping_fee: order.value.shipping?.fee_estimate ?? 0, shipping_reference: '',
   })
   sheetError.value = ''
@@ -460,6 +494,11 @@ async function confirmDelivered() {
       }
     }
     if (delivery.delivery_code) extra.delivery_code = delivery.delivery_code
+    if (locateAsk.value && delivery.locate) {
+      const pos = await currentPosition(10000, true)
+      if (!pos && locateRequired.value) throw new Error('Position introuvable : activez la localisation du téléphone.')
+      if (pos) Object.assign(extra, { locate: true, ...pos })
+    }
     if (billed.value) {
       const p = order.value.proof || {}
       if (p.proof_name && !delivery.received_by_name.trim()) throw new Error('Indiquez le nom de la personne qui a reçu la course.')

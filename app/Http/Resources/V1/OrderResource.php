@@ -118,6 +118,8 @@ class OrderResource extends JsonResource
             // ce que le livreur doit relever (réglages du client)
             'department' => $this->department_id ? $this->departmentBrief($this->resource->loadMissing('department')->department) : null,
             'to_department' => $this->to_department_id ? $this->departmentBrief($this->resource->loadMissing('toDepartment')->toDepartment) : null,
+            // Destination de l'annuaire : position confirmée sur place (le livreur va droit à la porte)
+            'destination' => $this->destination_id ? $this->destinationBrief() : null,
             'requested_by' => $this->requested_by,
             'handed_by_name' => $this->handed_by_name,
             'handed_by_role' => $this->handed_by_role,
@@ -245,6 +247,23 @@ class OrderResource extends JsonResource
             'manager_name' => $department->manager_name,
             'phone' => $department->phone,
             'cost_center' => $department->cost_center,
+        ] : null;
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function destinationBrief(): ?array
+    {
+        $d = $this->resource->loadMissing('destination')->destination;
+
+        return $d ? [
+            'id' => $d->id,
+            'label' => $d->label(),
+            'has_location' => $d->hasLocation() && ! $d->location_conflict,
+            'located_at' => $d->located_at,
+            'location_source' => $d->location_source,
+            'deliveries_count' => $d->deliveries_count,
         ] : null;
     }
 }

@@ -269,6 +269,7 @@ const menu = computed(() => {
       label: 'Distribution et MAD',
       items: [
         { to: '/admin/contrats', icon: '📑', label: 'Contrats', permission: 'merchants.view', activities: ['distribution', 'mad'] },
+        { to: '/admin/annuaire', icon: '📇', label: 'Annuaire', permission: 'merchants.view', activities: ['distribution', 'mad'] },
         { to: '/admin/formules', icon: '🧮', label: 'Tarifs', permission: ['settings.manage', 'rates.manage'], activities: ['distribution', 'mad'] },
         { to: '/admin/factures', icon: '📄', label: 'Factures', permission: 'invoices.view', activities: ['distribution', 'mad'] },
       ],

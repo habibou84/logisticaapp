@@ -9,6 +9,7 @@ use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\Permission;
 use App\Exceptions\BusinessRuleException;
+use App\Models\Destination;
 use App\Models\IncidentReason;
 use App\Models\Order;
 use App\Models\OrderAssignment;
@@ -16,6 +17,9 @@ use App\Models\OrderAttachment;
 use App\Models\User;
 use App\Services\Assignment\AutoAssigner;
 use App\Services\Departments\DepartmentSettings;
+use App\Services\Destinations\DestinationLocations;
+use App\Services\Destinations\Destinations;
+use App\Services\Destinations\DestinationSettings;
 use App\Services\Finance\FinanceRecorder;
 use App\Services\Merchants\MerchantLocation;
 use App\Services\Stock\StockKeeper;
@@ -120,6 +124,14 @@ class OrderWorkflow
                     'mime_type' => 'image/png',
                     'uploaded_by' => $actor->id,
                 ]);
+            }
+
+            // Annuaire : une livraison de plus ; position du livreur gardée comme celle de l'adresse s'il l'a demandé
+            if ($to === OrderStatus::Delivered) {
+                app(Destinations::class)->delivered($order);
+                if ($actor !== null && ! empty($context['locate']) && isset($context['lat'], $context['lng'])) {
+                    app(DestinationLocations::class)->fromOrder($order, $actor, (float) $context['lat'], (float) $context['lng'], isset($context['accuracy']) ? (int) $context['accuracy'] : null);
+                }
             }
 
             // Course validée : le colis va au livreur déjà prévu chez ce client, sinon au livreur du planning
@@ -313,6 +325,13 @@ class OrderWorkflow
         }
 
         $this->validateProof($order, $context);
+
+        // Annuaire : position obligatoire pour une destination qui n'en a pas encore (réglage)
+        if ($order->destination_id && empty($context['offline']) && empty($context['locate'])
+            && app(DestinationSettings::class)->for($order->company)['courier_locate'] === 'required'
+            && ! Destination::withoutGlobalScopes()->whereKey($order->destination_id)->whereNotNull('lat')->exists()) {
+            throw new BusinessRuleException('Enregistrez la position de cette adresse : elle n\'en a pas encore.', 'locate');
+        }
 
         $collected = $context['collected_amount'] ?? null;
 

@@ -117,6 +117,12 @@ const ALL = computed(() => {
       keywords: 'événement terrain panne accident contrôle police vol agression météo signaler incident route pause',
     },
     {
+      key: 'destinations', icon: '📇', title: 'Annuaire des destinations', to: '/admin/reglages/annuaire', permission: 'settings.manage',
+      description: 'Suggestions pendant la saisie, enrichissement par les courses, position GPS confirmée par les livreurs.',
+      summary: c?.destination_settings && (c.destination_settings.enabled ? `Clients : ${onOff(c.destination_settings.clients_see)} · position ${{ free: 'au choix du livreur', prompt: 'proposée à chaque livraison', required: 'obligatoire si absente' }[c.destination_settings.courier_locate]}` : 'Désactivé'),
+      keywords: 'annuaire destination suggestion adresse gps position livreur base clients numéro vérifier',
+    },
+    {
       key: 'departments', icon: '🏢', title: 'Départements des clients', to: '/admin/reglages/departements', permission: 'settings.manage',
       description: 'Banques, administrations : départements sur les courses, courrier interne, qui remet et qui reçoit, bordereaux, facture ventilée, quotas.',
       summary: c?.department_settings && (c.department_settings.enabled ? `Département ${c.department_settings.required ? 'obligatoire' : 'facultatif'} · facture ${{ detailed: 'ventilée', split: 'par département', none: 'sans détail' }[c.department_settings.invoice_mode]}` : 'Désactivé'),

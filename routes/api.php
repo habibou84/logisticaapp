@@ -24,6 +24,7 @@ use App\Http\Controllers\Api\V1\CourierVehicleController;
 use App\Http\Controllers\Api\V1\DeliveryDayController;
 use App\Http\Controllers\Api\V1\DepartmentController;
 use App\Http\Controllers\Api\V1\DepartmentSlipController;
+use App\Http\Controllers\Api\V1\DestinationController;
 use App\Http\Controllers\Api\V1\FieldEventController;
 use App\Http\Controllers\Api\V1\FieldReportController;
 use App\Http\Controllers\Api\V1\FinanceController;
@@ -323,6 +324,19 @@ Route::prefix('v1')->name('v1.')->group(function () {
             Route::put('merchants/{merchant}/users/{user}/departments', 'updateUser')->name('merchants.users.departments');
             Route::put('departments/{department}', 'update')->name('departments.update');
             Route::delete('departments/{department}', 'destroy')->name('departments.destroy');
+        });
+        // Annuaire des destinations (partagé par tous les clients)
+        Route::controller(DestinationController::class)->group(function () {
+            Route::get('destinations/suggest', 'suggest')->middleware('throttle:120,1')->name('destinations.suggest');
+            Route::post('destinations/import', 'import')->middleware('throttle:10,1')->name('destinations.import');
+            Route::get('destinations', 'index')->name('destinations.index');
+            Route::post('destinations', 'store')->name('destinations.store');
+            Route::get('destinations/{destination}', 'show')->name('destinations.show');
+            Route::put('destinations/{destination}', 'update')->name('destinations.update');
+            Route::delete('destinations/{destination}', 'destroy')->name('destinations.destroy');
+            Route::post('destinations/{destination}/merge', 'merge')->name('destinations.merge');
+            Route::post('destinations/{destination}/location', 'locate')->name('destinations.locate');
+            Route::post('orders/{order}/locate', 'locateOrder')->middleware('throttle:30,1')->name('orders.locate');
         });
         Route::controller(DepartmentSlipController::class)->group(function () {
             Route::get('departments/{department}/slip', 'show')->name('departments.slip');
