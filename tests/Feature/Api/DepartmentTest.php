@@ -3,8 +3,10 @@
 namespace Tests\Feature\Api;
 
 use App\Enums\OrderStatus;
+use App\Enums\Permission;
 use App\Enums\Role;
 use App\Models\BillingPlan;
+use App\Models\ClientInvoice;
 use App\Models\Department;
 use App\Models\Order;
 use App\Models\User;
@@ -240,5 +242,55 @@ class DepartmentTest extends TestCase
 
         Sanctum::actingAs($this->admin);
         $this->getJson("/api/v1/departments/{$agency->id}/slip?kind=delivery")->assertOk()->assertJsonPath('data.orders.0.received_by', 'Mme Bamba (Secrétaire)');
+    }
+
+    public function test_the_month_invoice_is_broken_down_or_split_by_department(): void
+    {
+        // Forfait de 50 000 F pour 100 envois : Finance 3 plis, Marketing 1 colis ; un chèque à l'unité pour Marketing
+        $finance = $this->department(['name' => 'Finance', 'code' => 'FIN', 'cost_center' => 'CC-100']);
+        $marketing = $this->department(['name' => 'Marketing', 'code' => 'MKT', 'cost_center' => 'CC-200']);
+        $this->order($this->merchantUser, ['department_id' => $finance->id, 'shipment_quantity' => 3])->assertCreated();
+        $this->order($this->merchantUser, ['department_id' => $marketing->id, 'shipment_type' => 'colis'])->assertCreated();
+        $this->order($this->merchantUser, ['department_id' => $marketing->id, 'shipment_type' => 'cheque'])->assertCreated();
+        $this->travelTo('2026-12-01 08:00:00');
+
+        // Ventilée (par défaut) : une facture, une section par département, forfait au prorata des envois
+        $this->artisan('billing:invoice')->assertSuccessful();
+        $invoice = ClientInvoice::sole();
+        $this->assertSame(51500, $invoice->total);
+        Sanctum::actingAs($this->admin);
+        $detail = $this->getJson("/api/v1/client-invoices/{$invoice->id}")->assertOk();
+        $this->assertSame([['FIN · Finance', 'CC-100', 37500], ['MKT · Marketing', 'CC-200', 14000]],
+            collect($detail->json('data.departments'))->map(fn ($d) => [$d['label'], $d['cost_center'], $d['total']])->all());
+        $this->assertSame('FIN · Finance', $detail->json('data.orders.0.department'));
+        $csv = $this->get("/api/v1/client-invoices/{$invoice->id}/export")->assertOk()->getContent();
+        $this->assertStringContainsString('"Finance";"CC-100"', $csv);
+        $this->assertStringContainsString('"Total de la facture";"";"";"";"";"";"";"";"";"";"51500"', $csv);
+
+        // Forfait payé par le département principal (Finance)
+        $this->putJson("/api/v1/merchants/{$this->merchant->id}/department-settings", ['department_settings' => ['forfait_split' => 'main']])->assertOk();
+        $this->postJson("/api/v1/client-invoices/{$invoice->id}/refresh")->assertOk()
+            ->assertJsonPath('data.departments.0.total', 50000)->assertJsonPath('data.departments.1.total', 1500);
+
+        // Une facture par département
+        $this->putJson("/api/v1/merchants/{$this->merchant->id}/department-settings", ['department_settings' => ['invoice_mode' => 'split', 'forfait_split' => 'prorata']])->assertOk();
+        $this->artisan('billing:invoice', ['--month' => '2026-11'])->assertSuccessful();
+        $invoices = ClientInvoice::orderBy('department_id')->get();
+        $this->assertSame([[$finance->id, 37500], [$marketing->id, 14000]], $invoices->map(fn ($i) => [$i->department_id, $i->total])->all());
+        $this->getJson("/api/v1/client-invoices/{$invoices[1]->id}")->assertOk()->assertJsonPath('data.department.cost_center', 'CC-200')->assertJsonCount(2, 'data.orders');
+        // Chacune son numéro
+        $this->postJson("/api/v1/client-invoices/{$invoices[0]->id}/issue")->assertOk()->assertJsonPath('data.number', 'DIS-202611-0001');
+        $this->postJson("/api/v1/client-invoices/{$invoices[1]->id}/issue")->assertOk()->assertJsonPath('data.number', 'DIS-202611-0002');
+
+        // Un employé de la Finance ne voit que la facture de la Finance
+        $staff = $this->staff([$finance]);
+        $staff->givePermissionTo(Permission::FinanceView->value);
+        Sanctum::actingAs($staff);
+        $this->assertSame([$invoices[0]->id], array_column($this->getJson('/api/v1/client-invoices')->assertOk()->json('data'), 'id'));
+        $this->getJson("/api/v1/client-invoices/{$invoices[1]->id}")->assertNotFound();
+
+        // Statistiques du mois par département
+        $stats = $this->getJson("/api/v1/merchants/{$this->merchant->id}/departments/stats?month=2026-11")->assertOk();
+        $this->assertSame([['Finance', 1, 3, 37500]], collect($stats->json('data'))->map(fn ($r) => [$r['name'], $r['courses'], $r['units'], $r['cost']])->all());
     }
 }

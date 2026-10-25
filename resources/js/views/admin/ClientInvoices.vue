@@ -50,7 +50,7 @@
         <tbody class="divide-y">
           <tr v-for="i in invoices" :key="i.id">
             <td class="p-2 font-mono">{{ i.number || '—' }}</td>
-            <td data-label="Client" class="p-2 font-medium">{{ i.merchant?.business_name }}</td>
+            <td data-label="Client" class="p-2 font-medium">{{ i.merchant?.business_name }}<span v-if="i.department" class="block text-xs font-normal text-gray-500">🏢 {{ i.department.label }}</span></td>
             <td data-label="Activité" class="p-2"><span :class="['rounded-full px-2 py-0.5 text-xs font-medium', activityBadge(i.activity)]">{{ activityShort(i.activity) }}</span></td>
             <td data-label="Mois" class="p-2">{{ i.period_label }}</td>
             <td data-label="Total" class="p-2 text-right">{{ money(i.total) }}</td>

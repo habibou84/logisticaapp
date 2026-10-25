@@ -60,6 +60,8 @@ function migrate() {
 migrate()
 
 let current = NATIVE_SPACES[nativeApp] || spaceForPath(window.location.pathname) || read(SPACE_KEY) || 'marchand'
+// Espace retenu : une page commune (étiquette, bordereau) ouverte dans un nouvel onglet reprend la bonne session
+if (!nativeApp && spaceForPath(window.location.pathname)) write(SPACE_KEY, current)
 
 export function currentSpace() {
   return current

@@ -8,14 +8,17 @@ use App\Enums\InvoicePaymentMethod;
 use App\Enums\Permission;
 use App\Http\Controllers\Controller;
 use App\Models\ClientInvoice;
+use App\Models\Department;
 use App\Models\Merchant;
 use App\Models\Order;
+use App\Services\Departments\Departments;
 use App\Services\Finance\ClientInvoicing;
 use App\Services\Finance\ClientSpace;
 use App\Support\InvoicePayments;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Validation\Rule;
 
 /**
@@ -24,7 +27,7 @@ use Illuminate\Validation\Rule;
  */
 class ClientInvoiceController extends Controller
 {
-    public function __construct(private readonly ClientInvoicing $invoicing) {}
+    public function __construct(private readonly ClientInvoicing $invoicing, private readonly Departments $departments) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -38,8 +41,10 @@ class ClientInvoiceController extends Controller
         ]);
 
         $invoices = ClientInvoice::query()
-            ->with('merchant:id,business_name')
+            ->with(['merchant:id,business_name', 'department'])
             ->when($user->merchant_id, fn ($q) => $q->where('merchant_id', $user->merchant_id)->whereIn('status', [ClientInvoiceStatus::Issued->value, ClientInvoiceStatus::Paid->value]))
+            // Employé limité à ses départements : leurs factures (une facture par département)
+            ->when(($scope = $this->departments->scopeFor($user)) !== null, fn ($q) => $q->where(fn ($q) => $q->whereIn('department_id', $scope)->orWhereNull('department_id')))
             ->when(! $user->merchant_id && $request->filled('merchant_id'), fn ($q) => $q->where('merchant_id', $request->integer('merchant_id')))
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
             ->when($request->filled('activity'), fn ($q) => $q->where('activity', $request->string('activity')))
@@ -94,6 +99,8 @@ class ClientInvoiceController extends Controller
     {
         $this->authorizeManage($request);
         $invoice = $this->invoicing->compute($clientInvoice->merchant, $clientInvoice->activity, CarbonImmutable::parse($clientInvoice->period));
+        // Facture d'un département : la même, recalculée
+        $invoice = $clientInvoice->fresh() ?? $invoice;
 
         return response()->json(['data' => $invoice ? $this->detail($invoice) : null]);
     }
@@ -106,9 +113,11 @@ class ClientInvoiceController extends Controller
             'quantity' => ['required', 'integer', 'min:1', 'max:100000'],
             // Négatif : remise
             'unit_price' => ['required', 'integer', 'min:-100000000', 'max:100000000'],
+            // Facture ventilée : département de la ligne
+            'department_id' => ['nullable', 'integer', Rule::exists('departments', 'id')->where('merchant_id', $clientInvoice->merchant_id)],
         ], [], ['label' => 'libellé', 'quantity' => 'quantité', 'unit_price' => 'prix unitaire']);
 
-        return response()->json(['data' => $this->detail($this->invoicing->addLine($clientInvoice, $data['label'], $data['quantity'], $data['unit_price']))]);
+        return response()->json(['data' => $this->detail($this->invoicing->addLine($clientInvoice, $data['label'], $data['quantity'], $data['unit_price'], $data['department_id'] ?? null))]);
     }
 
     public function removeLine(Request $request, ClientInvoice $clientInvoice, int $line): JsonResponse
@@ -169,13 +178,52 @@ class ClientInvoiceController extends Controller
             'balance' => $invoice->balance(),
             'issued_at' => $invoice->issued_at?->toDateString(),
             'due_at' => $invoice->due_at?->toDateString(),
+            // Une facture par département : celui de la facture
+            'department' => $invoice->department_id ? $this->departmentBrief($invoice->loadMissing('department')->department) : null,
         ];
+    }
+
+    /** @return array<string, mixed>|null */
+    private function departmentBrief(?Department $department): ?array
+    {
+        return $department ? ['id' => $department->id, 'name' => $department->name, 'label' => $department->label(), 'cost_center' => $department->cost_center] : null;
+    }
+
+    /**
+     * Annexe de la facture pour Excel (CSV « ; ») : chaque course avec son département et son centre de coûts,
+     * puis le total de chaque département.
+     */
+    public function export(Request $request, ClientInvoice $clientInvoice): Response
+    {
+        $this->authorizeView($request, $clientInvoice);
+        $clientInvoice->loadMissing(['lines.department', 'merchant']);
+        $rows = [['Département', 'Centre de coûts', 'Course', 'Date', 'Demandé par', 'Destinataire', 'Destination', 'Envoi', 'Nombre', 'Base', 'Montant']];
+        foreach ($this->invoicing->ordersOf($clientInvoice)->get() as $o) {
+            $rows[] = [
+                $o->department?->name ?? '', $o->department?->cost_center ?? '', $o->tracking_code, $o->created_at->format('d/m/Y'),
+                $o->requested_by ?? '', $o->toDepartment?->name ?? ($o->recipient_name ?? ''), $o->deliveryZone?->name ?? '',
+                $o->shipment_type?->label() ?? '', (string) max(1, (int) $o->billing_units), $o->billing_basis ?? '',
+                $o->billing_basis === 'forfait' ? '' : (string) (int) $o->billing_amount,
+            ];
+        }
+        $rows[] = [];
+        $rows[] = ['Total par département', 'Centre de coûts', '', '', '', '', '', '', '', '', 'Montant'];
+        foreach ($clientInvoice->lines->groupBy(fn ($l) => (int) $l->department_id) as $group) {
+            $department = $group->first()->department ?? $clientInvoice->loadMissing('department')->department;
+            $rows[] = [$department?->name ?? 'Sans département', $department?->cost_center ?? '', '', '', '', '', '', '', '', '', (string) $group->sum('amount')];
+        }
+        $rows[] = ['Total de la facture', '', '', '', '', '', '', '', '', '', (string) $clientInvoice->total];
+
+        $csv = "\u{FEFF}".implode("\r\n", array_map(fn (array $r) => implode(';', array_map(fn ($v) => '"'.str_replace('"', '""', (string) $v).'"', $r)), $rows));
+        $name = 'facture-'.($clientInvoice->number ?: 'brouillon-'.$clientInvoice->id).'.csv';
+
+        return response($csv, 200, ['Content-Type' => 'text/csv; charset=UTF-8', 'Content-Disposition' => "attachment; filename=\"{$name}\""]);
     }
 
     /** @return array<string, mixed> */
     private function detail(ClientInvoice $invoice): array
     {
-        $invoice->loadMissing(['lines', 'payments.recorder:id,name', 'merchant', 'company']);
+        $invoice->loadMissing(['lines.department', 'payments.recorder:id,name', 'merchant', 'company']);
         $merchant = $invoice->merchant;
 
         return [
@@ -199,7 +247,14 @@ class ClientInvoiceController extends Controller
                 'unit_price' => $l->unit_price,
                 'amount' => $l->amount,
                 'manual' => $l->manual,
+                'department_id' => $l->department_id,
             ])->values(),
+            // Facture ventilée : sous-total de chaque département (avec son centre de coûts)
+            'departments' => $invoice->lines->whereNotNull('department_id')->isEmpty() ? [] : $invoice->lines->groupBy(fn ($l) => (int) $l->department_id)
+                ->map(fn ($group, $id) => [
+                    ...($this->departmentBrief($group->first()->department) ?? ['id' => null, 'name' => 'Sans département', 'label' => 'Sans département', 'cost_center' => null]),
+                    'total' => (int) $group->sum('amount'),
+                ])->values(),
             'payments' => $invoice->payments->map(fn ($p) => [
                 'id' => $p->id,
                 'amount' => $p->amount,
@@ -223,6 +278,9 @@ class ClientInvoiceController extends Controller
                 'status_label' => $o->status->label(),
                 'basis' => $o->billing_basis,
                 'amount' => $o->billing_basis === 'forfait' ? null : $o->billing_amount,
+                'units' => max(1, (int) $o->billing_units),
+                'department' => $o->department?->label(),
+                'requested_by' => $o->requested_by,
             ])->values(),
         ];
     }
@@ -233,6 +291,9 @@ class ClientInvoiceController extends Controller
         if ($user->merchant_id !== null) {
             abort_unless($invoice === null || ($invoice->merchant_id === $user->merchant_id
                 && in_array($invoice->status, [ClientInvoiceStatus::Issued, ClientInvoiceStatus::Paid], true)), 404);
+            // Facture d'un autre département
+            $scope = $this->departments->scopeFor($user);
+            abort_if($invoice?->department_id !== null && $scope !== null && ! in_array($invoice->department_id, $scope, true), 404);
             abort_unless($user->can(Permission::FinanceView->value), 403);
 
             return;

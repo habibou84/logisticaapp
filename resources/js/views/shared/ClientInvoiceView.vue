@@ -3,6 +3,7 @@
     <div class="no-print flex flex-wrap items-center gap-2">
       <button class="btn-secondary" @click="router.back()">← Retour</button>
       <button class="btn-secondary" @click="print">🖨️ Imprimer / PDF</button>
+      <button class="btn-secondary" :disabled="busy" @click="exportCsv">⬇️ Excel (par centre de coûts)</button>
       <template v-if="canManage && invoice.status === 'draft'">
         <button class="btn-secondary" :disabled="busy" @click="act('refresh', 'Facture recalculée.')">↻ Recalculer</button>
         <button class="btn-primary" :disabled="busy" @click="issue">Émettre la facture</button>
@@ -26,6 +27,7 @@
           <p v-if="company?.phone || company?.email" class="text-sm text-gray-600">{{ [company.phone, company.email].filter(Boolean).join(' · ') }}</p>
           <h1 class="text-xl font-bold mt-3">Facture {{ invoice.number || '(brouillon)' }}</h1>
           <p class="text-sm">{{ invoice.activity_label }} · {{ invoice.period_label }}</p>
+          <p v-if="invoice.department" class="text-sm font-medium">Département : {{ invoice.department.label }}<template v-if="invoice.department.cost_center"> · centre de coûts {{ invoice.department.cost_center }}</template></p>
         </div>
         <div class="text-right text-sm">
           <p class="font-semibold text-base">{{ invoice.client.business_name }}</p>
@@ -42,9 +44,14 @@
         <thead class="text-left text-gray-600 border-b">
           <tr><th class="py-2">Désignation</th><th class="py-2 text-right">Quantité</th><th class="py-2 text-right">Prix unitaire</th><th class="py-2 text-right">Montant</th><th class="no-print" /></tr>
         </thead>
-        <tbody class="divide-y">
-          <tr v-for="l in invoice.lines" :key="l.id" :class="l.kind === 'included' ? 'text-gray-500' : ''">
-            <td class="py-2">{{ l.label }}</td>
+        <!-- Facture ventilée : une section par département, avec son sous-total -->
+        <tbody v-for="g in groups" :key="g.key" class="divide-y">
+          <tr v-if="g.department" class="bg-slate-50">
+            <td class="py-2 font-semibold" colspan="3">🏢 {{ g.department.label }}<span v-if="g.department.cost_center" class="font-normal text-gray-600"> · centre de coûts {{ g.department.cost_center }}</span></td>
+            <td class="py-2 text-right font-semibold">{{ money(g.department.total) }}</td><td class="no-print" />
+          </tr>
+          <tr v-for="l in g.lines" :key="l.id" :class="l.kind === 'included' ? 'text-gray-500' : ''">
+            <td :class="['py-2', g.department ? 'pl-4' : '']">{{ l.label }}</td>
             <td class="py-2 text-right">{{ l.quantity }}</td>
             <td class="py-2 text-right">{{ l.kind === 'included' ? '' : money(l.unit_price) }}</td>
             <td class="py-2 text-right">{{ l.kind === 'included' ? 'inclus' : money(l.amount) }}</td>
@@ -64,6 +71,12 @@
         <div class="flex-1 min-w-48"><label class="label" for="cl-label">Ligne à ajouter (remise, frais)</label><input id="cl-label" v-model="line.label" class="input" required maxlength="255"></div>
         <div><label class="label" for="cl-qty">Quantité</label><input id="cl-qty" v-model.number="line.quantity" type="number" min="1" class="input w-20" required></div>
         <div><label class="label" for="cl-price">Prix unitaire (F, négatif = remise)</label><input id="cl-price" v-model.number="line.unit_price" type="number" class="input w-36" required></div>
+        <div v-if="invoice.departments?.length">
+          <label class="label" for="cl-dep">Département</label>
+          <select id="cl-dep" v-model="line.department_id" class="input w-44">
+            <option v-for="d in invoice.departments" :key="d.id ?? 'none'" :value="d.id">{{ d.label }}</option>
+          </select>
+        </div>
         <button class="btn-secondary" :disabled="busy">+ Ajouter</button>
       </form>
 
@@ -99,15 +112,16 @@
         <div class="overflow-x-auto mt-2">
           <table class="w-full text-xs">
             <thead class="text-left text-gray-600 border-b">
-              <tr><th class="py-1">Date</th><th class="py-1">Code</th><th class="py-1">Destinataire</th><th class="py-1">Destination</th><th class="py-1">Envoi</th><th class="py-1">Délai</th><th class="py-1">État</th><th class="py-1 text-right">Montant</th></tr>
+              <tr><th class="py-1">Date</th><th class="py-1">Code</th><th v-if="hasDepartments" class="py-1">Département</th><th class="py-1">Destinataire</th><th class="py-1">Destination</th><th class="py-1">Envoi</th><th class="py-1">Délai</th><th class="py-1">État</th><th class="py-1 text-right">Montant</th></tr>
             </thead>
             <tbody class="divide-y">
               <tr v-for="o in invoice.orders" :key="o.id">
                 <td class="py-1">{{ date(o.created_at) }}</td>
                 <td class="py-1 font-mono">{{ o.tracking_code }}</td>
+                <td v-if="hasDepartments" class="py-1">{{ o.department || '—' }}<span v-if="o.requested_by" class="block text-gray-500">{{ o.requested_by }}</span></td>
                 <td class="py-1">{{ o.recipient_name || '—' }}</td>
                 <td class="py-1">{{ o.destination }}</td>
-                <td class="py-1">{{ o.shipment_type || '—' }}<template v-if="o.weight_kg"> · {{ o.weight_kg }} kg</template></td>
+                <td class="py-1">{{ o.units > 1 ? `${o.units} × ` : '' }}{{ o.shipment_type || '—' }}<template v-if="o.weight_kg"> · {{ o.weight_kg }} kg</template></td>
                 <td class="py-1">{{ o.delivery_delay || '—' }}</td>
                 <td class="py-1">{{ o.status_label }}</td>
                 <td class="py-1 text-right">{{ o.basis === 'forfait' ? 'forfait' : money(o.amount) }}</td>
@@ -158,7 +172,27 @@ const busy = ref(false)
 const printingAnnex = ref(false)
 const company = computed(() => auth.user?.company)
 const canManage = computed(() => !auth.user?.merchant_id && auth.can('invoices.manage'))
-const line = reactive({ label: '', quantity: 1, unit_price: 0 })
+const line = reactive({ label: '', quantity: 1, unit_price: 0, department_id: null })
+// Lignes groupées par département (facture ventilée), sinon un seul groupe
+const groups = computed(() => {
+  const deps = invoice.value?.departments || []
+  if (!deps.length) return [{ key: 'all', department: null, lines: invoice.value?.lines || [] }]
+  return deps.map((d) => ({ key: d.id ?? 'none', department: d, lines: invoice.value.lines.filter((l) => (l.department_id ?? null) === (d.id ?? null)) }))
+})
+const hasDepartments = computed(() => (invoice.value?.orders || []).some((o) => o.department))
+
+async function exportCsv() {
+  try {
+    const { data } = await http.get(`/client-invoices/${invoice.value.id}/export`, { responseType: 'blob' })
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(data)
+    a.download = `facture-${invoice.value.number || invoice.value.id}.csv`
+    a.click()
+    URL.revokeObjectURL(a.href)
+  } catch (e) {
+    toasts.error(apiErrorMessage(e))
+  }
+}
 const payment = reactive({ amount: null, method: 'bank_transfer', reference: '', paid_on: today() })
 
 async function load() {
@@ -200,7 +234,7 @@ function voidInvoice() {
 
 async function addLine() {
   await run(() => http.post(`/client-invoices/${invoice.value.id}/lines`, { ...line }), 'Ligne ajoutée.')
-  Object.assign(line, { label: '', quantity: 1, unit_price: 0 })
+  Object.assign(line, { label: '', quantity: 1, unit_price: 0, department_id: line.department_id })
 }
 
 const ICONS = { bank_transfer: '🏦', mobile_money: '📱', cheque: '🧾', cash: '💵', other: '💳' }

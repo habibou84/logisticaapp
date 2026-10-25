@@ -27,7 +27,7 @@
                 <span v-if="d.is_main" class="ml-1 rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-800">principal</span>
                 <span v-if="!d.active" class="ml-1 rounded-full bg-slate-200 px-2 py-0.5 text-xs">désactivé</span>
               </p>
-              <p v-if="d.manager_name || d.phone" class="text-sm text-gray-600">👤 {{ d.manager_name || '—' }}<template v-if="d.phone"> · {{ d.phone }}</template></p>
+              <p v-if="d.manager_name || d.phone" class="text-sm text-gray-600">👤 {{ d.manager_name || '—' }}<template v-if="d.phone"> · {{ localPhone(d.phone) }}</template></p>
             </div>
             <button v-if="canManage" type="button" class="text-sm text-blue-600" @click="edit(d)">Modifier</button>
           </div>
@@ -94,6 +94,8 @@
       </div>
     </section>
 
+    <DepartmentStats v-if="tab === 'stats'" :merchant-id="merchantId" />
+
     <slot name="extra" :tab="tab" :departments="departments" />
 
     <DepartmentFormModal :open="formOpen" :merchant-id="merchantId" :department="editing" :zones="zones" :staff="staff" @close="formOpen = false" @saved="formOpen = false; load()" />
@@ -104,8 +106,10 @@
 import { computed, onMounted, ref } from 'vue'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import DepartmentFormModal from './DepartmentFormModal.vue'
+import DepartmentStats from './DepartmentStats.vue'
 import { DEPARTMENT_OPTIONS, optionChoices, optionText } from '../../utils/departments'
 import { useToastStore } from '../../stores/toasts'
+import { localPhone } from '../../utils/format'
 
 const props = defineProps({
   merchantId: { type: Number, required: true },
@@ -135,6 +139,7 @@ const error = ref('')
 const tabs = computed(() => [
   { key: 'list', label: `Départements (${departments.value.filter((d) => d.active).length})` },
   ...(canManage.value ? [{ key: 'users', label: 'Comptes' }] : []),
+  ...(departments.value.length ? [{ key: 'stats', label: 'Statistiques' }] : []),
   ...(props.staff ? [{ key: 'settings', label: 'Réglages du client' }] : []),
   ...props.extraTabs,
 ])

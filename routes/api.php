@@ -318,6 +318,7 @@ Route::prefix('v1')->name('v1.')->group(function () {
             Route::get('merchant/departments', 'mine')->name('merchant.departments');
             Route::get('merchants/{merchant}/departments', 'index')->name('merchants.departments.index');
             Route::post('merchants/{merchant}/departments', 'store')->name('merchants.departments.store');
+            Route::get('merchants/{merchant}/departments/stats', 'stats')->name('merchants.departments.stats');
             Route::put('merchants/{merchant}/department-settings', 'updateSettings')->name('merchants.department-settings');
             Route::put('merchants/{merchant}/users/{user}/departments', 'updateUser')->name('merchants.users.departments');
             Route::put('departments/{department}', 'update')->name('departments.update');
@@ -467,6 +468,7 @@ Route::prefix('v1')->name('v1.')->group(function () {
             Route::get('/', 'index')->name('index');
             Route::post('generate', 'generate')->middleware('throttle:20,1')->name('generate');
             Route::get('{clientInvoice}', 'show')->whereNumber('clientInvoice')->name('show');
+            Route::get('{clientInvoice}/export', 'export')->whereNumber('clientInvoice')->name('export');
             Route::post('{clientInvoice}/refresh', 'refresh')->name('refresh');
             Route::post('{clientInvoice}/lines', 'addLine')->name('lines.store');
             Route::delete('{clientInvoice}/lines/{line}', 'removeLine')->whereNumber('line')->name('lines.destroy');

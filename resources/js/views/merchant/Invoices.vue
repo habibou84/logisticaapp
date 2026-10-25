@@ -28,7 +28,7 @@
     <p class="px-1 text-sm text-slate-500">Vos courses de distribution et de MAD sont facturées chaque mois, une facture par activité. Touchez une facture pour la voir ou l'enregistrer en PDF.</p>
     <RouterLink v-for="i in shown" :key="i.id" :to="`/marchand/factures/${i.id}`" class="tap m-card p-4 flex justify-between items-center gap-3 active:bg-slate-50">
       <span class="min-w-0">
-        <span class="font-medium">{{ i.period_label }}</span> <span class="text-sm text-slate-500">· {{ i.activity_label }}</span>
+        <span class="font-medium">{{ i.period_label }}</span> <span class="text-sm text-slate-500">· {{ i.activity_label }}<template v-if="i.department"> · {{ i.department.label }}</template></span>
         <span class="block text-sm text-slate-500">{{ i.number }} · {{ money(i.total) }}</span>
         <span v-if="i.status === 'issued' && i.due_at" :class="['block text-xs', i.is_overdue ? 'text-red-600 font-medium' : 'text-slate-500']">
           {{ i.is_overdue ? 'Était à payer le' : 'À payer avant le' }} {{ date(i.due_at) }}

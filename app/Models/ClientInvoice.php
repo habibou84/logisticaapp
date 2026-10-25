@@ -20,6 +20,8 @@ class ClientInvoice extends Model
     protected $fillable = [
         'company_id', 'merchant_id', 'activity', 'number', 'period', 'status', 'total', 'amount_paid',
         'issued_at', 'due_at', 'paid_at', 'notes', 'reminded_at', 'overdue_notified_at',
+        // Facture d'un département du client (une facture par département)
+        'department_id',
     ];
 
     protected function casts(): array
@@ -47,6 +49,11 @@ class ClientInvoice extends Model
     public function merchant(): BelongsTo
     {
         return $this->belongsTo(Merchant::class);
+    }
+
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(Department::class);
     }
 
     public function lines(): HasMany

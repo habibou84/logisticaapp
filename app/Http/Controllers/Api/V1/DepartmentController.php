@@ -2,16 +2,21 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Enums\Activity;
+use App\Enums\OrderStatus;
 use App\Enums\Role;
 use App\Exceptions\BusinessRuleException;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\V1\DepartmentResource;
 use App\Models\Department;
 use App\Models\Merchant;
+use App\Models\Order;
 use App\Models\User;
 use App\Rules\PhoneNumber;
 use App\Services\Departments\Departments;
 use App\Services\Departments\DepartmentSettings;
+use App\Services\Finance\ClientInvoicing;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -114,6 +119,54 @@ class DepartmentController extends Controller
         $department->delete();
 
         return response()->json(['data' => ['deleted' => true]]);
+    }
+
+    /**
+     * Chiffres du mois de chaque département : courses, envois, livrées, échecs, délai moyen, coût (facture
+     * du mois en cours de calcul : forfait réparti, envois à l'unité).
+     */
+    public function stats(Request $request, Merchant $merchant, ClientInvoicing $invoicing): JsonResponse
+    {
+        Gate::authorize('view', $merchant);
+        $data = $request->validate(['month' => ['nullable', 'date_format:Y-m']]);
+        $company = $merchant->company;
+        $month = isset($data['month']) ? CarbonImmutable::createFromFormat('Y-m-d', $data['month'].'-01', $company->timezone ?: config('app.timezone')) : CarbonImmutable::now($company->timezone ?: config('app.timezone'));
+        [$from, $to] = $invoicing->bounds($company, $month);
+        $scope = $this->departments->scopeFor($request->user());
+
+        $orders = Order::query()->where('merchant_id', $merchant->id)->whereNotNull('department_id')
+            ->whereNotIn('status', [OrderStatus::Cancelled->value, OrderStatus::Rejected->value])
+            ->where('created_at', '>=', $from->utc())->where('created_at', '<', $to->utc())
+            ->get(['id', 'department_id', 'to_department_id', 'status', 'billing_units', 'created_at', 'delivered_at', 'activity']);
+        // Coût du mois : lignes de la facture, département par département
+        $costs = [];
+        foreach ([Activity::Distribution, Activity::Mad] as $activity) {
+            foreach ($invoicing->departmentLines($merchant, $activity, $from, $to) as $key => $lines) {
+                $costs[$key] = ($costs[$key] ?? 0) + array_sum(array_column($lines, 'amount'));
+            }
+        }
+
+        $rows = Department::query()->where('merchant_id', $merchant->id)->ordered()->get()
+            ->filter(fn (Department $d) => $scope === null || in_array($d->id, $scope, true))
+            ->map(function (Department $d) use ($orders, $costs) {
+                $mine = $orders->where('department_id', $d->id);
+                $delivered = $mine->where('status', OrderStatus::Delivered);
+                $hours = $delivered->map(fn (Order $o) => $o->delivered_at ? $o->created_at->diffInMinutes($o->delivered_at) / 60 : null)->filter();
+
+                return [
+                    'id' => $d->id, 'name' => $d->name, 'label' => $d->label(), 'cost_center' => $d->cost_center, 'quota' => $d->monthly_quota,
+                    'courses' => $mine->count(),
+                    'units' => (int) $mine->sum(fn (Order $o) => max(1, (int) $o->billing_units)),
+                    'received' => $orders->where('to_department_id', $d->id)->count(),
+                    'delivered' => $delivered->count(),
+                    'failed' => $mine->whereIn('status', [OrderStatus::DeliveryFailed, OrderStatus::Returned, OrderStatus::Lost])->count(),
+                    'avg_hours' => $hours->isEmpty() ? null : round($hours->avg(), 1),
+                    'cost' => (int) ($costs[$d->id] ?? 0),
+                ];
+            })->values();
+
+        return response()->json(['data' => $rows, 'month' => $from->format('Y-m'), 'month_label' => ucfirst($from->locale('fr')->translatedFormat('F Y')),
+            'unassigned_cost' => (int) ($costs[0] ?? 0)]);
     }
 
     /** Réglages des départements de ce client (vide : comme l'entreprise) */
