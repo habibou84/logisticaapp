@@ -8,7 +8,7 @@
         <button class="btn-secondary" :disabled="busy" @click="act('refresh', 'Facture recalculée.')">↻ Recalculer</button>
         <button class="btn-primary" :disabled="busy" @click="issue">Émettre la facture</button>
       </template>
-      <button v-if="canManage && (invoice.status === 'draft' || (invoice.status === 'issued' && !invoice.amount_paid))" class="text-red-600 ml-auto" :disabled="busy" @click="voidInvoice">
+      <button v-if="canManage && (invoice.status === 'draft' || (invoice.status === 'issued' && !invoice.amount_paid && auth.can('invoices.void')))" class="text-red-600 ml-auto" :disabled="busy" @click="voidInvoice">
         {{ invoice.status === 'draft' ? 'Supprimer le brouillon' : 'Annuler la facture' }}
       </button>
     </div>

@@ -85,7 +85,7 @@ class AppearanceController extends Controller
     private function company(Request $request): Company
     {
         $company = $request->user()->company;
-        abort_unless($company && $request->user()->can('update', $company), 403);
+        abort_unless($company && $request->user()->can('manageBrand', $company), 403);
 
         return $company;
     }

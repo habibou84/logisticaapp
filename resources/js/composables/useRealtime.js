@@ -122,7 +122,7 @@ export function useRealtime() {
   if (orderChannel) {
     echo.private(orderChannel).listen('.order.changed', (payload) => {
       // Équipe limitée à certaines activités : les autres courses ne la concernent pas
-      const scope = auth.role !== 'admin' && !auth.user.merchant_id ? (auth.user.activities || []) : []
+      const scope = auth.role !== 'admin' && !auth.user.merchant_id ? (auth.user.scope?.activities ?? auth.user.activities ?? []) : []
       if (scope.length && payload.order?.activity && !scope.includes(payload.order.activity)) return
       lastOrderChange.value = payload
       orderChanges.value++

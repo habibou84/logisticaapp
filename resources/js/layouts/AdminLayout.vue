@@ -145,6 +145,7 @@ import { useHeldParcelStore } from '../stores/heldParcels'
 import { useDispatchCountStore } from '../stores/dispatchCounts'
 import { branding, loadBranding, spaceColor } from '../composables/useBranding'
 import { myActivities } from '../utils/activities'
+import { filterMenu } from '../utils/adminMenu'
 
 const sidebarOpen = ref(false)
 const search = ref('')
@@ -171,7 +172,7 @@ const fieldReports = useFieldReportStore()
 // Véhicules : échéances dépassées et véhicules immobilisés (badge du menu)
 const vehicleUrgent = ref(0)
 async function loadVehicleCounts() {
-  if (!auth.can('orders.dispatch')) return
+  if (!auth.can('fleet.manage')) return
   vehicleUrgent.value = (await http.get('/vehicles/counts').catch(() => null))?.data.data.urgent || 0
 }
 const heldParcels = useHeldParcelStore()
@@ -181,8 +182,9 @@ const isDispatch = computed(() => auth.can('orders.dispatch'))
 
 let countsTimer
 function fetchCounts() {
-  fieldReports.fetchCounts().catch(() => {})
+  if (auth.can('field_events.manage')) fieldReports.fetchCounts().catch(() => {})
   loadVehicleCounts()
+  if (!isDispatch.value) return
   heldParcels.fetchCounts().catch(() => {})
   dispatchCounts.fetchCounts().catch(() => {})
 }
@@ -229,89 +231,20 @@ watch(() => route.fullPath, (to, from) => {
 
 onMounted(() => {
   loadSetup()
-  if (!isDispatch.value) return
+  if (!auth.can(['orders.dispatch', 'fleet.manage', 'field_events.manage'])) return
   fetchCounts()
   countsTimer = setInterval(fetchCounts, 60000)
 })
 onBeforeUnmount(() => clearInterval(countsTimer))
 
-// Menu en rubriques ; une entrée sans droit ni module disparaît, une rubrique vide aussi
-// Entrée propre à certaines activités : cachée aux comptes limités à d'autres
-const visible = (item) => (!item.permission || auth.can(item.permission))
-  && (!item.activities || myActivities(auth.user).some((a) => item.activities.includes(a.value)))
-const menu = computed(() => {
-  const groups = [
-    {
-      id: 'operations',
-      label: 'Opérations',
-      items: [
-        { to: '/admin/courses', icon: '📦', label: 'Courses', permission: 'orders.view', badge: isDispatch.value ? dispatchCounts.counts.late.total : 0 },
-        { to: '/admin/carte', icon: '📍', label: 'Carte des livreurs', permission: 'orders.dispatch' },
-        { to: '/admin/disponibilites', icon: '🟢', label: 'Livreurs disponibles', permission: 'orders.dispatch' },
-        { to: '/admin/planning', icon: '📅', label: 'Planning des livreurs', permission: 'orders.dispatch' },
-        { to: '/admin/terrain', icon: '📣', label: 'Remontées terrain', permission: 'orders.dispatch', badge: fieldReports.badge },
-        { to: '/admin/colis-livreurs', icon: '🎒', label: 'Colis chez les livreurs', permission: 'orders.dispatch', badge: heldParcels.counts.overdue },
-        { to: '/admin/retours', icon: '📮', label: 'Retours clients', permission: 'orders.dispatch' },
-      ],
-    },
-    {
-      id: 'finances',
-      label: 'Finances',
-      items: [
-        { to: '/admin/caisse', icon: '💰', label: 'Caisse', permission: 'finance.view' },
-        { to: '/admin/chiffre-affaires', icon: '📈', label: 'Chiffre d\'affaires', permission: 'revenue.view' },
-        { to: '/admin/paie-livreurs', icon: '🧾', label: 'Paie des livreurs', permission: 'settings.manage' },
-      ],
-    },
-    {
-      // Clients sous contrat : forfait du mois, tarifs, factures
-      id: 'contrats',
-      label: 'Distribution et MAD',
-      items: [
-        { to: '/admin/contrats', icon: '📑', label: 'Contrats', permission: 'merchants.view', activities: ['distribution', 'mad'] },
-        { to: '/admin/annuaire', icon: '📇', label: 'Annuaire', permission: 'merchants.view', activities: ['distribution', 'mad'] },
-        { to: '/admin/formules', icon: '🧮', label: 'Tarifs', permission: ['settings.manage', 'rates.manage'], activities: ['distribution', 'mad'] },
-        { to: '/admin/factures', icon: '📄', label: 'Factures', permission: 'invoices.view', activities: ['distribution', 'mad'] },
-      ],
-    },
-    {
-      id: 'clients',
-      label: 'Clients',
-      items: [
-        { to: '/admin/marchands', icon: '🏪', label: 'Clients', permission: 'merchants.view' },
-        { to: '/admin/stock', icon: '🏬', label: 'Stock', permission: 'stock.manage' },
-        { to: '/admin/messages', icon: '💬', label: 'Messages', permission: 'orders.dispatch' },
-      ],
-    },
-    {
-      id: 'equipe',
-      label: 'Équipe',
-      items: [
-        { to: '/admin/livreurs', icon: '🛵', label: 'Livreurs', permission: 'orders.dispatch' },
-        { to: '/admin/vehicules', icon: '🏍️', label: 'Véhicules', permission: 'orders.dispatch', badge: vehicleUrgent.value },
-        { to: '/admin/qualite-livreurs', icon: '⭐', label: 'Qualité des livreurs', permission: 'orders.dispatch' },
-        { to: '/admin/utilisateurs', icon: '👥', label: 'Utilisateurs', permission: 'users.view' },
-      ],
-    },
-    {
-      id: 'configuration',
-      label: 'Configuration',
-      // Zones, tarifs, WhatsApp, intégrations… : tout passe par la page Réglages, rangée par thèmes
-      items: [
-        // Point rouge : alertes du bilan de santé
-        { to: '/admin/reglages', icon: '⚙️', label: 'Réglages', permission: ['settings.manage', 'integrations.manage', 'users.view'], badge: (setup.value?.health || []).filter((h) => h.level === 'alert').length },
-      ],
-    },
-  ]
-
-  return {
-    top: [
-      { to: '/admin', icon: '🏠', label: 'Tableau de bord' },
-      { to: '/admin/statistiques', icon: '📊', label: 'Statistiques', permission: 'orders.view' },
-    ].filter(visible),
-    groups: groups.map((g) => ({ ...g, items: g.items.filter(visible) })).filter((g) => g.items.length),
-  }
-})
+// Menu en rubriques (utils/adminMenu) ; entrée propre à certaines activités : cachée aux comptes limités à d'autres
+const menu = computed(() => filterMenu((p) => auth.can(p), myActivities(auth.user).map((a) => a.value), {
+  late: isDispatch.value ? dispatchCounts.counts.late.total : 0,
+  fieldReports: fieldReports.badge,
+  heldParcels: heldParcels.counts.overdue,
+  vehicles: vehicleUrgent.value,
+  health: (setup.value?.health || []).filter((h) => h.level === 'alert').length,
+}))
 
 // Barre d'onglets du téléphone : dispatch (courses, carte, alertes) ou, sans dispatch, les écrans de ses droits
 const tabs = computed(() => {
@@ -320,14 +253,14 @@ const tabs = computed(() => {
     ? [
         { to: '/admin/courses', icon: '📦', label: 'Courses', badge: dispatchCounts.counts.late.total },
         { to: '/admin/carte', icon: '📍', label: 'Carte' },
-        { to: '/admin/terrain', icon: '📣', label: 'Alertes', badge: fieldReports.badge },
-      ]
+        { to: '/admin/terrain', icon: '📣', label: 'Alertes', badge: fieldReports.badge, permission: 'field_events.manage' },
+      ].filter((t) => !t.permission || auth.can(t.permission))
     : [
         { to: '/admin/courses', icon: '📦', label: 'Courses', permission: 'orders.view' },
         { to: '/admin/caisse', icon: '💰', label: 'Caisse', permission: 'finance.view' },
         { to: '/admin/marchands', icon: '🏪', label: 'Clients', permission: 'merchants.view' },
         { to: '/admin/statistiques', icon: '📊', label: 'Stats', permission: 'orders.view' },
-      ].filter(visible)
+      ].filter((t) => auth.can(t.permission))
   return [home, ...candidates.slice(0, 3)]
 })
 const isActive = (t) => (t.exact ? route.path === t.to : route.path === t.to || route.path.startsWith(`${t.to}/`))

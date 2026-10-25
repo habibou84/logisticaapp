@@ -111,7 +111,7 @@ class WhatsAppSignupController extends Controller
         $user = User::query()->find($ticket['user'] ?? null);
         $company = Company::query()->find($ticket['company'] ?? null);
         abort_if(
-            $user === null || $company === null || $user->company_id !== $company->id || ! $user->isActive() || ! $user->can('settings.manage'),
+            $user === null || $company === null || $user->company_id !== $company->id || ! $user->isActive() || ! $user->can('messaging.manage'),
             403,
             'Vous n\'avez plus accès aux paramètres de cette entreprise.',
         );

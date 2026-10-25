@@ -36,7 +36,7 @@ class MerchantPolicy
     public function manageDepartments(User $user, Merchant $merchant): bool
     {
         if ($user->merchant_id === null) {
-            return $user->can(Permission::MerchantsManage->value);
+            return $user->can(Permission::DepartmentsManage->value);
         }
 
         return $user->merchant_id === $merchant->id && $user->hasRole(Role::MerchantOwner->value)

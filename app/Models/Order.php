@@ -12,6 +12,7 @@ use App\Enums\Role;
 use App\Enums\ShipmentType;
 use App\Models\Concerns\BelongsToCompany;
 use App\Models\Scopes\ActivityScope;
+use App\Models\Scopes\PerimeterScope;
 use App\Services\Departments\Departments;
 use App\Support\PhoneNumber;
 use Database\Factories\OrderFactory;
@@ -154,6 +155,7 @@ class Order extends Model
     {
         // Périmètre de l'équipe (activités visibles)
         static::addGlobalScope(new ActivityScope);
+        static::addGlobalScope(new PerimeterScope);
         static::creating(function (Order $order) {
             $order->tracking_code ??= static::generateTrackingCode();
             $order->delivery_code ??= str_pad((string) random_int(0, 9999), 4, '0', STR_PAD_LEFT);

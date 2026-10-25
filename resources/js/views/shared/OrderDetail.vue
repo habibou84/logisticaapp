@@ -331,7 +331,9 @@ const assignableTypes = computed(() => Object.keys(ASSIGNABLE).filter((type) => 
   return true
 }))
 const nextStatuses = computed(() => (TRANSITIONS[order.value.status] || [])
-  .filter((s) => !(s === 'confirmed' && order.value.status === 'pending') && !isWarehouseStep(order.value.status, s)))
+  .filter((s) => !(s === 'confirmed' && order.value.status === 'pending') && !isWarehouseStep(order.value.status, s))
+  // Annuler une course de l'équipe : droit à part
+  .filter((s) => s !== 'cancelled' || isMerchant.value || auth.can('orders.cancel')))
 // Préparation et remise en stock (dispatch, agents de dépôt)
 const warehouseActions = computed(() => {
   if (!order.value?.from_warehouse || isMerchant.value) return []

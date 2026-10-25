@@ -244,6 +244,6 @@ async function save() {
 onMounted(async () => {
   load()
   zones.value = (await http.get('/zones')).data.data
-  if (auth.can('settings.manage')) grids.value = (await http.get('/pricing-grids')).data.data
+  if (auth.can(['pricing.manage', 'merchants.manage'])) grids.value = (await http.get('/pricing-grids')).data.data
 })
 </script>

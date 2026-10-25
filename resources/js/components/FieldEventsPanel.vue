@@ -19,7 +19,7 @@
         <option value="">Tous les livreurs</option>
         <option v-for="c in couriers" :key="c.id" :value="c.id">{{ c.name }}</option>
       </select>
-      <RouterLink v-if="auth.can('settings.manage')" to="/admin/reglages/evenements-terrain" class="ml-auto text-sm text-blue-600">⚙️ Types et effets automatiques</RouterLink>
+      <RouterLink v-if="auth.can('field_events.manage')" to="/admin/reglages/evenements-terrain" class="ml-auto text-sm text-blue-600">⚙️ Types et effets automatiques</RouterLink>
     </div>
 
     <FieldEventCard

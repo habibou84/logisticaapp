@@ -80,7 +80,7 @@ class BrandingController extends Controller
     private function editableCompany(Request $request): Company
     {
         $company = $request->user()->company;
-        abort_unless($company && $request->user()->can('update', $company), 403);
+        abort_unless($company && $request->user()->can('manageBrand', $company), 403);
 
         return $company;
     }

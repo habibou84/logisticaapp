@@ -251,6 +251,6 @@ class DestinationController extends Controller
     {
         $user = $request->user();
         abort_unless($user->merchant_id === null && ! $user->isCourier()
-            && $user->can(($manage ? Permission::MerchantsManage : Permission::MerchantsView)->value), 403);
+            && $user->can(($manage ? Permission::DestinationsManage : Permission::MerchantsView)->value), 403);
     }
 }

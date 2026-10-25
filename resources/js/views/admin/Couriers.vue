@@ -34,7 +34,7 @@
         </p>
         <div class="flex gap-3 text-sm">
           <RouterLink :to="{ path: '/admin/courses', query: { courier_id: c.id } }" class="text-blue-600">Courses</RouterLink>
-          <button v-if="auth.can('users.manage')" class="text-blue-600" @click="openForm(c)">Modifier</button>
+          <button v-if="auth.can('couriers.manage')" class="text-blue-600" @click="openForm(c)">Modifier</button>
         </div>
       </div>
       <p v-if="!couriers.length" class="text-gray-500">Aucun livreur actif.</p>
@@ -115,7 +115,7 @@ const zones = ref([])
 const form = reactive({ open: false, id: null, data: {}, error: '' })
 const router = useRouter()
 const plans = ref([])
-const canPay = computed(() => auth.can('settings.manage'))
+const canPay = computed(() => auth.can('pay.manage'))
 const defaultPlan = computed(() => plans.value.find((p) => p.is_default))
 const personalPlan = computed(() => plans.value.find((p) => p.personal && p.courier?.id === form.id))
 // Plans partagés et plan personnel de ce livreur

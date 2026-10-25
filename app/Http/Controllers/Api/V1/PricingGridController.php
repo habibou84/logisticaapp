@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Enums\Permission;
 use App\Enums\SurchargeType;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\V1\PricingGridResource;
@@ -16,8 +17,12 @@ use Illuminate\Validation\ValidationException;
 
 class PricingGridController extends Controller
 {
-    public function index(): AnonymousResourceCollection
+    /** Liste : pour la grille des tarifs, et pour rattacher un client à sa grille */
+    public function index(Request $request): AnonymousResourceCollection
     {
+        abort_unless($request->user()->merchant_id === null
+            && $request->user()->canAny([Permission::PricingManage->value, Permission::MerchantsManage->value]), 403);
+
         return PricingGridResource::collection(
             PricingGrid::withCount(['rules', 'merchants'])->orderByDesc('is_default')->orderBy('name')->get()
         );

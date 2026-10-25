@@ -181,9 +181,9 @@ class CourierController extends Controller
         ]);
 
         // La rémunération relève des réglages de l'entreprise
-        abort_if(array_key_exists('pay_plan_id', $data) && ! $request->user()->can(Permission::SettingsManage->value), 403, 'Seul un administrateur peut changer le plan de paie.');
+        abort_if(array_key_exists('pay_plan_id', $data) && $data['pay_plan_id'] != $courier->pay_plan_id && ! $request->user()->can(Permission::PayManage->value), 403, 'Changer le plan de paie demande le droit « Paie des livreurs ».');
         abort_if(array_key_exists('mission_acceptance', $data) && $data['mission_acceptance'] !== $courier->mission_acceptance
-            && ! $request->user()->can(Permission::SettingsManage->value), 403, 'Seul un administrateur peut changer la règle d\'acceptation des missions.');
+            && ! $request->user()->can(Permission::PlanningManage->value), 403, 'Changer la règle d\'acceptation des missions demande le droit « Planning et automatismes ».');
 
         $courier->update(collect($data)->except(['zone_ids', 'backup_zone_ids'])->all());
 

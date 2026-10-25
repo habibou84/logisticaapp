@@ -193,7 +193,11 @@ Route::prefix('v1')->name('v1.')->group(function () {
             Route::get('module', 'module')->name('module');
         });
         Route::get('roles', [RoleController::class, 'index'])->name('roles.index');
+        Route::post('roles', [RoleController::class, 'store'])->name('roles.store');
+        Route::put('roles/{role}', [RoleController::class, 'update'])->name('roles.update');
+        Route::delete('roles/{role}', [RoleController::class, 'destroy'])->name('roles.destroy');
         Route::apiResource('companies', CompanyController::class)->only(['show', 'update']);
+        Route::get('users/{user}/access', [UserController::class, 'access'])->name('users.access');
         Route::apiResource('users', UserController::class);
 
         // Référentiels
@@ -211,21 +215,33 @@ Route::prefix('v1')->name('v1.')->group(function () {
             Route::post('setup/videos', [SetupGuideController::class, 'videosUpdate'])->name('setup.videos');
             Route::post('setup/test-order', [SetupGuideController::class, 'startTest'])->name('setup.test-order.start');
             Route::delete('setup/test-order', [SetupGuideController::class, 'cleanTest'])->name('setup.test-order.clean');
+        });
+
+        // Zones et dépôts
+        Route::middleware('can:zones.manage')->group(function () {
             Route::post('zones', [ZoneController::class, 'store'])->name('zones.store');
             Route::patch('zones/{zone}', [ZoneController::class, 'update'])->name('zones.update');
             Route::delete('zones/{zone}', [ZoneController::class, 'destroy'])->name('zones.destroy');
             Route::post('hubs', [HubController::class, 'store'])->name('hubs.store');
             Route::patch('hubs/{hub}', [HubController::class, 'update'])->name('hubs.update');
+        });
 
-            Route::apiResource('pricing-grids', PricingGridController::class);
+        // Grilles de tarifs (la liste sert aussi à rattacher un client à sa grille)
+        Route::get('pricing-grids', [PricingGridController::class, 'index'])->name('pricing-grids.index');
+        Route::middleware('can:pricing.manage')->group(function () {
+            Route::apiResource('pricing-grids', PricingGridController::class)->except('index');
             Route::put('pricing-grids/{pricing_grid}/rules', [PricingGridController::class, 'syncRules'])->name('pricing-grids.rules');
             Route::put('pricing-grids/{pricing_grid}/surcharges', [PricingGridController::class, 'syncSurcharges'])->name('pricing-grids.surcharges');
+        });
 
-            // Paie des livreurs : plans de rémunération
+        // Paie des livreurs : plans de rémunération
+        Route::middleware('can:pay.manage')->group(function () {
             Route::post('pay-plans/simulate', [PayPlanController::class, 'simulate'])->middleware('throttle:30,1')->name('pay-plans.simulate');
             Route::apiResource('pay-plans', PayPlanController::class);
+        });
 
-            // WhatsApp
+        // WhatsApp
+        Route::middleware('can:messaging.manage')->group(function () {
             Route::get('whatsapp/settings', [WhatsAppSettingsController::class, 'show'])->name('whatsapp.settings');
             Route::put('whatsapp/settings', [WhatsAppSettingsController::class, 'update'])->name('whatsapp.settings.update');
             Route::post('whatsapp/test', [WhatsAppSettingsController::class, 'test'])->middleware('throttle:10,1')->name('whatsapp.test');
@@ -237,7 +253,7 @@ Route::prefix('v1')->name('v1.')->group(function () {
         });
 
         // Remontées terrain des livreurs (notes, problèmes) : consultation et suivi par le dispatch
-        Route::middleware('can:orders.dispatch')->prefix('field-reports')->name('field-reports.')->group(function () {
+        Route::middleware('can:field_events.manage')->prefix('field-reports')->name('field-reports.')->group(function () {
             Route::get('/', [FieldReportController::class, 'index'])->name('index');
             Route::get('counts', [FieldReportController::class, 'counts'])->name('counts');
             Route::post('{event}/handle', [FieldReportController::class, 'handle'])->name('handle');
@@ -245,7 +261,7 @@ Route::prefix('v1')->name('v1.')->group(function () {
         });
 
         // Véhicules : parc, papiers, entretien, carnet, location-vente, échéances, statistiques
-        Route::middleware('can:orders.dispatch')->prefix('vehicles')->name('vehicles.')->controller(VehicleController::class)->group(function () {
+        Route::middleware('can:fleet.manage')->prefix('vehicles')->name('vehicles.')->controller(VehicleController::class)->group(function () {
             Route::get('catalog', 'catalog')->name('catalog');
             Route::get('counts', 'counts')->name('counts');
             Route::get('deadlines', 'deadlines')->name('deadlines');
@@ -273,7 +289,7 @@ Route::prefix('v1')->name('v1.')->group(function () {
         });
 
         // Événements terrain des livreurs (panne, accident, contrôle…)
-        Route::middleware('can:orders.dispatch')->prefix('field-events')->name('field-events.')->controller(FieldEventController::class)->group(function () {
+        Route::middleware('can:field_events.manage')->prefix('field-events')->name('field-events.')->controller(FieldEventController::class)->group(function () {
             Route::get('/', 'index')->name('index');
             Route::get('counts', 'counts')->name('counts');
             Route::get('stats', 'stats')->name('stats');
@@ -375,7 +391,7 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::put('merchants/{merchant}/notifications', [MerchantNotificationController::class, 'update'])->name('merchants.notifications.update');
 
         // Planning des livreurs : qui ramasse ou livre où et quand, absences
-        Route::middleware('can:orders.dispatch')->controller(PlanningController::class)->group(function () {
+        Route::middleware('can:planning.manage')->controller(PlanningController::class)->group(function () {
             Route::get('planning', 'show')->name('planning.show');
             Route::post('planning/pause', 'pause')->name('planning.pause');
             Route::post('planning/rules', 'storeRule')->name('planning.rules.store');
@@ -391,9 +407,9 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::get('couriers/{courier}/availability', [CourierAvailabilityController::class, 'show'])->middleware('can:orders.dispatch')->name('couriers.availability.show');
         Route::post('couriers/{courier}/pickup-mission', [CourierAvailabilityController::class, 'pickupMission'])->middleware('can:orders.dispatch')->name('couriers.pickup-mission');
         Route::get('couriers/{courier}/track', [CourierController::class, 'track'])->middleware('can:orders.dispatch')->name('couriers.track');
-        Route::get('couriers', [CourierController::class, 'index'])->middleware('can:orders.dispatch')->name('couriers.index');
-        Route::get('couriers/{courier}', [CourierController::class, 'show'])->middleware('can:orders.dispatch')->name('couriers.show');
-        Route::patch('couriers/{courier}', [CourierController::class, 'update'])->middleware('can:users.manage')->name('couriers.update');
+        Route::get('couriers', [CourierController::class, 'index'])->middleware('permission:orders.dispatch|couriers.manage|fleet.manage|planning.manage|pay.manage')->name('couriers.index');
+        Route::get('couriers/{courier}', [CourierController::class, 'show'])->middleware('permission:orders.dispatch|couriers.manage|fleet.manage|planning.manage|pay.manage')->name('couriers.show');
+        Route::patch('couriers/{courier}', [CourierController::class, 'update'])->middleware('can:couriers.manage')->name('couriers.update');
 
         // Journée de livraison : état (dispatch, marchands), fermeture et réouverture (dispatch)
         Route::get('delivery-day', [DeliveryDayController::class, 'show'])->name('delivery-day.show');

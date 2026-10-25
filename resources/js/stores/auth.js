@@ -19,8 +19,9 @@ export const useAuthStore = defineStore('auth', {
 
   getters: {
     isAuthenticated: (state) => !!state.token,
-    role: (state) => state.user?.role ?? null,
-    homeRoute: (state) => homeFor(state.user?.role),
+    // Rôle sur mesure : compté comme un rôle de l'équipe pour les espaces
+    role: (state) => (state.user?.role_custom ? 'staff_custom' : state.user?.role ?? null),
+    homeRoute: (state) => homeFor(state.user?.role_custom ? 'staff_custom' : state.user?.role),
     // Une liste de droits : l'un d'eux suffit
     can: (state) => (permission) => [permission].flat().some((p) => (state.user?.permissions ?? []).includes(p)),
   },
@@ -48,7 +49,7 @@ export const useAuthStore = defineStore('auth', {
     // Session ouverte par le serveur : connexion, fin d'inscription, nouveau mot de passe
     startSession({ token, user }) {
       // Rangée dans l'espace du compte (mot de passe oublié, inscription : pages communes)
-      setSpace(spaceForPath(homeFor(user?.role)))
+      setSpace(spaceForPath(homeFor(user?.role_custom ? 'staff_custom' : user?.role)))
       this.token = token
       this.user = user
       setToken(token)

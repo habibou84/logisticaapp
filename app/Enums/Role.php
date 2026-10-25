@@ -32,11 +32,24 @@ enum Role: string
     }
 
     /**
-     * Permissions accordées à chaque rôle.
+     * Permissions accordées à chaque rôle (avec celles nées du découpage de ses permissions larges : un rôle garde
+     * tout ce qu'il pouvait faire avant le découpage).
      *
      * @return list<Permission>
      */
     public function permissions(): array
+    {
+        $base = $this->basePermissions();
+        $values = array_map(fn (Permission $p) => $p->value, $base);
+        foreach ($base as $permission) {
+            array_push($values, ...(Permission::splits()[$permission->value] ?? []));
+        }
+
+        return array_values(array_filter(Permission::cases(), fn (Permission $p) => in_array($p->value, $values, true)));
+    }
+
+    /** @return list<Permission> */
+    private function basePermissions(): array
     {
         return match ($this) {
             self::Admin => Permission::companyScoped(),

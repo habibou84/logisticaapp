@@ -154,6 +154,9 @@ class ClientInvoiceController extends Controller
     public function void(Request $request, ClientInvoice $clientInvoice): JsonResponse
     {
         $this->authorizeManage($request);
+        // Supprimer un brouillon : droit des factures ; annuler une facture émise : droit à part
+        abort_unless($clientInvoice->status === ClientInvoiceStatus::Draft || $request->user()->can(Permission::InvoicesVoid->value), 403,
+            'Annuler une facture émise demande le droit « Annuler une facture émise ».');
         $invoice = $this->invoicing->void($clientInvoice);
 
         return response()->json(['data' => $invoice ? $this->detail($invoice) : null]);

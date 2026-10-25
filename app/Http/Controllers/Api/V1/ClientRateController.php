@@ -182,7 +182,7 @@ class ClientRateController extends Controller
         $user = $request->user();
         // Grilles de l'entreprise et prix négociés : jamais pour un compte client
         abort_if($user->merchant_id !== null, 403);
-        abort_unless($user->canAny([Permission::SettingsManage->value, Permission::RatesManage->value])
+        abort_unless($user->canAny([Permission::PricingManage->value, Permission::RatesManage->value])
             || ($read && $user->canAny([Permission::OrdersCreate->value, Permission::FinanceView->value, Permission::InvoicesView->value])), 403);
     }
 }

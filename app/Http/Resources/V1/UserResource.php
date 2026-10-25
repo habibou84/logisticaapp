@@ -30,7 +30,7 @@ class UserResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $role = $this->primaryRole();
+        $role = $this->accessRole();
 
         return [
             'id' => $this->id,
@@ -38,8 +38,12 @@ class UserResource extends JsonResource
             'name' => $this->name,
             'phone' => $this->phone,
             'email' => $this->email,
-            'role' => $role?->value,
-            'role_label' => $role?->label(),
+            'role' => $role?->name,
+            'role_label' => $role?->displayLabel(),
+            // Rôle sur mesure de l'équipe (écran Rôles)
+            'role_custom' => (bool) $role?->is_custom,
+            // Espace de l'application : équipe, livreur ou client
+            'space' => $this->space(),
             'status' => $this->status,
             'last_login_at' => $this->last_login_at,
             'company' => CompanyResource::make($this->whenLoaded('company')),
@@ -64,6 +68,14 @@ class UserResource extends JsonResource
             ] : null),
             // Équipe : périmètre (activités visibles, vide : toutes) et réglage fin des permissions
             'activities' => $this->activities ?? [],
+            'zone_ids' => $this->zone_ids ?? [],
+            'hub_ids' => $this->hub_ids ?? [],
+            // Périmètre effectif (compte, sinon rôle) : vide = tout
+            'scope' => [
+                'activities' => $this->activityScope() ?? [],
+                'zone_ids' => $this->resource->zoneScope() ?? [],
+                'hub_ids' => $this->resource->hubScope() ?? [],
+            ],
             'extra_permissions' => $this->whenLoaded('permissions', fn () => $this->permissions->pluck('name')->values()),
             'denied_permissions' => $this->denied_permissions ?? [],
             'permissions' => $this->when(

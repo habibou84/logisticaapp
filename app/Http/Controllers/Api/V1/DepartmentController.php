@@ -172,7 +172,8 @@ class DepartmentController extends Controller
     /** Réglages des départements de ce client (vide : comme l'entreprise) */
     public function updateSettings(Request $request, Merchant $merchant): JsonResponse
     {
-        Gate::authorize('update', $merchant);
+        Gate::authorize('manageDepartments', $merchant);
+        abort_if($request->user()->merchant_id !== null, 403);
         $data = $request->validate(DepartmentSettings::rules());
         $merchant->forceFill(['department_settings' => DepartmentSettings::clean((array) ($data['department_settings'] ?? []), DepartmentSettings::CLIENT_KEYS)])->save();
         $this->departments->forget();

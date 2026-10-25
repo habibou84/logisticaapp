@@ -5,7 +5,7 @@
         <h1 class="text-xl font-bold">Annuaire des destinations</h1>
         <p class="text-sm text-gray-600">Partagé par tous les clients de distribution et de MAD : proposé pendant la saisie d'une course, enrichi par chaque course, positions confirmées par les livreurs.</p>
       </div>
-      <div v-if="auth.can('merchants.manage')" class="flex gap-2">
+      <div v-if="auth.can('destinations.manage')" class="flex gap-2">
         <button type="button" class="btn-secondary" @click="importOpen = true">⬆️ Importer</button>
         <button type="button" class="btn-primary" @click="edit(null)">+ Nouvelle destination</button>
       </div>
@@ -47,7 +47,7 @@
               <span v-else class="text-gray-400">—</span>
             </td>
             <td class="p-2 text-right">{{ d.deliveries_count }}</td>
-            <td class="p-2 text-right"><button v-if="auth.can('merchants.manage')" type="button" class="text-blue-600" @click="open(d)">Modifier</button></td>
+            <td class="p-2 text-right"><button v-if="auth.can('destinations.manage')" type="button" class="text-blue-600" @click="open(d)">Modifier</button></td>
           </tr>
           <tr v-if="!loading && !rows.length"><td colspan="6" class="p-8 text-center text-gray-500">Aucune destination{{ search ? ' pour cette recherche' : '' }}. Importez l'ancienne base ou laissez les courses l'enrichir.</td></tr>
         </tbody>

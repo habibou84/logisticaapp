@@ -222,7 +222,7 @@ class CourierRatingController extends Controller
 
     public function neutralize(Request $request, CourierRating $rating): JsonResponse
     {
-        $this->authorizeTeam($request, Permission::UsersManage);
+        $this->authorizeTeam($request, Permission::RatingsManage);
         $data = $request->validate(['reason' => ['required', 'string', 'max:255']], [], ['reason' => 'motif']);
 
         return response()->json(['data' => $this->ratingData($this->ratings->neutralize($request->user(), $rating, $data['reason']), true)]);
@@ -230,7 +230,7 @@ class CourierRatingController extends Controller
 
     public function restore(Request $request, CourierRating $rating): JsonResponse
     {
-        $this->authorizeTeam($request, Permission::UsersManage);
+        $this->authorizeTeam($request, Permission::RatingsManage);
 
         return response()->json(['data' => $this->ratingData($this->ratings->restore($rating), true)]);
     }
@@ -369,6 +369,6 @@ class CourierRatingController extends Controller
     private function authorizeTeam(Request $request, Permission $permission = Permission::OrdersDispatch): void
     {
         $user = $request->user();
-        abort_unless($user->merchant_id === null && ! $user->isCourier() && ($user->can($permission->value) || $user->can(Permission::UsersManage->value)), 403);
+        abort_unless($user->merchant_id === null && ! $user->isCourier() && ($user->can($permission->value) || $user->can(Permission::RatingsManage->value)), 403);
     }
 }

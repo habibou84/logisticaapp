@@ -46,7 +46,13 @@ class User extends Authenticatable
         // Périmètre de l'équipe (activités visibles, vide : toutes) et permissions retirées au rôle
         'activities',
         'denied_permissions',
+        // Périmètre par zones et dépôts (vide : celui du rôle, sinon tout)
+        'zone_ids',
+        'hub_ids',
     ];
+
+    /** @var array<string, list<int>|null> périmètre calculé une fois par requête */
+    private array $perimeterCache = [];
 
     protected $hidden = [
         'password',
@@ -64,6 +70,8 @@ class User extends Authenticatable
             'password' => 'hashed',
             'activities' => 'array',
             'denied_permissions' => 'array',
+            'zone_ids' => 'array',
+            'hub_ids' => 'array',
             'status' => UserStatus::class,
         ];
     }
@@ -109,13 +117,35 @@ class User extends Authenticatable
     }
 
     /**
-     * Rôle principal de l'utilisateur (un seul rôle par compte).
+     * Rôle intégré de l'utilisateur (un seul rôle par compte) ; null pour un rôle sur mesure.
      */
     public function primaryRole(): ?Role
     {
         $name = $this->getRoleNames()->first();
 
         return $name ? Role::tryFrom($name) : null;
+    }
+
+    /** Rôle du compte, intégré ou sur mesure */
+    public function accessRole(): ?AccessRole
+    {
+        return $this->roles->first();
+    }
+
+    /** Clé du rôle (valeur du rôle intégré, ou nom technique du rôle sur mesure) */
+    public function roleKey(): ?string
+    {
+        return $this->getRoleNames()->first();
+    }
+
+    public function roleLabel(): ?string
+    {
+        return $this->accessRole()?->displayLabel();
+    }
+
+    public function hasCustomRole(): bool
+    {
+        return (bool) $this->accessRole()?->is_custom;
     }
 
     /**
@@ -144,9 +174,59 @@ class User extends Authenticatable
         if ($this->merchant_id !== null || $this->isCourier() || $this->hasRole(Role::Admin->value)) {
             return null;
         }
-        $values = array_values(array_intersect(Activity::values(), (array) ($this->activities ?? [])));
+        // Celui du compte, sinon celui de son rôle sur mesure
+        $own = array_values(array_intersect(Activity::values(), (array) ($this->activities ?? [])));
+        $values = $own !== [] ? $own : array_values(array_intersect(Activity::values(), (array) ($this->accessRole()?->activities ?? [])));
 
         return $values === [] ? null : $values;
+    }
+
+    /**
+     * Zones des courses que ce compte de l'équipe voit (communes avec leurs quartiers), ou null : toutes.
+     * Celles du compte, sinon celles de son rôle sur mesure.
+     *
+     * @return list<int>|null
+     */
+    public function zoneScope(): ?array
+    {
+        return $this->perimeter('zone_ids', function (array $ids) {
+            $children = Zone::withoutGlobalScopes()->where('company_id', $this->company_id)->whereIn('parent_id', $ids)->pluck('id')->all();
+
+            return array_values(array_unique(array_map('intval', [...$ids, ...$children])));
+        });
+    }
+
+    /**
+     * Dépôts des courses que ce compte de l'équipe voit (courses ramassées vers ces dépôts), ou null : tous.
+     *
+     * @return list<int>|null
+     */
+    public function hubScope(): ?array
+    {
+        return $this->perimeter('hub_ids', fn (array $ids) => array_values(array_map('intval', $ids)));
+    }
+
+    /**
+     * @param  callable(list<int>): list<int>  $expand
+     * @return list<int>|null
+     */
+    private function perimeter(string $column, callable $expand): ?array
+    {
+        if (array_key_exists($column, $this->perimeterCache)) {
+            return $this->perimeterCache[$column];
+        }
+        $ids = [];
+        if ($this->merchant_id === null && ! $this->isCourier() && ! $this->hasRole(Role::Admin->value)) {
+            $ids = (array) ($this->{$column} ?: ($this->accessRole()?->{$column} ?? []));
+        }
+
+        return $this->perimeterCache[$column] = $ids === [] ? null : $expand($ids);
+    }
+
+    /** Périmètre recalculé (rôle ou compte modifié dans la même requête) */
+    public function forgetPerimeter(): void
+    {
+        $this->perimeterCache = [];
     }
 
     /**
@@ -191,7 +271,7 @@ class User extends Authenticatable
      */
     public function isStaff(): bool
     {
-        return $this->hasAnyRole(Role::values(Role::staff()));
+        return $this->hasAnyRole(Role::values(Role::staff())) || $this->hasCustomRole();
     }
 
     /**

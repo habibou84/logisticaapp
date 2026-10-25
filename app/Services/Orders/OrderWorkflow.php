@@ -180,6 +180,15 @@ class OrderWorkflow
             throw new AuthorizationException('Seul un administrateur peut déclarer un colis perdu.');
         }
 
+        // Annuler une course de l'équipe : droit à part (le client annule la sienne avant ramassage, plus bas)
+        if ($to === OrderStatus::Cancelled && $actor->merchant_id === null && ! $actor->isCourier()) {
+            if ($actor->can(Permission::OrdersCancel->value)) {
+                return;
+            }
+
+            throw new AuthorizationException('Vous n\'avez pas le droit d\'annuler une course.');
+        }
+
         if ($actor->can(Permission::OrdersDispatch->value)) {
             return;
         }

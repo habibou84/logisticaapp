@@ -81,10 +81,10 @@ const ALL = computed(() => {
       keywords: 'validation heure limite journée tentatives code livraison hors connexion offline garde dépôt fermeture assignation automatique planning acceptation missions refus empêchement injoignable retard livraison jour même plafond',
     },
     {
-      key: 'pricing', icon: '🗺️', title: 'Zones et tarifs', permission: 'settings.manage',
+      key: 'pricing', icon: '🗺️', title: 'Zones et tarifs',
       description: 'Zones desservies, grilles de prix, suppléments, frais des colis retournés.',
       summary: c && `Frais d'un retour : ${c.return_fee_percent} % des frais de livraison`,
-      links: [{ to: '/admin/zones', label: 'Zones' }, { to: '/admin/tarifs', label: 'Tarifs et retours' }],
+      links: [{ to: '/admin/zones', label: 'Zones', permission: 'zones.manage' }, { to: '/admin/tarifs', label: 'Tarifs et retours', permission: 'pricing.manage' }],
       keywords: 'zones communes quartiers tarifs grille prix suppléments express fragile poids frais retour distribution intérieur villes pli colis chèque délai',
     },
     {
@@ -94,7 +94,7 @@ const ALL = computed(() => {
       keywords: 'alerte délai sans livreur colis gardé livreur relance remontées terrain point semaine rapport',
     },
     {
-      key: 'messages', icon: '💬', title: 'Messages aux clients', to: '/admin/whatsapp', permission: 'settings.manage',
+      key: 'messages', icon: '💬', title: 'Messages aux clients', to: '/admin/whatsapp', permission: 'messaging.manage',
       description: 'WhatsApp de l\'entreprise : numéro, envois, modèles, test ; notifications sur téléphone des clients.',
       keywords: 'whatsapp sms messages modèles envois test notifications push téléphone',
     },
@@ -105,31 +105,31 @@ const ALL = computed(() => {
       keywords: 'inscription en ligne créer compte client',
     },
     {
-      key: 'ratings', icon: '⭐', title: 'Notation des livreurs', to: '/admin/reglages/notation', permission: 'settings.manage',
+      key: 'ratings', icon: '⭐', title: 'Notation des livreurs', to: '/admin/reglages/notation', permission: 'ratings.manage',
       description: 'Notes des clients, de l\'équipe et automatique ; poids, alertes, ce que voit le livreur, choix des livreurs par les clients.',
       summary: c?.rating_settings && `Automatique ${c.rating_settings.weight_auto} % · clients ${c.rating_settings.weight_client} % · équipe ${c.rating_settings.weight_team} %`,
       keywords: 'note notation étoiles avis qualité livreur classement',
     },
     {
-      key: 'field-events', icon: '🚨', title: 'Événements terrain', to: '/admin/reglages/evenements-terrain', permission: 'settings.manage',
+      key: 'field-events', icon: '🚨', title: 'Événements terrain', to: '/admin/reglages/evenements-terrain', permission: 'field_events.manage',
       description: 'Ce que les livreurs signalent sur la route (panne, accident, contrôle…) et les effets automatiques : pause, courses retirées, clients prévenus.',
       summary: c?.field_event_settings && (c.field_event_settings.enabled ? `${c.field_event_settings.types.filter((t) => t.active).length} types proposés · mise hors service : ${onOff(c.field_event_settings.pause_courier)} · clients prévenus : ${onOff(c.field_event_settings.notify_clients)}` : 'Désactivé'),
       keywords: 'événement terrain panne accident contrôle police vol agression météo signaler incident route pause',
     },
     {
-      key: 'destinations', icon: '📇', title: 'Annuaire des destinations', to: '/admin/reglages/annuaire', permission: 'settings.manage',
+      key: 'destinations', icon: '📇', title: 'Annuaire des destinations', to: '/admin/reglages/annuaire', permission: 'destinations.manage',
       description: 'Suggestions pendant la saisie, enrichissement par les courses, position GPS confirmée par les livreurs.',
       summary: c?.destination_settings && (c.destination_settings.enabled ? `Clients : ${onOff(c.destination_settings.clients_see)} · position ${{ free: 'au choix du livreur', prompt: 'proposée à chaque livraison', required: 'obligatoire si absente' }[c.destination_settings.courier_locate]}` : 'Désactivé'),
       keywords: 'annuaire destination suggestion adresse gps position livreur base clients numéro vérifier',
     },
     {
-      key: 'departments', icon: '🏢', title: 'Départements des clients', to: '/admin/reglages/departements', permission: 'settings.manage',
+      key: 'departments', icon: '🏢', title: 'Départements des clients', to: '/admin/reglages/departements', permission: 'departments.manage',
       description: 'Banques, administrations : départements sur les courses, courrier interne, qui remet et qui reçoit, bordereaux, facture ventilée, quotas.',
       summary: c?.department_settings && (c.department_settings.enabled ? `Département ${c.department_settings.required ? 'obligatoire' : 'facultatif'} · facture ${{ detailed: 'ventilée', split: 'par département', none: 'sans détail' }[c.department_settings.invoice_mode]}` : 'Désactivé'),
       keywords: 'département service banque finance marketing courrier interne bordereau centre de coûts quota facture ventilée',
     },
     {
-      key: 'vehicles', icon: '🏍️', title: 'Véhicules', to: '/admin/reglages/vehicules', permission: 'settings.manage',
+      key: 'vehicles', icon: '🏍️', title: 'Véhicules', to: '/admin/reglages/vehicules', permission: 'fleet.manage',
       description: 'État des lieux, papiers et entretien, carburant (dotation ou remboursement), location-vente, amendes, indemnité véhicule personnel.',
       summary: c?.vehicle_settings && `État des lieux ${{ daily: 'chaque jour', weekly: 'chaque lundi', never: 'désactivé' }[c.vehicle_settings.check_mode]} · carburant ${{ allowance: 'en dotation', refund: 'remboursé', courier: 'à la charge du livreur' }[c.vehicle_settings.fuel_mode]}`,
       keywords: 'véhicule moto parc assurance visite technique vignette carte grise permis entretien vidange carburant essence plein dotation location vente amende sinistre',
@@ -137,7 +137,7 @@ const ALL = computed(() => {
     {
       key: 'team', icon: '🛵', title: 'Équipe et paie',
       description: 'Rémunération des livreurs, comptes et rôles de l\'équipe.',
-      links: [{ to: '/admin/paie-livreurs', label: 'Paie des livreurs', permission: 'settings.manage' }, { to: '/admin/utilisateurs', label: 'Utilisateurs et rôles', permission: 'users.view' }],
+      links: [{ to: '/admin/paie-livreurs', label: 'Paie des livreurs', permission: 'pay.manage' }, { to: '/admin/utilisateurs', label: 'Utilisateurs et rôles', permission: 'users.view' }],
       keywords: 'paie salaire plan rémunération primes utilisateurs rôles équipe',
     },
     {
@@ -167,10 +167,9 @@ const cards = computed(() => ALL.value
   }))
 
 onMounted(async () => {
-  if (!auth.can('settings.manage')) return
   const [c, guide] = await Promise.all([
     http.get(`/companies/${auth.user.company_id}`).catch(() => null),
-    http.get('/setup').catch(() => null),
+    auth.can('settings.manage') ? http.get('/setup').catch(() => null) : null,
   ])
   company.value = c?.data?.data ?? null
   setup.value = guide?.data?.data ?? null

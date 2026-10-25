@@ -7,7 +7,7 @@
       </div>
       <div class="flex flex-wrap gap-2">
         <RouterLink to="/admin/vehicules/echeances" class="btn-secondary">📅 Échéances</RouterLink>
-        <RouterLink v-if="auth.can('settings.manage')" to="/admin/reglages/vehicules" class="btn-secondary">⚙️ Réglages</RouterLink>
+        <RouterLink v-if="auth.can('fleet.manage')" to="/admin/reglages/vehicules" class="btn-secondary">⚙️ Réglages</RouterLink>
         <button type="button" class="btn-primary" @click="editing = null; formOpen = true">+ Ajouter un véhicule</button>
       </div>
     </div>

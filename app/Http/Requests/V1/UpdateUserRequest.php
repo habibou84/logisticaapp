@@ -8,6 +8,7 @@ use App\Enums\Role;
 use App\Enums\UserStatus;
 use App\Models\User;
 use App\Rules\PhoneNumber;
+use App\Services\Access\Access;
 use App\Support\PhoneNumber as Phone;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -26,7 +27,7 @@ class UpdateUserRequest extends FormRequest
 
         // Changer un rôle ou un statut demande un droit supplémentaire
         // (personne ne peut modifier son propre rôle ou statut)
-        if ($this->hasAny(['role', 'status', 'activities', 'extra_permissions', 'denied_permissions'])) {
+        if ($this->hasAny(['role', 'status', 'activities', 'extra_permissions', 'denied_permissions', 'zone_ids', 'hub_ids'])) {
             return ! $this->user()->is($user)
                 && $this->user()->can('changeRoleOrStatus', $user);
         }
@@ -60,9 +61,33 @@ class UpdateUserRequest extends FormRequest
             'extra_permissions.*' => [Rule::enum(Permission::class)],
             'denied_permissions' => ['sometimes', 'array'],
             'denied_permissions.*' => [Rule::enum(Permission::class)],
-            'role' => ['sometimes', 'required', Rule::in(Role::values(Role::assignableBy($this->user())))],
+            'zone_ids' => ['sometimes', 'nullable', 'array'],
+            'zone_ids.*' => ['integer', Rule::exists('zones', 'id')->where('company_id', $user->company_id)],
+            'hub_ids' => ['sometimes', 'nullable', 'array'],
+            'hub_ids.*' => ['integer', Rule::exists('hubs', 'id')->where('company_id', $user->company_id)],
+            'role' => ['sometimes', 'required', Rule::in(app(Access::class)->assignableRoles($this->user())->pluck('name')->all())],
             'status' => ['sometimes', 'required', new Enum(UserStatus::class)],
         ];
+    }
+
+    public function after(): array
+    {
+        $access = app(Access::class);
+        $user = $this->route('user');
+
+        return [function ($validator) use ($access, $user) {
+            if ($this->has('extra_permissions')) {
+                // Seules les permissions nouvellement ajoutées comptent : celles déjà là restent
+                $added = array_diff((array) $this->input('extra_permissions', []), $user->getDirectPermissions()->pluck('name')->all());
+                $access->assertCanGrant($this->user(), array_values($added), 'extra_permissions');
+            }
+            // Toujours au moins un administrateur actif
+            $leavesAdmin = ($this->filled('role') && $this->input('role') !== Role::Admin->value)
+                || ($this->filled('status') && $this->input('status') !== UserStatus::Active->value);
+            if ($leavesAdmin && $access->isLastAdmin($user)) {
+                $validator->errors()->add('role', 'C\'est le dernier administrateur actif : nommez-en un autre d\'abord.');
+            }
+        }];
     }
 
     public function attributes(): array

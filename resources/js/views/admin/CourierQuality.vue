@@ -5,7 +5,7 @@
         <h1 class="text-xl font-bold">Qualité des livreurs</h1>
         <p class="text-sm text-gray-600">Note sur 5 des {{ settings.window_days || 90 }} derniers jours : automatique, clients et équipe (Réglages › Notation des livreurs).</p>
       </div>
-      <RouterLink v-if="auth.can('settings.manage')" to="/admin/reglages/notation" class="btn-secondary">⚙️ Réglages</RouterLink>
+      <RouterLink v-if="auth.can('ratings.manage')" to="/admin/reglages/notation" class="btn-secondary">⚙️ Réglages</RouterLink>
     </div>
 
     <div class="card overflow-x-auto">
@@ -110,9 +110,9 @@
               </p>
               <p v-if="r.comment">« {{ r.comment }} »</p>
               <p v-if="r.neutralized_at" class="text-xs text-gray-600">Neutralisée : {{ r.neutralized_reason }}
-                <button v-if="auth.can('users.manage')" type="button" class="text-blue-600 ml-1" @click="restore(r)">Rétablir</button>
+                <button v-if="auth.can('ratings.manage')" type="button" class="text-blue-600 ml-1" @click="restore(r)">Rétablir</button>
               </p>
-              <button v-else-if="auth.can('users.manage') && r.source !== 'team'" type="button" class="text-xs text-red-700" @click="neutralize(r)">Neutraliser…</button>
+              <button v-else-if="auth.can('ratings.manage') && r.source !== 'team'" type="button" class="text-xs text-red-700" @click="neutralize(r)">Neutraliser…</button>
             </li>
             <li v-if="!detail.ratings.length" class="p-3 text-gray-500">Aucune note pour le moment.</li>
           </ul>

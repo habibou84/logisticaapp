@@ -4,9 +4,9 @@ namespace App\Http\Requests\V1;
 
 use App\Enums\Activity;
 use App\Enums\Permission;
-use App\Enums\Role;
 use App\Models\User;
 use App\Rules\PhoneNumber;
+use App\Services\Access\Access;
 use App\Support\PhoneNumber as Phone;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -47,8 +47,19 @@ class StoreUserRequest extends FormRequest
             'extra_permissions.*' => [Rule::enum(Permission::class)],
             'denied_permissions' => ['sometimes', 'array'],
             'denied_permissions.*' => [Rule::enum(Permission::class)],
-            'role' => ['required', Rule::in(Role::values(Role::assignableBy($actor)))],
+            // Périmètre par zones et dépôts (vide : celui du rôle)
+            'zone_ids' => ['sometimes', 'nullable', 'array'],
+            'zone_ids.*' => ['integer', Rule::exists('zones', 'id')->where('company_id', $companyId)],
+            'hub_ids' => ['sometimes', 'nullable', 'array'],
+            'hub_ids.*' => ['integer', Rule::exists('hubs', 'id')->where('company_id', $companyId)],
+            'role' => ['required', Rule::in(app(Access::class)->assignableRoles($actor)->pluck('name')->all())],
         ];
+    }
+
+    public function after(): array
+    {
+        // Personne ne donne un droit qu'il n'a pas lui-même
+        return [fn () => app(Access::class)->assertCanGrant($this->user(), (array) $this->input('extra_permissions', []), 'extra_permissions')];
     }
 
     public function attributes(): array

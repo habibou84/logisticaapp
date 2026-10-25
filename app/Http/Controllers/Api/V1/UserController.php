@@ -2,13 +2,14 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Enums\Role;
 use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\V1\StoreUserRequest;
 use App\Http\Requests\V1\UpdateUserRequest;
 use App\Http\Resources\V1\UserResource;
+use App\Models\Hub;
 use App\Models\User;
+use App\Models\Zone;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -25,7 +26,7 @@ class UserController extends Controller
         $actor = $request->user();
 
         $request->validate([
-            'role' => ['nullable', Rule::in(Role::values(Role::cases()))],
+            'role' => ['nullable', 'string', 'max:60'],
             'status' => ['nullable', Rule::enum(UserStatus::class)],
             'search' => ['nullable', 'string', 'max:100'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
@@ -63,6 +64,8 @@ class UserController extends Controller
                 'password' => $data['password'],
                 'activities' => $data['activities'] ?? null,
                 'denied_permissions' => $data['denied_permissions'] ?? null,
+                'zone_ids' => $data['zone_ids'] ?? null,
+                'hub_ids' => $data['hub_ids'] ?? null,
             ]);
 
             $user->assignRole($data['role']);
@@ -82,6 +85,38 @@ class UserController extends Controller
         Gate::authorize('view', $user);
 
         return UserResource::make($user->load(['roles', 'permissions', 'company']));
+    }
+
+    /**
+     * « Voir comme ce compte » : ses droits effectifs (rôle, ajoutés, retirés) et son périmètre, pour l'aperçu de ce
+     * qu'il verra.
+     */
+    public function access(User $user): JsonResponse
+    {
+        Gate::authorize('view', $user);
+        $user->load(['roles.permissions', 'permissions']);
+        $role = $user->accessRole();
+        $zones = Zone::query()->whereIn('id', $user->zoneScope() ?? [])->whereNull('parent_id')->orderBy('name')->pluck('name');
+        $hubs = Hub::query()->whereIn('id', $user->hubScope() ?? [])->orderBy('name')->pluck('name');
+
+        return response()->json(['data' => [
+            'id' => $user->id,
+            'name' => $user->name,
+            'role' => $role?->name,
+            'role_label' => $role?->displayLabel(),
+            'space' => $user->space(),
+            'permissions' => $user->effectivePermissions(),
+            'from_role' => $role?->permissions->pluck('name')->values() ?? [],
+            'extra_permissions' => $user->permissions->pluck('name')->values(),
+            'denied_permissions' => $user->denied_permissions ?? [],
+            'scope' => [
+                'activities' => $user->activityScope() ?? [],
+                'zones' => $zones,
+                'hubs' => $hubs,
+                // D'où vient le périmètre : le compte lui-même ou son rôle
+                'from_role' => ! $user->activities && ! $user->zone_ids && ! $user->hub_ids,
+            ],
+        ]]);
     }
 
     public function update(UpdateUserRequest $request, User $user): UserResource

@@ -3,8 +3,8 @@
 namespace App\Policies;
 
 use App\Enums\Permission;
-use App\Enums\Role;
 use App\Models\User;
+use App\Services\Access\Access;
 
 /**
  * Le super administrateur passe toutes les vérifications (Gate::before).
@@ -35,7 +35,9 @@ class UserPolicy
 
     public function delete(User $actor, User $user): bool
     {
-        return ! $actor->is($user) && $this->update($actor, $user);
+        return ! $actor->is($user) && $this->update($actor, $user)
+            && ! app(Access::class)->isLastAdmin($user)
+            && ($user->accessRole() === null || $user->merchant_id !== null || app(Access::class)->canAssign($actor, $user->accessRole()));
     }
 
     /**
@@ -44,8 +46,12 @@ class UserPolicy
      */
     public function changeRoleOrStatus(User $actor, User $user): bool
     {
+        // Jamais un compte plus puissant que soi (son rôle doit être de ceux qu'on peut attribuer)
+        $role = $user->accessRole();
+
         return ! $actor->is($user)
             && $this->update($actor, $user)
-            && in_array($user->primaryRole(), [...Role::assignableBy($actor), null], true);
+            && $user->merchant_id === null
+            && ($role === null || app(Access::class)->canAssign($actor, $role));
     }
 }

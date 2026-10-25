@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\V1\UpdateCompanyRequest;
 use App\Http\Resources\V1\CompanyResource;
 use App\Models\Company;
+use App\Policies\CompanyPolicy;
 use App\Services\Departments\DepartmentSettings;
 use App\Services\Destinations\DestinationSettings;
 use App\Services\FieldEvents\FieldEventSettings;
@@ -49,7 +50,13 @@ class CompanyController extends Controller
         if (array_key_exists('vehicle_settings', $data)) {
             $data['vehicle_settings'] = VehicleSettings::clean((array) ($data['vehicle_settings'] ?? []));
         }
-        $company->update($data);
+        // Seuls les réglages qui changent comptent : chacun demande la permission de son domaine
+        $company->fill($data);
+        foreach (array_keys($company->getDirty()) as $field) {
+            abort_unless($request->user()->can(CompanyPolicy::permissionFor($field)->value), 403,
+                'Vous n\'avez pas le droit de modifier ce réglage ('.CompanyPolicy::permissionFor($field)->label().').');
+        }
+        $company->save();
 
         return CompanyResource::make($company->loadCount('users'));
     }

@@ -11,6 +11,7 @@ export const activityBadge = (value) => ACTIVITIES.find((a) => a.value === value
 
 // Activités que voit ce compte : toutes pour l'administrateur et un périmètre vide, sinon son périmètre
 export function myActivities(user) {
-  const scope = user && user.role !== 'admin' && !user.merchant_id ? (user.activities || []) : []
+  // Périmètre effectif donné par le serveur (compte, sinon son rôle sur mesure)
+  const scope = user && user.role !== 'admin' && !user.merchant_id ? (user.scope?.activities ?? user.activities ?? []) : []
   return scope.length ? ACTIVITIES.filter((a) => scope.includes(a.value)) : ACTIVITIES
 }
