@@ -42,6 +42,10 @@ class TransitionOrderRequest extends FormRequest
             // Distribution, MAD : preuve de remise (nom de la personne qui a reçu, signature dessinée)
             'received_by_name' => ['nullable', 'string', 'max:120'],
             'signature' => ['nullable', 'string', 'max:700000'],
+            // Départements du client : qui a remis au ramassage, fonction de la personne qui a reçu
+            'handed_by_name' => ['nullable', 'string', 'max:120'],
+            'handed_by_role' => ['nullable', 'string', 'max:80'],
+            'received_by_role' => ['nullable', 'string', 'max:80'],
             'lat' => ['nullable', 'numeric', 'between:-90,90'],
             'lng' => ['nullable', 'numeric', 'between:-180,180'],
         ];
@@ -56,6 +60,8 @@ class TransitionOrderRequest extends FormRequest
             'delivery_code' => 'code de livraison',
             'collected_amount' => 'montant encaissé',
             'received_by_name' => 'nom de la personne qui a reçu',
+            'handed_by_name' => 'nom de la personne qui a remis',
+            'received_by_role' => 'fonction de la personne qui a reçu',
             'payment_method' => 'mode de paiement',
             'transaction_ref' => 'référence de transaction',
             'shipping_fee' => 'frais d\'expédition',

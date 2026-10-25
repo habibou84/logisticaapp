@@ -22,6 +22,7 @@
           :sub="!merchant.has_pickup_location ? 'Position à indiquer' : merchant.pickup_location_source === 'courier' ? 'Estimée par nos livreurs : à vérifier' : 'Position enregistrée'"
           :sub-class="merchant.has_pickup_location ? '' : 'text-amber-800 font-medium'"
         />
+        <MenuRow v-if="merchant.activities?.some((a) => a !== 'ecommerce')" to="/marchand/departements" icon="building" tone="violet" label="Mes départements" sub="Qui envoie, qui reçoit, quotas du mois" />
         <MenuRow to="/marchand/stock" icon="box" label="Mon stock" />
         <MenuRow v-if="merchant.billing_plans?.length && auth.can('finance.view')" to="/marchand/factures" icon="file" tone="red" label="Mes factures" :sub="merchant.billing_plans.map((p) => p.formula_label).join(', ')" />
       </div>

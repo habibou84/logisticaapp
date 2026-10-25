@@ -117,6 +117,12 @@ const ALL = computed(() => {
       keywords: 'événement terrain panne accident contrôle police vol agression météo signaler incident route pause',
     },
     {
+      key: 'departments', icon: '🏢', title: 'Départements des clients', to: '/admin/reglages/departements', permission: 'settings.manage',
+      description: 'Banques, administrations : départements sur les courses, courrier interne, qui remet et qui reçoit, bordereaux, facture ventilée, quotas.',
+      summary: c?.department_settings && (c.department_settings.enabled ? `Département ${c.department_settings.required ? 'obligatoire' : 'facultatif'} · facture ${{ detailed: 'ventilée', split: 'par département', none: 'sans détail' }[c.department_settings.invoice_mode]}` : 'Désactivé'),
+      keywords: 'département service banque finance marketing courrier interne bordereau centre de coûts quota facture ventilée',
+    },
+    {
       key: 'vehicles', icon: '🏍️', title: 'Véhicules', to: '/admin/reglages/vehicules', permission: 'settings.manage',
       description: 'État des lieux, papiers et entretien, carburant (dotation ou remboursement), location-vente, amendes, indemnité véhicule personnel.',
       summary: c?.vehicle_settings && `État des lieux ${{ daily: 'chaque jour', weekly: 'chaque lundi', never: 'désactivé' }[c.vehicle_settings.check_mode]} · carburant ${{ allowance: 'en dotation', refund: 'remboursé', courier: 'à la charge du livreur' }[c.vehicle_settings.fuel_mode]}`,

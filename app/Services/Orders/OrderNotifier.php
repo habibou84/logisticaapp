@@ -9,6 +9,7 @@ use App\Models\Order;
 use App\Models\OrderEvent;
 use App\Models\User;
 use App\Notifications\OrderAlert;
+use App\Services\Departments\Departments;
 use App\Support\Money;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Notification;
@@ -119,11 +120,13 @@ class OrderNotifier
         $date = $event->rescheduled_to?->format('d/m/Y');
 
         return match ($event->to_status) {
-            OrderStatus::PickedUp => [['picked_up', "Colis {$code} récupéré", 'Votre colis a été récupéré par notre livreur.'], null],
+            OrderStatus::PickedUp => [['picked_up', "Colis {$code} récupéré", 'Votre colis a été récupéré par notre livreur.'
+                .($order->handed_by_name ? " Remis par {$order->handed_by_name}".($order->handed_by_role ? " ({$order->handed_by_role})" : '').'.' : '')], null],
             OrderStatus::OutForDelivery => [['out_for_delivery', "Colis {$code} en chemin", 'Votre colis est en cours de livraison.'], null],
             OrderStatus::Delivered => $order->is_shipping
                 ? [['delivered', "Colis {$code} expédié", "Déposé chez {$order->shipping_carrier}. Frais d'expédition : ".Money::format((int) $order->shipping_fee).'.'], null]
-                : [['delivered', "Colis {$code} livré", 'Votre colis a été livré.'], null],
+                : [['delivered', "Colis {$code} livré", 'Votre colis a été livré.'
+                    .($order->received_by_name ? " Reçu par {$order->received_by_name}".($order->received_by_role ? " ({$order->received_by_role})" : '').'.' : '')], null],
             OrderStatus::DeliveryFailed => [
                 ['incident', "Échec de livraison {$code}", "La livraison n'a pas pu être effectuée.{$why}{$note}"],
                 ['incident', "Échec de livraison {$code}", trim("{$reason}{$note}")],
@@ -151,7 +154,15 @@ class OrderNotifier
      */
     private function merchantUsers(Order $order): Collection
     {
-        return User::where('merchant_id', $order->merchant_id)->where('status', 'active')->get();
+        // Employé limité à ses départements : seulement les courses qu'ils envoient ou reçoivent
+        $departments = app(Departments::class);
+
+        return User::where('merchant_id', $order->merchant_id)->where('status', 'active')->get()
+            ->filter(function (User $user) use ($departments, $order) {
+                $scope = $departments->scopeFor($user);
+
+                return $scope === null || in_array((int) $order->department_id, $scope, true) || in_array((int) $order->to_department_id, $scope, true);
+            })->values();
     }
 
     /**

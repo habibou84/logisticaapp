@@ -38,10 +38,34 @@
       <ChoiceChips v-model="form.activity" :options="activityChoices" :columns="activityChoices.length === 2 ? 2 : 1" label="Activité de la course" />
     </section>
 
-    <PasteMessage mobile :start-open="route.query.coller === '1'" @parsed="applyParsed" />
+    <!-- Client à départements : qui envoie, et vers qui (personne extérieure ou autre département) -->
+    <section v-if="billed && departments.all.value.length" id="step-department" class="m-card p-4 space-y-4" aria-labelledby="step-dep">
+      <h2 id="step-dep" class="m-step">Le département</h2>
+      <div v-if="departments.senders.value.length > 1 || !departments.settings.value.required">
+        <p class="m-label">Qui envoie ? <span v-if="departments.settings.value.required" class="text-red-600">*</span></p>
+        <ChoiceChips v-model="form.department_id" :options="senderChoices" :columns="senderChoices.length > 3 ? 1 : 2" label="Département qui envoie" />
+      </div>
+      <p v-else-if="sender" class="text-sm">🏢 <strong>{{ sender.label }}</strong><span v-if="sender.usage?.quota" class="text-slate-500"> · {{ sender.usage.used }}/{{ sender.usage.quota }} envois ce mois</span></p>
+      <p v-if="sender?.usage?.quota && sender.usage.percent >= 80" :class="['rounded-xl px-3 py-2 text-sm', sender.usage.percent >= 100 ? 'bg-red-50 text-red-800' : 'bg-amber-50 text-amber-900']">
+        Quota du mois {{ sender.usage.percent >= 100 ? 'atteint' : `utilisé à ${sender.usage.percent} %` }} : {{ sender.usage.used }} envois sur {{ sender.usage.quota }}.
+      </p>
+      <div v-if="departments.settings.value.requested_by !== 'off'">
+        <label class="m-label" for="requested-by">Demandé par <span v-if="departments.settings.value.requested_by === 'required'" class="text-red-600">*</span><span v-else class="font-normal text-slate-500">(facultatif)</span></label>
+        <input id="requested-by" v-model="form.requested_by" class="m-input" maxlength="120" autocomplete="jibiat-off" placeholder="Nom de la personne">
+      </div>
+      <div v-if="departments.settings.value.internal_mail && departments.all.value.length > 1">
+        <p class="m-label">Pour qui ?</p>
+        <ChoiceChips v-model="internal" :options="[{ value: false, label: 'Une personne extérieure', icon: '👤' }, { value: true, label: 'Un autre département', icon: '🏢', description: 'courrier interne' }]" :columns="2" label="Destinataire" />
+        <div v-if="internal" class="mt-3">
+          <ChoiceChips v-model="form.to_department_id" :options="targetChoices" :columns="1" label="Département destinataire" />
+        </div>
+      </div>
+    </section>
+
+    <PasteMessage v-if="!internal" mobile :start-open="route.query.coller === '1'" @parsed="applyParsed" />
 
     <!-- 1. Le destinataire -->
-    <section class="m-card p-4 space-y-4" aria-labelledby="step-client">
+    <section v-if="!internal" class="m-card p-4 space-y-4" aria-labelledby="step-client">
       <h2 id="step-client" class="m-step"><span class="m-step-num">1</span>Le destinataire</h2>
       <div class="relative">
         <label class="m-label" for="phone">Téléphone <span class="text-red-600">*</span></label>
@@ -70,7 +94,7 @@
     </section>
 
     <!-- 2. Où livrer -->
-    <section class="m-card p-4 space-y-4" aria-labelledby="step-where">
+    <section v-if="!internal" class="m-card p-4 space-y-4" aria-labelledby="step-where">
       <h2 id="step-where" class="m-step"><span class="m-step-num">2</span>Où livrer</h2>
       <div id="zone-field">
         <label class="m-label" for="zone">Commune ou quartier <span class="text-red-600">*</span></label>
@@ -270,6 +294,7 @@ import StatusIcon from '../../components/mobile/StatusIcon.vue'
 import PasteMessage from '../../components/PasteMessage.vue'
 import ZoneSelect from '../../components/ZoneSelect.vue'
 import { keyboardOpen } from '../../composables/useKeyboard'
+import { useDepartments } from '../../composables/useDepartments'
 import { longDay, useDeliveryDate } from '../../composables/useDeliveryDate'
 import { useAuthStore } from '../../stores/auth'
 import { localPhone, money, today } from '../../utils/format'
@@ -308,6 +333,10 @@ const blank = () => ({
   shipment_type: null,
   // Plis ou chèques remis ensemble
   shipment_quantity: 1,
+  // Départements : qui envoie, vers lequel (courrier interne), qui a demandé
+  department_id: null,
+  to_department_id: null,
+  requested_by: '',
   weight_kg: null,
   delivery_delay: null,
   recipient_phone: '',
@@ -328,6 +357,23 @@ const blank = () => ({
 // Un seul écran : l'essentiel visible, le reste derrière « Date, contenu du colis… »
 const form = reactive(blank())
 const billed = computed(() => form.activity !== 'ecommerce')
+// Départements du client (distribution, MAD)
+const departments = useDepartments(computed(() => auth.user?.merchant_id), { mine: true })
+const hasDepartments = computed(() => billed.value && departments.all.value.length > 0)
+const internal = ref(false)
+const quotaHint = (d) => (d.usage?.quota ? `${d.usage.used}/${d.usage.quota} ce mois` : (d.location || ''))
+const senderChoices = computed(() => [
+  ...(departments.settings.value.required ? [] : [{ value: null, label: 'Aucun', icon: '—' }]),
+  ...departments.senders.value.map((d) => ({ value: d.id, label: d.label, icon: '🏢', description: quotaHint(d) })),
+])
+const targetChoices = computed(() => departments.all.value.filter((d) => d.id !== form.department_id)
+  .map((d) => ({ value: d.id, label: d.label, icon: '🏢', description: d.location || d.manager_name || '' })))
+const sender = computed(() => departments.all.value.find((d) => d.id === form.department_id))
+// Un seul département possible : choisi d'office
+watch(() => departments.senders.value, (list) => {
+  if (list.length === 1 && !form.department_id) form.department_id = list[0].id
+}, { immediate: true })
+watch(internal, (v) => { if (!v) form.to_department_id = null })
 // Nombre de plis ou de chèques : seulement pour un pli ou un chèque (un colis compte pour un)
 const hasQuantity = computed(() => form.activity === 'distribution' && ['pli', 'cheque'].includes(form.shipment_type))
 watch(hasQuantity, (v) => { if (!v) form.shipment_quantity = 1 })
@@ -533,14 +579,17 @@ async function checkDuplicates() {
 
 // Champs obligatoires : le premier oublié est montré à l'écran
 function validate() {
-  missing.phone = form.recipient_phone.replace(/\D/g, '').length < 8
+  missing.phone = !internal.value && form.recipient_phone.replace(/\D/g, '').length < 8
   if (billed.value) form.fee_payer = 'merchant'
-  missing.zone = !form.delivery_zone_id
+  missing.zone = !internal.value && !form.delivery_zone_id
   missing.feePayer = !form.fee_payer
   missing.date = !dateChosen.value
   const first = [
     // Distribution, MAD sans formule en cours : la course ne peut pas être facturée
     [billed.value && !plan.value, 'step-shipment', `Aucune formule ${activityLabel(form.activity)} en cours : contactez l'agence pour l'ouvrir.`],
+    [hasDepartments.value && departments.settings.value.required && !form.department_id, 'step-department', 'Choisissez le département qui envoie la course.'],
+    [hasDepartments.value && departments.settings.value.requested_by === 'required' && !form.requested_by?.trim(), 'step-department', 'Indiquez qui demande la course.'],
+    [internal.value && !form.to_department_id, 'step-department', 'Choisissez le département destinataire.'],
     [missing.phone, 'phone', 'Indiquez le numéro de téléphone du destinataire.'],
     [missing.zone, 'zone-field', 'Choisissez la commune ou le quartier de livraison.'],
     [source.value && !pickedItems.value.length, 'amount', 'Choisissez les articles à prendre à l\'entrepôt.'],
@@ -594,7 +643,8 @@ async function submit() {
 
 function reset() {
   // Activité gardée d'une course à l'autre
-  Object.assign(form, { ...blank(), activity: form.activity, billing_plan_id: form.billing_plan_id })
+  Object.assign(form, { ...blank(), activity: form.activity, billing_plan_id: form.billing_plan_id, department_id: form.department_id, requested_by: form.requested_by })
+  internal.value = false
   Object.keys(missing).forEach((key) => { missing[key] = false })
   showMore.value = false
   showStock.value = false

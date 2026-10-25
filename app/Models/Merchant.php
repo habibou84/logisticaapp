@@ -60,6 +60,7 @@ class Merchant extends Model
             'pickup_location_accuracy' => 'integer',
             'shop_enabled' => 'boolean',
             'shop_fee_payer' => FeePayer::class,
+            'department_settings' => 'array',
         ];
     }
 
@@ -102,6 +103,12 @@ class Merchant extends Model
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class);
+    }
+
+    /** Départements du client (Finance, Marketing…) */
+    public function departments(): HasMany
+    {
+        return $this->hasMany(Department::class);
     }
 
     protected static function booted(): void

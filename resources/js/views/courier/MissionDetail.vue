@@ -21,6 +21,12 @@
       <p class="text-xl font-bold">{{ target.name }}</p>
       <p class="text-slate-700">📍 {{ target.zone }}<span v-if="target.address"> · {{ target.address }}</span></p>
       <p v-if="target.landmark" class="text-slate-500">Repère : {{ target.landmark }}</p>
+      <!-- Département du client : chez qui ramasser, à qui remettre -->
+      <p v-if="targetDepartment" class="rounded-xl bg-violet-50 p-3 text-violet-900">
+        🏢 <strong>{{ targetDepartment.label }}</strong><template v-if="targetDepartment.location"> · {{ targetDepartment.location }}</template>
+        <span v-if="targetDepartment.manager_name" class="block text-sm">👤 {{ targetDepartment.manager_name }}</span>
+        <span v-if="mission.type === 'pickup' && order.to_department" class="block text-sm">Courrier interne vers {{ order.to_department.label }}</span>
+      </p>
       <p v-if="mission.type === 'delivery' && order.delivery.scheduled_date" class="text-sm text-slate-500">Prévue le {{ date(order.delivery.scheduled_date) }} {{ order.delivery.time_slot ? `(${order.delivery.time_slot}h)` : '' }}</p>
 
       <div class="grid grid-cols-3 gap-2 pt-2">
@@ -131,7 +137,11 @@
         <template v-if="billed">
           <div>
             <label class="m-label" for="received-by">Reçu par{{ order.proof?.proof_name ? ' *' : '' }}</label>
-            <input id="received-by" v-model="delivery.received_by_name" class="m-input" maxlength="120" placeholder="Nom et fonction (ex. : Mme Bamba, secrétariat)">
+            <input id="received-by" v-model="delivery.received_by_name" class="m-input" maxlength="120" :placeholder="asksRole ? 'Nom' : 'Nom et fonction (ex. : Mme Bamba, secrétariat)'">
+          </div>
+          <div v-if="asksRole">
+            <label class="m-label" for="received-role">Fonction{{ order.department_proof.received_role === 'required' ? ' *' : '' }}</label>
+            <input id="received-role" v-model="delivery.received_by_role" class="m-input" maxlength="80" placeholder="Ex. : secrétaire de direction">
           </div>
           <div v-if="order.proof?.proof_signature || delivery.signature">
             <p class="m-label">Signature{{ order.proof?.proof_signature ? ' *' : '' }}</p>
@@ -177,6 +187,15 @@
     </BottomSheet>
 
     <!-- Problème -->
+    <!-- Département du client : qui remet la course -->
+    <BottomSheet :open="sheet === 'handover'" title="Colis récupéré" @close="sheet = null">
+      <div class="space-y-4">
+        <HandoverFields :model="handover" :proof="order.department_proof || {}" :department="order.department" />
+        <p v-if="sheetError" class="text-red-600 text-sm">{{ sheetError }}</p>
+        <button class="m-btn-success" :disabled="busy" @click="confirmHandover">✓ Valider le ramassage</button>
+      </div>
+    </BottomSheet>
+
     <BottomSheet :open="sheet === 'incident'" title="Que se passe-t-il ?" @close="sheet = null">
       <div class="space-y-4">
         <ChoiceChips v-model="incident.reason" :options="reasonOptions" label="Motif" />
@@ -242,6 +261,8 @@ import StatusBadge from '../../components/StatusBadge.vue'
 import DispatchMessages from '../../components/mobile/DispatchMessages.vue'
 import BottomSheet from '../../components/mobile/BottomSheet.vue'
 import ChoiceChips from '../../components/mobile/ChoiceChips.vue'
+import HandoverFields from '../../components/courier/HandoverFields.vue'
+import { asksHandover, blankHandover, handoverPayload } from '../../utils/handover'
 import SignaturePad from '../../components/mobile/SignaturePad.vue'
 import { useAuthStore } from '../../stores/auth'
 import { cachedGet } from '../../composables/useCachedApi'
@@ -302,6 +323,30 @@ const active = computed(() => ['accepted', 'in_progress'].includes(mission.value
 const offlineEnabled = computed(() => !!auth.user?.company?.offline_courier_actions)
 const canReportIncident = computed(() => ['pickup_assigned', 'pickup_in_progress', 'out_for_delivery'].includes(order.value?.status))
 
+// Département du client : celui qui envoie (ramassage), celui qui reçoit (courrier interne)
+const targetDepartment = computed(() => (mission.value.type === 'pickup' ? order.value.department : order.value.to_department))
+const asksRole = computed(() => !!order.value?.department_proof && order.value.department_proof.received_role !== 'off')
+const handover = reactive({ handed_by_name: '', handed_by_role: '', signature: null })
+function openHandover() {
+  Object.assign(handover, blankHandover(order.value))
+  sheetError.value = ''
+  sheet.value = 'handover'
+}
+async function confirmHandover() {
+  busy.value = true
+  sheetError.value = ''
+  try {
+    const result = await post('picked_up', handoverPayload(order.value, handover))
+    sheet.value = null
+    toasts.success(result.offline ? OFFLINE_SAVED : result.data.data.status_label)
+    if (!result.offline) await load()
+  } catch (e) {
+    sheetError.value = e.isAxiosError || e.response ? apiErrorMessage(e) : e.message
+  } finally {
+    busy.value = false
+  }
+}
+
 // Coordonnées utiles selon le type de mission : marchand (ramassage) ou client (livraison, retour au client)
 const target = computed(() => {
   const o = order.value
@@ -316,7 +361,7 @@ const primary = computed(() => {
   const s = order.value.status
   const t = mission.value.type
   if (t === 'pickup' && s === 'pickup_assigned') return { label: '🛵 Je pars chercher le colis', class: 'm-btn-primary', action: () => move('pickup_in_progress') }
-  if (t === 'pickup' && ['pickup_assigned', 'pickup_in_progress'].includes(s)) return { label: '✓ J\'ai récupéré le colis', class: 'm-btn-success', action: () => move('picked_up') }
+  if (t === 'pickup' && ['pickup_assigned', 'pickup_in_progress'].includes(s)) return { label: '✓ J\'ai récupéré le colis', class: 'm-btn-success', action: () => (asksHandover(order.value) ? openHandover() : move('picked_up')) }
   if (t === 'delivery' && ['delivery_assigned', 'picked_up', 'at_hub', 'delivery_failed', 'rescheduled'].includes(s)) return { label: shipping.value ? '🚌 Je pars à la gare' : '🛵 Je pars livrer', class: 'm-btn-primary', action: () => move('out_for_delivery') }
   if (t === 'delivery' && s === 'out_for_delivery') return { label: shipping.value ? '✓ Colis expédié' : '✓ Colis livré', class: 'm-btn-success', action: openDelivered }
   if (t === 'return' && s === 'return_assigned') return { label: '🛵 Je rapporte le colis', class: 'm-btn-primary', action: () => move('returning') }
@@ -395,7 +440,7 @@ async function move(status) {
 function openDelivered() {
   Object.assign(delivery, {
     collected_amount: billed.value ? 0 : order.value.amounts.cod_amount, payment_method: 'cash', received_by_company: false, transaction_ref: '', delivery_code: '',
-    received_by_name: '', signature: order.value.proof?.proof_signature ? '' : null,
+    received_by_name: '', received_by_role: '', signature: order.value.proof?.proof_signature ? '' : null,
     shipping_carrier: recentCarriers.value[0] || '', shipping_fee: order.value.shipping?.fee_estimate ?? 0, shipping_reference: '',
   })
   sheetError.value = ''
@@ -420,7 +465,9 @@ async function confirmDelivered() {
       if (p.proof_name && !delivery.received_by_name.trim()) throw new Error('Indiquez le nom de la personne qui a reçu la course.')
       if (p.proof_signature && !delivery.signature) throw new Error('Faites signer la personne qui reçoit la course.')
       if (p.proof_photo && !photoTaken.value) throw new Error('Prenez une photo de la décharge avant de valider.')
+      if (asksRole.value && order.value.department_proof.received_role === 'required' && !delivery.received_by_role.trim()) throw new Error('Indiquez la fonction de la personne qui a reçu la course.')
       if (delivery.received_by_name.trim()) extra.received_by_name = delivery.received_by_name.trim()
+      if (delivery.received_by_role?.trim()) extra.received_by_role = delivery.received_by_role.trim()
       if (delivery.signature) extra.signature = delivery.signature
     }
     if (shipping.value) {

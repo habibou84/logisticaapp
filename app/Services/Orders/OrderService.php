@@ -15,6 +15,7 @@ use App\Models\Recipient;
 use App\Models\User;
 use App\Models\Zone;
 use App\Services\Assignment\AutoAssigner;
+use App\Services\Departments\Departments;
 use App\Services\Finance\ClientSpace;
 use App\Services\Pricing\ClientPricing;
 use App\Services\Pricing\PricingService;
@@ -54,6 +55,7 @@ class OrderService
         private readonly PickupGroups $pickups,
         private readonly DeliveryDay $deliveryDay,
         private readonly AutoAssigner $autoAssigner,
+        private readonly Departments $departments,
     ) {}
 
     /**
@@ -85,6 +87,9 @@ class OrderService
                     'pickup_lng' => null,
                 ];
             }
+
+            // Départements du client : qui envoie, adresse d'un autre site, courrier interne
+            $data = $this->departments->prepare($actor, $merchant, $activity, $data);
 
             // Distribution et MAD : rien à encaisser auprès du destinataire, la course passe sur la facture du mois
             if ($activity !== Activity::Ecommerce) {
@@ -130,6 +135,9 @@ class OrderService
                 'merchant_alerts_muted' => ($data['notify_merchant'] ?? true) === false,
                 'created_by' => $actor->id,
                 'pickup_hub_id' => $hub?->id,
+                'department_id' => $data['department_id'] ?? null,
+                'to_department_id' => $data['to_department_id'] ?? null,
+                'requested_by' => $data['requested_by'] ?? null,
                 'fee_payer' => $feePayer,
                 'items_amount' => $itemsAmount,
                 'max_attempts' => $company->default_max_attempts,
@@ -138,7 +146,9 @@ class OrderService
                 'internal_due_at' => app(InternalDelays::class)->dueAt($company, $activity, $pricing['billing_plan_id'] ?? null, now()),
             ]);
             $order->cod_amount = Order::computeCodAmount($itemsAmount, $order->totalFees(), $feePayer);
-            $order->recipient_id = $this->rememberRecipient($merchant, $data)->id;
+            $this->departments->assertQuota($actor, $order);
+            // Courrier interne : le département n'entre pas dans le carnet des destinataires
+            $order->recipient_id = empty($data['to_department_id']) ? $this->rememberRecipient($merchant, $data)->id : null;
             $order->save();
 
             $location = $items !== [] ? $this->stock->location($merchant, $hub) : null;
@@ -184,6 +194,7 @@ class OrderService
             // Forfait du client bientôt épuisé : alerte à 80 % puis à 100 %
             $created = $order;
             DB::afterCommit(fn () => app(ClientSpace::class)->afterOrder($created));
+            DB::afterCommit(fn () => $this->departments->afterOrder($created));
 
             return $order;
         });

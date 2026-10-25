@@ -22,6 +22,8 @@ use App\Http\Controllers\Api\V1\CourierRatingController;
 use App\Http\Controllers\Api\V1\CourierSpaceController;
 use App\Http\Controllers\Api\V1\CourierVehicleController;
 use App\Http\Controllers\Api\V1\DeliveryDayController;
+use App\Http\Controllers\Api\V1\DepartmentController;
+use App\Http\Controllers\Api\V1\DepartmentSlipController;
 use App\Http\Controllers\Api\V1\FieldEventController;
 use App\Http\Controllers\Api\V1\FieldReportController;
 use App\Http\Controllers\Api\V1\FinanceController;
@@ -311,6 +313,21 @@ Route::prefix('v1')->name('v1.')->group(function () {
         // Marchands
         Route::apiResource('merchants', MerchantController::class)->except('destroy');
         Route::post('merchants/{merchant}/users', [MerchantController::class, 'storeUser'])->name('merchants.users.store');
+        // Départements du client (distribution, MAD)
+        Route::controller(DepartmentController::class)->group(function () {
+            Route::get('merchant/departments', 'mine')->name('merchant.departments');
+            Route::get('merchants/{merchant}/departments', 'index')->name('merchants.departments.index');
+            Route::post('merchants/{merchant}/departments', 'store')->name('merchants.departments.store');
+            Route::put('merchants/{merchant}/department-settings', 'updateSettings')->name('merchants.department-settings');
+            Route::put('merchants/{merchant}/users/{user}/departments', 'updateUser')->name('merchants.users.departments');
+            Route::put('departments/{department}', 'update')->name('departments.update');
+            Route::delete('departments/{department}', 'destroy')->name('departments.destroy');
+        });
+        Route::controller(DepartmentSlipController::class)->group(function () {
+            Route::get('departments/{department}/slip', 'show')->name('departments.slip');
+            Route::post('departments/{department}/slips', 'sign')->name('departments.slips.store');
+            Route::get('department-slips/{departmentSlip}/signature', 'signature')->name('department-slips.signature');
+        });
         Route::put('merchants/{merchant}/pickup-location', [MerchantLocationController::class, 'update'])->name('merchants.pickup-location');
         Route::get('merchant/pickup-location', [MerchantLocationController::class, 'mine'])->name('merchant.pickup-location');
         // Statistiques de l'e-commerçant (son application)

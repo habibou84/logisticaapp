@@ -12,6 +12,7 @@ use App\Enums\Role;
 use App\Enums\ShipmentType;
 use App\Models\Concerns\BelongsToCompany;
 use App\Models\Scopes\ActivityScope;
+use App\Services\Departments\Departments;
 use App\Support\PhoneNumber;
 use Database\Factories\OrderFactory;
 use Illuminate\Database\Eloquent\Builder;
@@ -39,6 +40,13 @@ class Order extends Model
         'activity',
         'merchant_alerts_muted',
         'received_by_name',
+        // Départements du client : qui envoie, vers qui (courrier interne), qui a demandé, remis, reçu
+        'department_id',
+        'to_department_id',
+        'requested_by',
+        'handed_by_name',
+        'handed_by_role',
+        'received_by_role',
         'created_by',
         'pickup_zone_id',
         'pickup_hub_id',
@@ -197,6 +205,18 @@ class Order extends Model
     public function merchant(): BelongsTo
     {
         return $this->belongsTo(Merchant::class);
+    }
+
+    /** Département du client qui envoie la course */
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(Department::class);
+    }
+
+    /** Département destinataire (courrier interne) */
+    public function toDepartment(): BelongsTo
+    {
+        return $this->belongsTo(Department::class, 'to_department_id');
     }
 
     public function creator(): BelongsTo
@@ -395,7 +415,11 @@ class Order extends Model
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
         if ($user->merchant_id !== null) {
-            return $query->where('merchant_id', $user->merchant_id);
+            // Employé limité à ses départements : les courses qu'ils envoient ou reçoivent
+            $departments = app(Departments::class)->scopeFor($user);
+
+            return $query->where('merchant_id', $user->merchant_id)
+                ->when($departments !== null, fn ($q) => $q->where(fn ($q) => $q->whereIn('department_id', $departments)->orWhereIn('to_department_id', $departments)));
         }
 
         if ($user->isCourier()) {

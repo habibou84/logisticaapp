@@ -4,7 +4,9 @@ namespace App\Http\Resources\V1;
 
 use App\Enums\OrderEventType;
 use App\Enums\OrderStatus;
+use App\Models\Department;
 use App\Models\Order;
+use App\Services\Departments\DepartmentSettings;
 use App\Services\Orders\ActivityOptions;
 use App\Services\Orders\AwaitingCourier;
 use Illuminate\Http\Request;
@@ -112,6 +114,18 @@ class OrderResource extends JsonResource
                 array_flip(['proof_name', 'proof_signature', 'proof_photo']),
             )),
             'received_by_name' => $this->received_by_name,
+            // Départements du client : qui envoie, vers lequel (courrier interne), qui a demandé, remis et reçu ;
+            // ce que le livreur doit relever (réglages du client)
+            'department' => $this->department_id ? $this->departmentBrief($this->resource->loadMissing('department')->department) : null,
+            'to_department' => $this->to_department_id ? $this->departmentBrief($this->resource->loadMissing('toDepartment')->toDepartment) : null,
+            'requested_by' => $this->requested_by,
+            'handed_by_name' => $this->handed_by_name,
+            'handed_by_role' => $this->handed_by_role,
+            'received_by_role' => $this->received_by_role,
+            'department_proof' => $this->when($this->department_id !== null || $this->to_department_id !== null, fn () => array_intersect_key(
+                app(DepartmentSettings::class)->for($this->resource->loadMissing('merchant')->merchant),
+                array_flip(['handover_name', 'handover_signature', 'received_role', 'slips']),
+            )),
             // Distribution ponctuelle : le lot de la course (missions du livreur regroupées)
             'lot' => $this->when($this->relationLoaded('billingPlan') && $this->billingPlan?->formula->isLot(), fn () => [
                 'id' => $this->billingPlan->id,
@@ -214,6 +228,23 @@ class OrderResource extends JsonResource
             'id' => $courier->id,
             'name' => $courier->user?->name,
             'phone' => $courier->user?->phone,
+        ] : null;
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function departmentBrief(?Department $department): ?array
+    {
+        return $department ? [
+            'id' => $department->id,
+            'name' => $department->name,
+            'code' => $department->code,
+            'label' => $department->label(),
+            'location' => $department->location,
+            'manager_name' => $department->manager_name,
+            'phone' => $department->phone,
+            'cost_center' => $department->cost_center,
         ] : null;
     }
 }

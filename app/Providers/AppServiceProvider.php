@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Services\Departments\Departments;
 use App\Services\Messaging\Gateways\AutoWhatsAppGateway;
 use App\Services\Messaging\Gateways\LogSmsGateway;
 use App\Services\Messaging\Gateways\LogWhatsAppGateway;
@@ -32,6 +33,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->scoped(ActivityOptions::class);
         // Parc de véhicules : véhicule de chaque livreur lu une fois par requête
         $this->app->scoped(Fleet::class);
+        $this->app->scoped(Departments::class);
         // WhatsApp : réel pour les numéros connectés (auto), forcé (meta) ou simulé partout (log)
         $this->app->bind(WhatsAppGateway::class, fn () => match (config('messaging.whatsapp.driver')) {
             'meta' => new MetaCloudGateway,

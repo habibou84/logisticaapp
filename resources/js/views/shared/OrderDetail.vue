@@ -124,6 +124,8 @@
           </ul>
         </div>
 
+        <DepartmentTrace :order="order" />
+
         <!-- Notation du livreur (équipe) : notes de la course, note de l'équipe -->
         <OrderRatings v-if="isDispatcher && (order.delivery_courier || order.pickup_courier)" :order="order" />
 
@@ -254,6 +256,7 @@ import CourierMessageThread from '../../components/CourierMessageThread.vue'
 import { useAuthStore } from '../../stores/auth'
 import { useToastStore } from '../../stores/toasts'
 import { orderChanges, lastOrderChange } from '../../composables/useRealtime'
+import DepartmentTrace from '../../components/departments/DepartmentTrace.vue'
 import { date, dateTime, money, shipmentLabel, telLink } from '../../utils/format'
 import { activityBadge } from '../../utils/activities'
 import SupplementsModal from '../../components/SupplementsModal.vue'

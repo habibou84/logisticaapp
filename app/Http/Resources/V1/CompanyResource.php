@@ -4,6 +4,7 @@ namespace App\Http\Resources\V1;
 
 use App\Enums\Activity;
 use App\Models\Company;
+use App\Services\Departments\DepartmentSettings;
 use App\Services\FieldEvents\FieldEventSettings;
 use App\Services\Orders\ActivityOptions;
 use App\Services\Ratings\RatingSettings;
@@ -70,6 +71,7 @@ class CompanyResource extends JsonResource
             'rating_settings' => app(RatingSettings::class)->for($this->resource),
             'field_event_settings' => app(FieldEventSettings::class)->for($this->resource),
             'vehicle_settings' => app(VehicleSettings::class)->for($this->resource),
+            'department_settings' => app(DepartmentSettings::class)->company($this->resource),
             'merchant_signup' => $this->merchant_signup,
             'weekly_report' => $this->weekly_report,
             'logo_url' => Branding::logoUrl($this->resource),

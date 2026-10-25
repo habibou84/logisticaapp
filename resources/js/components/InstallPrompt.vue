@@ -34,7 +34,7 @@ import { pwa, promptInstall } from '../composables/usePwa'
 const DISMISS_KEY = 'install-popup-dismissed'
 const DISMISS_DAYS = 3
 // Pages des deux applications installables (pas le back-office, ni le suivi des destinataires)
-const SKIP = [/^\/admin/, /^\/suivi/, /^\/b\//, /^\/etiquette/, /^\/bon-de-retour/, /^\/inscription/, /^\/mot-de-passe-oublie/]
+const SKIP = [/^\/admin/, /^\/suivi/, /^\/b\//, /^\/etiquette/, /^\/bon-de-retour/, /^\/bordereau/, /^\/inscription/, /^\/mot-de-passe-oublie/]
 
 const route = useRoute()
 const open = ref(false)

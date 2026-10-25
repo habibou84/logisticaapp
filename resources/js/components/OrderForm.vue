@@ -26,11 +26,16 @@
       <p v-if="errors.activity" class="field-error">{{ errors.activity[0] }}</p>
     </section>
 
-    <PasteMessage :merchant-id="merchantId" @parsed="applyParsed" />
+    <!-- Client à départements (distribution, MAD) : qui envoie, vers qui -->
+    <DepartmentFields v-if="billed && departments.all.value.length" :form="form" :all="departments.all.value" :senders="departments.senders.value" :settings="departments.settings.value" :errors="errors" />
+
+    <PasteMessage v-if="!form.to_department_id" :merchant-id="merchantId" @parsed="applyParsed" />
 
     <section class="card p-4 space-y-3">
-      <h3 class="font-semibold">Destinataire et livraison</h3>
+      <h3 class="font-semibold">{{ form.to_department_id ? 'Livraison' : 'Destinataire et livraison' }}</h3>
+      <p v-if="form.to_department_id" class="text-sm text-gray-600">Courrier interne : adresse et responsable du département destinataire.</p>
       <div class="grid sm:grid-cols-2 gap-3">
+        <template v-if="!form.to_department_id">
         <div class="relative">
           <label class="label" for="phone">Téléphone * <span v-if="parsed.recipient_phone" class="check">à vérifier</span></label>
           <input
@@ -74,6 +79,7 @@
           <label class="label" for="address">Adresse et repère <span v-if="parsed.delivery_address" class="check">à vérifier</span></label>
           <input id="address" v-model="form.delivery_address" :class="['input', mark('delivery_address')]" placeholder="Ex. : Siporex, résidence Les Palmiers, face pharmacie" @input="touched('delivery_address')">
         </div>
+        </template>
         <div id="when-field" class="sm:col-span-2">
           <p class="label">Quand livrer ? <span class="text-red-600">*</span></p>
           <div class="flex flex-wrap items-center gap-2" role="radiogroup" aria-label="Jour de livraison">
@@ -284,6 +290,8 @@ import { money } from '../utils/format'
 import { myActivities } from '../utils/activities'
 import PasteMessage from './PasteMessage.vue'
 import ZoneSelect from './ZoneSelect.vue'
+import DepartmentFields from './departments/DepartmentFields.vue'
+import { useDepartments } from '../composables/useDepartments'
 import { useDeliveryDate } from '../composables/useDeliveryDate'
 
 const props = defineProps({
@@ -323,6 +331,10 @@ const form = reactive({
   shipment_type: null,
   // Plis ou chèques remis ensemble
   shipment_quantity: 1,
+  // Départements du client : qui envoie, vers lequel (courrier interne), qui a demandé
+  department_id: null,
+  to_department_id: null,
+  requested_by: '',
   weight_kg: null,
   delivery_delay: null,
 })
@@ -398,6 +410,7 @@ async function checkDuplicates() {
 
 const itemsTotal = computed(() => items.value.reduce((sum, i) => sum + (i.quantity || 0) * (i.unit_price || 0), 0))
 const merchantId = computed(() => (isMerchant.value ? auth.user.merchant_id : form.merchant_id))
+const departments = useDepartments(computed(() => (isMerchant.value ? auth.user.merchant_id : form.merchant_id)), { mine: isMerchant.value })
 const client = computed(() => (isMerchant.value ? auth.user?.merchant : merchants.value.find((m) => m.id === form.merchant_id)) || null)
 const activityChoices = computed(() => {
   const own = client.value?.activities || []
@@ -549,7 +562,7 @@ function pickRecipient(r) {
 // Après « Enregistrer et nouvelle » : formulaire vidé, client gardé
 const blank = { ...form }
 function reset() {
-  Object.assign(form, { ...blank, merchant_id: form.merchant_id, activity: form.activity, billing_plan_id: form.billing_plan_id, shipment_type: form.shipment_type, delivery_delay: form.delivery_delay, fee_payer: billingPlan.value ? 'merchant' : null })
+  Object.assign(form, { ...blank, merchant_id: form.merchant_id, activity: form.activity, billing_plan_id: form.billing_plan_id, shipment_type: form.shipment_type, delivery_delay: form.delivery_delay, department_id: form.department_id, requested_by: form.requested_by, fee_payer: billingPlan.value ? 'merchant' : null })
   items.value = []
   zoneChoices.value = []
   duplicates.value = []

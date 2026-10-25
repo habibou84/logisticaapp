@@ -120,6 +120,8 @@
       </div>
     </section>
 
+    <DepartmentTrace :order="order" mobile />
+
     <!-- Frais facturés au client -->
     <section v-if="order.expenses?.length" class="m-card p-4 space-y-2 text-sm">
       <h2 class="font-semibold text-base">Frais de la course</h2>
@@ -221,6 +223,7 @@ import ChoiceChips from '../../components/mobile/ChoiceChips.vue'
 import { useAuthStore } from '../../stores/auth'
 import { useToastStore } from '../../stores/toasts'
 import { orderChanges, lastOrderChange } from '../../composables/useRealtime'
+import DepartmentTrace from '../../components/departments/DepartmentTrace.vue'
 import { localPhone, money, shipmentLabel, telLink, today } from '../../utils/format'
 import { BEFORE_PICKUP, FINAL } from '../../utils/workflow'
 import { siteOrigin } from '../../native'

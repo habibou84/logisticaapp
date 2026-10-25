@@ -28,6 +28,7 @@ class OrderController extends Controller
     public const LIST_RELATIONS = [
         'merchant', 'pickupZone', 'deliveryZone', 'lastIncidentReason', 'pickupHub', 'items',
         'pickupCourier.user', 'deliveryCourier.user', 'returnCourier.user', 'holder.user', 'merchantDecision',
+        'department', 'toDepartment',
     ];
 
     public function __construct(private readonly OrderService $orders) {}
@@ -44,6 +45,8 @@ class OrderController extends Controller
             // File « Sans livreur » : ramassage, livraison ou les deux
             'awaiting' => ['nullable', Rule::in([AwaitingCourier::PICKUP, AwaitingCourier::DELIVERY])],
             'merchant_id' => ['nullable', 'integer'],
+            // Département du client : courses qu'il envoie ou qu'il reçoit
+            'department_id' => ['nullable', 'integer'],
             // Activité : e-commerce, distribution, MAD (dans le périmètre de l'utilisateur)
             'activity' => ['nullable', Rule::enum(Activity::class)],
             'hub_id' => ['nullable', 'integer'],
@@ -78,6 +81,7 @@ class OrderController extends Controller
             ->when($queue === 'unassigned', fn ($q) => $q->orderBy('status_changed_at'))
             ->when($request->filled('merchant_id'), fn ($q) => $q->where('merchant_id', $request->integer('merchant_id')))
             ->when($request->filled('activity'), fn ($q) => $q->where('activity', $request->string('activity')))
+            ->when($request->filled('department_id'), fn ($q) => $q->where(fn ($q) => $q->where('department_id', $request->integer('department_id'))->orWhere('to_department_id', $request->integer('department_id'))))
             // Courses d'un contrat ou d'un lot (distribution, MAD), ou une liste précise (feuille de route)
             ->when($request->filled('billing_plan_id'), fn ($q) => $q->where('billing_plan_id', $request->integer('billing_plan_id')))
             ->when($request->filled('ids'), fn ($q) => $q->whereIn('id', array_map('intval', array_slice((array) $request->input('ids'), 0, 500))))

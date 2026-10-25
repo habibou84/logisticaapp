@@ -60,6 +60,10 @@ class StoreOrderRequest extends FormRequest
                 Rule::exists('merchants', 'id')->where('company_id', $companyId)->whereNull('deleted_at'),
             ],
             'merchant_reference' => ['nullable', 'string', 'max:100'],
+            // Départements du client : qui envoie, vers lequel (courrier interne), qui a demandé
+            'department_id' => ['nullable', 'integer'],
+            'to_department_id' => ['nullable', 'integer'],
+            'requested_by' => ['nullable', 'string', 'max:120'],
 
             // Commande préparée dans un entrepôt (produits en stock chez l'entreprise)
             'pickup_hub_id' => ['nullable', 'integer', Rule::exists('hubs', 'id')->where('company_id', $companyId)->where('is_active', true)],
@@ -73,10 +77,11 @@ class StoreOrderRequest extends FormRequest
             'pickup_lng' => ['nullable', 'numeric', 'between:-180,180'],
 
             'recipient_name' => ['nullable', 'string', 'max:255'],
-            'recipient_phone' => ['required', 'string', new PhoneNumber],
+            // Courrier interne : le département destinataire donne le téléphone et l'adresse
+            'recipient_phone' => ['required_without:to_department_id', 'nullable', 'string', new PhoneNumber],
             'recipient_phone2' => ['nullable', 'string', new PhoneNumber],
             // Identifiant de zone, ou son nom (« Cocody », « Yopougon Siporex »)
-            'delivery_zone_id' => ['required_without:delivery_zone', 'nullable', 'integer', $zone],
+            'delivery_zone_id' => ['required_without_all:delivery_zone,to_department_id', 'nullable', 'integer', $zone],
             'delivery_zone' => ['nullable', 'string', 'max:150'],
             'delivery_address' => ['nullable', 'string', 'max:500'],
             'delivery_landmark' => ['nullable', 'string', 'max:255'],
@@ -138,6 +143,9 @@ class StoreOrderRequest extends FormRequest
             'activity' => 'activité',
             'shipment_type' => 'type d\'envoi',
             'shipment_quantity' => 'nombre de plis',
+            'department_id' => 'département',
+            'to_department_id' => 'département destinataire',
+            'requested_by' => 'demandé par',
             'delivery_delay' => 'délai de livraison',
             'pickup_hub_id' => 'entrepôt',
             'items' => 'articles',

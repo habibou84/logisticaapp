@@ -5,6 +5,7 @@ namespace App\Policies;
 use App\Enums\Permission;
 use App\Models\Order;
 use App\Models\User;
+use App\Services\Departments\Departments;
 
 /**
  * L'isolation entre entreprises est assurée par le scope global (404 sinon).
@@ -20,7 +21,7 @@ class OrderPolicy
     public function view(User $user, Order $order): bool
     {
         if ($user->merchant_id !== null) {
-            return $user->merchant_id === $order->merchant_id;
+            return $user->merchant_id === $order->merchant_id && $this->inDepartments($user, $order);
         }
 
         if ($user->isCourier()) {
@@ -38,7 +39,7 @@ class OrderPolicy
     public function update(User $user, Order $order): bool
     {
         if ($user->merchant_id !== null) {
-            return $user->merchant_id === $order->merchant_id && $user->can(Permission::OrdersCreate->value);
+            return $user->merchant_id === $order->merchant_id && $this->inDepartments($user, $order) && $user->can(Permission::OrdersCreate->value);
         }
 
         return $user->can(Permission::OrdersDispatch->value);
@@ -76,6 +77,14 @@ class OrderPolicy
     {
         return $user->merchant_id === null && ! $user->isCourier()
             && ($user->can(Permission::OrdersDispatch->value) || $user->can(Permission::FinanceManage->value));
+    }
+
+    /** Employé limité à ses départements : course envoyée ou reçue par l'un d'eux */
+    private function inDepartments(User $user, Order $order): bool
+    {
+        $departments = app(Departments::class)->scopeFor($user);
+
+        return $departments === null || in_array((int) $order->department_id, $departments, true) || in_array((int) $order->to_department_id, $departments, true);
     }
 
     public function addAttachment(User $user, Order $order): bool

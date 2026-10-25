@@ -15,6 +15,7 @@ use App\Models\OrderAssignment;
 use App\Models\OrderAttachment;
 use App\Models\User;
 use App\Services\Assignment\AutoAssigner;
+use App\Services\Departments\DepartmentSettings;
 use App\Services\Finance\FinanceRecorder;
 use App\Services\Merchants\MerchantLocation;
 use App\Services\Stock\StockKeeper;
@@ -105,14 +106,15 @@ class OrderWorkflow
                 ], fn ($v) => $v !== null),
             ]);
 
-            // Distribution, MAD : signature de la personne qui a reçu, gardée avec la course
-            if ($to === OrderStatus::Delivered && ($signature = $this->decodeSignature($context['signature'] ?? null)) !== null) {
-                $path = "orders/{$order->id}/signature-".now()->format('YmdHis').'.png';
+            // Distribution, MAD : signature de la personne qui a reçu (ou qui a remis au ramassage), gardée avec la course
+            if (in_array($to, [OrderStatus::Delivered, OrderStatus::PickedUp], true) && ($signature = $this->decodeSignature($context['signature'] ?? null)) !== null) {
+                $kind = $to === OrderStatus::Delivered ? 'delivery' : 'pickup';
+                $path = "orders/{$order->id}/signature-{$kind}-".now()->format('YmdHis').'.png';
                 Storage::disk('local')->put($path, $signature);
                 OrderAttachment::create([
                     'order_id' => $order->id,
                     'event_id' => $event->id,
-                    'type' => 'signature_delivery',
+                    'type' => "signature_{$kind}",
                     'disk' => 'local',
                     'path' => $path,
                     'mime_type' => 'image/png',
@@ -257,6 +259,7 @@ class OrderWorkflow
                 ? null
                 : ($reason ?? throw new BusinessRuleException('Indiquez le motif de l\'échec du ramassage.', 'incident_reason_id')),
             OrderStatus::Delivered => $this->validateDelivery($order, $context),
+            OrderStatus::PickedUp => $this->validateHandover($order, $context),
             OrderStatus::Lost => filled($context['lost_reason'] ?? null) ? null
                 : throw new BusinessRuleException('Déclarez la perte depuis l\'action « Colis perdu ».', 'status'),
             default => null,
@@ -343,6 +346,29 @@ class OrderWorkflow
         if ($options['proof_photo'] && ! $order->attachments()->where('type', 'photo_delivery')->exists()) {
             throw new BusinessRuleException('Prenez une photo de la décharge (ou du cachet) avant de valider.', 'photo');
         }
+        // Client à départements : fonction de la personne qui reçoit (réglage du client)
+        if (($order->department_id !== null || $order->to_department_id !== null)
+            && app(DepartmentSettings::class)->for($order->loadMissing('merchant')->merchant)['received_role'] === 'required' && blank($context['received_by_role'] ?? null)) {
+            throw new BusinessRuleException('Indiquez la fonction de la personne qui a reçu la course.', 'received_by_role');
+        }
+    }
+
+    /**
+     * Département du client au ramassage : nom (et fonction) de la personne qui remet, sa signature, selon les
+     * réglages du client. Hors connexion, le ramassage est gardé tel quel.
+     */
+    private function validateHandover(Order $order, array $context): void
+    {
+        if ($order->department_id === null || ! empty($context['offline'])) {
+            return;
+        }
+        $settings = app(DepartmentSettings::class)->for($order->loadMissing('merchant')->merchant);
+        if ($settings['handover_name'] === 'required' && blank($context['handed_by_name'] ?? null)) {
+            throw new BusinessRuleException('Indiquez le nom de la personne du département qui vous remet la course.', 'handed_by_name');
+        }
+        if ($settings['handover_signature'] === 'required' && $this->decodeSignature($context['signature'] ?? null) === null) {
+            throw new BusinessRuleException('Faites signer la personne qui vous remet la course.', 'signature');
+        }
     }
 
     /** Signature dessinée sur le téléphone (image PNG en base64), ou null */
@@ -395,6 +421,11 @@ class OrderWorkflow
                 $this->finish($pickup, AssignmentStatus::Completed);
                 $order->picked_up_at = $now;
                 $order->handTo($order->pickup_courier_id);
+                // Département du client : qui a remis la course au livreur
+                if (filled($context['handed_by_name'] ?? null)) {
+                    $order->handed_by_name = trim((string) $context['handed_by_name']);
+                    $order->handed_by_role = filled($context['handed_by_role'] ?? null) ? trim((string) $context['handed_by_role']) : null;
+                }
 
                 return $pickup;
 
@@ -425,6 +456,9 @@ class OrderWorkflow
                 $order->collected_amount = $context['collected_amount'] ?? $order->cod_amount;
                 if (filled($context['received_by_name'] ?? null)) {
                     $order->received_by_name = trim((string) $context['received_by_name']);
+                }
+                if (filled($context['received_by_role'] ?? null)) {
+                    $order->received_by_role = trim((string) $context['received_by_role']);
                 }
                 if ($order->is_shipping) {
                     $order->shipping_fee = $context['shipping_fee'];

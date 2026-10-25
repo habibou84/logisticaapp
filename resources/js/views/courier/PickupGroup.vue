@@ -43,6 +43,7 @@
         >
         <span class="flex-1 min-w-0">
           <span class="block font-semibold truncate">{{ m.order.recipient.name || m.order.recipient.phone }}</span>
+          <span v-if="m.order.department" class="block text-sm text-violet-800 truncate">🏢 {{ m.order.department.label }}<template v-if="m.order.to_department"> → {{ m.order.to_department.label }}</template></span>
           <span class="block text-sm text-slate-500 truncate">🛵 vers {{ m.order.delivery.zone_name }} · {{ m.order.package.description || 'Colis' }}<template v-if="m.order.package.shipment_quantity > 1"> · {{ shipmentLabel(m.order.package) }}</template></span>
           <span class="flex flex-wrap items-center gap-2 mt-1">
             <span v-if="m.status === 'assigned'" class="rounded-full bg-amber-100 text-amber-800 text-xs font-semibold px-2 py-0.5">À accepter</span>
@@ -73,6 +74,20 @@
       </div>
     </div>
 
+    <!-- Départements du client : qui remet les colis -->
+    <BottomSheet :open="sheet === 'handover'" :title="`${pickedCount} colis récupéré${pickedCount > 1 ? 's' : ''}`" @close="sheet = null">
+      <div class="space-y-4">
+        <HandoverFields :model="handover" :proof="handoverOrder?.department_proof || {}" :department="handoverDepartments.length === 1 ? handoverDepartments[0] : null" />
+        <p v-if="handoverDepartments.length > 1" class="text-sm text-slate-600">Départements : {{ handoverDepartments.map((d) => d.label).join(', ') }}</p>
+        <template v-if="missing.length">
+          <p class="text-sm text-slate-600">{{ missing.length }} colis non remis retournent à l'agence :</p>
+          <ChoiceChips v-model="incident.reason" :options="reasonOptions" label="Motif" />
+        </template>
+        <p v-if="sheetError" class="text-red-600 text-sm">{{ sheetError }}</p>
+        <button class="m-btn-success" :disabled="busy || (missing.length && !incident.reason)" @click="confirmHandover">✓ Valider le ramassage</button>
+      </div>
+    </BottomSheet>
+
     <!-- Colis non remis : motif -->
     <BottomSheet :open="sheet === 'missing'" :title="`${missing.length} colis non remis`" @close="sheet = null">
       <div class="space-y-4">
@@ -83,7 +98,7 @@
         <ChoiceChips v-model="incident.reason" :options="reasonOptions" label="Motif" />
         <textarea v-model="incident.note" rows="2" class="m-input" placeholder="Précisez (facultatif) : ex. colis pas encore emballé" />
         <p v-if="sheetError" class="text-red-600 text-sm">{{ sheetError }}</p>
-        <button class="m-btn-success" :disabled="busy || !incident.reason" @click="confirmPicked">
+        <button class="m-btn-success" :disabled="busy || !incident.reason" @click="confirmPicked()">
           ✓ Valider : {{ pickedCount }} récupéré{{ pickedCount > 1 ? 's' : '' }}
         </button>
       </div>
@@ -96,6 +111,8 @@
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
+import HandoverFields from '../../components/courier/HandoverFields.vue'
+import { asksHandover, blankHandover, handoverPayload } from '../../utils/handover'
 import StatusBadge from '../../components/StatusBadge.vue'
 import BottomSheet from '../../components/mobile/BottomSheet.vue'
 import ChoiceChips from '../../components/mobile/ChoiceChips.vue'
@@ -209,19 +226,39 @@ async function leave() {
   }
 }
 
+// Départements du client parmi les colis récupérés : qui les remet
+const handoverOrder = computed(() => picked.value.map((m) => m.order).find(asksHandover) || null)
+const handoverDepartments = computed(() => [...new Map(picked.value.filter((m) => m.order.department).map((m) => [m.order.department.id, m.order.department])).values()])
+const handover = reactive({ handed_by_name: '', handed_by_role: '', signature: null })
+
 function openPicked() {
+  if (handoverOrder.value) {
+    Object.assign(handover, blankHandover(handoverOrder.value))
+    Object.assign(incident, { reason: null, note: '' })
+    sheetError.value = ''
+    sheet.value = 'handover'
+    return
+  }
   if (!missing.value.length) return confirmPicked()
   Object.assign(incident, { reason: null, note: '' })
   sheetError.value = ''
   sheet.value = 'missing'
 }
 
-async function confirmPicked() {
+function confirmHandover() {
+  try {
+    confirmPicked(handoverPayload(handoverOrder.value, handover))
+  } catch (e) {
+    sheetError.value = e.message
+  }
+}
+
+async function confirmPicked(extra = {}) {
   busy.value = true
   try {
     const left = missing.value
     const done = picked.value
-    const report = await sendAll(done, { status: 'picked_up' })
+    const report = await sendAll(done, { status: 'picked_up', ...extra })
     if (left.length) {
       // Colis non remis : retour à « Validée », l'agence le reprogramme
       const back = await sendAll(left, { status: 'confirmed', incident_reason_id: incident.reason, note: incident.note || undefined })

@@ -32,6 +32,18 @@
           >{{ counts[f.value] }}</span>
         </button>
       </div>
+
+      <!-- Client à départements : courses envoyées ou reçues par l'un d'eux -->
+      <div v-if="departments.senders.value.length > 1" class="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 lg:mx-0 lg:px-0" role="radiogroup" aria-label="Département">
+        <button
+          v-for="d in [{ id: null, label: 'Tous les départements' }, ...departments.senders.value.map((x) => ({ id: x.id, label: x.code || x.name }))]" :key="d.id ?? 'all'"
+          type="button" role="radio" :aria-checked="department === d.id"
+          :class="['tap shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold ring-1', department === d.id ? 'bg-slate-900 text-white ring-slate-900' : 'bg-white ring-slate-200 text-slate-700']"
+          @click="department = d.id; reload()"
+        >
+          🏢 {{ d.label }}
+        </button>
+      </div>
     </div>
 
     <!-- Courses de la période choisie -->
@@ -73,6 +85,7 @@ import PeriodPicker from '../../components/mobile/PeriodPicker.vue'
 import ActivitySwitch from '../../components/client/ActivitySwitch.vue'
 import { useClientSpaceStore } from '../../stores/clientSpace'
 import { ORDER_FILTERS, filterParams } from '../../utils/orderFilters'
+import { useDepartments } from '../../composables/useDepartments'
 import { periodFromQuery, periodQuery } from '../../utils/periods'
 
 const auth = useAuthStore()
@@ -100,6 +113,9 @@ const counts = reactive({})
 const page = ref(1)
 const hasMore = ref(false)
 const loading = ref(false)
+// Département choisi (client à départements)
+const department = ref(null)
+const departments = useDepartments(computed(() => auth.user?.merchant_id), { mine: true })
 
 // Jour de livraison d'une course : date prévue, sinon jour de création
 function dayOf(o) {
@@ -139,7 +155,7 @@ async function load(p = 1) {
   try {
     const { data } = await cachedGet('/orders', {
       // Une recherche porte sur toutes les dates : on retrouve une course sans connaître son jour
-      params: { page: p, per_page: 20, ...filterParams(current, search.value ? null : period.value), search: search.value || undefined, activity: space.current || undefined },
+      params: { page: p, per_page: 20, ...filterParams(current, search.value ? null : period.value), search: search.value || undefined, activity: space.current || undefined, department_id: department.value || undefined },
     })
     orders.value = p === 1 ? data.data : [...orders.value, ...data.data]
     page.value = p
@@ -155,7 +171,7 @@ async function load(p = 1) {
 async function loadCounts() {
   await Promise.all(filters.map(async (f) => {
     try {
-      const { data } = await cachedGet('/orders', { params: { per_page: 1, ...filterParams(f, period.value), activity: space.current || undefined } })
+      const { data } = await cachedGet('/orders', { params: { per_page: 1, ...filterParams(f, period.value), activity: space.current || undefined, department_id: department.value || undefined } })
       counts[f.value] = data.meta?.total ?? 0
     } catch {
       // Compteur facultatif
