@@ -86,6 +86,7 @@ const routes = [
       { path: 'retours', component: () => import('../views/admin/MerchantReturns.vue'), meta: { permission: 'orders.dispatch' } },
       { path: 'livreurs', component: () => import('../views/admin/Couriers.vue'), meta: { permission: ['orders.dispatch', 'couriers.manage'] } },
       { path: 'utilisateurs', component: () => import('../views/admin/Users.vue'), meta: { permission: 'users.view' } },
+      { path: 'roles', component: () => import('../views/admin/Roles.vue'), meta: { permission: 'users.view' } },
       { path: 'zones', component: () => import('../views/admin/Zones.vue'), meta: { permission: 'zones.manage' } },
       { path: 'tarifs', component: () => import('../views/admin/Pricing.vue'), meta: { permission: 'pricing.manage' } },
       { path: 'paie-livreurs', component: () => import('../views/admin/PayPlans.vue'), meta: { permission: 'pay.manage' } },

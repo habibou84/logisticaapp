@@ -6,7 +6,7 @@
       @click.self="$emit('close')"
     >
       <div
-        class="w-full sm:max-w-lg max-h-[92vh] overflow-y-auto bg-white rounded-t-2xl sm:rounded-xl shadow-xl"
+        :class="['w-full max-h-[92vh] overflow-y-auto bg-white rounded-t-2xl sm:rounded-xl shadow-xl', wide ? 'sm:max-w-3xl' : 'sm:max-w-lg']"
         role="dialog"
         aria-modal="true"
       >
@@ -26,6 +26,8 @@
 defineProps({
   open: { type: Boolean, default: false },
   title: { type: String, default: '' },
+  // Fenêtre large (éditeur de rôle, aperçu d'un compte)
+  wide: { type: Boolean, default: false },
 })
 defineEmits(['close'])
 </script>

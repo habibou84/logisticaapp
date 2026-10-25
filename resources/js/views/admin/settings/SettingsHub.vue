@@ -137,8 +137,8 @@ const ALL = computed(() => {
     {
       key: 'team', icon: '🛵', title: 'Équipe et paie',
       description: 'Rémunération des livreurs, comptes et rôles de l\'équipe.',
-      links: [{ to: '/admin/paie-livreurs', label: 'Paie des livreurs', permission: 'pay.manage' }, { to: '/admin/utilisateurs', label: 'Utilisateurs et rôles', permission: 'users.view' }],
-      keywords: 'paie salaire plan rémunération primes utilisateurs rôles équipe',
+      links: [{ to: '/admin/paie-livreurs', label: 'Paie des livreurs', permission: 'pay.manage' }, { to: '/admin/utilisateurs', label: 'Utilisateurs', permission: 'users.view' }, { to: '/admin/roles', label: 'Rôles et droits', permission: 'users.view' }],
+      keywords: 'paie salaire plan rémunération primes utilisateurs rôles droits permissions équipe périmètre zones dépôts',
     },
     {
       key: 'integrations', icon: '🔌', title: 'Intégrations',

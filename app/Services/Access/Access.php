@@ -126,6 +126,7 @@ class Access
         $builtIn = $role->builtIn();
 
         return [
+            'id' => $role->id,
             'value' => $role->name,
             'label' => $role->displayLabel(),
             'description' => $role->is_custom ? $role->description : $this->builtInDescription($builtIn),
