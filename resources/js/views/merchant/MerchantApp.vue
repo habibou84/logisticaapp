@@ -29,12 +29,8 @@ const tabs = computed(() => [
   {
     to: '/marchand/courses/nouvelle',
     label: 'Nouvelle course',
+    // Bouton ＋ : directement le formulaire (l'import Excel reste dans Moi)
     primary: true,
-    menu: auth.can('orders.create') ? [
-      { to: '/marchand/courses/nouvelle', icon: 'plus', label: 'Une nouvelle course', text: space.hasEcommerce ? 'Le destinataire, la commune, le montant' : 'Le destinataire, la commune, l\'envoi' },
-      { to: '/marchand/courses/nouvelle?coller=1', icon: 'message', label: 'Coller un message WhatsApp', text: 'La course se remplit toute seule' },
-      { to: '/marchand/courses/import', icon: 'upload', label: 'Importer un fichier Excel', text: 'Beaucoup de courses d\'un coup' },
-    ] : null,
   },
   ...(moneyTab.value ? [moneyTab.value] : []),
   { to: '/marchand/profil', label: 'Moi', icon: UserIcon },

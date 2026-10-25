@@ -164,16 +164,6 @@
       <PushInvite />
     </template>
 
-    <!-- Un seul bouton ＋ (en bas) ; le raccourci « coller un message » reste sous le pouce -->
-    <RouterLink
-      v-if="auth.can('orders.create')"
-      to="/marchand/courses/nouvelle?coller=1"
-      class="tap fixed left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-xl active:scale-95 lg:hidden"
-      style="bottom: calc(5.5rem + env(safe-area-inset-bottom))"
-    >
-      <StatusIcon name="message" class="h-4 w-4" />Coller un message WhatsApp
-    </RouterLink>
-
     <!-- Détail d'une tuile -->
     <BottomSheet :open="!!sheet" :title="sheetTitle" @close="sheet = null">
       <ForfaitCard v-if="sheet?.type === 'plan'" :plan="sheet.plan" />
