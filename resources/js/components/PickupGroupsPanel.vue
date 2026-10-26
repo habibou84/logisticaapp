@@ -28,6 +28,7 @@
               <option :value="undefined" disabled>Livreur…</option>
               <option v-for="c in couriers" :key="c.id" :value="c.id">{{ c.name }} ({{ c.active_assignments_count }} en cours){{ c.is_available ? '' : ' · indisponible' }}{{ madSuffix(c) }}</option>
             </select>
+            <a :href="`/etiquettes?ids=${chosen(g).join(',')}`" target="_blank" class="btn-secondary" :class="{ 'pointer-events-none opacity-50': !chosen(g).length }">🏷️ Étiquettes</a>
             <button class="btn-primary" :disabled="!courier[g.key] || !chosen(g).length || busy === g.key" @click="assign(g)">
               {{ busy === g.key ? 'Assignation…' : `Assigner ${chosen(g).length === visible(g).length ? 'les' : ''} ${chosen(g).length}` }}
             </button>

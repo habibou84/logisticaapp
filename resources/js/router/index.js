@@ -48,6 +48,12 @@ const routes = [
     meta: { roles: [...SPACES.admin, ...SPACES.marchand] },
   },
   {
+    path: '/etiquettes',
+    name: 'labels',
+    component: () => import('../views/Label.vue'),
+    meta: { roles: [...SPACES.admin, ...SPACES.marchand] },
+  },
+  {
     path: '/feuille-de-route',
     name: 'route-sheet',
     component: () => import('../views/RouteSheet.vue'),

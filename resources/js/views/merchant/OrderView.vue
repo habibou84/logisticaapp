@@ -159,6 +159,9 @@
       <button v-if="beforePickup" class="m-btn-secondary text-red-600" @click="sheet = 'cancel'">Annuler la course</button>
     </section>
 
+    <!-- Étiquette à coller sur le colis ou le pli -->
+    <RouterLink v-if="canPrintLabel" :to="`/etiquette/${order.id}`" class="m-btn-secondary flex items-center justify-center gap-2">🖨️ Imprimer l'étiquette</RouterLink>
+
     <!-- Revenue, annulée ou en échec : la refaire partir (nouvelle course liée) -->
     <section v-if="canRenew" class="space-y-2">
       <button class="m-btn-secondary" @click="sheet = 'renew'">🔁 Reconduire la course</button>
@@ -283,6 +286,7 @@ const relivrer = ref(false)
 const fullHistory = ref(false)
 
 const isFinal = computed(() => FINAL.includes(order.value?.status))
+const canPrintLabel = computed(() => auth.can('orders.create') && !['cancelled', 'rejected'].includes(order.value?.status))
 const canRenew = computed(() => auth.can('orders.create') && ['returned', 'cancelled', 'delivery_failed'].includes(order.value?.status))
 const renewDate = ref(null)
 const state = computed(() => merchantStatus(order.value))

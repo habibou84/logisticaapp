@@ -22,6 +22,7 @@
       <div class="grid grid-cols-2 gap-3">
         <a :href="shareLink" target="_blank" class="m-btn-secondary whitespace-nowrap px-3 py-3.5"><StatusIcon name="share" class="h-4 w-4 shrink-0" />Partager</a>
         <RouterLink :to="`/marchand/courses/${created.id}`" class="m-btn-secondary whitespace-nowrap px-3 py-3.5">Voir la course</RouterLink>
+        <RouterLink :to="`/etiquette/${created.id}`" class="m-btn-secondary whitespace-nowrap px-3 py-3.5">🖨️ Étiquette</RouterLink>
       </div>
     </div>
   </div>

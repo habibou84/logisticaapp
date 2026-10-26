@@ -74,6 +74,7 @@
                   {{ p.usage.delivered }} livré(s) · {{ p.usage.in_progress }} en cours<template v-if="p.usage.remaining"> · {{ p.usage.remaining }} à créer</template>
                   <span v-if="p.usage.late" class="text-red-600 font-medium"> · {{ p.usage.late }} en retard</span>
                   <span v-if="p.usage.done" class="text-emerald-700 font-medium"> · terminé ✓</span>
+                  <a v-if="p.usage.used" :href="`/etiquettes?lot=${p.id}`" target="_blank" class="ml-1 text-blue-600">🏷️ Étiquettes du lot</a>
                 </div>
                 <div v-if="p.usage.supplements" class="text-xs text-gray-600">Suppléments : {{ money(p.usage.supplements) }}</div>
               </template>

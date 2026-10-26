@@ -196,6 +196,7 @@
         </button>
         <!-- Distribution : liste à faire signer à chaque remise -->
         <a :href="`/feuille-de-route?ids=${selected.join(',')}`" target="_blank" class="btn-secondary">🖨 Feuille de route</a>
+        <a :href="`/etiquettes?ids=${selected.join(',')}`" target="_blank" class="btn-secondary">🏷️ Étiquettes</a>
         <button class="btn-secondary" @click="selected = []">Annuler</button>
       </div>
 
