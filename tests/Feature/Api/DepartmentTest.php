@@ -196,6 +196,8 @@ class DepartmentTest extends TestCase
 
     public function test_who_hands_over_and_who_receives_is_noted_and_slips_are_signed(): void
     {
+        // Accusé de réception sur l'étiquette (et sa photo) : pas l'objet de ce test
+        $this->company->update(['activity_options' => ['distribution' => ['receipt_label' => false]]]);
         Storage::fake('local');
         $finance = $this->department(['name' => 'Finance', 'location' => 'Bâtiment A']);
         $agency = $this->department(['name' => 'Agence Plateau', 'pickup_zone_id' => $this->plateau->id, 'pickup_address' => 'Rue du Commerce']);

@@ -457,7 +457,7 @@ const hasQuantity = computed(() => !!billingPlan.value && ['pli', 'cheque'].incl
 watch(hasQuantity, (v) => { if (!v) form.shipment_quantity = 1 })
 const proofText = computed(() => {
   const p = billingPlan.value?.proof || {}
-  return [p.proof_name && 'le nom de la personne qui reçoit', p.proof_signature && 'sa signature', p.proof_photo && 'une photo de la décharge'].filter(Boolean).join(', ')
+  return [p.proof_name && 'le nom de la personne qui reçoit', p.proof_signature && 'sa signature', p.receipt_label ? 'l\'accusé de réception signé et tamponné (photo)' : p.proof_photo && 'une photo de la décharge'].filter(Boolean).join(', ')
 })
 watch(billingPlan, (plan) => {
   form.shipment_type = plan ? (form.shipment_type || 'colis') : null

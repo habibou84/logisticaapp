@@ -105,6 +105,7 @@ const PROOFS = [
   { key: 'proof_name', label: 'Nom de la personne qui reçoit', hint: 'Saisi par le livreur à la remise.' },
   { key: 'proof_signature', label: 'Signature', hint: 'Signée sur le téléphone du livreur.' },
   { key: 'proof_photo', label: 'Photo de la décharge', hint: 'Ou du cachet, prise avant de valider.' },
+  { key: 'receipt_label', label: 'Accusé de réception sur l\'étiquette', hint: 'Nom, prénoms, fonction, date, signature et cachet à remplir par la personne qui reçoit ; le livreur en prend la photo avant de valider.' },
 ]
 
 const QUANTITY = { per_item: 'Chaque pli ou chèque compte et se facture', per_course: 'Comptée et facturée une fois' }

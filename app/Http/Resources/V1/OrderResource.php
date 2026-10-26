@@ -110,10 +110,8 @@ class OrderResource extends JsonResource
             // Distribution, MAD : rien à encaisser, la course passe sur la facture du mois
             'billed_monthly' => in_array($this->activity, ActivityOptions::ACTIVITIES, true),
             // Preuve de remise demandée au livreur (réglages de l'entreprise ou du contrat), et celle reçue
-            'proof' => $this->when(in_array($this->activity, ActivityOptions::ACTIVITIES, true), fn () => array_intersect_key(
-                app(ActivityOptions::class)->order($this->resource) ?? [],
-                array_flip(['proof_name', 'proof_signature', 'proof_photo']),
-            )),
+            // (accusé de réception sur l'étiquette : sa photo est demandée)
+            'proof' => $this->when(in_array($this->activity, ActivityOptions::ACTIVITIES, true), fn () => app(ActivityOptions::class)->proof($this->resource) ?? []),
             'received_by_name' => $this->received_by_name,
             // Départements du client : qui envoie, vers lequel (courrier interne), qui a demandé, remis et reçu ;
             // ce que le livreur doit relever (réglages du client)

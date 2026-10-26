@@ -245,7 +245,7 @@ const DAY_SHORT = ['lun', 'mar', 'mer', 'jeu', 'ven', 'sam', 'dim']
 // « Preuve : nom, signature · WhatsApp au destinataire · réservé lun–ven 08:00–17:00 »
 function describeOptions(plan) {
   const o = plan.effective_options
-  const proofs = [o.proof_name && 'nom', o.proof_signature && 'signature', o.proof_photo && 'photo'].filter(Boolean)
+  const proofs = [o.proof_name && 'nom', o.proof_signature && 'signature', (o.proof_photo || o.receipt_label) && (o.receipt_label ? 'accusé de réception (photo)' : 'photo')].filter(Boolean)
   const parts = [`Preuve : ${proofs.length ? proofs.join(', ') : 'aucune'}`, o.notify_recipient ? 'WhatsApp au destinataire' : 'pas de message au destinataire']
   if (plan.formula === 'mad_contract') {
     const days = o.mad_days.length === 7 ? 'tous les jours' : o.mad_days.map((d) => DAY_SHORT[d - 1]).join(', ')

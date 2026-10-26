@@ -173,7 +173,7 @@ class BillingPlan extends Model
         $options = app(ActivityOptions::class)->plan($this);
 
         return [
-            'proof' => array_intersect_key($options, array_flip(['proof_name', 'proof_signature', 'proof_photo'])),
+            'proof' => array_intersect_key($options, array_flip(['proof_name', 'proof_signature', 'proof_photo', 'receipt_label'])),
             'couriers' => $this->formula === BillingFormula::MadContract
                 ? $this->couriers->map(fn ($c) => ['id' => $c->id, 'name' => $c->user?->name])->values()->all()
                 : [],

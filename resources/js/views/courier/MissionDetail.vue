@@ -160,7 +160,7 @@
           </div>
           <button v-else type="button" class="text-sm font-medium text-[var(--app-color)]" @click="delivery.signature = ''">+ Faire signer</button>
           <label :class="['m-btn-secondary cursor-pointer', order.proof?.proof_photo && !photoTaken ? 'ring-2 ring-amber-400' : '']">
-            📷 {{ photoTaken ? 'Photo envoyée ✓ (en reprendre une)' : `Photographier la décharge${order.proof?.proof_photo ? ' *' : ''}` }}
+            📷 {{ photoTaken ? 'Photo envoyée ✓ (en reprendre une)' : `${order.proof?.receipt_label ? 'Photographier l\'accusé signé et tamponné' : 'Photographier la décharge'}${order.proof?.proof_photo ? ' *' : ''}` }}
             <input type="file" accept="image/*" capture="environment" class="hidden" @change="uploadPhoto">
           </label>
         </template>
@@ -306,7 +306,7 @@ const shipping = computed(() => order.value?.is_shipping && mission.value?.type 
 const billed = computed(() => !!order.value?.billed_monthly)
 const proofList = computed(() => {
   const p = order.value?.proof || {}
-  return [p.proof_name && 'nom de la personne', p.proof_signature && 'signature', p.proof_photo && 'photo de la décharge'].filter(Boolean).join(', ')
+  return [p.proof_name && 'nom de la personne', p.proof_signature && 'signature', p.proof_photo && (p.receipt_label ? 'photo de l\'accusé signé et tamponné' : 'photo de la décharge')].filter(Boolean).join(', ')
 })
 const photoTaken = ref(false)
 const CARRIERS_KEY = 'recent_carriers'
@@ -504,7 +504,7 @@ async function confirmDelivered() {
       const p = order.value.proof || {}
       if (p.proof_name && !delivery.received_by_name.trim()) throw new Error('Indiquez le nom de la personne qui a reçu la course.')
       if (p.proof_signature && !delivery.signature) throw new Error('Faites signer la personne qui reçoit la course.')
-      if (p.proof_photo && !photoTaken.value) throw new Error('Prenez une photo de la décharge avant de valider.')
+      if (p.proof_photo && !photoTaken.value) throw new Error(p.receipt_label ? 'Prenez une photo de l\'accusé de réception signé et tamponné avant de valider.' : 'Prenez une photo de la décharge avant de valider.')
       if (asksRole.value && order.value.department_proof.received_role === 'required' && !delivery.received_by_role.trim()) throw new Error('Indiquez la fonction de la personne qui a reçu la course.')
       if (delivery.received_by_name.trim()) extra.received_by_name = delivery.received_by_name.trim()
       if (delivery.received_by_role?.trim()) extra.received_by_role = delivery.received_by_role.trim()

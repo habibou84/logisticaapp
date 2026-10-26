@@ -286,7 +286,7 @@ const error = ref('')
 const supplementOpen = ref(false)
 const proofLabel = computed(() => {
   const p = order.value?.proof || {}
-  return [p.proof_name && 'nom', p.proof_signature && 'signature', p.proof_photo && 'photo de la décharge'].filter(Boolean).join(', ')
+  return [p.proof_name && 'nom', p.proof_signature && 'signature', p.proof_photo && (p.receipt_label ? 'accusé de réception (photo)' : 'photo de la décharge')].filter(Boolean).join(', ')
 })
 const canSupplement = computed(() => !auth.user?.merchant_id && ['distribution', 'mad'].includes(order.value?.activity)
   && auth.can(['invoices.manage', 'rates.manage']))

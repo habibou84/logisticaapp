@@ -14,6 +14,7 @@ use App\Models\Order;
 use App\Models\OutboundMessage;
 use App\Models\PayPlan;
 use App\Services\Finance\CourierPay;
+use App\Services\Orders\ActivityOptions;
 use App\Services\Orders\OrderDispatcher;
 use App\Services\Orders\OrderWorkflow;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -131,13 +132,19 @@ class DistributionMadIntegrationTest extends TestCase
 
         $this->getJson("/api/v1/orders/{$order->id}")->assertOk()
             ->assertJsonPath('data.billed_monthly', true)
-            ->assertJsonPath('data.proof', ['proof_name' => true, 'proof_signature' => false, 'proof_photo' => false]);
+            // Accusé de réception sur l'étiquette par défaut : sa photo est demandée
+            ->assertJsonPath('data.proof', ['proof_name' => true, 'proof_signature' => false, 'proof_photo' => true, 'receipt_label' => true]);
 
         // Par défaut : le nom de la personne qui reçoit
         $this->postJson("/api/v1/orders/{$order->id}/status", ['status' => 'delivered'])->assertUnprocessable()->assertJsonValidationErrors('received_by_name');
 
+        // Sans accusé sur l'étiquette : ni photo ni accusé
+        $this->company->update(['activity_options' => ['distribution' => ['receipt_label' => false]]]);
+        app(ActivityOptions::class)->forget();
+        $this->getJson("/api/v1/orders/{$order->id}")->assertJsonPath('data.proof.proof_photo', false)->assertJsonPath('data.proof.receipt_label', false);
+
         // Entreprise : signature demandée en plus ; le contrat demande aussi la photo
-        $this->company->update(['activity_options' => ['distribution' => ['proof_signature' => true]]]);
+        $this->company->update(['activity_options' => ['distribution' => ['proof_signature' => true, 'receipt_label' => false]]]);
         $plan->update(['options' => ['proof_photo' => true]]);
         $signature = 'data:image/png;base64,'.base64_encode(UploadedFile::fake()->image('s.png', 20, 10)->getContent());
         $this->postJson("/api/v1/orders/{$order->id}/status", ['status' => 'delivered', 'received_by_name' => 'Mme Bamba'])->assertUnprocessable()->assertJsonValidationErrors('signature');

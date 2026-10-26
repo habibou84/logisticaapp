@@ -168,6 +168,7 @@ contrat peut faire autrement (**Contrats › Modifier › Réglages…** ; « co
 | Réglage | Effet |
 |---|---|
 | Preuve de remise : nom, signature, photo | Ce que le livreur doit relever avant de valider la remise (vérifié par le serveur ; hors connexion, la livraison est gardée). Le nom et la signature figurent sur la fiche course ; le client voit « reçue par … ». |
+| Accusé de réception sur l'étiquette | Distribution (par défaut ; désactivé en MAD) : le bas de l'étiquette 10 × 15 devient un accusé à remplir par la personne qui reçoit (nom, prénoms, fonction, date et heure, signature, cachet de l'entreprise) ; « À remettre à » imprimé quand on connaît la personne attendue (responsable du département destinataire, ou nom saisi en plus de l'organisation de l'annuaire). Le livreur photographie l'accusé signé et tamponné avant de valider (obligatoire ; hors connexion, la livraison est gardée). |
 | Prévenir le destinataire sur WhatsApp | « Un envoi est en route » (sans montant, avec le code de remise et le suivi), ou rien. |
 | MAD : livreurs réservés | Pendant la mise à disposition, l'assignation automatique ne leur donne pas les courses des autres clients. |
 | MAD : jours et horaires | Quand les livreurs sont chez le client (ex. lundi–vendredi, 08:00–17:00). En dehors, ils reprennent le circuit habituel et les courses du client suivent le circuit habituel. |

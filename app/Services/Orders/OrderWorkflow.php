@@ -367,7 +367,7 @@ class OrderWorkflow
      */
     private function validateProof(Order $order, array $context): void
     {
-        $options = $this->activityOptions->order($order);
+        $options = $this->activityOptions->proof($order);
         if ($options === null || ! empty($context['offline'])) {
             return;
         }
@@ -378,7 +378,9 @@ class OrderWorkflow
             throw new BusinessRuleException('Faites signer la personne qui reçoit la course.', 'signature');
         }
         if ($options['proof_photo'] && ! $order->attachments()->where('type', 'photo_delivery')->exists()) {
-            throw new BusinessRuleException('Prenez une photo de la décharge (ou du cachet) avant de valider.', 'photo');
+            throw new BusinessRuleException($options['receipt_label']
+                ? 'Prenez une photo de l\'accusé de réception signé et tamponné avant de valider.'
+                : 'Prenez une photo de la décharge (ou du cachet) avant de valider.', 'photo');
         }
         // Client à départements : fonction de la personne qui reçoit (réglage du client)
         if (($order->department_id !== null || $order->to_department_id !== null)

@@ -13,6 +13,8 @@ use Carbon\CarbonInterface;
  * (Réglages › Courses), que chaque contrat peut changer (valeur vide : comme l'entreprise).
  *
  * - proof_name, proof_signature, proof_photo : preuve de remise demandée au livreur ;
+ * - receipt_label : accusé de réception (nom, prénoms, fonction, date, signature, cachet) imprimé sur l'étiquette ;
+ *   sa photo, signé et tamponné, est alors demandée au livreur à la remise ;
  * - notify_recipient : messages WhatsApp au destinataire (en route, livrée…) ;
  * - mad_exclusive : livreurs en MAD réservés au client (pas de courses d'autres clients) ;
  * - mad_days (1 = lundi … 7 = dimanche), mad_from, mad_to (« 08:00 ») : quand ils le sont ;
@@ -20,12 +22,13 @@ use Carbon\CarbonInterface;
  */
 class ActivityOptions
 {
-    public const KEYS = ['proof_name', 'proof_signature', 'proof_photo', 'notify_recipient', 'mad_exclusive', 'mad_days', 'mad_from', 'mad_to', 'quantity_billing'];
+    public const KEYS = ['proof_name', 'proof_signature', 'proof_photo', 'receipt_label', 'notify_recipient', 'mad_exclusive', 'mad_days', 'mad_from', 'mad_to', 'quantity_billing'];
 
     public const DEFAULTS = [
         'proof_name' => true,
         'proof_signature' => false,
         'proof_photo' => false,
+        'receipt_label' => true,
         'notify_recipient' => true,
         'mad_exclusive' => true,
         'mad_days' => [1, 2, 3, 4, 5, 6, 7],
@@ -50,8 +53,10 @@ class ActivityOptions
     public function company(?Company $company, Activity $activity): array
     {
         $saved = $company?->activity_options[$activity->value] ?? [];
+        // MAD : pas d'accusé sur l'étiquette par défaut (le livreur est chez le client)
+        $defaults = $activity === Activity::Mad ? [...self::DEFAULTS, 'receipt_label' => false] : self::DEFAULTS;
 
-        return $this->merge(self::DEFAULTS, is_array($saved) ? $saved : []);
+        return $this->merge($defaults, is_array($saved) ? $saved : []);
     }
 
     /**
@@ -85,6 +90,26 @@ class ActivityOptions
         $plan = $order->billing_plan_id ? BillingPlan::withoutGlobalScopes()->find($order->billing_plan_id) : null;
 
         return $this->memo[$key] = $plan ? $this->plan($plan, $company) : $this->company($company, $order->activity);
+    }
+
+    /**
+     * Preuve de remise demandée au livreur pour une course : l'accusé imprimé sur l'étiquette demande sa photo.
+     *
+     * @return array{proof_name: bool, proof_signature: bool, proof_photo: bool, receipt_label: bool}|null
+     */
+    public function proof(Order $order): ?array
+    {
+        $options = $this->order($order);
+        if ($options === null) {
+            return null;
+        }
+
+        return [
+            'proof_name' => (bool) $options['proof_name'],
+            'proof_signature' => (bool) $options['proof_signature'],
+            'proof_photo' => (bool) ($options['proof_photo'] || $options['receipt_label']),
+            'receipt_label' => (bool) $options['receipt_label'],
+        ];
     }
 
     /** Réglages changés (entreprise, contrat) : relus à la prochaine course */
@@ -155,6 +180,7 @@ class ActivityOptions
             "{$prefix}.proof_name" => ['nullable', 'boolean'],
             "{$prefix}.proof_signature" => ['nullable', 'boolean'],
             "{$prefix}.proof_photo" => ['nullable', 'boolean'],
+            "{$prefix}.receipt_label" => ['nullable', 'boolean'],
             "{$prefix}.notify_recipient" => ['nullable', 'boolean'],
             "{$prefix}.mad_exclusive" => ['nullable', 'boolean'],
             "{$prefix}.mad_days" => ['nullable', 'array'],

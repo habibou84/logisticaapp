@@ -162,6 +162,8 @@ class DestinationTest extends TestCase
 
     public function test_the_courier_confirms_the_position_on_the_spot(): void
     {
+        // Accusé de réception sur l'étiquette (et sa photo) : pas l'objet de ce test
+        $this->company->update(['activity_options' => ['distribution' => ['receipt_label' => false]]]);
         $this->import(false)->assertOk();
         $nai = Destination::where('acronym', 'NAI')->first();
         $make = function () use ($nai) {
@@ -211,6 +213,8 @@ class DestinationTest extends TestCase
 
     public function test_the_position_can_be_required_for_addresses_without_one(): void
     {
+        // Accusé de réception sur l'étiquette (et sa photo) : pas l'objet de ce test
+        $this->company->update(['activity_options' => ['distribution' => ['receipt_label' => false]]]);
         $this->import(false)->assertOk();
         $urc = Destination::where('name', 'URC')->first();
         $this->company->update(['destination_settings' => ['courier_locate' => 'required']]);
