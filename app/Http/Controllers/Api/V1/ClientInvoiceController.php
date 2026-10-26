@@ -7,11 +7,13 @@ use App\Enums\ClientInvoiceStatus;
 use App\Enums\InvoicePaymentMethod;
 use App\Enums\Permission;
 use App\Http\Controllers\Controller;
+use App\Models\ClientCreditNote;
 use App\Models\ClientInvoice;
 use App\Models\Department;
 use App\Models\Merchant;
 use App\Models\Order;
 use App\Services\Departments\Departments;
+use App\Services\Finance\ClientCreditNotes;
 use App\Services\Finance\ClientInvoicing;
 use App\Services\Finance\ClientSpace;
 use App\Support\InvoicePayments;
@@ -42,7 +44,9 @@ class ClientInvoiceController extends Controller
 
         $invoices = ClientInvoice::query()
             ->with(['merchant:id,business_name', 'department'])
-            ->when($user->merchant_id, fn ($q) => $q->where('merchant_id', $user->merchant_id)->whereIn('status', [ClientInvoiceStatus::Issued->value, ClientInvoiceStatus::Paid->value]))
+            ->when($user->merchant_id, fn ($q) => $q->where('merchant_id', $user->merchant_id)->where(fn ($q) => $q->whereIn('status', [ClientInvoiceStatus::Issued->value, ClientInvoiceStatus::Paid->value])
+                // Annulée par un avoir : le client garde la facture et son avoir
+                ->orWhere('credited_amount', '>', 0)))
             // Employé limité à ses départements : leurs factures (une facture par département)
             ->when(($scope = $this->departments->scopeFor($user)) !== null, fn ($q) => $q->where(fn ($q) => $q->whereIn('department_id', $scope)->orWhereNull('department_id')))
             ->when(! $user->merchant_id && $request->filled('merchant_id'), fn ($q) => $q->where('merchant_id', $request->integer('merchant_id')))
@@ -162,6 +166,47 @@ class ClientInvoiceController extends Controller
         return response()->json(['data' => $invoice ? $this->detail($invoice) : null]);
     }
 
+    /**
+     * Avoir sur la facture : total, partiel (lignes et quantités, montant libre).
+     */
+    public function creditNote(Request $request, ClientInvoice $clientInvoice, ClientCreditNotes $notes, ClientSpace $space): JsonResponse
+    {
+        $this->authorizeManage($request);
+        abort_unless($request->user()->can(Permission::InvoicesVoid->value), 403, 'Faire un avoir demande le droit « Annuler une facture émise ou faire un avoir ».');
+        $data = $request->validate([
+            'reason' => ['required', 'string', 'max:500'],
+            'full' => ['required', 'boolean'],
+            'lines' => ['array'],
+            'lines.*.line_id' => ['required', 'integer'],
+            'lines.*.quantity' => ['required', 'integer', 'min:0', 'max:100000'],
+            'extra' => ['nullable', 'array'],
+            'extra.label' => ['required_with:extra', 'string', 'max:255'],
+            'extra.amount' => ['required_with:extra', 'integer', 'min:0', 'max:100000000'],
+        ], [], ['reason' => 'motif de l\'avoir', 'extra.label' => 'libellé', 'extra.amount' => 'montant']);
+        $note = $notes->create($clientInvoice, $request->user(), $data['reason'], $data['full'], $data['lines'] ?? [], $data['extra'] ?? null);
+        $space->creditNoteIssued($note);
+
+        return response()->json(['data' => $this->detail($clientInvoice->fresh())], 201);
+    }
+
+    /** @return array<string, mixed> */
+    public static function creditNoteData(ClientCreditNote $note): array
+    {
+        return [
+            'id' => $note->id,
+            'number' => $note->number,
+            'issued_at' => $note->issued_at->toDateString(),
+            'reason' => $note->reason,
+            'vat_rate' => $note->vat_rate,
+            'total_ht' => $note->total_ht,
+            'vat_amount' => $note->vat_amount,
+            'total' => $note->total,
+            'refund_due' => $note->refund_due,
+            'created_by' => $note->author?->name,
+            'lines' => $note->lines->map(fn ($l) => ['label' => $l->label, 'quantity' => $l->quantity, 'unit_price' => $l->unit_price, 'amount' => $l->amount])->values(),
+        ];
+    }
+
     /** @return array<string, mixed> */
     private function summary(ClientInvoice $invoice): array
     {
@@ -174,9 +219,15 @@ class ClientInvoiceController extends Controller
             'period' => $invoice->period->format('Y-m'),
             'period_label' => ucfirst($invoice->period->locale('fr')->translatedFormat('F Y')),
             'status' => $invoice->status->value,
-            'status_label' => $invoice->isOverdue() ? 'En retard' : $invoice->status->label(),
+            'status_label' => $invoice->isOverdue() ? 'En retard' : ($invoice->status === ClientInvoiceStatus::Void && $invoice->credited_amount > 0 ? 'Annulée par avoir' : $invoice->status->label()),
             'is_overdue' => $invoice->isOverdue(),
             'total' => $invoice->total,
+            // TVA : hors taxe, TVA, taux ; avoirs ; trop-perçu à rembourser
+            'total_ht' => $invoice->total_ht,
+            'vat_amount' => $invoice->vat_amount,
+            'vat_rate' => $invoice->vat_rate,
+            'credited_amount' => $invoice->credited_amount,
+            'refund_due' => $invoice->refundDue(),
             'amount_paid' => $invoice->amount_paid,
             'balance' => $invoice->balance(),
             'issued_at' => $invoice->issued_at?->toDateString(),
@@ -215,7 +266,11 @@ class ClientInvoiceController extends Controller
             $department = $group->first()->department ?? $clientInvoice->loadMissing('department')->department;
             $rows[] = [$department?->name ?? 'Sans département', $department?->cost_center ?? '', '', '', '', '', '', '', '', '', (string) $group->sum('amount')];
         }
-        $rows[] = ['Total de la facture', '', '', '', '', '', '', '', '', '', (string) $clientInvoice->total];
+        if ($clientInvoice->vat_amount > 0) {
+            $rows[] = ['Total hors taxe', '', '', '', '', '', '', '', '', '', (string) $clientInvoice->total_ht];
+            $rows[] = ['TVA '.rtrim(rtrim(number_format($clientInvoice->vat_rate, 2, ',', ''), '0'), ',').' %', '', '', '', '', '', '', '', '', '', (string) $clientInvoice->vat_amount];
+        }
+        $rows[] = ['Total de la facture'.($clientInvoice->vat_amount > 0 ? ' TTC' : ''), '', '', '', '', '', '', '', '', '', (string) $clientInvoice->total];
 
         $csv = "\u{FEFF}".implode("\r\n", array_map(fn (array $r) => implode(';', array_map(fn ($v) => '"'.str_replace('"', '""', (string) $v).'"', $r)), $rows));
         $name = 'facture-'.($clientInvoice->number ?: 'brouillon-'.$clientInvoice->id).'.csv';
@@ -226,8 +281,15 @@ class ClientInvoiceController extends Controller
     /** @return array<string, mixed> */
     private function detail(ClientInvoice $invoice): array
     {
-        $invoice->loadMissing(['lines.department', 'payments.recorder:id,name', 'merchant', 'company']);
+        $invoice->loadMissing(['lines.department', 'payments.recorder:id,name', 'merchant', 'company', 'creditNotes.lines', 'creditNotes.author:id,name']);
         $merchant = $invoice->merchant;
+        $company = $invoice->company;
+        // Brouillon : identité fiscale du moment ; facture émise : celle de l'émission
+        $fiscal = $invoice->client_snapshot ?? [
+            'legal_name' => $merchant->legal_name ?: $merchant->business_name, 'ncc' => $merchant->ncc, 'rccm' => $merchant->rccm,
+            'address' => $merchant->billing_address ?: $merchant->pickup_address,
+        ];
+        $credited = app(ClientCreditNotes::class)->creditedQuantities($invoice);
 
         return [
             ...$this->summary($invoice),
@@ -240,8 +302,23 @@ class ClientInvoiceController extends Controller
                 'contact_name' => $merchant->contact_name,
                 'phone' => $merchant->phone,
                 'email' => $merchant->email,
-                'address' => $merchant->pickup_address,
+                'address' => $fiscal['address'] ?? $merchant->pickup_address,
+                'legal_name' => $fiscal['legal_name'] ?? null,
+                'ncc' => $fiscal['ncc'] ?? null,
+                'rccm' => $fiscal['rccm'] ?? null,
             ],
+            // Émetteur : identité fiscale de l'entreprise (Réglages › Facturation et TVA)
+            'issuer' => [
+                'legal_name' => $company?->legal_name ?: $company?->name,
+                'ncc' => $company?->ncc,
+                'rccm' => $company?->rccm,
+                'tax_regime' => $company?->tax_regime,
+                'tax_office' => $company?->tax_office,
+                'address' => $company?->address,
+            ],
+            'vat_basis' => $invoice->vat_basis,
+            'vat_exemption' => $invoice->vat_exemption,
+            'credit_notes' => $invoice->creditNotes->map(fn (ClientCreditNote $n) => self::creditNoteData($n))->values(),
             'lines' => $invoice->lines->map(fn ($l) => [
                 'id' => $l->id,
                 'kind' => $l->kind,
@@ -251,6 +328,8 @@ class ClientInvoiceController extends Controller
                 'amount' => $l->amount,
                 'manual' => $l->manual,
                 'department_id' => $l->department_id,
+                // Déjà repris sur un avoir
+                'credited_quantity' => $credited[$l->id] ?? 0,
             ])->values(),
             // Facture ventilée : sous-total de chaque département (avec son centre de coûts)
             'departments' => $invoice->lines->whereNotNull('department_id')->isEmpty() ? [] : $invoice->lines->groupBy(fn ($l) => (int) $l->department_id)
@@ -293,7 +372,7 @@ class ClientInvoiceController extends Controller
         $user = $request->user();
         if ($user->merchant_id !== null) {
             abort_unless($invoice === null || ($invoice->merchant_id === $user->merchant_id
-                && in_array($invoice->status, [ClientInvoiceStatus::Issued, ClientInvoiceStatus::Paid], true)), 404);
+                && (in_array($invoice->status, [ClientInvoiceStatus::Issued, ClientInvoiceStatus::Paid], true) || $invoice->credited_amount > 0)), 404);
             // Facture d'un autre département
             $scope = $this->departments->scopeFor($user);
             abort_if($invoice?->department_id !== null && $scope !== null && ! in_array($invoice->department_id, $scope, true), 404);

@@ -22,6 +22,8 @@ class ClientInvoice extends Model
         'issued_at', 'due_at', 'paid_at', 'notes', 'reminded_at', 'overdue_notified_at',
         // Facture d'un département du client (une facture par département)
         'department_id',
+        // TVA figée sur la facture, avoirs, identité fiscale du client à l'émission
+        'vat_rate', 'vat_basis', 'total_ht', 'vat_amount', 'vat_exemption', 'credited_amount', 'client_snapshot',
     ];
 
     protected function casts(): array
@@ -32,6 +34,11 @@ class ClientInvoice extends Model
             'period' => 'date:Y-m-d',
             'total' => 'integer',
             'amount_paid' => 'integer',
+            'vat_rate' => 'float',
+            'total_ht' => 'integer',
+            'vat_amount' => 'integer',
+            'credited_amount' => 'integer',
+            'client_snapshot' => 'array',
             'issued_at' => 'date:Y-m-d',
             'due_at' => 'date:Y-m-d',
             'paid_at' => 'datetime',
@@ -66,9 +73,21 @@ class ClientInvoice extends Model
         return $this->hasMany(ClientInvoicePayment::class)->orderBy('paid_on')->orderBy('id');
     }
 
+    public function creditNotes(): HasMany
+    {
+        return $this->hasMany(ClientCreditNote::class)->orderBy('issued_at')->orderBy('id');
+    }
+
+    /** Reste à payer : total, moins les avoirs et les paiements */
     public function balance(): int
     {
-        return max(0, $this->total - $this->amount_paid);
+        return max(0, $this->total - $this->credited_amount - $this->amount_paid);
+    }
+
+    /** Payé au-delà de ce qui reste dû après les avoirs : à rembourser au client */
+    public function refundDue(): int
+    {
+        return max(0, $this->amount_paid + $this->credited_amount - $this->total);
     }
 
     public function isOverdue(): bool

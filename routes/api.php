@@ -518,6 +518,7 @@ Route::prefix('v1')->name('v1.')->group(function () {
             Route::post('{clientInvoice}/issue', 'issue')->name('issue');
             Route::post('{clientInvoice}/payments', 'pay')->name('payments.store');
             Route::post('{clientInvoice}/void', 'void')->name('void');
+            Route::post('{clientInvoice}/credit-notes', 'creditNote')->name('credit-notes.store');
         });
 
         Route::get('reports/summary', [ReportController::class, 'summary'])->name('reports.summary');

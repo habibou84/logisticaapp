@@ -401,6 +401,8 @@ class ClientInvoicing
     public function issue(ClientInvoice $invoice): ClientInvoice
     {
         $this->ensureDraft($invoice);
+        // TVA et exonération du jour de l'émission
+        $invoice = $this->refreshTotal($invoice);
         if ($invoice->total <= 0) {
             throw new BusinessRuleException('Une facture à zéro ne s\'émet pas : ajoutez une ligne ou supprimez-la.', 'total');
         }
@@ -417,6 +419,7 @@ class ClientInvoicing
                 'status' => ClientInvoiceStatus::Issued,
                 'issued_at' => $today->toDateString(),
                 'due_at' => $today->addDays((int) config('platform.client_invoices.due_days', 15))->toDateString(),
+                'client_snapshot' => $this->clientSnapshot($invoice->merchant),
             ]);
 
             // Suppléments repris par la facture : ils ne changent plus (facture par département : celle du principal)
@@ -456,15 +459,34 @@ class ClientInvoicing
                 'notes' => $data['notes'] ?? null,
             ]);
 
-            $paid = (int) $invoice->payments()->sum('amount');
-            $invoice->update([
-                'amount_paid' => $paid,
-                'status' => $paid >= $invoice->total ? ClientInvoiceStatus::Paid : ClientInvoiceStatus::Issued,
-                'paid_at' => $paid >= $invoice->total ? now() : null,
-            ]);
+            $invoice->update(['amount_paid' => (int) $invoice->payments()->sum('amount')]);
+            $this->settle($invoice);
 
             return $invoice;
         });
+    }
+
+    /**
+     * Statut selon ce qui reste dû : payée quand paiements et avoirs couvrent le total ; annulée quand un
+     * avoir couvre tout et que rien n'avait été payé.
+     */
+    public function settle(ClientInvoice $invoice): ClientInvoice
+    {
+        if (! in_array($invoice->status, [ClientInvoiceStatus::Issued, ClientInvoiceStatus::Paid], true)) {
+            return $invoice;
+        }
+        $settled = $invoice->amount_paid + $invoice->credited_amount >= $invoice->total;
+        $status = match (true) {
+            ! $settled => ClientInvoiceStatus::Issued,
+            $invoice->credited_amount >= $invoice->total && $invoice->amount_paid === 0 => ClientInvoiceStatus::Void,
+            default => ClientInvoiceStatus::Paid,
+        };
+        $invoice->update(['status' => $status, 'paid_at' => $status === ClientInvoiceStatus::Paid ? ($invoice->paid_at ?? now()) : null]);
+        if ($status === ClientInvoiceStatus::Void) {
+            $this->releaseSupplements($invoice);
+        }
+
+        return $invoice;
     }
 
     /**
@@ -480,11 +502,19 @@ class ClientInvoicing
         if ($invoice->status !== ClientInvoiceStatus::Issued || $invoice->amount_paid > 0) {
             throw new BusinessRuleException('Seule une facture émise sans paiement peut être annulée.', 'status');
         }
+        if ($invoice->credited_amount > 0) {
+            throw new BusinessRuleException('Un avoir a déjà été fait sur cette facture : faites un avoir pour le reste.', 'status');
+        }
         $invoice->update(['status' => ClientInvoiceStatus::Void]);
-        // Suppléments libérés (à facturer autrement)
-        ClientSupplement::withoutGlobalScopes()->where('client_invoice_id', $invoice->id)->update(['client_invoice_id' => null]);
+        $this->releaseSupplements($invoice);
 
         return $invoice;
+    }
+
+    /** Suppléments libérés (à facturer autrement) */
+    private function releaseSupplements(ClientInvoice $invoice): void
+    {
+        ClientSupplement::withoutGlobalScopes()->where('client_invoice_id', $invoice->id)->update(['client_invoice_id' => null]);
     }
 
     /**
@@ -500,11 +530,27 @@ class ClientInvoicing
         return [$from, $from->addMonth()];
     }
 
+    /**
+     * Totaux du brouillon : TVA du moment (réglage de l'entreprise, exonération du client) sur la somme des
+     * lignes, saisies hors taxe ou toutes taxes comprises.
+     */
     private function refreshTotal(ClientInvoice $invoice): ClientInvoice
     {
-        $invoice->update(['total' => max(0, (int) $invoice->lines()->sum('amount'))]);
+        $terms = app(Vat::class)->terms($invoice->merchant()->withoutGlobalScopes()->with('company')->first());
+        $invoice->update([...$terms, ...Vat::split((int) $invoice->lines()->sum('amount'), $terms['vat_rate'], $terms['vat_basis'])]);
 
         return $invoice->fresh(['lines', 'payments', 'merchant']);
+    }
+
+    /** Identité fiscale du client imprimée sur la facture, figée à l'émission */
+    private function clientSnapshot(Merchant $merchant): array
+    {
+        return [
+            'legal_name' => $merchant->legal_name ?: $merchant->business_name,
+            'ncc' => $merchant->ncc,
+            'rccm' => $merchant->rccm,
+            'address' => $merchant->billing_address ?: $merchant->pickup_address,
+        ];
     }
 
     private function ensureDraft(ClientInvoice $invoice): void

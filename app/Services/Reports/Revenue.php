@@ -6,6 +6,7 @@ use App\Enums\Activity;
 use App\Enums\ClientInvoiceStatus;
 use App\Enums\LedgerEntryType;
 use App\Enums\OrderStatus;
+use App\Models\ClientCreditNote;
 use App\Models\ClientInvoice;
 use App\Models\ClientInvoicePayment;
 use App\Models\Company;
@@ -92,8 +93,11 @@ class Revenue
         $invoices = fn () => ClientInvoice::withoutGlobalScopes()->where('company_id', $company->id)->where('activity', $activity->value);
 
         return [
-            'billed' => (int) $invoices()->whereIn('status', [ClientInvoiceStatus::Issued->value, ClientInvoiceStatus::Paid->value])
-                ->whereDate('period', $start->toDateString())->sum('total'),
+            // Hors taxe ; les avoirs viennent en moins le mois où ils sont faits
+            'billed' => (int) $invoices()->where(fn ($q) => $q->whereIn('status', [ClientInvoiceStatus::Issued->value, ClientInvoiceStatus::Paid->value])->orWhere('credited_amount', '>', 0))
+                ->whereDate('period', $start->toDateString())->sum('total_ht')
+                - (int) ClientCreditNote::withoutGlobalScopes()->where('company_id', $company->id)->where('activity', $activity->value)
+                    ->whereDate('issued_at', '>=', $start->toDateString())->whereDate('issued_at', '<', $end->toDateString())->sum('total_ht'),
             'collected' => (int) ClientInvoicePayment::withoutGlobalScopes()->where('company_id', $company->id)
                 ->whereIn('client_invoice_id', $invoices()->select('id'))
                 ->whereDate('paid_on', '>=', $start->toDateString())->whereDate('paid_on', '<', $end->toDateString())

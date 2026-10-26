@@ -6,6 +6,7 @@ use App\Rules\PhoneNumber;
 use App\Services\Departments\DepartmentSettings;
 use App\Services\Destinations\DestinationSettings;
 use App\Services\FieldEvents\FieldEventSettings;
+use App\Services\Finance\Vat;
 use App\Services\Orders\ActivityOptions;
 use App\Services\Ratings\RatingSettings;
 use App\Services\Vehicles\VehicleSettings;
@@ -50,6 +51,13 @@ class UpdateCompanyRequest extends FormRequest
             'depot_closes_at' => ['sometimes', 'nullable', 'date_format:H:i'],
             'tagline' => ['sometimes', 'nullable', 'string', 'max:160'],
             'invoice_payment_info' => ['sometimes', 'nullable', 'string', 'max:1000'],
+            // Identité fiscale (factures) et TVA
+            'legal_name' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'ncc' => ['sometimes', 'nullable', 'string', 'max:30'],
+            'rccm' => ['sometimes', 'nullable', 'string', 'max:60'],
+            'tax_regime' => ['sometimes', 'nullable', 'string', 'max:60'],
+            'tax_office' => ['sometimes', 'nullable', 'string', 'max:120'],
+            ...Vat::rules(),
             // Moyens de paiement des factures : comptes bancaires, Mobile Money, chèque… au choix de l'entreprise
             ...InvoicePayments::rules(),
             // Délai interne de distribution par activité, en heures (vide : aucun)
@@ -120,6 +128,12 @@ class UpdateCompanyRequest extends FormRequest
             'courier_available_alert' => 'alerte livreur libre',
             'directory_listed' => 'annuaire',
             'directory_pitch' => 'présentation dans l\'annuaire',
+            'legal_name' => 'raison sociale',
+            'ncc' => 'NCC',
+            'rccm' => 'RCCM',
+            'tax_regime' => 'régime d\'imposition',
+            'tax_office' => 'centre des impôts',
+            'vat_settings.rate' => 'taux de TVA',
             'invoice_payment_methods.*.bank' => 'banque',
             'invoice_payment_methods.*.iban' => 'IBAN',
             'invoice_payment_methods.*.operator' => 'opérateur Mobile Money',

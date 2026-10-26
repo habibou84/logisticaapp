@@ -39,6 +39,14 @@ class MerchantResource extends JsonResource
             // Informations internes à l'entreprise de livraison
             'pricing_grid_id' => $this->when($isStaff, $this->pricing_grid_id),
             'notes' => $this->when($isStaff, $this->notes),
+            // Identité fiscale (factures) et exonération de TVA
+            'legal_name' => $this->legal_name,
+            'ncc' => $this->ncc,
+            'rccm' => $this->rccm,
+            'billing_address' => $this->billing_address,
+            'vat_exempt' => (bool) $this->vat_exempt,
+            'vat_exemption_ref' => $this->vat_exemption_ref,
+            'vat_exemption_until' => $this->vat_exemption_until?->toDateString(),
             'orders_count' => $this->whenCounted('orders'),
             // Activités du client (e-commerce, distribution, MAD) et formules en cours (une par activité facturée)
             'activities' => array_map(fn (Activity $a) => $a->value, $this->resource->activityList()),

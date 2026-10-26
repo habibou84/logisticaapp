@@ -46,6 +46,14 @@ class Merchant extends Model
         'shop_enabled',
         'shop_intro',
         'shop_fee_payer',
+        // Identité fiscale (factures) et exonération de TVA
+        'legal_name',
+        'ncc',
+        'rccm',
+        'billing_address',
+        'vat_exempt',
+        'vat_exemption_ref',
+        'vat_exemption_until',
     ];
 
     protected function casts(): array
@@ -61,6 +69,8 @@ class Merchant extends Model
             'shop_enabled' => 'boolean',
             'shop_fee_payer' => FeePayer::class,
             'department_settings' => 'array',
+            'vat_exempt' => 'boolean',
+            'vat_exemption_until' => 'date:Y-m-d',
         ];
     }
 

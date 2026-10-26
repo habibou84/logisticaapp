@@ -34,7 +34,7 @@
           {{ i.is_overdue ? 'Était à payer le' : 'À payer avant le' }} {{ date(i.due_at) }}
         </span>
       </span>
-      <span :class="['shrink-0 rounded-full px-2 py-0.5 text-xs font-medium', i.status === 'paid' ? 'bg-emerald-100 text-emerald-800' : i.is_overdue ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-800']">
+      <span :class="['shrink-0 rounded-full px-2 py-0.5 text-xs font-medium', i.status === 'paid' ? 'bg-emerald-100 text-emerald-800' : i.status === 'void' ? 'bg-slate-100 text-slate-600' : i.is_overdue ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-800']">
         {{ i.status === 'issued' ? `Reste ${money(i.balance)}` : i.status_label }}
       </span>
     </RouterLink>

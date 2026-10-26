@@ -10,6 +10,7 @@ use App\Policies\CompanyPolicy;
 use App\Services\Departments\DepartmentSettings;
 use App\Services\Destinations\DestinationSettings;
 use App\Services\FieldEvents\FieldEventSettings;
+use App\Services\Finance\Vat;
 use App\Services\Orders\ActivityOptions;
 use App\Services\Ratings\RatingSettings;
 use App\Services\Vehicles\VehicleSettings;
@@ -46,6 +47,9 @@ class CompanyController extends Controller
         }
         if (array_key_exists('department_settings', $data)) {
             $data['department_settings'] = DepartmentSettings::clean((array) ($data['department_settings'] ?? []));
+        }
+        if (array_key_exists('vat_settings', $data)) {
+            $data['vat_settings'] = Vat::clean((array) ($data['vat_settings'] ?? []));
         }
         if (array_key_exists('vehicle_settings', $data)) {
             $data['vehicle_settings'] = VehicleSettings::clean((array) ($data['vehicle_settings'] ?? []));

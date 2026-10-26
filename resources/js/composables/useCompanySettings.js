@@ -5,7 +5,7 @@ import { useAuthStore } from '../stores/auth'
 import { useToastStore } from '../stores/toasts'
 
 // Champs qu'on peut vider (sinon un champ vide est ignoré) ; les heures vides deviennent null
-const CLEARABLE = ['tagline', 'daily_cutoff_time', 'depot_closes_at', 'auto_delivery_max_cod', 'invoice_payment_info']
+const CLEARABLE = ['tagline', 'legal_name', 'ncc', 'rccm', 'tax_regime', 'tax_office', 'daily_cutoff_time', 'depot_closes_at', 'auto_delivery_max_cod', 'invoice_payment_info']
 const TIMES = ['daily_cutoff_time', 'depot_closes_at']
 
 /**

@@ -143,6 +143,21 @@
             <div class="col-span-2"><label class="label">Mot de passe (8 caractères min.)</label><input v-model="form.owner.password" type="text" class="input" autocomplete="new-password"></div>
           </div>
         </fieldset>
+        <!-- Imprimé sur les factures du mois et les avoirs -->
+        <details class="rounded border border-slate-200 p-3" :open="!!(form.data.ncc || form.data.vat_exempt)">
+          <summary class="font-medium text-sm cursor-pointer">Facturation : raison sociale, NCC, TVA</summary>
+          <div class="grid grid-cols-2 gap-3 mt-3">
+            <div class="col-span-2"><label class="label" for="m-legal">Raison sociale</label><input id="m-legal" v-model="form.data.legal_name" class="input" maxlength="255" :placeholder="form.data.business_name"></div>
+            <div><label class="label" for="m-ncc">NCC</label><input id="m-ncc" v-model="form.data.ncc" class="input" maxlength="30"></div>
+            <div><label class="label" for="m-rccm">RCCM</label><input id="m-rccm" v-model="form.data.rccm" class="input" maxlength="60"></div>
+            <div class="col-span-2"><label class="label" for="m-billing">Adresse de facturation</label><input id="m-billing" v-model="form.data.billing_address" class="input" maxlength="500" placeholder="Sinon : l'adresse de ramassage"></div>
+            <label class="col-span-2 flex items-center gap-2 text-sm"><input v-model="form.data.vat_exempt" type="checkbox"> Exonéré de TVA</label>
+            <template v-if="form.data.vat_exempt">
+              <div><label class="label" for="m-exo">N° de l'attestation</label><input id="m-exo" v-model="form.data.vat_exemption_ref" class="input" maxlength="120"></div>
+              <div><label class="label" for="m-exo-until">Valable jusqu'au</label><input id="m-exo-until" v-model="form.data.vat_exemption_until" type="date" class="input"></div>
+            </template>
+          </div>
+        </details>
         <div><label class="label">Notes internes</label><textarea v-model="form.data.notes" rows="2" class="input" /></div>
         <button class="btn-primary w-full" :disabled="form.saving">Enregistrer</button>
       </form>
@@ -181,7 +196,8 @@ const SOURCES = { merchant: 'par le client', staff: 'par l\'agence', courier: 'e
 const locationChanged = computed(() => form.location?.lat !== form.initialLocation?.lat || form.location?.lng !== form.initialLocation?.lng)
 
 const FIELDS = ['business_name', 'contact_name', 'phone', 'whatsapp_phone', 'email', 'pickup_zone_id', 'pickup_address',
-  'pickup_landmark', 'pricing_grid_id', 'default_fee_payer', 'status', 'notes']
+  'pickup_landmark', 'pricing_grid_id', 'default_fee_payer', 'status', 'notes',
+  'legal_name', 'ncc', 'rccm', 'billing_address', 'vat_exempt', 'vat_exemption_ref', 'vat_exemption_until']
 
 async function load() {
   merchants.value = (await http.get('/merchants', {
@@ -205,6 +221,7 @@ function openForm(merchant = null) {
   form.data = Object.fromEntries(FIELDS.map((f) => [f, merchant?.[f] ?? null]))
   form.data.default_fee_payer ??= 'merchant'
   form.data.status ??= 'active'
+  form.data.vat_exempt ??= false
   // Seules les activités de son périmètre se cochent ; les autres restent telles quelles (serveur)
   const mine = activities.value.map((a) => a.value)
   form.activities = merchant ? (merchant.activities || []).filter((a) => mine.includes(a)) : [mine[0]]

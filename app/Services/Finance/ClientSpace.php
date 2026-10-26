@@ -9,6 +9,7 @@ use App\Enums\NotificationEvent;
 use App\Enums\OrderStatus;
 use App\Enums\WhatsAppTemplate;
 use App\Models\BillingPlan;
+use App\Models\ClientCreditNote;
 use App\Models\ClientInvoice;
 use App\Models\Courier;
 use App\Models\Merchant;
@@ -192,6 +193,18 @@ class ClientSpace
         $this->notify($merchant, NotificationEvent::InvoiceIssued, WhatsAppTemplate::InvoiceIssued,
             [$merchant->business_name, (string) $invoice->number, $invoice->activity->label(), $period, Money::format($invoice->total), $due],
             new ClientBillingAlert('invoice_issued', "📄 Facture {$invoice->number}", "{$invoice->activity->label()} · {$period} : ".Money::format($invoice->total).", à payer avant le {$due}.", "/marchand/factures/{$invoice->id}"));
+    }
+
+    /**
+     * Avoir émis : le client est prévenu dans l'application (cloche).
+     */
+    public function creditNoteIssued(ClientCreditNote $note): void
+    {
+        $invoice = $note->invoice()->withoutGlobalScopes()->first();
+        $refund = $note->refund_due > 0 ? ' · '.Money::format($note->refund_due).' à vous rembourser' : '';
+        $users = User::withoutGlobalScopes()->where('merchant_id', $note->merchant_id)->where('status', 'active')->get();
+        Notification::send($users, new ClientBillingAlert('credit_note_issued', "🧾 Avoir {$note->number}",
+            'Sur la facture '.$invoice?->number.' : '.Money::format($note->total).$refund.'.', "/marchand/factures/{$note->client_invoice_id}"));
     }
 
     /**

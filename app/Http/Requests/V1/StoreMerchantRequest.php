@@ -62,6 +62,14 @@ class StoreMerchantRequest extends FormRequest
             'pricing_grid_id' => ['nullable', 'integer', Rule::exists('pricing_grids', 'id')->where('company_id', $companyId)],
             'default_fee_payer' => ['nullable', Rule::enum(FeePayer::class)],
             'notes' => ['nullable', 'string', 'max:2000'],
+            // Identité fiscale (factures) et exonération de TVA
+            'legal_name' => ['nullable', 'string', 'max:255'],
+            'ncc' => ['nullable', 'string', 'max:30'],
+            'rccm' => ['nullable', 'string', 'max:60'],
+            'billing_address' => ['nullable', 'string', 'max:500'],
+            'vat_exempt' => ['sometimes', 'boolean'],
+            'vat_exemption_ref' => ['nullable', 'string', 'max:120'],
+            'vat_exemption_until' => ['nullable', 'date_format:Y-m-d'],
 
             // Compte de connexion du client (facultatif)
             'owner' => ['nullable', 'array'],
@@ -76,6 +84,12 @@ class StoreMerchantRequest extends FormRequest
     {
         return [
             'business_name' => 'nom commercial',
+            'legal_name' => 'raison sociale',
+            'ncc' => 'NCC',
+            'rccm' => 'RCCM',
+            'billing_address' => 'adresse de facturation',
+            'vat_exemption_ref' => 'référence de l\'attestation d\'exonération',
+            'vat_exemption_until' => 'fin de l\'exonération',
             'phone' => 'téléphone',
             'whatsapp_phone' => 'numéro WhatsApp',
             'pickup_zone_id' => 'zone de ramassage',

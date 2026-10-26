@@ -56,6 +56,14 @@ class UpdateMerchantRequest extends FormRequest
             'default_fee_payer' => ['sometimes', Rule::enum(FeePayer::class)],
             'status' => ['sometimes', Rule::enum(MerchantStatus::class)],
             'notes' => ['sometimes', 'nullable', 'string', 'max:2000'],
+            // Identité fiscale (factures) et exonération de TVA
+            'legal_name' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'ncc' => ['sometimes', 'nullable', 'string', 'max:30'],
+            'rccm' => ['sometimes', 'nullable', 'string', 'max:60'],
+            'billing_address' => ['sometimes', 'nullable', 'string', 'max:500'],
+            'vat_exempt' => ['sometimes', 'boolean'],
+            'vat_exemption_ref' => ['sometimes', 'nullable', 'string', 'max:120'],
+            'vat_exemption_until' => ['sometimes', 'nullable', 'date_format:Y-m-d'],
         ];
     }
 

@@ -8,7 +8,8 @@
         <button class="btn-secondary" :disabled="busy" @click="act('refresh', 'Facture recalculée.')">↻ Recalculer</button>
         <button class="btn-primary" :disabled="busy" @click="issue">Émettre la facture</button>
       </template>
-      <button v-if="canManage && (invoice.status === 'draft' || (invoice.status === 'issued' && !invoice.amount_paid && auth.can('invoices.void')))" class="text-red-600 ml-auto" :disabled="busy" @click="voidInvoice">
+      <button v-if="canCredit" class="btn-secondary" :disabled="busy" @click="openCredit">🧾 Faire un avoir</button>
+      <button v-if="canManage && (invoice.status === 'draft' || (invoice.status === 'issued' && !invoice.amount_paid && !invoice.credited_amount && auth.can('invoices.void')))" class="text-red-600 ml-auto" :disabled="busy" @click="voidInvoice">
         {{ invoice.status === 'draft' ? 'Supprimer le brouillon' : 'Annuler la facture' }}
       </button>
     </div>
@@ -19,18 +20,22 @@
     </p>
 
     <!-- Facture imprimable -->
-    <div class="card p-6 space-y-5 statement">
+    <div :class="['card p-6 space-y-5 statement', printingNote ? 'print:hidden' : '']">
       <div class="flex flex-wrap justify-between gap-4">
         <div>
-          <p class="font-semibold">{{ company?.name }}</p>
+          <p class="font-semibold">{{ invoice.issuer?.legal_name || company?.name }}</p>
           <p v-if="company?.address" class="text-sm text-gray-600">{{ company.address }}</p>
+          <p v-if="issuerFiscal" class="text-xs text-gray-600">{{ issuerFiscal }}</p>
           <p v-if="company?.phone || company?.email" class="text-sm text-gray-600">{{ [company.phone, company.email].filter(Boolean).join(' · ') }}</p>
           <h1 class="text-xl font-bold mt-3">Facture {{ invoice.number || '(brouillon)' }}</h1>
           <p class="text-sm">{{ invoice.activity_label }} · {{ invoice.period_label }}</p>
           <p v-if="invoice.department" class="text-sm font-medium">Département : {{ invoice.department.label }}<template v-if="invoice.department.cost_center"> · centre de coûts {{ invoice.department.cost_center }}</template></p>
         </div>
         <div class="text-right text-sm">
-          <p class="font-semibold text-base">{{ invoice.client.business_name }}</p>
+          <p class="font-semibold text-base">{{ invoice.client.legal_name || invoice.client.business_name }}</p>
+          <p v-if="invoice.client.legal_name && invoice.client.legal_name !== invoice.client.business_name" class="text-gray-600">{{ invoice.client.business_name }}</p>
+          <p v-if="invoice.client.ncc || invoice.client.rccm" class="text-xs">{{ [invoice.client.ncc && `NCC ${invoice.client.ncc}`, invoice.client.rccm && `RCCM ${invoice.client.rccm}`].filter(Boolean).join(' · ') }}</p>
+          <p v-if="invoice.client.address" class="text-xs text-gray-600">{{ invoice.client.address }}</p>
           <p v-if="invoice.client.contact_name">{{ invoice.client.contact_name }}</p>
           <p>{{ invoice.client.phone }}</p>
           <p v-if="invoice.client.email">{{ invoice.client.email }}</p>
@@ -42,7 +47,7 @@
 
       <table class="w-full text-sm">
         <thead class="text-left text-gray-600 border-b">
-          <tr><th class="py-2">Désignation</th><th class="py-2 text-right">Quantité</th><th class="py-2 text-right">Prix unitaire</th><th class="py-2 text-right">Montant</th><th class="no-print" /></tr>
+          <tr><th class="py-2">Désignation</th><th class="py-2 text-right">Quantité</th><th class="py-2 text-right">Prix unitaire{{ basisLabel }}</th><th class="py-2 text-right">Montant{{ basisLabel }}</th><th class="no-print" /></tr>
         </thead>
         <!-- Facture ventilée : une section par département, avec son sous-total -->
         <tbody v-for="g in groups" :key="g.key" class="divide-y">
@@ -61,9 +66,16 @@
           </tr>
         </tbody>
         <tfoot>
-          <tr class="border-t font-bold"><td class="py-2" colspan="3">Total</td><td class="py-2 text-right">{{ money(invoice.total) }}</td><td class="no-print" /></tr>
+          <template v-if="hasVat">
+            <tr class="border-t"><td class="py-1" colspan="3">Total hors taxe</td><td class="py-1 text-right">{{ money(invoice.total_ht) }}</td><td class="no-print" /></tr>
+            <tr><td class="py-1" colspan="3">TVA {{ rate(invoice.vat_rate) }}</td><td class="py-1 text-right">{{ money(invoice.vat_amount) }}</td><td class="no-print" /></tr>
+          </template>
+          <tr class="border-t font-bold"><td class="py-2" colspan="3">Total{{ hasVat ? ' TTC' : '' }}</td><td class="py-2 text-right">{{ money(invoice.total) }}</td><td class="no-print" /></tr>
+          <tr v-if="invoice.vat_exemption"><td class="py-1 text-xs text-gray-600" colspan="4">{{ invoice.vat_exemption }}</td><td class="no-print" /></tr>
+          <tr v-if="invoice.credited_amount"><td class="py-1" colspan="3">Avoirs ({{ invoice.credit_notes.map((n) => n.number).join(', ') }})</td><td class="py-1 text-right">− {{ money(invoice.credited_amount) }}</td><td class="no-print" /></tr>
           <tr v-if="invoice.amount_paid"><td class="py-1" colspan="3">Déjà payé</td><td class="py-1 text-right">− {{ money(invoice.amount_paid) }}</td><td class="no-print" /></tr>
-          <tr v-if="invoice.amount_paid" class="font-semibold"><td class="py-1" colspan="3">Reste à payer</td><td class="py-1 text-right">{{ money(invoice.balance) }}</td><td class="no-print" /></tr>
+          <tr v-if="invoice.amount_paid || invoice.credited_amount" class="font-semibold"><td class="py-1" colspan="3">Reste à payer</td><td class="py-1 text-right">{{ money(invoice.balance) }}</td><td class="no-print" /></tr>
+          <tr v-if="invoice.refund_due" class="font-semibold text-amber-700"><td class="py-1" colspan="3">À rembourser au client</td><td class="py-1 text-right">{{ money(invoice.refund_due) }}</td><td class="no-print" /></tr>
         </tfoot>
       </table>
 
@@ -100,6 +112,16 @@
         <p class="text-xs text-gray-500">Indiquez le numéro {{ invoice.number }} en référence du paiement.</p>
       </div>
 
+      <div v-if="invoice.credit_notes?.length" class="text-sm space-y-1">
+        <h2 class="font-semibold">Avoirs</h2>
+        <div v-for="n in invoice.credit_notes" :key="n.id" class="flex flex-wrap items-baseline gap-x-2">
+          <span class="font-mono">{{ n.number }}</span>
+          <span>· {{ date(n.issued_at) }} · {{ money(n.total) }}{{ hasVat ? ' TTC' : '' }} · {{ n.reason }}</span>
+          <span v-if="n.refund_due" class="text-amber-700">· {{ money(n.refund_due) }} à rembourser</span>
+          <button type="button" class="no-print text-xs text-blue-600" @click="printNote(n)">🖨️ Imprimer l'avoir</button>
+        </div>
+      </div>
+
       <div v-if="invoice.payments.length" class="text-sm space-y-1">
         <h2 class="font-semibold">Paiements</h2>
         <p v-for="p in invoice.payments" :key="p.id">
@@ -132,6 +154,71 @@
       </details>
     </div>
 
+    <!-- Avoir imprimable (seul à l'impression) -->
+    <div v-if="printingNote" class="hidden print:block p-6 space-y-5 text-sm">
+      <div class="flex flex-wrap justify-between gap-4">
+        <div>
+          <p class="font-semibold">{{ invoice.issuer?.legal_name || company?.name }}</p>
+          <p v-if="company?.address" class="text-gray-600">{{ company.address }}</p>
+          <p v-if="issuerFiscal" class="text-xs text-gray-600">{{ issuerFiscal }}</p>
+          <h1 class="text-xl font-bold mt-3">Avoir {{ printingNote.number }}</h1>
+          <p>Sur la facture {{ invoice.number }} · {{ invoice.activity_label }} · {{ invoice.period_label }}</p>
+          <p>Motif : {{ printingNote.reason }}</p>
+        </div>
+        <div class="text-right">
+          <p class="font-semibold text-base">{{ invoice.client.legal_name || invoice.client.business_name }}</p>
+          <p v-if="invoice.client.ncc" class="text-xs">NCC {{ invoice.client.ncc }}</p>
+          <p v-if="invoice.client.address" class="text-xs text-gray-600">{{ invoice.client.address }}</p>
+          <p class="mt-2">Le {{ date(printingNote.issued_at) }}</p>
+        </div>
+      </div>
+      <table class="w-full">
+        <thead class="text-left text-gray-600 border-b">
+          <tr><th class="py-2">Désignation</th><th class="py-2 text-right">Quantité</th><th class="py-2 text-right">Prix unitaire{{ basisLabel }}</th><th class="py-2 text-right">Montant{{ basisLabel }}</th></tr>
+        </thead>
+        <tbody class="divide-y">
+          <tr v-for="(l, i) in printingNote.lines" :key="i"><td class="py-2">{{ l.label }}</td><td class="py-2 text-right">{{ l.quantity }}</td><td class="py-2 text-right">{{ money(l.unit_price) }}</td><td class="py-2 text-right">{{ money(l.amount) }}</td></tr>
+        </tbody>
+        <tfoot>
+          <template v-if="hasVat">
+            <tr class="border-t"><td class="py-1" colspan="3">Total hors taxe</td><td class="py-1 text-right">{{ money(printingNote.total_ht) }}</td></tr>
+            <tr><td class="py-1" colspan="3">TVA {{ rate(printingNote.vat_rate) }}</td><td class="py-1 text-right">{{ money(printingNote.vat_amount) }}</td></tr>
+          </template>
+          <tr class="border-t font-bold"><td class="py-2" colspan="3">Total de l'avoir{{ hasVat ? ' TTC' : '' }}</td><td class="py-2 text-right">{{ money(printingNote.total) }}</td></tr>
+          <tr v-if="printingNote.refund_due"><td class="py-1" colspan="3">Remboursé au client</td><td class="py-1 text-right">{{ money(printingNote.refund_due) }}</td></tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <Modal :open="credit.open" title="Faire un avoir" wide @close="credit.open = false">
+      <form class="space-y-3" @submit.prevent="createCredit">
+        <p class="text-sm text-gray-600">L'avoir réduit ce que le client doit ; si la facture est déjà payée, la différence est à lui rembourser. Reste sur la facture : <b>{{ money(remaining) }}</b>.</p>
+        <div class="flex gap-4 text-sm">
+          <label class="flex items-center gap-1.5"><input v-model="credit.full" type="radio" :value="true"> Avoir total (tout le reste)</label>
+          <label class="flex items-center gap-1.5"><input v-model="credit.full" type="radio" :value="false"> Avoir partiel</label>
+        </div>
+        <template v-if="!credit.full">
+          <table class="w-full text-sm">
+            <thead class="text-left text-gray-600 border-b"><tr><th class="py-1">Ligne</th><th class="py-1 text-right">Facturé</th><th class="py-1 text-right">À reprendre</th></tr></thead>
+            <tbody class="divide-y">
+              <tr v-for="l in creditableLines" :key="l.id">
+                <td class="py-1">{{ l.label }} <span class="text-gray-500">· {{ money(l.unit_price) }}</span></td>
+                <td class="py-1 text-right">{{ l.quantity }}<span v-if="l.credited_quantity" class="text-gray-500"> ({{ l.credited_quantity }} déjà repris)</span></td>
+                <td class="py-1 text-right"><input v-model.number="credit.quantities[l.id]" type="number" min="0" :max="l.quantity - l.credited_quantity" class="input w-20 text-right" :aria-label="`Quantité reprise : ${l.label}`"></td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="flex flex-wrap items-end gap-2">
+            <div class="flex-1 min-w-48"><label class="label" for="cr-extra">Montant libre (geste commercial, erreur…)</label><input id="cr-extra" v-model="credit.extra_label" class="input" maxlength="255" placeholder="Libellé"></div>
+            <div><label class="label" for="cr-amount">Montant{{ basisLabel }} (F)</label><input id="cr-amount" v-model.number="credit.extra_amount" type="number" min="0" class="input w-36"></div>
+          </div>
+        </template>
+        <div><label class="label" for="cr-reason">Motif de l'avoir *</label><input id="cr-reason" v-model="credit.reason" class="input" maxlength="500" required placeholder="Ex. : plis déjà réceptionnés, contrat résilié"></div>
+        <p class="text-sm font-semibold">Avoir : {{ money(creditPreview) }}{{ hasVat ? ' TTC' : '' }}</p>
+        <button type="submit" class="btn-primary w-full" :disabled="busy || !creditPreview || creditPreview > remaining">Émettre l'avoir</button>
+      </form>
+    </Modal>
+
     <div v-if="canManage && invoice.status === 'issued'" class="card p-4 no-print space-y-3">
       <h2 class="font-semibold">Enregistrer un paiement</h2>
       <form class="flex flex-wrap items-end gap-2" @submit.prevent="pay">
@@ -162,6 +249,7 @@ import http, { apiErrorMessage } from '../../bootstrap/axios'
 import { useAuthStore } from '../../stores/auth'
 import { useToastStore } from '../../stores/toasts'
 import { date, money, today } from '../../utils/format'
+import Modal from '../../components/Modal.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -179,6 +267,47 @@ const groups = computed(() => {
   if (!deps.length) return [{ key: 'all', department: null, lines: invoice.value?.lines || [] }]
   return deps.map((d) => ({ key: d.id ?? 'none', department: d, lines: invoice.value.lines.filter((l) => (l.department_id ?? null) === (d.id ?? null)) }))
 })
+// TVA : affichée dès qu'un taux s'applique ; base des prix saisis (HT ou TTC)
+const hasVat = computed(() => invoice.value?.vat_rate > 0)
+const basisLabel = computed(() => (hasVat.value ? (invoice.value.vat_basis === 'ttc' ? ' TTC' : ' HT') : ''))
+const rate = (r) => `${String(Math.round(r * 100) / 100).replace('.', ',')} %`
+const issuerFiscal = computed(() => {
+  const i = invoice.value?.issuer || {}
+  return [i.ncc && `NCC ${i.ncc}`, i.rccm && `RCCM ${i.rccm}`, i.tax_regime, i.tax_office && `Centre des impôts : ${i.tax_office}`].filter(Boolean).join(' · ')
+})
+
+// Avoirs : droit « Annuler une facture émise ou faire un avoir »
+const remaining = computed(() => (invoice.value ? invoice.value.total - invoice.value.credited_amount : 0))
+const canCredit = computed(() => canManage.value && auth.can('invoices.void') && ['issued', 'paid'].includes(invoice.value?.status) && remaining.value > 0)
+const credit = reactive({ open: false, full: false, reason: '', quantities: {}, extra_label: '', extra_amount: null })
+const creditableLines = computed(() => (invoice.value?.lines || []).filter((l) => l.amount > 0 && l.quantity > l.credited_quantity))
+const creditPreview = computed(() => {
+  if (credit.full) return remaining.value
+  const sum = creditableLines.value.reduce((t, l) => t + (Number(credit.quantities[l.id]) || 0) * l.unit_price, 0) + (Number(credit.extra_amount) || 0)
+  const r = invoice.value?.vat_rate || 0
+  return invoice.value?.vat_basis === 'ttc' || !r ? sum : sum + Math.round(sum * r / 100)
+})
+function openCredit() {
+  Object.assign(credit, { open: true, full: false, reason: '', quantities: {}, extra_label: '', extra_amount: null })
+}
+async function createCredit() {
+  const payload = {
+    reason: credit.reason,
+    full: credit.full,
+    lines: credit.full ? [] : Object.entries(credit.quantities).filter(([, q]) => q > 0).map(([id, q]) => ({ line_id: Number(id), quantity: q })),
+    extra: !credit.full && credit.extra_amount > 0 ? { label: credit.extra_label || 'Avoir', amount: credit.extra_amount } : null,
+  }
+  await run(() => http.post(`/client-invoices/${invoice.value.id}/credit-notes`, payload), 'Avoir émis.')
+  credit.open = false
+}
+const printingNote = ref(null)
+function printNote(n) {
+  printingNote.value = n
+  setTimeout(() => {
+    window.print()
+    printingNote.value = null
+  }, 50)
+}
 const hasDepartments = computed(() => (invoice.value?.orders || []).some((o) => o.department))
 
 async function exportCsv() {

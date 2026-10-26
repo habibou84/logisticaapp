@@ -24,6 +24,8 @@ class CompanyPolicy
         'rating_settings' => Permission::RatingsManage,
         'department_settings' => Permission::DepartmentsManage,
         'destination_settings' => Permission::DestinationsManage,
+        // TVA des factures : la facturation
+        'vat_settings' => Permission::InvoicesManage,
     ];
 
     public function view(User $actor, Company $company): bool

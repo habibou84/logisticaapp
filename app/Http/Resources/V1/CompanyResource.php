@@ -7,6 +7,7 @@ use App\Models\Company;
 use App\Services\Departments\DepartmentSettings;
 use App\Services\Destinations\DestinationSettings;
 use App\Services\FieldEvents\FieldEventSettings;
+use App\Services\Finance\Vat;
 use App\Services\Orders\ActivityOptions;
 use App\Services\Ratings\RatingSettings;
 use App\Services\Vehicles\VehicleSettings;
@@ -62,6 +63,12 @@ class CompanyResource extends JsonResource
             'cutoff_by_day' => (object) ($this->cutoff_by_day ?? []),
             'tagline' => $this->tagline,
             'invoice_payment_info' => $this->invoice_payment_info,
+            'legal_name' => $this->legal_name,
+            'ncc' => $this->ncc,
+            'rccm' => $this->rccm,
+            'tax_regime' => $this->tax_regime,
+            'tax_office' => $this->tax_office,
+            'vat_settings' => app(Vat::class)->for($this->resource),
             'invoice_payment_methods' => $this->invoice_payment_methods ?? [],
             // Délai interne de distribution par activité (heures, vide : aucun)
             'internal_delays' => (object) ($this->internal_delays ?? []),

@@ -94,6 +94,12 @@ const ALL = computed(() => {
       keywords: 'alerte délai sans livreur colis gardé livreur relance remontées terrain point semaine rapport',
     },
     {
+      key: 'invoicing', icon: '🧾', title: 'Facturation et TVA', to: '/admin/reglages/facturation', permission: ['settings.manage', 'invoices.manage'],
+      description: 'Identité fiscale (raison sociale, NCC, RCCM) et TVA des factures des clients : taux, prix HT ou TTC, exonération.',
+      summary: c && (c.vat_settings?.enabled ? `TVA ${c.vat_settings.rate} % · prix ${c.vat_settings.prices === 'ttc' ? 'TTC' : 'HT'}` : 'Sans TVA'),
+      keywords: 'tva taxe ht ttc ncc rccm raison sociale régime impôts exonération attestation facture avoir fne',
+    },
+    {
       key: 'reasons', icon: '📝', title: 'Motifs et notes de suivi', to: '/admin/reglages/motifs', permission: 'settings.manage',
       description: 'Motifs de non-livraison et de ramassage du livreur (par famille et par activité), notes de suivi de l\'équipe.',
       keywords: 'motifs non livraison échec report injoignable absent fermé documents cachet signature tva retour note suivi attente réceptionne annuaire photo',
