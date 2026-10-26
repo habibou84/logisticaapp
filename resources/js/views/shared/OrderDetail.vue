@@ -12,6 +12,8 @@
       <span v-if="order.return_requested && !['returned', 'return_assigned', 'returning'].includes(order.status)" class="text-xs rounded-full bg-rose-100 text-rose-700 px-2 py-0.5">Retour demandé</span>
       <!-- Demande d'un agent du client : elle attend l'accord de son chef de service -->
       <span v-if="order.approval?.awaiting" class="text-xs rounded-full bg-amber-100 text-amber-800 px-2 py-0.5" title="Ni validable ni assignable avant l'accord du client">✋ Attend le chef de service du client</span>
+      <span v-if="order.follow_up" :class="['text-xs rounded-full px-2 py-0.5', order.follow_up.holds ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700']">{{ order.follow_up.holds ? '⏸' : '📌' }} {{ order.follow_up.label }}</span>
+      <RouterLink v-if="order.renewed_from" :to="`/admin/courses/${order.renewed_from.id}`" class="text-xs rounded-full bg-blue-50 text-blue-700 px-2 py-0.5">🔁 Reconduite de {{ order.renewed_from.tracking_code }}</RouterLink>
       <div class="ml-auto flex gap-2">
         <!-- Client sous contrat : prestation exceptionnelle sur la facture du mois -->
         <button v-if="canSupplement" type="button" class="btn-secondary" @click="supplementOpen = true">➕ Supplément</button>
@@ -171,6 +173,10 @@
           <button v-if="nextStatuses.length" class="btn-secondary w-full" @click="openStatus(nextStatuses)">Changer le statut…</button>
         </div>
 
+        <!-- Note de suivi de l'équipe (Réglages › Motifs) -->
+        <OrderFollowUp v-if="canFollowUp" :order="order" @changed="(o) => (order = o)" />
+        <OrderRenew v-if="canRenew" :key="order.id" :order="order" />
+
         <div v-if="warehouseActions.length" class="card p-4 space-y-2">
           <h2 class="font-semibold">Entrepôt</h2>
           <button v-if="warehouseActions.includes('prepare')" class="btn-success w-full" @click="quickMove('at_hub', 'Commande préparée.')">📦 Commande préparée</button>
@@ -263,6 +269,8 @@ import { date, dateTime, money, shipmentLabel, telLink } from '../../utils/forma
 import { activityBadge } from '../../utils/activities'
 import SupplementsModal from '../../components/SupplementsModal.vue'
 import OrderRatings from '../../components/OrderRatings.vue'
+import OrderFollowUp from '../../components/OrderFollowUp.vue'
+import OrderRenew from '../../components/OrderRenew.vue'
 import { ASSIGNABLE, ASSIGNMENT_LABELS, BEFORE_PICKUP, FINAL, TRANSITIONS, isWarehouseStep } from '../../utils/workflow'
 
 const STOCK_STATES = {
@@ -321,6 +329,8 @@ const isStaff = computed(() => !isMerchant.value)
 const isDispatcher = computed(() => auth.can('orders.dispatch'))
 const canManageExpenses = computed(() => auth.can('orders.dispatch') || auth.can('finance.manage'))
 const isFinal = computed(() => FINAL.includes(order.value?.status))
+const canFollowUp = computed(() => isStaff.value && !isFinal.value && auth.can(['orders.dispatch', 'orders.create']))
+const canRenew = computed(() => auth.can('orders.create') && ['returned', 'cancelled', 'delivery_failed'].includes(order.value?.status))
 const canEditDelivery = computed(() => !isFinal.value && order.value?.status !== 'out_for_delivery' && (isMerchant.value || isDispatcher.value))
 const assignableTypes = computed(() => Object.keys(ASSIGNABLE).filter((type) => {
   if (!ASSIGNABLE[type].includes(order.value.status)) return false

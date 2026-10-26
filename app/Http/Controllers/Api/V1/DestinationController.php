@@ -234,7 +234,7 @@ class DestinationController extends Controller
             'phone_check' => ['sometimes', 'boolean'],
             'email' => [$sometimes, 'nullable', 'email', 'max:190'],
             'sector' => [$sometimes, 'nullable', 'string', 'max:120'],
-            'status' => ['sometimes', Rule::in(['active', 'pending'])],
+            'status' => ['sometimes', Rule::in(['active', 'pending', 'inactive'])],
         ]);
         // Seuls des numéros au bon format sont enregistrés
         foreach (['phone', 'phone2', 'phone3'] as $field) {

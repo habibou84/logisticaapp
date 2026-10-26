@@ -6,6 +6,7 @@ use App\Enums\AssignmentType;
 use App\Enums\OrderStatus;
 use App\Enums\Role;
 use App\Models\Company;
+use App\Models\IncidentReason;
 use App\Models\Order;
 use App\Models\User;
 use App\Notifications\OrderAlert;
@@ -54,6 +55,10 @@ class AwaitingCourier
     public static function scope(Builder $query, ?string $stage = null, ?string $day = null): Builder
     {
         $day ??= today()->toDateString();
+
+        // Mises en attente par une note de suivi : pas « sans livreur » tant qu'elles attendent
+        $query->where(fn (Builder $q) => $q->whereNull('follow_up_reason_id')
+            ->orWhereIn('follow_up_reason_id', IncidentReason::query()->where('holds', false)->select('id')));
 
         return $query->where(function (Builder $q) use ($stage, $day) {
             if ($stage !== self::DELIVERY) {

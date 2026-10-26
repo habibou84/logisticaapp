@@ -13,8 +13,12 @@
       <label class="label" for="reason">Motif {{ reasonRequired ? '*' : '' }}</label>
       <select id="reason" v-model="form.incident_reason_id" class="input" :required="reasonRequired">
         <option :value="null">{{ reasonRequired ? 'Choisir…' : 'Aucun' }}</option>
-        <option v-for="r in reasons" :key="r.id" :value="r.id">{{ r.label }}</option>
+        <optgroup v-for="g in reasonGroups" :key="g.key" :label="g.label">
+          <option v-for="r in g.reasons" :key="r.id" :value="r.id">{{ r.label }}</option>
+        </optgroup>
       </select>
+      <p v-if="selectedReason?.photo === 'required'" class="text-xs text-amber-700 mt-1">📷 Ce motif demande une photo du livreur (pièce jointe « photo de l'incident » de moins de 12 h).</p>
+      <p v-if="selectedReason?.triggers_return" class="text-xs text-slate-500 mt-1">↩️ La course part en retour vers le client.</p>
     </div>
 
     <div v-if="showDate">
@@ -67,8 +71,8 @@
     </template>
 
     <div>
-      <label class="label" for="note">{{ form.status === 'cancelled' ? 'Raison' : 'Note' }}</label>
-      <textarea id="note" v-model="form.note" rows="2" class="input" />
+      <label class="label" for="note">{{ form.status === 'cancelled' ? 'Raison' : 'Note' }}{{ noteRequired ? ' *' : '' }}</label>
+      <textarea id="note" v-model="form.note" rows="2" class="input" :required="noteRequired" />
     </div>
 
     <button type="submit" class="btn-primary w-full" :disabled="saving">{{ saving ? 'Envoi…' : 'Valider' }}</button>
@@ -80,6 +84,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue'
 import http, { apiErrorMessage } from '../bootstrap/axios'
 import { DELIVERY_PAYMENT_METHODS, PAYMENT_METHODS, STATUS_LABELS, today } from '../utils/format'
 import { needsDate, needsReason } from '../utils/workflow'
+import { REASON_FAMILIES, reasonsFor } from '../utils/reasons'
 
 const props = defineProps({
   order: { type: Object, required: true },
@@ -109,10 +114,14 @@ const error = ref('')
 const saving = ref(false)
 
 const stage = computed(() => (['pending', 'confirmed', 'pickup_assigned', 'pickup_in_progress'].includes(props.order.status) ? 'pickup' : 'delivery'))
-const reasons = computed(() => allReasons.value.filter((r) => r.applies_to === 'both' || r.applies_to === stage.value))
+const reasons = computed(() => reasonsFor(allReasons.value, stage.value, props.order.activity))
+const reasonGroups = computed(() => Object.entries(REASON_FAMILIES)
+  .map(([key, f]) => ({ key, label: f.label, reasons: reasons.value.filter((r) => (r.family || 'other') === key) }))
+  .filter((g) => g.reasons.length))
 const reasonRequired = computed(() => needsReason(props.order.status, form.status))
 const showReason = computed(() => reasonRequired.value || ['rescheduled', 'cancelled'].includes(form.status))
 const selectedReason = computed(() => allReasons.value.find((r) => r.id === form.incident_reason_id))
+const noteRequired = computed(() => showReason.value && !!selectedReason.value?.requires_note)
 const showDate = computed(() => needsDate(form.status) || selectedReason.value?.requires_date)
 
 watch(() => props.choices, (c) => { if (!c.includes(form.status)) form.status = c[0] })

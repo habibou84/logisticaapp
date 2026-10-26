@@ -95,6 +95,12 @@ class Order extends Model
         'cod_amount',
         'max_attempts',
         'delivery_code',
+        // Note de suivi de l'équipe, course reconduite
+        'follow_up_reason_id',
+        'follow_up_note',
+        'follow_up_at',
+        'follow_up_by',
+        'renewed_from_id',
         // Validation par le chef de service (départements)
         'approval_requested_at',
         'approved_at',
@@ -108,6 +114,7 @@ class Order extends Model
         return [
             'merchant_alerts_muted' => 'boolean',
             'approval_requested_at' => 'datetime',
+            'follow_up_at' => 'datetime',
             'approved_at' => 'datetime',
             'status' => OrderStatus::class,
             'fee_payer' => FeePayer::class,
@@ -253,6 +260,29 @@ class Order extends Model
     public function deliveryZone(): BelongsTo
     {
         return $this->belongsTo(Zone::class, 'delivery_zone_id');
+    }
+
+    /** Note de suivi de l'équipe (« En attente de l'adresse »…) */
+    public function followUpReason(): BelongsTo
+    {
+        return $this->belongsTo(IncidentReason::class, 'follow_up_reason_id');
+    }
+
+    public function followUpAuthor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'follow_up_by');
+    }
+
+    /** Course dont celle-ci est la reconduction */
+    public function renewedFrom(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'renewed_from_id');
+    }
+
+    /** Mise en attente par une note de suivi : pas d'assignation automatique */
+    public function isOnHold(): bool
+    {
+        return $this->follow_up_reason_id !== null && (bool) $this->loadMissing('followUpReason')->followUpReason?->holds;
     }
 
     /** Compte du client qui a validé la demande (chef de service, gérant) */

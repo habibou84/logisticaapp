@@ -209,13 +209,18 @@
 
     <BottomSheet :open="sheet === 'incident'" title="Que se passe-t-il ?" @close="sheet = null">
       <div class="space-y-4">
-        <ChoiceChips v-model="incident.reason" :options="reasonOptions" label="Motif" />
+        <ReasonPicker v-model="incident.reason" :reasons="stageReasons" />
         <div v-if="selectedReason?.requires_date">
           <p class="m-label">Nouvelle date demandée par le client</p>
           <ChoiceChips v-model="incident.when" :options="dateOptions" :columns="3" label="Date" />
           <input v-if="incident.when === 'other'" v-model="incident.date" type="date" :min="today()" class="m-input mt-2" aria-label="Date">
         </div>
-        <textarea v-model="incident.note" rows="2" class="m-input" placeholder="Précisez (facultatif) : ex. téléphone éteint, 3 appels" />
+        <textarea v-model="incident.note" rows="2" class="m-input" :placeholder="selectedReason?.requires_note ? 'Précisez ce qui se passe (obligatoire)' : 'Précisez (facultatif) : ex. téléphone éteint, 3 appels'" />
+        <!-- Photo demandée par le motif (ex. bureau fermé) -->
+        <label v-if="selectedReason && selectedReason.photo !== 'off'" :class="['m-btn-secondary cursor-pointer', selectedReason.photo === 'required' && !incidentPhoto ? 'ring-2 ring-amber-400' : '']">
+          📷 {{ incidentPhoto ? 'Photo envoyée ✓' : `Prendre une photo${selectedReason.photo === 'required' ? ' *' : ' (conseillée)'}` }}
+          <input type="file" accept="image/*" capture="environment" class="hidden" @change="uploadIncidentPhoto">
+        </label>
         <p class="text-xs text-slate-500">L'agence et le client sont prévenus immédiatement.</p>
         <p v-if="sheetError" class="text-red-600 text-sm">{{ sheetError }}</p>
         <button class="m-btn-danger" :disabled="busy || !incident.reason" @click="confirmIncident">Envoyer</button>
@@ -272,6 +277,8 @@ import StatusBadge from '../../components/StatusBadge.vue'
 import DispatchMessages from '../../components/mobile/DispatchMessages.vue'
 import BottomSheet from '../../components/mobile/BottomSheet.vue'
 import ChoiceChips from '../../components/mobile/ChoiceChips.vue'
+import ReasonPicker from '../../components/mobile/ReasonPicker.vue'
+import { reasonsFor } from '../../utils/reasons'
 import HandoverFields from '../../components/courier/HandoverFields.vue'
 import { asksHandover, blankHandover, handoverPayload } from '../../utils/handover'
 import SignaturePad from '../../components/mobile/SignaturePad.vue'
@@ -403,9 +410,9 @@ const primary = computed(() => {
 })
 
 const stage = computed(() => (mission.value?.type === 'pickup' ? 'pickup' : 'delivery'))
-const reasonOptions = computed(() => reasons.value
-  .filter((r) => r.applies_to === 'both' || r.applies_to === stage.value)
-  .map((r) => ({ value: r.id, label: r.label })))
+// Motifs de l'étape et de l'activité de la course (distribution, MAD : les leurs)
+const stageReasons = computed(() => reasonsFor(reasons.value, stage.value, order.value?.activity))
+const incidentPhoto = ref(false)
 const selectedReason = computed(() => reasons.value.find((r) => r.id === incident.reason))
 
 const paymentOptions = DELIVERY_PAYMENT_METHODS.map((m) => ({
@@ -562,6 +569,7 @@ async function saveExpense() {
 
 function openIncident() {
   Object.assign(incident, { reason: null, when: 'tomorrow', date: null, note: '' })
+  incidentPhoto.value = false
   sheetError.value = ''
   sheet.value = 'incident'
 }
@@ -572,6 +580,8 @@ async function confirmIncident() {
   try {
     // Ramassage : retour à « Validée » ; livraison : échec (ou report daté selon le motif)
     const status = stage.value === 'pickup' ? 'confirmed' : 'delivery_failed'
+    if (selectedReason.value?.requires_note && !incident.note.trim()) throw new Error('Précisez ce qui se passe dans la note.')
+    if (selectedReason.value?.photo === 'required' && !incidentPhoto.value) throw new Error('Prenez une photo avant d\'envoyer.')
     const extra = { incident_reason_id: incident.reason, note: incident.note || undefined }
     if (selectedReason.value?.requires_date) {
       extra.rescheduled_to = { tomorrow: dayOffset(1), after: dayOffset(2), other: incident.date }[incident.when]
@@ -633,6 +643,21 @@ async function sendNote() {
   } finally {
     busy.value = false
   }
+}
+
+async function uploadIncidentPhoto(e) {
+  const file = e.target.files[0]
+  if (!file) return
+  const form = new FormData()
+  form.append('file', file)
+  form.append('type', 'photo_incident')
+  try {
+    await http.post(`/orders/${order.value.id}/attachments`, form)
+    incidentPhoto.value = true
+  } catch (err) {
+    sheetError.value = apiErrorMessage(err)
+  }
+  e.target.value = ''
 }
 
 async function uploadPhoto(e) {

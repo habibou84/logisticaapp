@@ -29,6 +29,7 @@ use App\Http\Controllers\Api\V1\FieldEventController;
 use App\Http\Controllers\Api\V1\FieldReportController;
 use App\Http\Controllers\Api\V1\FinanceController;
 use App\Http\Controllers\Api\V1\HubController;
+use App\Http\Controllers\Api\V1\IncidentReasonController;
 use App\Http\Controllers\Api\V1\LegacyImportController;
 use App\Http\Controllers\Api\V1\MerchantAccountController;
 use App\Http\Controllers\Api\V1\MerchantController;
@@ -207,6 +208,10 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::get('recipients', [ReferenceController::class, 'recipients'])->name('recipients.index');
         Route::post('quotes', QuoteController::class)->name('quotes.store');
         Route::get('hubs', [HubController::class, 'index'])->name('hubs.index');
+
+        // Réglages › Motifs : non-livraison, ramassage, notes de suivi de l'équipe
+        Route::middleware('can:settings.manage')->apiResource('incident-reason-settings', IncidentReasonController::class)
+            ->except('show')->parameters(['incident-reason-settings' => 'incidentReason']);
 
         Route::middleware('can:settings.manage')->group(function () {
             // Parcours de mise en route de l'administrateur
@@ -438,6 +443,8 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::post('orders/{order}/unassign', [OrderActionController::class, 'unassign'])->name('orders.unassign');
         Route::post('orders/{order}/decision', [OrderActionController::class, 'decide'])->name('orders.decision');
         Route::post('orders/{order}/approval', [OrderActionController::class, 'approval'])->name('orders.approval');
+        Route::post('orders/{order}/follow-up', [OrderActionController::class, 'followUp'])->name('orders.follow-up');
+        Route::post('orders/{order}/renew', [OrderActionController::class, 'renew'])->name('orders.renew');
         Route::post('orders/{order}/lost', [OrderActionController::class, 'declareLost'])->name('orders.lost');
         Route::post('orders/{order}/notes', [OrderActionController::class, 'note'])->name('orders.notes');
         Route::post('orders/{order}/verify-delivery-code', [OrderActionController::class, 'verifyDeliveryCode'])->name('orders.verify-delivery-code');

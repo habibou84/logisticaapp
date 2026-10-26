@@ -213,6 +213,10 @@ class AutoAssigner
         }
 
         $order = $order->fresh();
+        // Mise en attente par une note de suivi de l'équipe (« En attente de l'adresse »…)
+        if ($order->isOnHold()) {
+            return null;
+        }
         $now = CarbonImmutable::now($company->timezone ?: config('app.timezone'));
         if ($this->chooser->blocker($order, $company, $now) !== null) {
             return null;
@@ -277,6 +281,10 @@ class AutoAssigner
         }
 
         $order = $order->fresh();
+        // Mise en attente par une note de suivi de l'équipe (« En attente de l'adresse »…)
+        if ($order->isOnHold()) {
+            return null;
+        }
         if ($order->status !== OrderStatus::Confirmed || $order->fromWarehouse() || $order->merchant_id === null
             || $order->assignments()->active()->where('type', AssignmentType::Pickup->value)->exists()) {
             return null;

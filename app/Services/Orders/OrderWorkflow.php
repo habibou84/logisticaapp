@@ -131,6 +131,11 @@ class OrderWorkflow
                 ]);
             }
 
+            // Annuaire : motif qui touche la fiche (entreprise disparue, nom, adresse ou numéro à vérifier)
+            if ($reason !== null && in_array($to, [OrderStatus::DeliveryFailed, OrderStatus::Rescheduled], true)) {
+                app(Destinations::class)->flag($order, $reason);
+            }
+
             // Annuaire : une livraison de plus ; position du livreur gardée comme celle de l'adresse s'il l'a demandé
             if ($to === OrderStatus::Delivered) {
                 app(Destinations::class)->delivered($order);
@@ -154,6 +159,9 @@ class OrderWorkflow
             if ($to === OrderStatus::PickedUp && isset($context['lat'], $context['lng']) && $order->merchant) {
                 $this->locations->learn($order->merchant);
             }
+
+            // Course partie en livraison ou terminée : la note de suivi de l'équipe est levée
+            app(OrderFollowUps::class)->clearOnProgress($order);
 
             return $order;
         });
@@ -259,12 +267,36 @@ class OrderWorkflow
         throw new AuthorizationException;
     }
 
+    /**
+     * Motif choisi : proposé pour l'activité de la course ; note ou photo demandée par le motif (hors connexion,
+     * l'échec est gardé tel quel).
+     */
+    private function validateReason(Order $order, IncidentReason $reason, array $context): void
+    {
+        if (! $reason->forActivity($order->activity)) {
+            throw new BusinessRuleException('Ce motif ne s\'applique pas à ce type de course.', 'incident_reason_id');
+        }
+        if (! empty($context['offline'])) {
+            return;
+        }
+        if ($reason->requires_note && blank($context['note'] ?? null)) {
+            throw new BusinessRuleException("« {$reason->label} » : précisez ce qui se passe dans la note.", 'note');
+        }
+        if ($reason->photo === 'required'
+            && ! $order->attachments()->where('type', 'photo_incident')->where('created_at', '>=', now()->subHours(12))->exists()) {
+            throw new BusinessRuleException("« {$reason->label} » : prenez une photo avant d'envoyer.", 'photo');
+        }
+    }
+
     private function validate(Order $order, OrderStatus $from, OrderStatus $to, ?IncidentReason $reason, array $context): void
     {
         $stage = $from->isBeforePickup() ? 'pickup' : 'delivery';
 
         if ($reason !== null && ! $reason->appliesTo($stage)) {
             throw new BusinessRuleException('Ce motif ne s\'applique pas à cette étape.', 'incident_reason_id');
+        }
+        if ($reason !== null) {
+            $this->validateReason($order, $reason, $context);
         }
 
         $returnStatuses = [OrderStatus::ReturnAssigned, OrderStatus::Returning];

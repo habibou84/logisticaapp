@@ -358,6 +358,9 @@ const queues = [
   { value: 'to_decide', label: 'À décider' },
   { value: 'scheduled', label: 'Prévues plus tard' },
   { value: 'incidents', label: 'Incidents' },
+  // Notes de suivi de l'équipe (Réglages › Motifs) ; « En attente » : celles qui retiennent la course
+  { value: 'follow_up', label: '📌 Suivi' },
+  { value: 'on_hold', label: '⏸ En attente' },
   { value: 'to_return', label: 'À retourner' },
   // Livrées hors connexion avec un code client incorrect
   { value: 'code_to_verify', label: '⚠️ Codes à vérifier' },

@@ -49,7 +49,7 @@ class CourierMessageTest extends TestCase
     private function failDelivery(): OrderEvent
     {
         Sanctum::actingAs($this->courierB->user);
-        $reason = IncidentReason::where('applies_to', '!=', 'pickup')->where('requires_date', false)->first();
+        $reason = IncidentReason::whereIn('applies_to', ['delivery', 'both'])->where('requires_date', false)->orderBy('id')->first();
         $this->postJson("/api/v1/orders/{$this->order->id}/status", ['status' => 'delivery_failed', 'incident_reason_id' => $reason->id])->assertOk();
 
         return $this->order->events()->latest('id')->first();

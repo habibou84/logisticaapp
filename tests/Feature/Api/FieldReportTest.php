@@ -40,7 +40,7 @@ class FieldReportTest extends TestCase
 
     private function reason(): IncidentReason
     {
-        return IncidentReason::where('applies_to', '!=', 'pickup')->where('requires_date', false)->first();
+        return IncidentReason::whereIn('applies_to', ['delivery', 'both'])->where('requires_date', false)->orderBy('id')->first();
     }
 
     public function test_courier_notes_and_problems_alert_dispatch_with_a_field_flag(): void

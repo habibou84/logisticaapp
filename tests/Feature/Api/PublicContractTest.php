@@ -72,7 +72,7 @@ class PublicContractTest extends TestCase
     {
         $order = $this->pickedUp();
         $this->move($order, $this->courierB->user, 'out_for_delivery');
-        $reason = IncidentReason::where('applies_to', '!=', 'pickup')->where('requires_date', false)->where('triggers_return', false)->first();
+        $reason = IncidentReason::whereIn('applies_to', ['delivery', 'both'])->where('requires_date', false)->where('triggers_return', false)->orderBy('id')->first();
         $this->move($order, $this->courierB->user, 'delivery_failed', ['incident_reason_id' => $reason->id]);
 
         return $order->fresh();
@@ -149,7 +149,7 @@ class PublicContractTest extends TestCase
         $order = $this->pickedUp();
         $this->api('PATCH', "orders/{$order->tracking_code}", ['delivery_landmark' => 'Portail bleu'])->assertOk();
         $this->move($order, $this->courierB->user, 'out_for_delivery');
-        $reason = IncidentReason::where('applies_to', '!=', 'pickup')->where('requires_date', false)->where('triggers_return', false)->first();
+        $reason = IncidentReason::whereIn('applies_to', ['delivery', 'both'])->where('requires_date', false)->where('triggers_return', false)->orderBy('id')->first();
         $this->move($order, $this->courierB->user, 'delivery_failed', ['incident_reason_id' => $reason->id]);
         $this->api('POST', "orders/{$order->tracking_code}/decision", ['decision' => 'redeliver', 'date' => today()->addDay()->toDateString()])->assertOk();
 

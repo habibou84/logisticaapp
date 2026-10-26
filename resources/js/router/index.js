@@ -116,6 +116,7 @@ const routes = [
       { path: 'reglages/departements', component: () => import('../views/admin/settings/SettingsDepartments.vue'), meta: { permission: 'departments.manage' } },
       { path: 'reglages/vehicules', component: () => import('../views/admin/settings/SettingsVehicles.vue'), meta: { permission: 'fleet.manage' } },
       { path: 'qualite-livreurs', component: () => import('../views/admin/CourierQuality.vue'), meta: { permission: ['orders.dispatch', 'ratings.manage'] } },
+      { path: 'reglages/motifs', component: () => import('../views/admin/settings/SettingsReasons.vue'), meta: { permission: 'settings.manage' } },
       { path: 'reglages/alertes', component: () => import('../views/admin/settings/SettingsAlerts.vue'), meta: { permission: 'settings.manage' } },
       { path: 'reglages/e-commercants', component: () => import('../views/admin/settings/SettingsMerchants.vue'), meta: { permission: 'settings.manage' } },
       { path: 'reglages/reprise', component: () => import('../views/admin/settings/SettingsLegacy.vue'), meta: { permission: 'settings.manage' } },

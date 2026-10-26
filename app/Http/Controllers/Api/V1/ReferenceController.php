@@ -17,8 +17,13 @@ class ReferenceController extends Controller
      */
     public function incidentReasons(Request $request): AnonymousResourceCollection
     {
+        // Notes de suivi : réservées à l'équipe
+        $staff = $request->user()->isStaff();
+
         return IncidentReasonResource::collection(
-            IncidentReason::availableTo($request->user()->company_id)->orderBy('sort_order')->get()
+            IncidentReason::availableTo($request->user()->company_id)
+                ->when(! $staff, fn ($q) => $q->where('applies_to', '!=', 'follow_up'))
+                ->orderBy('sort_order')->get()
         );
     }
 

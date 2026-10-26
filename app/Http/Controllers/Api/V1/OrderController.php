@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\V1\StoreOrderRequest;
 use App\Http\Requests\V1\UpdateOrderRequest;
 use App\Http\Resources\V1\OrderResource;
+use App\Models\IncidentReason;
 use App\Models\Merchant;
 use App\Models\Order;
 use App\Services\Orders\AwaitingCourier;
@@ -26,7 +27,7 @@ use Illuminate\Validation\Rule;
 class OrderController extends Controller
 {
     public const LIST_RELATIONS = [
-        'merchant', 'pickupZone', 'deliveryZone', 'lastIncidentReason', 'pickupHub', 'items',
+        'merchant', 'pickupZone', 'deliveryZone', 'lastIncidentReason', 'followUpReason', 'pickupHub', 'items',
         'pickupCourier.user', 'deliveryCourier.user', 'returnCourier.user', 'holder.user', 'merchantDecision',
         'department', 'toDepartment', 'destination',
     ];
@@ -41,7 +42,7 @@ class OrderController extends Controller
             'status' => ['nullable', 'array'],
             'status.*' => [Rule::enum(OrderStatus::class)],
             // File d'attente du dispatch : à valider, à ramasser, à livrer, à retourner
-            'queue' => ['nullable', Rule::in(['to_confirm', 'to_approve', 'to_pickup', 'to_prepare', 'to_deliver', 'unassigned', 'to_decide', 'scheduled', 'to_return', 'incidents', 'code_to_verify', 'internal_late'])],
+            'queue' => ['nullable', Rule::in(['to_confirm', 'to_approve', 'on_hold', 'follow_up', 'to_pickup', 'to_prepare', 'to_deliver', 'unassigned', 'to_decide', 'scheduled', 'to_return', 'incidents', 'code_to_verify', 'internal_late'])],
             // File « Sans livreur » : ramassage, livraison ou les deux
             'awaiting' => ['nullable', Rule::in([AwaitingCourier::PICKUP, AwaitingCourier::DELIVERY])],
             'merchant_id' => ['nullable', 'integer'],
@@ -248,6 +249,9 @@ class OrderController extends Controller
             // Les demandes d'agents pas encore validées par leur chef de service ne sont pas encore à valider ici
             'to_confirm' => $query->where('status', OrderStatus::Pending)->where(fn ($q) => $q->whereNull('approval_requested_at')->orWhereNotNull('approved_at')),
             'to_approve' => $query->where('status', OrderStatus::Pending)->whereNotNull('approval_requested_at')->whereNull('approved_at'),
+            // Mises en attente par une note de suivi de l'équipe
+            'on_hold' => $query->whereIn('follow_up_reason_id', IncidentReason::query()->where('holds', true)->select('id')),
+            'follow_up' => $query->whereNotNull('follow_up_reason_id'),
             'to_pickup' => $query->where('status', OrderStatus::Confirmed)->whereNull('pickup_hub_id'),
             // Commandes d'entrepôt validées, à préparer avant la livraison
             'to_prepare' => $query->where('status', OrderStatus::Confirmed)->whereNotNull('pickup_hub_id'),

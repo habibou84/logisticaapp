@@ -94,6 +94,11 @@ const ALL = computed(() => {
       keywords: 'alerte délai sans livreur colis gardé livreur relance remontées terrain point semaine rapport',
     },
     {
+      key: 'reasons', icon: '📝', title: 'Motifs et notes de suivi', to: '/admin/reglages/motifs', permission: 'settings.manage',
+      description: 'Motifs de non-livraison et de ramassage du livreur (par famille et par activité), notes de suivi de l\'équipe.',
+      keywords: 'motifs non livraison échec report injoignable absent fermé documents cachet signature tva retour note suivi attente réceptionne annuaire photo',
+    },
+    {
       key: 'messages', icon: '💬', title: 'Messages aux clients', to: '/admin/whatsapp', permission: 'messaging.manage',
       description: 'WhatsApp de l\'entreprise : numéro, envois, modèles, test ; notifications sur téléphone des clients.',
       keywords: 'whatsapp sms messages modèles envois test notifications push téléphone',

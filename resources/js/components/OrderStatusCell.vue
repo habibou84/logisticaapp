@@ -20,6 +20,7 @@
       🕒 Après {{ order.awaiting_courier.cutoff_time }}
     </div>
     <div v-if="order.last_incident && ['delivery_failed', 'rescheduled'].includes(order.status)" class="text-xs text-red-600 mt-0.5">{{ order.last_incident.label }}</div>
+    <div v-if="order.follow_up" :class="['text-xs mt-0.5', order.follow_up.holds ? 'text-amber-700' : 'text-slate-600']" :title="order.follow_up.note || ''">{{ order.follow_up.holds ? '⏸' : '📌' }} {{ order.follow_up.label }}</div>
     <div v-if="order.return_requested && !['returned', 'return_assigned', 'returning'].includes(order.status)" class="text-xs text-rose-600">Retour demandé</div>
     <div v-if="order.delivery.scheduled_date && (order.status === 'rescheduled' || (order.delivery.scheduled_date > todayIso && !['delivered', 'cancelled', 'rejected', 'returned', 'lost'].includes(order.status)))" :class="['text-xs', order.delivery.scheduled_date <= todayIso ? 'text-emerald-700 font-medium' : 'text-gray-600']">📅 {{ order.delivery.scheduled_date <= todayIso ? 'Prévue aujourd\'hui' : date(order.delivery.scheduled_date) }}</div>
     <!-- Décision du client encore d'actualité -->

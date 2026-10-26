@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Enums\AssignmentType;
 use App\Enums\OrderEventType;
 use App\Enums\OrderStatus;
+use App\Enums\Permission;
 use App\Exceptions\BusinessRuleException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\V1\TransitionOrderRequest;
@@ -14,6 +15,7 @@ use App\Models\Order;
 use App\Models\OrderAttachment;
 use App\Services\Orders\OrderDecisions;
 use App\Services\Orders\OrderDispatcher;
+use App\Services\Orders\OrderFollowUps;
 use App\Services\Orders\OrderJournal;
 use App\Services\Orders\OrderLosses;
 use App\Services\Orders\OrderService;
@@ -66,6 +68,40 @@ class OrderActionController extends Controller
         ], [], ['reason' => 'motif']);
 
         return OrderResource::make($orders->decideApproval($request->user(), $order, $data['approve'], $data['reason'] ?? null)->load(OrderController::loadDetailRelations($request)));
+    }
+
+    /**
+     * Note de suivi de l'équipe (null : levée).
+     */
+    public function followUp(Request $request, Order $order, OrderFollowUps $followUps): OrderResource
+    {
+        $user = $request->user();
+        abort_unless($user->merchant_id === null && ! $user->isCourier()
+            && $user->canAny([Permission::OrdersDispatch->value, Permission::OrdersCreate->value]), 403);
+        $data = $request->validate([
+            'reason_id' => ['present', 'nullable', 'integer'],
+            'note' => ['nullable', 'string', 'max:500'],
+            'date' => ['nullable', 'date'],
+        ], [], ['reason_id' => 'note de suivi']);
+
+        return OrderResource::make($followUps->set($user, $order, $data['reason_id'], $data['note'] ?? null, $data['date'] ?? null)
+            ->load(OrderController::loadDetailRelations($request)));
+    }
+
+    /**
+     * Reconduire la course : nouvelle course identique, à une autre date.
+     */
+    public function renew(Request $request, Order $order, OrderFollowUps $followUps): JsonResponse
+    {
+        $user = $request->user();
+        abort_unless($user->can(Permission::OrdersCreate->value) && ($user->merchant_id === null ? ! $user->isCourier() : $user->merchant_id === $order->merchant_id), 403);
+        $data = $request->validate([
+            'date' => ['nullable', 'date', 'after_or_equal:today'],
+            'note' => ['nullable', 'string', 'max:255'],
+        ], [], ['date' => 'date de livraison']);
+        $renewed = $followUps->renew($user, $order, $data['date'] ?? null, $data['note'] ?? null);
+
+        return OrderResource::make($renewed->load(OrderController::loadDetailRelations($request)))->response()->setStatusCode(201);
     }
 
     public function decide(Request $request, Order $order): OrderResource

@@ -6,6 +6,7 @@ use App\Enums\Role;
 use App\Exceptions\BusinessRuleException;
 use App\Models\Company;
 use App\Models\Destination;
+use App\Models\IncidentReason;
 use App\Models\Merchant;
 use App\Models\Order;
 use App\Models\User;
@@ -168,6 +169,35 @@ class Destinations
         if ($order->destination_id) {
             Destination::withoutGlobalScopes()->whereKey($order->destination_id)->update(['deliveries_count' => DB::raw('deliveries_count + 1'), 'last_used_at' => now()]);
         }
+    }
+
+    /**
+     * Motif de non-livraison ou note de suivi qui touche la fiche de l'annuaire : entreprise disparue (fiche
+     * désactivée), nom, adresse ou numéro à vérifier (l'équipe est prévenue ; numéro marqué « à vérifier »).
+     */
+    public function flag(Order $order, IncidentReason $reason): void
+    {
+        $effect = $reason->destination_effect;
+        if ($effect === null || $order->destination_id === null) {
+            return;
+        }
+        $destination = Destination::withoutGlobalScopes()->find($order->destination_id);
+        if ($destination === null) {
+            return;
+        }
+        $what = match ($effect) {
+            'inactive' => 'désactivée',
+            'check_phone' => 'numéro à vérifier',
+            'check_name' => 'nom à vérifier',
+            default => 'adresse à vérifier',
+        };
+        if ($effect === 'inactive') {
+            $destination->forceFill(['status' => 'inactive'])->save();
+        } elseif ($effect === 'check_phone') {
+            $destination->forceFill(['phone_check' => true])->save();
+        }
+        $this->tellStaff($order->company_id, 'destination_flagged', "📇 {$destination->label()} : {$what}",
+            "« {$reason->label} » sur la course {$order->tracking_code}.", "/admin/annuaire?fiche={$destination->id}");
     }
 
     private function match(int $companyId, ?string $phone, ?string $name, ?int $zoneId): ?Destination

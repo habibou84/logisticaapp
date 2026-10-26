@@ -169,6 +169,10 @@ class OrderResource extends JsonResource
             'max_attempts' => $this->max_attempts,
             // Colis non livré : décision attendue, ou décision déjà prise par le client
             'needs_decision' => $this->needsDecision(),
+            // Note de suivi de l'équipe : tout pour l'équipe ; au client, seulement celles qu'on lui montre
+            'follow_up' => $this->followUp($request),
+            // Course reconduite à partir d'une autre
+            'renewed_from' => $this->renewed_from_id ? ['id' => $this->renewed_from_id, 'tracking_code' => $this->resource->loadMissing('renewedFrom')->renewedFrom?->tracking_code] : null,
             // Demande d'un agent : validation par le chef de son service (départements)
             'approval' => $this->approval_requested_at ? [
                 'awaiting' => $this->resource->awaitingApproval(),
@@ -255,6 +259,28 @@ class OrderResource extends JsonResource
             'phone' => $department->phone,
             'cost_center' => $department->cost_center,
         ] : null;
+    }
+
+    /** @return array<string, mixed>|null */
+    private function followUp(Request $request): ?array
+    {
+        $reason = $this->follow_up_reason_id ? $this->resource->loadMissing('followUpReason')->followUpReason : null;
+        if ($reason === null) {
+            return null;
+        }
+        $staff = $request->user()?->merchant_id === null && ! $request->user()?->isCourier();
+        if (! $staff && ! $reason->visible_to_client) {
+            return null;
+        }
+
+        return [
+            'reason_id' => $reason->id,
+            'label' => $reason->label,
+            'note' => $this->follow_up_note,
+            'holds' => (bool) $reason->holds,
+            'at' => $this->follow_up_at,
+            'by' => $staff ? $this->resource->loadMissing('followUpAuthor')->followUpAuthor?->name : null,
+        ];
     }
 
     /**

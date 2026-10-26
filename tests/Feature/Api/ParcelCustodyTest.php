@@ -56,7 +56,7 @@ class ParcelCustodyTest extends TestCase
 
     private function failDelivery(Order $order): Order
     {
-        $reason = IncidentReason::where('applies_to', '!=', 'pickup')->where('requires_date', false)->where('triggers_return', false)->first();
+        $reason = IncidentReason::whereIn('applies_to', ['delivery', 'both'])->where('requires_date', false)->where('triggers_return', false)->orderBy('id')->first();
         $this->move($order, $this->courierB->user, 'delivery_failed', ['incident_reason_id' => $reason->id])->assertOk();
 
         return $order->fresh();
@@ -102,7 +102,7 @@ class ParcelCustodyTest extends TestCase
         $delivered = $this->onTheRoad(['items_amount' => 10000]);
         $this->move($delivered, $this->courierB->user, 'delivered')->assertOk();
         $failed = $this->failDelivery($this->onTheRoad());
-        $reportReason = IncidentReason::where('requires_date', true)->first();
+        $reportReason = IncidentReason::where('applies_to', 'delivery')->where('requires_date', true)->orderBy('id')->first();
         $rescheduled = $this->onTheRoad();
         $this->move($rescheduled, $this->courierB->user, 'delivery_failed', [
             'incident_reason_id' => $reportReason->id, 'rescheduled_to' => today()->addDay()->toDateString(),

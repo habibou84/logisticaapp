@@ -96,9 +96,9 @@
           <li v-for="m in missing" :key="m.id">📦 {{ m.order.recipient.name || m.order.recipient.phone }} <span class="font-mono text-xs text-slate-400">{{ m.order.tracking_code }}</span></li>
         </ul>
         <ChoiceChips v-model="incident.reason" :options="reasonOptions" label="Motif" />
-        <textarea v-model="incident.note" rows="2" class="m-input" placeholder="Précisez (facultatif) : ex. colis pas encore emballé" />
+        <textarea v-model="incident.note" rows="2" class="m-input" :placeholder="noteRequired ? 'Précisez (obligatoire)' : 'Précisez (facultatif) : ex. colis pas encore emballé'" />
         <p v-if="sheetError" class="text-red-600 text-sm">{{ sheetError }}</p>
-        <button class="m-btn-success" :disabled="busy || !incident.reason" @click="confirmPicked()">
+        <button class="m-btn-success" :disabled="busy || !incident.reason || (noteRequired && !incident.note.trim())" @click="confirmPicked()">
           ✓ Valider : {{ pickedCount }} récupéré{{ pickedCount > 1 ? 's' : '' }}
         </button>
       </div>
@@ -121,6 +121,7 @@ import { cachedGet } from '../../composables/useCachedApi'
 import { useToastStore } from '../../stores/toasts'
 import { currentPosition } from '../../composables/useGeolocation'
 import { sendStatus, withPending } from '../../composables/useOfflineQueue'
+import { reasonsFor } from '../../utils/reasons'
 import { mapsLink, money, shipmentLabel, telLink, whatsappLink } from '../../utils/format'
 
 /**
@@ -157,9 +158,9 @@ const missing = computed(() => active.value.filter((m) => !checked.value.include
 const pickedCount = computed(() => picked.value.length)
 const offlineCount = computed(() => missions.value.filter((m) => m.offline).length)
 const gain = computed(() => missions.value.reduce((sum, m) => sum + (m.gain || 0), 0))
-const reasonOptions = computed(() => reasons.value
-  .filter((r) => r.applies_to === 'both' || r.applies_to === 'pickup')
+const reasonOptions = computed(() => reasonsFor(reasons.value, 'pickup', missions.value[0]?.order.activity)
   .map((r) => ({ value: r.id, label: r.label })))
+const noteRequired = computed(() => !!reasons.value.find((r) => r.id === incident.reason)?.requires_note)
 
 async function load() {
   let data

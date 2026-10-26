@@ -17,6 +17,10 @@
       <OrderProgress :status="order.status" :incident="order.last_incident?.label" :rescheduled-to="order.delivery.scheduled_date" :shipping="order.is_shipping" />
       <p v-if="plannedDay" class="flex items-center gap-2 rounded-xl bg-sky-50 px-3 py-2 text-sm text-sky-900"><StatusIcon name="calendar" class="h-4 w-4 shrink-0" /><span>Livraison prévue le <strong>{{ plannedDay }}</strong></span></p>
 
+      <!-- Note de suivi de l'agence, quand elle est montrée au client (Réglages › Motifs) -->
+      <p v-if="order.follow_up" class="rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-700">📌 <strong>{{ order.follow_up.label }}</strong><template v-if="order.follow_up.note"> · {{ order.follow_up.note }}</template></p>
+      <RouterLink v-if="order.renewed_from" :to="`/marchand/courses/${order.renewed_from.id}`" class="block text-xs text-slate-500">🔁 Reconduite de {{ order.renewed_from.tracking_code }}</RouterLink>
+
       <!-- Demande d'un agent : en attente du chef de service, qui la valide ou la refuse ici -->
       <div v-if="order.approval?.awaiting" class="rounded-xl bg-amber-50 p-3 text-sm text-amber-900 space-y-2">
         <p>✋ <strong>En attente de validation</strong> par le chef de service<template v-if="order.department"> ({{ order.department.name }})</template>. Elle part à l'agence dès qu'elle est validée.</p>
@@ -155,6 +159,11 @@
       <button v-if="beforePickup" class="m-btn-secondary text-red-600" @click="sheet = 'cancel'">Annuler la course</button>
     </section>
 
+    <!-- Revenue, annulée ou en échec : la refaire partir (nouvelle course liée) -->
+    <section v-if="canRenew" class="space-y-2">
+      <button class="m-btn-secondary" @click="sheet = 'renew'">🔁 Reconduire la course</button>
+    </section>
+
     <!-- Historique : l'essentiel, le détail complet à un toucher -->
     <section class="m-card p-4">
       <h2 class="font-semibold mb-3">Historique</h2>
@@ -192,6 +201,16 @@
       </div>
     </BottomSheet>
 
+    <BottomSheet :open="sheet === 'renew'" title="Reconduire la course" @close="sheet = null">
+      <div class="space-y-3">
+        <p class="text-slate-600">Une nouvelle course identique part (même destinataire, même envoi). Celle-ci reste comptée.</p>
+        <label class="m-label" for="renew-date">Jour de livraison (facultatif)</label>
+        <input id="renew-date" v-model="renewDate" type="date" :min="today()" class="m-input">
+        <textarea v-model="noteText" rows="2" class="m-input" placeholder="Note (facultatif) : ex. cachet ajouté" />
+        <button class="m-btn-primary" :disabled="busy" @click="doRenew">Reconduire</button>
+      </div>
+    </BottomSheet>
+
     <BottomSheet :open="sheet === 'note'" title="Envoyer un message" @close="sheet = null">
       <div class="space-y-3">
         <textarea v-model="noteText" rows="3" class="m-input" placeholder="Ex. : le destinataire préfère être livré au bureau" />
@@ -220,7 +239,7 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import OrderTimeline from '../../components/OrderTimeline.vue'
 import OrderProgress from '../../components/mobile/OrderProgress.vue'
@@ -242,6 +261,7 @@ import RatingSheet from '../../components/client/RatingSheet.vue'
 import { useCourierRating } from '../../composables/useCourierRating'
 
 const route = useRoute()
+const router = useRouter()
 const auth = useAuthStore()
 const toasts = useToastStore()
 
@@ -263,6 +283,8 @@ const relivrer = ref(false)
 const fullHistory = ref(false)
 
 const isFinal = computed(() => FINAL.includes(order.value?.status))
+const canRenew = computed(() => auth.can('orders.create') && ['returned', 'cancelled', 'delivery_failed'].includes(order.value?.status))
+const renewDate = ref(null)
 const state = computed(() => merchantStatus(order.value))
 
 // « mardi 20 octobre » ou « aujourd'hui » / « hier »
@@ -396,6 +418,21 @@ async function openEdit(thenRedeliver = false) {
   sheet.value = 'edit'
 }
 
+async function doRenew() {
+  busy.value = true
+  try {
+    const { data } = await http.post(`/orders/${order.value.id}/renew`, { date: renewDate.value || null, note: noteText.value || null })
+    sheet.value = null
+    noteText.value = ''
+    toasts.success(`Course reconduite : ${data.data.tracking_code}`)
+    router.push(`/marchand/courses/${data.data.id}`)
+  } catch (e) {
+    toasts.error(apiErrorMessage(e))
+  } finally {
+    busy.value = false
+  }
+}
+
 async function doEdit() {
   await run(
     () => http.patch(`/orders/${order.value.id}`, Object.fromEntries(Object.entries(edit).filter(([, v]) => v !== ''))),
@@ -419,4 +456,5 @@ watch(orderChanges, () => {
   if (lastOrderChange.value?.order?.id === order.value?.id) load()
 })
 onMounted(load)
+watch(() => route.params.id, (id) => { if (id) { order.value = null; load() } })
 </script>

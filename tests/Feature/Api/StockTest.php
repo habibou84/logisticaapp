@@ -244,7 +244,7 @@ class StockTest extends TestCase
         $this->as($this->hubAgent)->postJson("/api/v1/orders/{$order->id}/status", ['status' => 'at_hub']);
         $this->as($this->dispatcher)->postJson("/api/v1/orders/{$order->id}/assign", ['type' => 'delivery', 'courier_id' => $this->courierB->id]);
         $this->as($this->courierB->user)->postJson("/api/v1/orders/{$order->id}/status", ['status' => 'out_for_delivery']);
-        $reason = IncidentReason::where('applies_to', '!=', 'pickup')->where('requires_date', false)->first();
+        $reason = IncidentReason::whereIn('applies_to', ['delivery', 'both'])->where('requires_date', false)->orderBy('id')->first();
         $this->postJson("/api/v1/orders/{$order->id}/status", ['status' => 'delivery_failed', 'incident_reason_id' => $reason->id])->assertOk();
 
         $this->as($this->dispatcher)->postJson("/api/v1/orders/{$order->id}/assign", ['type' => 'return', 'courier_id' => $this->courierA->id])

@@ -55,7 +55,7 @@ class PublicMerchantActionsTest extends TestCase
     {
         $order = $this->pickedUp();
         $this->move($order, $this->courierB->user, 'out_for_delivery');
-        $reason = IncidentReason::where('applies_to', '!=', 'pickup')->where('requires_date', false)->where('triggers_return', false)->first();
+        $reason = IncidentReason::whereIn('applies_to', ['delivery', 'both'])->where('requires_date', false)->where('triggers_return', false)->orderBy('id')->first();
         $this->move($order, $this->courierB->user, 'delivery_failed', ['incident_reason_id' => $reason->id]);
 
         return $order->fresh();
