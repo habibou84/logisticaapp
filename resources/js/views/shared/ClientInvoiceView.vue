@@ -14,6 +14,12 @@
       </button>
     </div>
 
+    <!-- Facture normalisée (FNE) : à certifier (FNE injoignable) ou refusée (données à corriger) -->
+    <div v-if="fneProblem" class="no-print rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 flex flex-wrap items-center gap-2">
+      <span class="flex-1">⚠️ {{ fneProblem }}</span>
+      <button v-if="canManage" class="btn-secondary" :disabled="busy" @click="act('certify', 'Certification envoyée.')">Certifier maintenant</button>
+    </div>
+
     <p v-if="invoice.status === 'draft'" class="no-print rounded bg-slate-100 p-3 text-sm text-slate-700">
       Brouillon : recalculé à chaque « Recalculer » d'après les courses du mois (les lignes ajoutées à la main sont gardées).
       Le client ne le voit pas tant qu'il n'est pas émis.
@@ -44,6 +50,7 @@
           <span :class="['inline-block mt-1 rounded-full px-2 py-0.5 text-xs font-medium', invoice.is_overdue ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-700']">{{ invoice.status_label }}</span>
         </div>
       </div>
+      <FneSticker v-if="invoice.fne?.status === 'certified'" :fne="invoice.fne" />
 
       <table class="w-full text-sm">
         <thead class="text-left text-gray-600 border-b">
@@ -118,6 +125,8 @@
           <span class="font-mono">{{ n.number }}</span>
           <span>· {{ date(n.issued_at) }} · {{ money(n.total) }}{{ hasVat ? ' TTC' : '' }} · {{ n.reason }}</span>
           <span v-if="n.refund_due" class="text-amber-700">· {{ money(n.refund_due) }} à rembourser</span>
+          <span v-if="n.fne?.reference" class="text-gray-600">· FNE {{ n.fne.reference }}</span>
+          <span v-else-if="n.fne" class="text-amber-700">· {{ n.fne.status === 'failed' ? 'refusé par la FNE' : 'à certifier' }}</span>
           <button type="button" class="no-print text-xs text-blue-600" @click="printNote(n)">🖨️ Imprimer l'avoir</button>
         </div>
       </div>
@@ -172,6 +181,7 @@
           <p class="mt-2">Le {{ date(printingNote.issued_at) }}</p>
         </div>
       </div>
+      <FneSticker v-if="printingNote.fne?.status === 'certified'" :fne="printingNote.fne" credit />
       <table class="w-full">
         <thead class="text-left text-gray-600 border-b">
           <tr><th class="py-2">Désignation</th><th class="py-2 text-right">Quantité</th><th class="py-2 text-right">Prix unitaire{{ basisLabel }}</th><th class="py-2 text-right">Montant{{ basisLabel }}</th></tr>
@@ -208,7 +218,8 @@
               </tr>
             </tbody>
           </table>
-          <div class="flex flex-wrap items-end gap-2">
+          <p v-if="fneCertified" class="text-xs text-gray-500">Facture normalisée (FNE) : l'avoir reprend des lignes de la facture, en tout ou en partie.</p>
+          <div v-else class="flex flex-wrap items-end gap-2">
             <div class="flex-1 min-w-48"><label class="label" for="cr-extra">Montant libre (geste commercial, erreur…)</label><input id="cr-extra" v-model="credit.extra_label" class="input" maxlength="255" placeholder="Libellé"></div>
             <div><label class="label" for="cr-amount">Montant{{ basisLabel }} (F)</label><input id="cr-amount" v-model.number="credit.extra_amount" type="number" min="0" class="input w-36"></div>
           </div>
@@ -250,6 +261,7 @@ import { useAuthStore } from '../../stores/auth'
 import { useToastStore } from '../../stores/toasts'
 import { date, money, today } from '../../utils/format'
 import Modal from '../../components/Modal.vue'
+import FneSticker from '../../components/FneSticker.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -274,6 +286,15 @@ const rate = (r) => `${String(Math.round(r * 100) / 100).replace('.', ',')} %`
 const issuerFiscal = computed(() => {
   const i = invoice.value?.issuer || {}
   return [i.ncc && `NCC ${i.ncc}`, i.rccm && `RCCM ${i.rccm}`, i.tax_regime, i.tax_office && `Centre des impôts : ${i.tax_office}`].filter(Boolean).join(' · ')
+})
+
+// Facture normalisée (FNE)
+const fneCertified = computed(() => invoice.value?.fne?.status === 'certified')
+const fneProblem = computed(() => {
+  const items = [invoice.value?.fne, ...(invoice.value?.credit_notes || []).map((n) => n.fne && { ...n.fne, note: n.number })]
+    .filter((f) => f && f.status !== 'certified')
+  if (!items.length) return ''
+  return items.map((f) => `${f.note ? `Avoir ${f.note}` : 'Facture'} ${f.status === 'failed' ? `refusé${f.note ? '' : 'e'} par la FNE` : `pas encore certifié${f.note ? '' : 'e'}`}${f.error ? ` : ${f.error}` : ''}`).join(' · ')
 })
 
 // Avoirs : droit « Annuler une facture émise ou faire un avoir »

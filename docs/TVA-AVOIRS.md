@@ -31,6 +31,25 @@ la différence est **à rembourser** au client. Il vient en moins du chiffre d'a
 client est prévenu et le voit sur sa facture ; chaque avoir s'imprime à part. Une facture qui a un avoir ne
 s'annule plus : on fait un avoir pour le reste.
 
-## Suite : FNE
-Avec la clé API de la DGI : certification de chaque facture et de chaque avoir à l'émission (référence et QR code
-imprimés), en mode test puis en production.
+## Facture normalisée électronique (FNE)
+Selon la procédure d'interfaçage par API de la DGI (mai 2025). **Réglages › Facturation et TVA › FNE** :
+activation, environnement **test** (`http://54.247.95.108/ws`) ou **production** (URL donnée par la DGI), clé API
+(espace FNE › Paramétrage ; chiffrée, jamais réaffichée), point de vente, établissement, mode de paiement déclaré
+(« à terme » par défaut), message commercial, pied de facture. Stickers restants affichés.
+
+- **Émission** : la facture est envoyée à la FNE (`external/invoices/sign`). Certifiée : référence FNE et QR code
+  de vérification imprimés (sticker). Refusée (données, clé) : la facture reste en brouillon, avec le message de la
+  FNE. FNE injoignable : la facture est émise « à certifier » et repart toute seule (toutes les 10 minutes) ou
+  avec **Certifier maintenant**.
+- Avant l'envoi : point de vente et établissement, e-mail et téléphone du client, NCC pour une facture **B2B**,
+  taux 18 % (TVA) ou 9 % (TVAB).
+- Fiche du client : modèle **B2B** (automatique avec un NCC), **B2C**, **B2G** ; exonération **conventionnelle**
+  (TVAC) ou **légale** (TVAD). Entreprise sans TVA : TVAD.
+- Lignes envoyées en prix unitaire hors taxe (prix TTC convertis) ; lignes « inclus » à 0 F non envoyées ;
+  remises (lignes négatives) en pourcentage du total hors taxe.
+- **Avoirs** : certifiés à leur création (`external/invoices/{id}/refund`), article par article (lignes et
+  quantités) ; pas de montant libre sur une facture normalisée. Pas d'avoir tant que la facture n'est pas
+  certifiée. Une facture normalisée ne s'annule pas.
+
+Mise en service : inscription sur la plateforme de test, réglages en mode test, factures et avoirs d'essai,
+spécimens envoyés à support.fne@dgi.gouv.ci, puis URL de production et clé de production.

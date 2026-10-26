@@ -54,6 +54,9 @@ class Merchant extends Model
         'vat_exempt',
         'vat_exemption_ref',
         'vat_exemption_until',
+        'vat_exemption_type',
+        // Facture normalisée (FNE) : B2B, B2C, B2G
+        'fne_template',
     ];
 
     protected function casts(): array

@@ -16,6 +16,7 @@ use App\Services\Departments\Departments;
 use App\Services\Finance\ClientCreditNotes;
 use App\Services\Finance\ClientInvoicing;
 use App\Services\Finance\ClientSpace;
+use App\Services\Finance\Fne;
 use App\Support\InvoicePayments;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
@@ -189,6 +190,36 @@ class ClientInvoiceController extends Controller
         return response()->json(['data' => $this->detail($clientInvoice->fresh())], 201);
     }
 
+    /**
+     * Certifier (de nouveau) la facture et ses avoirs restés à certifier : FNE injoignable ou données corrigées.
+     */
+    public function certify(Request $request, ClientInvoice $clientInvoice, Fne $fne): JsonResponse
+    {
+        $this->authorizeManage($request);
+        abort_unless($fne->enabled($clientInvoice->company), 422, 'La facture normalisée (FNE) n\'est pas activée (Réglages › Facturation et TVA).');
+        abort_unless(in_array($clientInvoice->status, [ClientInvoiceStatus::Issued, ClientInvoiceStatus::Paid, ClientInvoiceStatus::Void], true), 422, 'Seule une facture émise se certifie.');
+        if ($clientInvoice->fne_status !== 'certified') {
+            $fne->certify($clientInvoice);
+        }
+        if ($clientInvoice->fresh()->fne_status === 'certified') {
+            $clientInvoice->creditNotes()->whereIn('fne_status', ['pending', 'failed'])->get()->each(fn (ClientCreditNote $n) => $fne->refund($n));
+        }
+
+        return response()->json(['data' => $this->detail($clientInvoice->fresh())]);
+    }
+
+    /** @return array<string, mixed>|null */
+    private static function fneData(ClientInvoice|ClientCreditNote $document): ?array
+    {
+        return $document->fne_status === null ? null : [
+            'status' => $document->fne_status,
+            'reference' => $document->fne_reference,
+            'verification_url' => $document->fne_token,
+            'error' => $document->fne_error,
+            'certified_at' => $document->fne_certified_at?->toIso8601String(),
+        ];
+    }
+
     /** @return array<string, mixed> */
     public static function creditNoteData(ClientCreditNote $note): array
     {
@@ -203,6 +234,7 @@ class ClientInvoiceController extends Controller
             'total' => $note->total,
             'refund_due' => $note->refund_due,
             'created_by' => $note->author?->name,
+            'fne' => self::fneData($note),
             'lines' => $note->lines->map(fn ($l) => ['label' => $l->label, 'quantity' => $l->quantity, 'unit_price' => $l->unit_price, 'amount' => $l->amount])->values(),
         ];
     }
@@ -228,6 +260,8 @@ class ClientInvoiceController extends Controller
             'vat_rate' => $invoice->vat_rate,
             'credited_amount' => $invoice->credited_amount,
             'refund_due' => $invoice->refundDue(),
+            // Facture normalisée électronique (DGI)
+            'fne' => self::fneData($invoice),
             'amount_paid' => $invoice->amount_paid,
             'balance' => $invoice->balance(),
             'issued_at' => $invoice->issued_at?->toDateString(),
@@ -317,6 +351,8 @@ class ClientInvoiceController extends Controller
                 'address' => $company?->address,
             ],
             'vat_basis' => $invoice->vat_basis,
+            // FNE active : les avoirs reprennent des lignes de la facture certifiée
+            'fne_enabled' => app(Fne::class)->enabled($company),
             'vat_exemption' => $invoice->vat_exemption,
             'credit_notes' => $invoice->creditNotes->map(fn (ClientCreditNote $n) => self::creditNoteData($n))->values(),
             'lines' => $invoice->lines->map(fn ($l) => [

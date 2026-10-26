@@ -64,6 +64,8 @@ class UpdateMerchantRequest extends FormRequest
             'vat_exempt' => ['sometimes', 'boolean'],
             'vat_exemption_ref' => ['sometimes', 'nullable', 'string', 'max:120'],
             'vat_exemption_until' => ['sometimes', 'nullable', 'date_format:Y-m-d'],
+            'vat_exemption_type' => ['sometimes', 'in:conventional,legal'],
+            'fne_template' => ['sometimes', 'nullable', 'in:B2B,B2C,B2G'],
         ];
     }
 

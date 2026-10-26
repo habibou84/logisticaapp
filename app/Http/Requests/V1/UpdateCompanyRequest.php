@@ -6,6 +6,7 @@ use App\Rules\PhoneNumber;
 use App\Services\Departments\DepartmentSettings;
 use App\Services\Destinations\DestinationSettings;
 use App\Services\FieldEvents\FieldEventSettings;
+use App\Services\Finance\Fne;
 use App\Services\Finance\Vat;
 use App\Services\Orders\ActivityOptions;
 use App\Services\Ratings\RatingSettings;
@@ -58,6 +59,7 @@ class UpdateCompanyRequest extends FormRequest
             'tax_regime' => ['sometimes', 'nullable', 'string', 'max:60'],
             'tax_office' => ['sometimes', 'nullable', 'string', 'max:120'],
             ...Vat::rules(),
+            ...Fne::rules(),
             // Moyens de paiement des factures : comptes bancaires, Mobile Money, chèque… au choix de l'entreprise
             ...InvoicePayments::rules(),
             // Délai interne de distribution par activité, en heures (vide : aucun)

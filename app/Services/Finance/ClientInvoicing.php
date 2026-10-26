@@ -429,6 +429,12 @@ class ClientInvoicing
                     ->whereNull('client_invoice_id')->update(['client_invoice_id' => $invoice->id]);
             }
 
+            // Facture normalisée (FNE) : certifiée à l'émission ; refusée, la facture reste en brouillon
+            $fne = app(Fne::class);
+            if ($fne->enabled($invoice->company)) {
+                $fne->certify($invoice);
+            }
+
             return $invoice;
         });
     }
@@ -501,6 +507,9 @@ class ClientInvoicing
         }
         if ($invoice->status !== ClientInvoiceStatus::Issued || $invoice->amount_paid > 0) {
             throw new BusinessRuleException('Seule une facture émise sans paiement peut être annulée.', 'status');
+        }
+        if ($invoice->fne_status !== null) {
+            throw new BusinessRuleException('Facture normalisée (FNE) : elle ne s\'annule pas, faites un avoir.', 'status');
         }
         if ($invoice->credited_amount > 0) {
             throw new BusinessRuleException('Un avoir a déjà été fait sur cette facture : faites un avoir pour le reste.', 'status');

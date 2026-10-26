@@ -34,8 +34,16 @@ class ClientCreditNotes
         if ($remaining <= 0) {
             throw new BusinessRuleException('Cette facture est déjà entièrement couverte par des avoirs.', 'status');
         }
+        // Facture normalisée (FNE) : l'avoir suit la facture certifiée, article par article
+        if (in_array($invoice->fne_status, ['pending', 'failed'], true)) {
+            throw new BusinessRuleException('La facture n\'est pas encore certifiée par la FNE : certifiez-la avant de faire un avoir.', 'fne');
+        }
+        $fne = $invoice->fne_status === 'certified';
+        if ($fne && $extra !== null && (int) ($extra['amount'] ?? 0) > 0) {
+            throw new BusinessRuleException('Facture normalisée (FNE) : l\'avoir reprend des lignes de la facture, pas un montant libre.', 'extra');
+        }
 
-        return DB::transaction(function () use ($invoice, $actor, $reason, $full, $lines, $extra, $remaining) {
+        return DB::transaction(function () use ($invoice, $actor, $reason, $full, $lines, $extra, $remaining, $fne) {
             $invoice = ClientInvoice::withoutGlobalScopes()->lockForUpdate()->findOrFail($invoice->id);
             [$rows, $amounts] = $full ? $this->fullRows($invoice, $remaining) : $this->partialRows($invoice, $lines, $extra);
             if ($amounts['total'] <= 0) {
@@ -66,6 +74,10 @@ class ClientCreditNotes
 
             $invoice->update(['credited_amount' => $invoice->credited_amount + $amounts['total']]);
             $this->invoicing->settle($invoice);
+            // Certifié avec la facture ; refusé par la FNE : rien n'est fait ; FNE injoignable : relancé plus tard
+            if ($fne) {
+                app(Fne::class)->refund($note->load('lines'));
+            }
 
             return $note->load('lines');
         });

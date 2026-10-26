@@ -10,6 +10,7 @@ use App\Policies\CompanyPolicy;
 use App\Services\Departments\DepartmentSettings;
 use App\Services\Destinations\DestinationSettings;
 use App\Services\FieldEvents\FieldEventSettings;
+use App\Services\Finance\Fne;
 use App\Services\Finance\Vat;
 use App\Services\Orders\ActivityOptions;
 use App\Services\Ratings\RatingSettings;
@@ -47,6 +48,13 @@ class CompanyController extends Controller
         }
         if (array_key_exists('department_settings', $data)) {
             $data['department_settings'] = DepartmentSettings::clean((array) ($data['department_settings'] ?? []));
+        }
+        if (array_key_exists('fne_settings', $data)) {
+            $data['fne_settings'] = Fne::clean((array) ($data['fne_settings'] ?? []));
+        }
+        // Clé API FNE : remplacée seulement quand une nouvelle est saisie (jamais renvoyée)
+        if (array_key_exists('fne_api_key', $data) && blank($data['fne_api_key'])) {
+            unset($data['fne_api_key']);
         }
         if (array_key_exists('vat_settings', $data)) {
             $data['vat_settings'] = Vat::clean((array) ($data['vat_settings'] ?? []));

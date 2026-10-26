@@ -151,10 +151,26 @@
             <div><label class="label" for="m-ncc">NCC</label><input id="m-ncc" v-model="form.data.ncc" class="input" maxlength="30"></div>
             <div><label class="label" for="m-rccm">RCCM</label><input id="m-rccm" v-model="form.data.rccm" class="input" maxlength="60"></div>
             <div class="col-span-2"><label class="label" for="m-billing">Adresse de facturation</label><input id="m-billing" v-model="form.data.billing_address" class="input" maxlength="500" placeholder="Sinon : l'adresse de ramassage"></div>
+            <div class="col-span-2">
+              <label class="label" for="m-fne">Facture normalisée (FNE)</label>
+              <select id="m-fne" v-model="form.data.fne_template" class="input">
+                <option :value="null">Automatique : B2B avec un NCC, sinon B2C</option>
+                <option value="B2B">B2B : entreprise ou professionnel avec NCC</option>
+                <option value="B2G">B2G : institution publique</option>
+                <option value="B2C">B2C : particulier</option>
+              </select>
+            </div>
             <label class="col-span-2 flex items-center gap-2 text-sm"><input v-model="form.data.vat_exempt" type="checkbox"> Exonéré de TVA</label>
             <template v-if="form.data.vat_exempt">
               <div><label class="label" for="m-exo">N° de l'attestation</label><input id="m-exo" v-model="form.data.vat_exemption_ref" class="input" maxlength="120"></div>
               <div><label class="label" for="m-exo-until">Valable jusqu'au</label><input id="m-exo-until" v-model="form.data.vat_exemption_until" type="date" class="input"></div>
+              <div class="col-span-2">
+                <label class="label" for="m-exo-type">Type d'exonération</label>
+                <select id="m-exo-type" v-model="form.data.vat_exemption_type" class="input">
+                  <option value="conventional">Conventionnelle (TVAC)</option>
+                  <option value="legal">Légale (TVAD)</option>
+                </select>
+              </div>
             </template>
           </div>
         </details>
@@ -197,7 +213,7 @@ const locationChanged = computed(() => form.location?.lat !== form.initialLocati
 
 const FIELDS = ['business_name', 'contact_name', 'phone', 'whatsapp_phone', 'email', 'pickup_zone_id', 'pickup_address',
   'pickup_landmark', 'pricing_grid_id', 'default_fee_payer', 'status', 'notes',
-  'legal_name', 'ncc', 'rccm', 'billing_address', 'vat_exempt', 'vat_exemption_ref', 'vat_exemption_until']
+  'legal_name', 'ncc', 'rccm', 'billing_address', 'vat_exempt', 'vat_exemption_ref', 'vat_exemption_until', 'vat_exemption_type', 'fne_template']
 
 async function load() {
   merchants.value = (await http.get('/merchants', {
@@ -222,6 +238,7 @@ function openForm(merchant = null) {
   form.data.default_fee_payer ??= 'merchant'
   form.data.status ??= 'active'
   form.data.vat_exempt ??= false
+  form.data.vat_exemption_type ??= 'conventional'
   // Seules les activités de son périmètre se cochent ; les autres restent telles quelles (serveur)
   const mine = activities.value.map((a) => a.value)
   form.activities = merchant ? (merchant.activities || []).filter((a) => mine.includes(a)) : [mine[0]]

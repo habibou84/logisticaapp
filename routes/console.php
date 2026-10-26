@@ -23,6 +23,8 @@ Schedule::command('merchants:locate')->dailyAt('03:10')->withoutOverlapping();
 Schedule::command('storage:bill')->monthlyOn(1, '01:10')->withoutOverlapping();
 // Factures des clients sous formule (distribution, MAD) : brouillons du mois écoulé, à vérifier puis émettre
 Schedule::command('billing:invoice')->monthlyOn(1, '01:30')->withoutOverlapping();
+// Facture normalisée (FNE) : factures et avoirs restés à certifier (FNE injoignable)
+Schedule::command('fne:retry')->everyTenMinutes()->withoutOverlapping();
 // Rappels des factures à payer (clients sous formule)
 Schedule::command('billing:remind')->dailyAt('09:10')->withoutOverlapping();
 // Délai interne de distribution : alertes risque de retard et retard

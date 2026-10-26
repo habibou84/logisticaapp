@@ -24,6 +24,8 @@ class ClientInvoice extends Model
         'department_id',
         // TVA figée sur la facture, avoirs, identité fiscale du client à l'émission
         'vat_rate', 'vat_basis', 'total_ht', 'vat_amount', 'vat_exemption', 'credited_amount', 'client_snapshot',
+        // Facture normalisée électronique (DGI)
+        'fne_status', 'fne_reference', 'fne_token', 'fne_id', 'fne_error', 'fne_certified_at', 'fne_attempts', 'fne_items',
     ];
 
     protected function casts(): array
@@ -39,6 +41,8 @@ class ClientInvoice extends Model
             'vat_amount' => 'integer',
             'credited_amount' => 'integer',
             'client_snapshot' => 'array',
+            'fne_items' => 'array',
+            'fne_certified_at' => 'datetime',
             'issued_at' => 'date:Y-m-d',
             'due_at' => 'date:Y-m-d',
             'paid_at' => 'datetime',

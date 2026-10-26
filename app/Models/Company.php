@@ -33,6 +33,9 @@ class Company extends Model
         'tax_regime',
         'tax_office',
         'vat_settings',
+        // Facture normalisée électronique (DGI)
+        'fne_settings',
+        'fne_api_key',
         'invoice_payment_methods',
         'internal_delays',
         'activity_options',
@@ -85,7 +88,7 @@ class Company extends Model
     ];
 
     /** Empreinte de la clé de reprise : jamais renvoyée */
-    protected $hidden = ['legacy_import_key_hash'];
+    protected $hidden = ['legacy_import_key_hash', 'fne_api_key'];
 
     protected function casts(): array
     {
@@ -103,6 +106,10 @@ class Company extends Model
             'appearance' => 'array',
             'invoice_payment_methods' => 'array',
             'vat_settings' => 'array',
+            'fne_settings' => 'array',
+            'fne_api_key' => 'encrypted',
+            'fne_warning' => 'boolean',
+            'fne_balance_sticker' => 'integer',
             'internal_delays' => 'array',
             'activity_options' => 'array',
             'rating_settings' => 'array',

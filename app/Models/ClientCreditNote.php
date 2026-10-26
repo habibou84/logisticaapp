@@ -20,6 +20,7 @@ class ClientCreditNote extends Model
     protected $fillable = [
         'company_id', 'merchant_id', 'client_invoice_id', 'activity', 'number', 'issued_at', 'reason',
         'vat_rate', 'total_ht', 'vat_amount', 'total', 'refund_due', 'created_by',
+        'fne_status', 'fne_reference', 'fne_token', 'fne_id', 'fne_error', 'fne_certified_at', 'fne_attempts',
     ];
 
     protected function casts(): array
@@ -32,6 +33,7 @@ class ClientCreditNote extends Model
             'vat_amount' => 'integer',
             'total' => 'integer',
             'refund_due' => 'integer',
+            'fne_certified_at' => 'datetime',
         ];
     }
 
