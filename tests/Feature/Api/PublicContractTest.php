@@ -95,6 +95,8 @@ class PublicContractTest extends TestCase
         ], ['Idempotency-Key' => 'contract-1'])->assertCreated();
         $this->assertContract('order-response', $created->json(), 'création');
         $code = $created->json('data.tracking_code');
+        // Étiquette à imprimer sans connexion (contrat 1.5) : Jibiat Marchand affiche le bouton avec ce lien
+        $this->assertMatchesRegularExpression('#/etiquette-partagee/\d+/\d+/[0-9a-f]{40}$#', (string) $created->json('data.label_url'));
 
         $this->assertContract('order-response', $this->api('PATCH', "orders/{$code}", ['delivery_landmark' => 'Portail bleu'])->assertOk()->json(), 'modification');
         $this->assertContract('order-list', $this->api('GET', 'orders')->assertOk()->json());
