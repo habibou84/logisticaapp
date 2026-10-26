@@ -143,6 +143,30 @@
             <div class="col-span-2"><label class="label">Mot de passe (8 caractères min.)</label><input v-model="form.owner.password" type="text" class="input" autocomplete="new-password"></div>
           </div>
         </fieldset>
+        <!-- Étiquettes : réglage propre au client (vide : celui de l'entreprise) -->
+        <details class="rounded border border-slate-200 p-3" :open="!!form.labelPrint">
+          <summary class="font-medium text-sm cursor-pointer">Étiquettes</summary>
+          <div class="grid grid-cols-2 gap-3 mt-3">
+            <div>
+              <label class="label" for="m-label-print">Imprime ses étiquettes</label>
+              <select id="m-label-print" v-model="form.labelPrint" class="input">
+                <option value="">Comme l'entreprise</option>
+                <option value="yes">Oui</option>
+                <option value="required">Obligatoire avant le ramassage</option>
+                <option value="no">Non, l'agence imprime</option>
+              </select>
+            </div>
+            <div>
+              <label class="label" for="m-label-format">Format proposé</label>
+              <select id="m-label-format" v-model="form.labelFormat" class="input">
+                <option value="">Comme l'entreprise</option>
+                <option value="thermal">Rouleau 10 × 15</option>
+                <option value="a6">A6</option>
+                <option value="a4">A4 · 4 par page</option>
+              </select>
+            </div>
+          </div>
+        </details>
         <!-- Imprimé sur les factures du mois et les avoirs -->
         <details class="rounded border border-slate-200 p-3" :open="!!(form.data.ncc || form.data.vat_exempt)">
           <summary class="font-medium text-sm cursor-pointer">Facturation : raison sociale, NCC, TVA</summary>
@@ -207,7 +231,7 @@ const billing = ref(null)
 const route = useRoute()
 // Lien de la notification « Nouveau client » : ?nouveaux=1
 const onlySignups = ref(!!route.query.nouveaux)
-const form = reactive({ open: false, id: null, data: {}, activities: [], owner: {}, error: '', saving: false, location: null, initialLocation: null, source: null })
+const form = reactive({ open: false, id: null, data: {}, activities: [], owner: {}, error: '', saving: false, location: null, initialLocation: null, source: null, labelPrint: '', labelFormat: '' })
 const SOURCES = { merchant: 'par le client', staff: 'par l\'agence', courier: 'estimée (livreurs)' }
 const locationChanged = computed(() => form.location?.lat !== form.initialLocation?.lat || form.location?.lng !== form.initialLocation?.lng)
 
@@ -239,6 +263,8 @@ function openForm(merchant = null) {
   form.data.status ??= 'active'
   form.data.vat_exempt ??= false
   form.data.vat_exemption_type ??= 'conventional'
+  form.labelPrint = merchant?.label_settings?.client_print || ''
+  form.labelFormat = merchant?.label_settings?.default_format || ''
   // Seules les activités de son périmètre se cochent ; les autres restent telles quelles (serveur)
   const mine = activities.value.map((a) => a.value)
   form.activities = merchant ? (merchant.activities || []).filter((a) => mine.includes(a)) : [mine[0]]
@@ -260,6 +286,7 @@ async function save() {
       return
     }
     payload.activities = [...form.activities]
+    payload.label_settings = { ...(form.labelPrint ? { client_print: form.labelPrint } : {}), ...(form.labelFormat ? { default_format: form.labelFormat } : {}) }
     if (!form.id && form.owner.phone) payload.owner = { ...form.owner, name: form.owner.name || form.data.contact_name || form.data.business_name }
     const { data } = form.id ? await http.patch(`/merchants/${form.id}`, payload) : await http.post('/merchants', payload)
     // Position : seulement si elle a changé (garde la source « marchand » ou « livreurs » sinon)

@@ -30,6 +30,7 @@ use App\Http\Controllers\Api\V1\FieldReportController;
 use App\Http\Controllers\Api\V1\FinanceController;
 use App\Http\Controllers\Api\V1\HubController;
 use App\Http\Controllers\Api\V1\IncidentReasonController;
+use App\Http\Controllers\Api\V1\LabelController;
 use App\Http\Controllers\Api\V1\LegacyImportController;
 use App\Http\Controllers\Api\V1\MerchantAccountController;
 use App\Http\Controllers\Api\V1\MerchantController;
@@ -162,12 +163,17 @@ Route::prefix('v1')->name('v1.')->group(function () {
     Route::get('tracking/{code}', TrackingController::class)
         ->middleware('throttle:30,1')
         ->name('tracking.show');
+    // Étiquette partagée par un lien signé (API publique : Jibiat Marchand)
+    Route::get('shared-labels/{order}/{expires}/{token}', [LabelController::class, 'shared'])->whereNumber(['order', 'expires'])->middleware('throttle:60,1')->name('shared-labels.show');
+    Route::post('shared-labels/{order}/{expires}/{token}/printed', [LabelController::class, 'sharedPrinted'])->whereNumber(['order', 'expires'])->middleware('throttle:30,1')->name('shared-labels.printed');
     // Note du destinataire sur la livraison (si l'entreprise le propose), avec le code de livraison
     Route::post('tracking/{code}/rating', [CourierRatingController::class, 'rateByRecipient'])
         ->middleware('throttle:10,1')
         ->name('tracking.rating');
 
     Route::middleware(['auth:sanctum', 'active', 'throttle:tenant'])->group(function () {
+        // Étiquettes imprimées (date, nombre d'impressions)
+        Route::post('orders/labels/printed', [LabelController::class, 'printed'])->middleware('throttle:60,1')->name('orders.labels.printed');
         Route::get('auth/me', [AuthController::class, 'me'])->name('auth.me');
         Route::post('auth/logout', [AuthController::class, 'logout'])->name('auth.logout');
         Route::post('company/logo', [BrandingController::class, 'upload'])->name('company.logo.store');

@@ -45,6 +45,12 @@
             <span class="min-w-0 flex-1"><strong class="block">{{ toRateText }}</strong><span class="text-sm text-slate-600">Votre avis en quelques secondes</span></span>
             <StatusIcon name="right" class="h-5 w-5 shrink-0 text-slate-400" />
           </RouterLink>
+          <!-- Étiquettes obligatoires avant le ramassage (réglage de l'agence) -->
+          <RouterLink v-if="unprinted.length" :to="`/etiquettes?ids=${unprinted.join(',')}`" class="tap flex items-center gap-3 p-4 active:bg-slate-50">
+            <span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-amber-50 text-amber-700" aria-hidden="true">🏷️</span>
+            <span class="min-w-0 flex-1"><strong class="block">{{ unprinted.length }} étiquette{{ unprinted.length > 1 ? 's' : '' }} à imprimer</strong><span class="text-sm text-slate-600">À coller sur les colis avant le ramassage</span></span>
+            <StatusIcon name="right" class="h-5 w-5 shrink-0 text-slate-400" />
+          </RouterLink>
           <RouterLink v-if="stock.low" to="/marchand/stock?filtre=bas" class="tap flex items-center gap-3 p-4 active:bg-slate-50">
             <span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-amber-50 text-amber-700"><StatusIcon name="box" class="h-5 w-5" /></span>
             <span class="min-w-0 flex-1"><strong class="block">{{ stock.low }} produit{{ stock.low > 1 ? 's' : '' }} en stock bas</strong><span class="text-sm text-slate-600">À réapprovisionner</span></span>
@@ -268,7 +274,7 @@ async function loadRatings() {
     // Notation facultative
   }
 }
-const todoCount = computed(() => (needsPickupLocation.value ? 1 : 0) + alertsTotal.value + (invoiceDue.value ? 1 : 0) + (stock.low ? 1 : 0) + (toRate.value ? 1 : 0))
+const todoCount = computed(() => (unprinted.value.length ? 1 : 0) + (needsPickupLocation.value ? 1 : 0) + alertsTotal.value + (invoiceDue.value ? 1 : 0) + (stock.low ? 1 : 0) + (toRate.value ? 1 : 0))
 // Sous la salutation : ce qui demande l'attention, sinon le nombre de courses du jour
 const subtitle = computed(() => {
   if (todoCount.value) return `${todoCount.value} chose${todoCount.value > 1 ? 's' : ''} demande${todoCount.value > 1 ? 'nt' : ''} votre attention`
@@ -370,6 +376,16 @@ watch(orderChanges, () => {
 function reload() {
   load()
 }
+// Courses à ramasser sans étiquette, quand l'agence demande de les imprimer avant le ramassage
+const unprinted = ref([])
+async function loadUnprinted() {
+  if (auth.user?.merchant?.label_settings?.client_print !== 'required' || !auth.can('orders.create')) return
+  try {
+    const { data } = await cachedGet('/orders', { params: { label: 'unprinted', status: ['pending', 'confirmed', 'pickup_assigned', 'pickup_in_progress'], per_page: 200 } })
+    unprinted.value = data.data.map((o) => o.id)
+  } catch { /* hors connexion */ }
+}
+
 async function loadStock() {
   // Stock : seulement si la formule de l'entreprise l'inclut
   try {
@@ -398,6 +414,7 @@ onMounted(() => {
   load()
   loadRatings()
   loadStock()
+  loadUnprinted()
   loadBalance()
   space.load()
 })

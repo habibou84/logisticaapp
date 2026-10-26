@@ -7,6 +7,7 @@ use App\Enums\FeePayer;
 use App\Models\Merchant;
 use App\Models\User;
 use App\Rules\PhoneNumber;
+use App\Services\Labels\LabelSettings;
 use App\Support\PhoneNumber as Phone;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -72,6 +73,7 @@ class StoreMerchantRequest extends FormRequest
             'vat_exemption_until' => ['nullable', 'date_format:Y-m-d'],
             'vat_exemption_type' => ['sometimes', 'in:conventional,legal'],
             'fne_template' => ['sometimes', 'nullable', 'in:B2B,B2C,B2G'],
+            ...LabelSettings::rules(),
 
             // Compte de connexion du client (facultatif)
             'owner' => ['nullable', 'array'],

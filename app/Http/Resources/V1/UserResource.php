@@ -6,6 +6,7 @@ use App\Enums\Activity;
 use App\Models\BillingPlan;
 use App\Models\User;
 use App\Services\Couriers\CourierCapabilities;
+use App\Services\Labels\LabelSettings;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -54,6 +55,8 @@ class UserResource extends JsonResource
                 'business_name' => $this->merchant->business_name,
                 // Activités et formules en cours (distribution, MAD) : activité, type d'envoi et délai sur ses courses
                 'activities' => array_map(fn (Activity $a) => $a->value, $this->merchant->activityList()),
+                // Étiquettes : imprime-t-il lui-même, format proposé
+                'label_settings' => app(LabelSettings::class)->for($this->company, $this->merchant),
                 'billing_plans' => collect([Activity::Distribution, Activity::Mad])
                     ->map(fn (Activity $a) => BillingPlan::activeFor($this->merchant, $a)?->brief())->filter()->values(),
                 // Lots ponctuels ouverts : choisis sur la course

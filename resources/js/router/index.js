@@ -47,6 +47,8 @@ const routes = [
     component: () => import('../views/Label.vue'),
     meta: { roles: [...SPACES.admin, ...SPACES.marchand] },
   },
+  // Étiquette partagée par l'API publique (Jibiat Marchand) : lien signé, sans connexion
+  { path: '/etiquette-partagee/:id(\\d+)/:expires(\\d+)/:token', name: 'shared-label', component: () => import('../views/Label.vue'), meta: { public: true } },
   {
     path: '/etiquettes',
     name: 'labels',

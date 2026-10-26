@@ -72,6 +72,8 @@
         <span v-if="order.attempts_count" class="rounded-full bg-slate-100 text-slate-700 text-sm px-3 py-1">Tentative {{ order.attempts_count + 1 }} / {{ order.max_attempts }}</span>
       </div>
       <p v-if="order.package.merchant_note" class="rounded-xl bg-amber-50 p-3 text-amber-900">📝 {{ order.package.merchant_note }}</p>
+      <!-- Étiquette pas encore imprimée par le client : à vérifier au ramassage -->
+      <p v-if="mission.type === 'pickup' && order.label && !order.label.printed_at" class="rounded-xl bg-slate-100 p-3 text-slate-700">🏷️ Étiquette pas encore imprimée : vérifiez que le colis est bien identifié, sinon l'agence l'imprimera au dépôt.</p>
       <p class="font-mono text-xs text-slate-400">{{ order.tracking_code }}<span v-if="mission.type === 'pickup'"> · {{ order.merchant?.business_name }}</span></p>
     </section>
 

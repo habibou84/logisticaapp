@@ -24,10 +24,10 @@
       <p class="k">Destinataire</p>
       <p class="font-bold text-[15px] leading-tight">{{ organisation }}</p>
       <p class="text-[13px] leading-tight">
-        <template v-if="handTo">À remettre à : <b>{{ handTo }}</b> · </template><b>{{ localPhone(order.recipient.phone) }}</b><template v-if="order.recipient.phone2"> / {{ localPhone(order.recipient.phone2) }}</template>
+        <template v-if="handTo">À remettre à : <b>{{ handTo }}</b><template v-if="show('recipient_phone')"> · </template></template><template v-if="show('recipient_phone')"><b>{{ localPhone(order.recipient.phone) }}</b><template v-if="order.recipient.phone2"> / {{ localPhone(order.recipient.phone2) }}</template></template>
       </p>
       <p class="text-[21px] font-extrabold uppercase leading-tight">{{ order.delivery.zone_name }}</p>
-      <p class="text-[11px]">{{ order.delivery.address }}<template v-if="order.delivery.landmark"> · {{ order.delivery.landmark }}</template></p>
+      <p class="text-[11px]">{{ order.delivery.address }}<template v-if="order.delivery.landmark && show('landmark')"> · {{ order.delivery.landmark }}</template></p>
     </div>
     <div class="accuse">
       <p class="text-[12px] font-bold uppercase tracking-wider">Accusé de réception</p>
@@ -63,18 +63,19 @@
       <p class="text-xs uppercase">Destinataire</p>
       <p class="font-bold text-lg leading-tight">{{ organisation }}</p>
       <p v-if="handTo" class="text-sm">À remettre à : <b>{{ handTo }}</b></p>
-      <p class="font-semibold">{{ localPhone(order.recipient.phone) }}<span v-if="order.recipient.phone2"> / {{ localPhone(order.recipient.phone2) }}</span></p>
+      <p v-if="show('recipient_phone')" class="font-semibold">{{ localPhone(order.recipient.phone) }}<span v-if="order.recipient.phone2"> / {{ localPhone(order.recipient.phone2) }}</span></p>
       <p class="text-2xl font-bold uppercase leading-tight">{{ order.delivery.zone_name }}</p>
       <p class="text-sm">{{ order.delivery.address }}</p>
-      <p v-if="order.delivery.landmark" class="text-sm">Repère : {{ order.delivery.landmark }}</p>
+      <p v-if="order.package.description && show('description') && !order.billed_monthly && show('cod')" class="text-sm">📦 {{ order.package.description }}</p>
+      <p v-if="order.delivery.landmark && show('landmark')" class="text-sm">Repère : {{ order.delivery.landmark }}</p>
     </div>
     <div class="border-t border-black pt-2 flex justify-between items-end gap-2">
       <!-- E-commerce : ce que le livreur encaisse ; distribution, MAD : facturé au mois, rien à encaisser -->
-      <div v-if="!order.billed_monthly">
+      <div v-if="!order.billed_monthly && show('cod')">
         <p class="text-xs uppercase">À encaisser</p>
         <p class="text-2xl font-bold">{{ money(order.amounts.cod_amount) }}</p>
       </div>
-      <div v-else-if="order.package.description" class="text-sm">{{ order.package.description }}</div>
+      <div v-else-if="order.package.description && show('description')" class="text-sm">{{ order.package.description }}</div>
       <p class="text-sm font-semibold ml-auto">
         <span v-if="order.package.is_fragile" class="tag">FRAGILE</span>
         <span v-if="order.package.is_express" class="tag">EXPRESS</span>
@@ -94,10 +95,17 @@ import { siteOrigin } from '../../native'
  * Étiquette d'une course (10 × 15 cm) : e-commerce avec le montant à encaisser, distribution avec l'accusé de
  * réception (réglage), MAD sans montant. Le QR code mène au suivi public (scan au ramassage, au dépôt, à la remise).
  */
-const props = defineProps({ order: { type: Object, required: true } })
+const props = defineProps({
+  order: { type: Object, required: true },
+  // Lien partagé (sans connexion) : l'entreprise vient de la réponse
+  company: { type: Object, default: null },
+  // Champs imprimés (Réglages › Courses et livraison)
+  fields: { type: Object, default: null },
+})
 const auth = useAuthStore()
-const company = computed(() => auth.user?.company)
-const logo = computed(() => company.value?.logo_url || null)
+const company = computed(() => props.company || auth.user?.company)
+const show = (field) => props.fields?.[field] !== false
+const logo = computed(() => (show('logo') ? company.value?.logo_url || null : null))
 const qr = ref('')
 watchEffect(async () => {
   qr.value = await QRCode.toDataURL(`${siteOrigin()}/suivi/${props.order.tracking_code}`, { margin: 1, width: 240 })

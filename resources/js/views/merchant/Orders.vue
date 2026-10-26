@@ -12,7 +12,7 @@
         <PeriodPicker menu class="min-w-0 flex-1" :model-value="period" @update:model-value="setPeriod" />
         <ActivitySwitch v-if="space.activities.length > 1" menu class="min-w-0 flex-1" @change="reload" />
         <!-- Étiquettes : choisir les courses à imprimer -->
-        <button v-if="auth.can('orders.create')" type="button" :class="['tap shrink-0 rounded-xl px-3 text-sm font-semibold ring-1', printMode ? 'text-white ring-transparent' : 'bg-white ring-slate-200 text-slate-700']" :style="printMode ? { backgroundColor: 'var(--app-color)' } : {}" :aria-pressed="printMode" @click="togglePrint">🏷️ Étiquettes</button>
+        <button v-if="auth.can('orders.create') && auth.user?.merchant?.label_settings?.client_print !== 'no'" type="button" :class="['tap shrink-0 rounded-xl px-3 text-sm font-semibold ring-1', printMode ? 'text-white ring-transparent' : 'bg-white ring-slate-200 text-slate-700']" :style="printMode ? { backgroundColor: 'var(--app-color)' } : {}" :aria-pressed="printMode" @click="togglePrint">🏷️ Étiquettes</button>
       </div>
 
       <!-- Catégories, avec le nombre de courses de chacune (sur la période) -->
@@ -61,7 +61,10 @@
             <span class="block font-semibold truncate">{{ o.recipient.name || o.recipient.phone }}</span>
             <span class="block text-sm text-slate-600 truncate">{{ o.delivery.zone_name }}<template v-if="o.department"> · 🏢 {{ o.department.code || o.department.name }}</template></span>
           </span>
-          <span class="font-mono text-xs text-slate-500">{{ o.tracking_code }}</span>
+          <span class="text-right">
+            <span class="block font-mono text-xs text-slate-500">{{ o.tracking_code }}</span>
+            <span v-if="o.label?.printed_at" class="text-xs text-emerald-700">✓ imprimée</span>
+          </span>
         </label>
       </template>
       <OrderCard v-for="o in (printMode ? [] : g.orders)" :key="o.id" :order="o" :to="`/marchand/courses/${o.id}`">
@@ -83,6 +86,7 @@
     <div v-if="printMode" class="sticky bottom-20 z-20 m-card flex flex-wrap items-center gap-2 p-3 shadow-lg lg:bottom-4">
       <button type="button" class="tap rounded-xl px-3 py-2 text-sm font-semibold ring-1 ring-slate-200" @click="pickAll">Tout cocher</button>
       <button type="button" class="tap rounded-xl px-3 py-2 text-sm font-semibold ring-1 ring-slate-200" @click="pickToCollect">À ramasser</button>
+      <button type="button" class="tap rounded-xl px-3 py-2 text-sm font-semibold ring-1 ring-slate-200" @click="pickUnprinted">Pas imprimées</button>
       <button v-if="picked.length" type="button" class="tap rounded-xl px-3 py-2 text-sm text-slate-600" @click="picked = []">Aucune</button>
       <RouterLink :to="`/etiquettes?ids=${picked.join(',')}`" :class="['tap ml-auto rounded-xl px-4 py-2 text-sm font-semibold text-white', picked.length ? '' : 'pointer-events-none opacity-50']" :style="{ backgroundColor: 'var(--app-color)' }">
         🖨️ Imprimer {{ picked.length || '' }}
@@ -124,6 +128,7 @@ function togglePrint() {
   picked.value = []
 }
 const pickAll = () => { picked.value = orders.value.filter(printable).map((o) => o.id) }
+const pickUnprinted = () => { picked.value = orders.value.filter((o) => printable(o) && !o.label?.printed_at).map((o) => o.id) }
 const pickToCollect = () => { picked.value = orders.value.filter((o) => TO_COLLECT.includes(o.status)).map((o) => o.id) }
 
 // En cours, reports compris (décision prise, nouvelle livraison prévue)

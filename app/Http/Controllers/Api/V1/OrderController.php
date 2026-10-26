@@ -84,6 +84,8 @@ class OrderController extends Controller
             ->when($request->filled('activity'), fn ($q) => $q->where('activity', $request->string('activity')))
             ->when($request->filled('department_id'), fn ($q) => $q->where(fn ($q) => $q->where('department_id', $request->integer('department_id'))->orWhere('to_department_id', $request->integer('department_id'))))
             // Courses d'un contrat ou d'un lot (distribution, MAD), ou une liste précise (feuille de route)
+            // Étiquette pas encore imprimée
+            ->when($request->input('label') === 'unprinted', fn ($q) => $q->whereNull('label_printed_at'))
             ->when($request->filled('billing_plan_id'), fn ($q) => $q->where('billing_plan_id', $request->integer('billing_plan_id')))
             ->when($request->filled('ids'), fn ($q) => $q->whereIn('id', array_map('intval', array_slice((array) $request->input('ids'), 0, 500))))
             ->when($request->filled('hub_id'), fn ($q) => $q->where('pickup_hub_id', $request->integer('hub_id')))

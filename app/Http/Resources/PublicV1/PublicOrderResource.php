@@ -5,6 +5,7 @@ namespace App\Http\Resources\PublicV1;
 use App\Models\Order;
 use App\Models\OrderAttachment;
 use App\Models\OrderEvent;
+use App\Services\Labels\LabelLinks;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\URL;
@@ -25,6 +26,8 @@ class PublicOrderResource extends JsonResource
             'status' => $this->status->value,
             'status_label' => $this->statusLabel(),
             'tracking_url' => $this->company->url('/suivi/'.$this->tracking_code),
+            // Étiquette à imprimer, sans connexion (lien signé, valable 7 jours)
+            'label_url' => app(LabelLinks::class)->url($this->resource),
             'delivery_code' => $this->delivery_code,
             'recipient' => [
                 'name' => $this->recipient_name,

@@ -8,6 +8,7 @@ use App\Services\Destinations\DestinationSettings;
 use App\Services\FieldEvents\FieldEventSettings;
 use App\Services\Finance\Fne;
 use App\Services\Finance\Vat;
+use App\Services\Labels\LabelSettings;
 use App\Services\Orders\ActivityOptions;
 use App\Services\Ratings\RatingSettings;
 use App\Services\Vehicles\VehicleSettings;
@@ -60,6 +61,7 @@ class UpdateCompanyRequest extends FormRequest
             'tax_office' => ['sometimes', 'nullable', 'string', 'max:120'],
             ...Vat::rules(),
             ...Fne::rules(),
+            ...LabelSettings::rules(),
             // Moyens de paiement des factures : comptes bancaires, Mobile Money, chèque… au choix de l'entreprise
             ...InvoicePayments::rules(),
             // Délai interne de distribution par activité, en heures (vide : aucun)

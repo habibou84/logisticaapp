@@ -57,6 +57,8 @@ class Merchant extends Model
         'vat_exemption_type',
         // Facture normalisée (FNE) : B2B, B2C, B2G
         'fne_template',
+        // Étiquettes : réglage propre au client (vide : celui de l'entreprise)
+        'label_settings',
     ];
 
     protected function casts(): array
@@ -72,6 +74,7 @@ class Merchant extends Model
             'shop_enabled' => 'boolean',
             'shop_fee_payer' => FeePayer::class,
             'department_settings' => 'array',
+            'label_settings' => 'array',
             'vat_exempt' => 'boolean',
             'vat_exemption_until' => 'date:Y-m-d',
         ];

@@ -13,6 +13,7 @@ use App\Models\BillingPlan;
 use App\Models\Merchant;
 use App\Models\Order;
 use App\Models\User;
+use App\Services\Labels\LabelSettings;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -93,6 +94,9 @@ class MerchantController extends Controller
     public function update(UpdateMerchantRequest $request, Merchant $merchant): MerchantResource
     {
         $data = $request->validated();
+        if (array_key_exists('label_settings', $data)) {
+            $data['label_settings'] = LabelSettings::clean((array) ($data['label_settings'] ?? [])) ?: null;
+        }
         $merchant->update(Arr::except($data, 'activities'));
         if (isset($data['activities'])) {
             // Activité retirée : seulement sans course ni formule (l'historique reste rattaché)

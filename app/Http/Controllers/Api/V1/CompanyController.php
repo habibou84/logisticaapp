@@ -12,6 +12,7 @@ use App\Services\Destinations\DestinationSettings;
 use App\Services\FieldEvents\FieldEventSettings;
 use App\Services\Finance\Fne;
 use App\Services\Finance\Vat;
+use App\Services\Labels\LabelSettings;
 use App\Services\Orders\ActivityOptions;
 use App\Services\Ratings\RatingSettings;
 use App\Services\Vehicles\VehicleSettings;
@@ -48,6 +49,9 @@ class CompanyController extends Controller
         }
         if (array_key_exists('department_settings', $data)) {
             $data['department_settings'] = DepartmentSettings::clean((array) ($data['department_settings'] ?? []));
+        }
+        if (array_key_exists('label_settings', $data)) {
+            $data['label_settings'] = LabelSettings::clean((array) ($data['label_settings'] ?? []));
         }
         if (array_key_exists('fne_settings', $data)) {
             $data['fne_settings'] = Fne::clean((array) ($data['fne_settings'] ?? []));

@@ -17,7 +17,9 @@
       <div class="ml-auto flex gap-2">
         <!-- Client sous contrat : prestation exceptionnelle sur la facture du mois -->
         <button v-if="canSupplement" type="button" class="btn-secondary" @click="supplementOpen = true">➕ Supplément</button>
-        <RouterLink :to="`/etiquette/${order.id}`" target="_blank" class="btn-secondary">🖨️ Étiquette</RouterLink>
+        <RouterLink :to="`/etiquette/${order.id}`" target="_blank" class="btn-secondary" :title="order.label?.printed_at ? `Imprimée le ${dateTime(order.label.printed_at)} (${order.label.print_count} fois)` : 'Étiquette pas encore imprimée'">
+          🖨️ Étiquette <span :class="order.label?.printed_at ? 'text-emerald-700' : 'text-amber-700'">{{ order.label?.printed_at ? '✓' : '·' }}</span>
+        </RouterLink>
       </div>
     </div>
 

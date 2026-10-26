@@ -115,6 +115,7 @@ class Order extends Model
             'merchant_alerts_muted' => 'boolean',
             'approval_requested_at' => 'datetime',
             'follow_up_at' => 'datetime',
+            'label_printed_at' => 'datetime',
             'approved_at' => 'datetime',
             'status' => OrderStatus::class,
             'fee_payer' => FeePayer::class,

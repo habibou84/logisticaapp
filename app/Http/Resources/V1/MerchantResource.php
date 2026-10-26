@@ -49,6 +49,8 @@ class MerchantResource extends JsonResource
             'vat_exemption_until' => $this->vat_exemption_until?->toDateString(),
             'vat_exemption_type' => $this->vat_exemption_type ?? 'conventional',
             'fne_template' => $this->fne_template,
+            // Étiquettes : réglage propre au client (vide : celui de l'entreprise)
+            'label_settings' => $this->label_settings ?: null,
             'orders_count' => $this->whenCounted('orders'),
             // Activités du client (e-commerce, distribution, MAD) et formules en cours (une par activité facturée)
             'activities' => array_map(fn (Activity $a) => $a->value, $this->resource->activityList()),

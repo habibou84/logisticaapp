@@ -6,6 +6,7 @@ use App\Enums\Activity;
 use App\Enums\FeePayer;
 use App\Enums\MerchantStatus;
 use App\Rules\PhoneNumber;
+use App\Services\Labels\LabelSettings;
 use App\Support\PhoneNumber as Phone;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -66,6 +67,7 @@ class UpdateMerchantRequest extends FormRequest
             'vat_exemption_until' => ['sometimes', 'nullable', 'date_format:Y-m-d'],
             'vat_exemption_type' => ['sometimes', 'in:conventional,legal'],
             'fne_template' => ['sometimes', 'nullable', 'in:B2B,B2C,B2G'],
+            ...LabelSettings::rules(),
         ];
     }
 

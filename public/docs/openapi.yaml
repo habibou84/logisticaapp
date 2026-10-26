@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: API publique — livraison
-  version: 1.0.0
+  version: 1.1.0
   description: |
     API des e-commerçants : créer et suivre des courses depuis une boutique en ligne,
     un logiciel de caisse ou une application indépendante.
@@ -624,6 +624,7 @@ components:
         status: { $ref: '#/components/schemas/Status' }
         status_label: { type: string, example: En chemin }
         tracking_url: { type: string, format: uri, description: 'Page de suivi à envoyer au client' }
+        label_url: { type: string, format: uri, description: 'Étiquette à imprimer (10 × 15, A6 ou A4), sans connexion : lien signé valable 7 jours, renouvelé à chaque lecture de la course' }
         delivery_code: { type: string, description: 'Code à donner au client, demandé par le livreur à la livraison' }
         recipient:
           type: object

@@ -175,6 +175,33 @@
         </div>
       </section>
 
+      <!-- Étiquettes : qui imprime, ce qui est imprimé, format proposé ; chaque client peut faire autrement -->
+      <section v-if="form.label_settings" class="card p-4 space-y-3">
+        <h2 class="font-semibold">Étiquettes</h2>
+        <div>
+          <label class="label" for="label-client">Les clients impriment leurs étiquettes</label>
+          <select id="label-client" v-model="form.label_settings.client_print" class="input">
+            <option value="yes">Oui, s'ils le souhaitent</option>
+            <option value="required">Oui, obligatoire avant le ramassage (rappel au client, signalé au livreur)</option>
+            <option value="no">Non, l'agence les imprime</option>
+          </select>
+        </div>
+        <div>
+          <label class="label" for="label-format">Format proposé</label>
+          <select id="label-format" v-model="form.label_settings.default_format" class="input">
+            <option value="thermal">Rouleau 10 × 15 cm (imprimante thermique)</option>
+            <option value="a6">A6</option>
+            <option value="a4">A4 · 4 par page</option>
+          </select>
+          <p class="text-xs text-gray-500 mt-1">Chacun peut en choisir un autre au moment d'imprimer : l'appareil le garde.</p>
+        </div>
+        <fieldset class="grid sm:grid-cols-2 gap-2 text-sm">
+          <legend class="label">Imprimé sur l'étiquette</legend>
+          <label v-for="(f, key) in LABEL_FIELDS" :key="key" class="flex items-center gap-2"><input v-model="form.label_settings.fields[key]" type="checkbox"> {{ f }}</label>
+        </fieldset>
+        <p class="text-xs text-gray-500">Un client peut avoir son propre choix (Clients › Modifier › Étiquettes).</p>
+      </section>
+
       <!-- Distribution et MAD : au choix de l'administrateur ; chaque contrat peut faire autrement -->
       <section v-if="form.activity_options" class="card p-4 space-y-4">
         <div>
@@ -207,8 +234,15 @@ const { form, dirty, saving, error, save, reset } = useCompanySettings([
   'validation_mode', 'daily_cutoff_time', 'default_max_attempts', 'require_delivery_code', 'offline_courier_actions', 'pickup_mission_custody', 'depot_closes_at', 'auto_pickup',
   'mission_acceptance', 'unreachable_minutes', 'late_pickup_alert_minutes', 'courier_available_alert',
   'auto_delivery', 'auto_delivery_max_cod', 'same_courier_delivery', 'cutoff_by_day', 'internal_delays',
-  'activity_options',
+  'activity_options', 'label_settings',
 ])
+const LABEL_FIELDS = {
+  cod: 'Montant à encaisser (e-commerce)',
+  recipient_phone: 'Téléphone du destinataire',
+  landmark: 'Repère de l\'adresse',
+  description: 'Description du colis',
+  logo: 'Logo de l\'entreprise',
+}
 const OPTION_ACTIVITIES = [
   { value: 'distribution', label: 'Distribution' },
   { value: 'mad', label: 'Mise à disposition (MAD)' },

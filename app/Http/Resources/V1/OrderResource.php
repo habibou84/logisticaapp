@@ -8,6 +8,7 @@ use App\Models\Department;
 use App\Models\Order;
 use App\Services\Departments\Departments;
 use App\Services\Departments\DepartmentSettings;
+use App\Services\Labels\LabelSettings;
 use App\Services\Orders\ActivityOptions;
 use App\Services\Orders\AwaitingCourier;
 use Illuminate\Http\Request;
@@ -111,6 +112,13 @@ class OrderResource extends JsonResource
             'billed_monthly' => in_array($this->activity, ActivityOptions::ACTIVITIES, true),
             // Preuve de remise demandée au livreur (réglages de l'entreprise ou du contrat), et celle reçue
             // (accusé de réception sur l'étiquette : sa photo est demandée)
+            // Étiquette : imprimée (quand, combien de fois) ; fiche de la course : réglages (qui imprime, champs, format)
+            'label' => [
+                'printed_at' => $this->label_printed_at,
+                'print_count' => (int) $this->label_print_count,
+                'settings' => $this->relationLoaded('events')
+                    ? app(LabelSettings::class)->for($this->company, $this->merchant) : null,
+            ],
             'proof' => $this->when(in_array($this->activity, ActivityOptions::ACTIVITIES, true), fn () => app(ActivityOptions::class)->proof($this->resource) ?? []),
             'received_by_name' => $this->received_by_name,
             // Départements du client : qui envoie, vers lequel (courrier interne), qui a demandé, remis et reçu ;

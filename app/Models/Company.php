@@ -36,6 +36,8 @@ class Company extends Model
         // Facture normalisée électronique (DGI)
         'fne_settings',
         'fne_api_key',
+        // Étiquettes : qui imprime, champs, format
+        'label_settings',
         'invoice_payment_methods',
         'internal_delays',
         'activity_options',
@@ -107,6 +109,7 @@ class Company extends Model
             'invoice_payment_methods' => 'array',
             'vat_settings' => 'array',
             'fne_settings' => 'array',
+            'label_settings' => 'array',
             'fne_api_key' => 'encrypted',
             'fne_warning' => 'boolean',
             'fne_balance_sticker' => 'integer',

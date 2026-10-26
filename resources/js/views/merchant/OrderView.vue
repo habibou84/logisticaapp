@@ -160,7 +160,9 @@
     </section>
 
     <!-- Étiquette à coller sur le colis ou le pli -->
-    <RouterLink v-if="canPrintLabel" :to="`/etiquette/${order.id}`" class="m-btn-secondary flex items-center justify-center gap-2">🖨️ Imprimer l'étiquette</RouterLink>
+    <RouterLink v-if="canPrintLabel" :to="`/etiquette/${order.id}`" class="m-btn-secondary flex items-center justify-center gap-2">
+      🖨️ {{ order.label?.printed_at ? 'Réimprimer l\'étiquette' : 'Imprimer l\'étiquette' }}<span v-if="!order.label?.printed_at && order.label?.settings?.client_print === 'required'" class="rounded-full bg-amber-100 px-2 text-xs text-amber-800">avant le ramassage</span>
+    </RouterLink>
 
     <!-- Revenue, annulée ou en échec : la refaire partir (nouvelle course liée) -->
     <section v-if="canRenew" class="space-y-2">
@@ -286,7 +288,8 @@ const relivrer = ref(false)
 const fullHistory = ref(false)
 
 const isFinal = computed(() => FINAL.includes(order.value?.status))
-const canPrintLabel = computed(() => auth.can('orders.create') && !['cancelled', 'rejected'].includes(order.value?.status))
+// Étiquette : pas pour un client dont l'agence imprime les étiquettes (réglage)
+const canPrintLabel = computed(() => auth.can('orders.create') && order.value?.label?.settings?.client_print !== 'no' && !['cancelled', 'rejected'].includes(order.value?.status))
 const canRenew = computed(() => auth.can('orders.create') && ['returned', 'cancelled', 'delivery_failed'].includes(order.value?.status))
 const renewDate = ref(null)
 const state = computed(() => merchantStatus(order.value))
