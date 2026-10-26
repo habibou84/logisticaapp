@@ -122,7 +122,7 @@ class OfflineCourierSyncTest extends TestCase
 
         // Entre-temps, le dispatch a enregistré un échec de livraison (client joint au téléphone)
         Sanctum::actingAs($this->dispatcher);
-        $reason = IncidentReason::where('applies_to', '!=', 'pickup')->where('requires_date', false)->value('id');
+        $reason = IncidentReason::whereIn('applies_to', ['delivery', 'both'])->where('requires_date', false)->orderBy('id')->value('id');
         $this->postJson("/api/v1/orders/{$order->id}/status", ['status' => 'delivery_failed', 'incident_reason_id' => $reason])->assertOk();
 
         $this->sync($this->courierA->user, [

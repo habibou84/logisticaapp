@@ -120,7 +120,7 @@ class CourierPayTest extends TestCase
     public function test_failed_attempt_depends_on_the_reason_and_is_paid_once_a_day(): void
     {
         $absent = IncidentReason::where('code', 'absent')->value('id') ?? IncidentReason::first()->id;
-        $other = IncidentReason::where('id', '!=', $absent)->value('id');
+        $other = IncidentReason::whereIn('applies_to', ['delivery', 'both'])->where('id', '!=', $absent)->orderBy('id')->value('id');
         $this->payPlan([
             ['event' => 'failed_attempt', 'calc' => 'fixed', 'amount' => 200, 'conditions' => ['incident_reason_ids' => [$absent]]],
         ], $this->courierA);

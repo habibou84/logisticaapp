@@ -53,7 +53,7 @@ class ReturnSlipTest extends TestCase
         $this->postJson("/api/v1/orders/{$order->id}/assign", ['type' => 'delivery', 'courier_id' => $this->courierB->id]);
         $this->move($order, $this->courierA->user, 'picked_up')->assertOk();
         $this->move($order, $this->courierB->user, 'out_for_delivery')->assertOk();
-        $reason = IncidentReason::where('applies_to', '!=', 'pickup')->where('requires_date', false)->where('triggers_return', false)->first();
+        $reason = IncidentReason::whereIn('applies_to', ['delivery', 'both'])->where('requires_date', false)->where('triggers_return', false)->orderBy('id')->first();
         $this->move($order, $this->courierB->user, 'delivery_failed', ['incident_reason_id' => $reason->id])->assertOk();
         Sanctum::actingAs($this->dispatcher);
         $this->postJson("/api/v1/orders/{$order->id}/decision", ['decision' => 'return'])->assertOk();
