@@ -4,6 +4,10 @@
     {{ offlineQueue.syncing ? 'Envoi en cours…' : `⏳ ${offlineQueue.pending.length} action${offlineQueue.pending.length > 1 ? 's' : ''} en attente d'envoi` }}
     <span v-if="pwa.online && !offlineQueue.syncing" class="underline ml-1">Envoyer</span>
   </button>
+  <button v-if="photoQueue.count" type="button" class="block w-full bg-sky-600 text-white text-center text-sm font-medium py-1.5" @click="syncPhotoQueue">
+    {{ photoQueue.syncing ? 'Envoi des photos…' : `📷 ${photoQueue.count} photo${photoQueue.count > 1 ? 's' : ''} en attente d'envoi` }}
+    <span v-if="pwa.online && !photoQueue.syncing" class="underline ml-1">Envoyer</span>
+  </button>
   <button v-if="offlineQueue.rejected.length" type="button" class="block w-full bg-red-600 text-white text-center text-sm font-medium py-1.5" @click="open = true">
     ⚠️ {{ offlineQueue.rejected.length }} action{{ offlineQueue.rejected.length > 1 ? 's' : '' }} refusée{{ offlineQueue.rejected.length > 1 ? 's' : '' }} : voir
   </button>
@@ -25,6 +29,7 @@
 import { ref, watch } from 'vue'
 import BottomSheet from './BottomSheet.vue'
 import { dismissRejected, offlineQueue, syncOfflineQueue } from '../../composables/useOfflineQueue'
+import { photoQueue, syncPhotoQueue } from '../../composables/usePhotoQueue'
 import { pwa } from '../../composables/usePwa'
 import { STATUS_LABELS } from '../../utils/format'
 
@@ -33,6 +38,7 @@ const open = ref(false)
 watch(() => offlineQueue.rejected.length, (n) => { if (!n) open.value = false })
 
 function describe(action) {
+  if (action.kind === 'photo') return 'photo'
   return action.kind === 'note' ? 'note' : (STATUS_LABELS[action.payload?.status] ?? action.payload?.status)
 }
 

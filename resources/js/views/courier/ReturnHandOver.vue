@@ -37,8 +37,10 @@
       </div>
 
       <div>
-        <label class="m-label" for="ho-photo">Ou photo de la remise</label>
-        <input id="ho-photo" type="file" accept="image/*" capture="environment" class="block w-full text-sm" @change="form.photo = $event.target.files[0] || null">
+        <p class="m-label">Ou photo de la remise (bon signé)</p>
+        <PhotoCapture class="m-btn-secondary" scan="returns" @captured="form.photo = $event">
+          📷 {{ form.photo ? 'Photo prise ✓ (en reprendre une)' : 'Photographier le bon signé' }}
+        </PhotoCapture>
       </div>
 
       <p v-if="error" class="text-sm text-red-600">{{ error }}</p>
@@ -55,6 +57,7 @@
 import { onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
+import PhotoCapture from '../../components/mobile/PhotoCapture.vue'
 import SignaturePad from '../../components/mobile/SignaturePad.vue'
 import { currentPosition } from '../../composables/useGeolocation'
 import { useToastStore } from '../../stores/toasts'
@@ -76,7 +79,11 @@ async function submit() {
     const body = new FormData()
     body.append('received_by_name', form.received_by_name)
     if (form.signature) body.append('signature', form.signature)
-    if (form.photo) body.append('photo', form.photo)
+    if (form.photo) {
+      body.append('photo', form.photo.file, 'remise.jpg')
+      if (form.photo.original) body.append('photo_original', form.photo.original, 'original.jpg')
+      if (form.photo.meta) body.append('photo_meta', JSON.stringify(form.photo.meta))
+    }
     if (selected.value.length < slip.value.orders.length) selected.value.forEach((id) => body.append('order_ids[]', id))
     const position = await currentPosition().catch(() => null)
     if (position) Object.entries(position).forEach(([k, v]) => body.append(k, v))

@@ -20,6 +20,7 @@ use App\Services\Orders\OrderJournal;
 use App\Services\Orders\OrderLosses;
 use App\Services\Orders\OrderService;
 use App\Services\Orders\OrderWorkflow;
+use App\Services\Photos\DocumentPhoto;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -307,33 +308,39 @@ class OrderActionController extends Controller
     }
 
     /**
-     * Photo de preuve (ramassage, livraison, incident) prise par le livreur ou le personnel.
+     * Photo de preuve (ramassage, livraison, incident) prise par le livreur ou le personnel : version traitée
+     * par le scanner, photo d'origine gardée à côté (réglage), informations de la prise. Renvoyée après une
+     * coupure avec le même identifiant (client_ref), elle n'est gardée qu'une fois.
      */
-    public function storeAttachment(Request $request, Order $order): JsonResponse
+    public function storeAttachment(Request $request, Order $order, DocumentPhoto $photos): JsonResponse
     {
         Gate::authorize('addAttachment', $order);
 
         $data = $request->validate([
-            'file' => ['required', 'image', 'max:5120'],
+            ...DocumentPhoto::rules('file'),
             'type' => ['required', Rule::in(['photo_pickup', 'photo_delivery', 'photo_incident', 'document'])],
             'note' => ['nullable', 'string', 'max:500'],
-        ], [], ['file' => 'photo']);
+            'client_ref' => ['nullable', 'string', 'max:64'],
+        ], [], ['file' => 'photo', 'file_original' => 'photo d\'origine']);
 
-        $attachment = DB::transaction(function () use ($request, $order, $data) {
+        $existing = filled($data['client_ref'] ?? null)
+            ? $order->attachments()->where('client_ref', $data['client_ref'])->first() : null;
+
+        $attachment = $existing ?? DB::transaction(function () use ($request, $order, $data, $photos) {
             $event = $this->journal->record($order, $request->user(), OrderEventType::ProofAdded, [
                 'note' => $data['note'] ?? null,
                 'meta' => ['attachment_type' => $data['type']],
             ]);
 
-            $path = $request->file('file')->store("orders/{$order->id}", 'local');
+            $stored = $photos->store($order->company, $request->file('file'), $request->file('file_original'), $data['file_meta'] ?? null, "orders/{$order->id}");
 
             return OrderAttachment::create([
+                ...$stored,
                 'order_id' => $order->id,
                 'event_id' => $event->id,
                 'type' => $data['type'],
                 'disk' => 'local',
-                'path' => $path,
-                'mime_type' => $request->file('file')->getMimeType(),
+                'client_ref' => $data['client_ref'] ?? null,
                 'uploaded_by' => $request->user()->id,
             ]);
         });
@@ -342,13 +349,21 @@ class OrderActionController extends Controller
             'id' => $attachment->id,
             'type' => $attachment->type,
             'url' => route('v1.orders.attachments.show', [$order->id, $attachment->id], false),
-        ]], 201);
+        ]], $existing ? 200 : 201);
     }
 
-    public function showAttachment(Order $order, OrderAttachment $attachment): StreamedResponse
+    /**
+     * Photo d'une course ; ?original=1 : la photo d'origine, avant le scanner (équipe seulement).
+     */
+    public function showAttachment(Request $request, Order $order, OrderAttachment $attachment): StreamedResponse
     {
         Gate::authorize('view', $order);
         abort_unless($attachment->order_id === $order->id, 404);
+        if ($request->boolean('original')) {
+            abort_unless($request->user()->merchant_id === null && $attachment->original_path !== null, 404);
+
+            return Storage::disk($attachment->disk)->response($attachment->original_path);
+        }
 
         return Storage::disk($attachment->disk)->response($attachment->path);
     }

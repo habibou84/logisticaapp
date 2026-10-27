@@ -43,6 +43,10 @@ class OrderEventResource extends JsonResource
                 'id' => $a->id,
                 'type' => $a->type,
                 'url' => route('v1.orders.attachments.show', [$this->order_id, $a->id], false),
+                // Photo d'origine, avant le scanner : pour l'équipe seulement (valeur de preuve)
+                'original_url' => $a->original_path !== null && $request->user()?->merchant_id === null
+                    ? route('v1.orders.attachments.show', [$this->order_id, $a->id, 'original' => 1], false) : null,
+                'scan' => $a->meta ? collect($a->meta)->only(['scanned', 'mode', 'quality', 'taken_at', 'overridden'])->all() : null,
             ])),
             'visible_to_merchant' => $this->visible_to_merchant,
             'created_at' => $this->created_at,

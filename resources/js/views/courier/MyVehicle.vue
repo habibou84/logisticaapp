@@ -78,10 +78,9 @@
           <div><label class="m-label" for="fuel-liters">Litres</label><input id="fuel-liters" v-model.number="fuel.liters" type="number" inputmode="decimal" step="0.1" min="0" class="m-input"></div>
           <div><label class="m-label" for="fuel-odo">Compteur</label><input id="fuel-odo" v-model.number="fuel.odometer" type="number" inputmode="numeric" min="0" class="m-input" :placeholder="String(info.vehicle?.odometer || '')"></div>
         </div>
-        <label :class="['m-btn-secondary cursor-pointer', info.settings.fuel_receipt_required && !receipt ? 'ring-2 ring-amber-400' : '']">
+        <PhotoCapture :class="['m-btn-secondary', info.settings.fuel_receipt_required && !receipt ? 'ring-2 ring-amber-400' : '']" scan="vehicle" @captured="receipt = $event.file">
           📷 {{ receipt ? 'Reçu photographié ✓' : `Photo du reçu${info.settings.fuel_receipt_required ? ' *' : ''}` }}
-          <input type="file" accept="image/*" capture="environment" class="hidden" @change="addReceipt">
-        </label>
+        </PhotoCapture>
         <p class="rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-600">{{ fuelNote }}</p>
         <p v-if="fuelError" class="text-sm text-red-600">{{ fuelError }}</p>
         <button type="button" class="m-btn-primary" :disabled="busy || !(fuel.amount > 0) || (info.settings.fuel_receipt_required && !receipt)" @click="sendFuel">Enregistrer le plein</button>
@@ -96,7 +95,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import BottomSheet from '../../components/mobile/BottomSheet.vue'
 import { authImage } from '../../composables/useAuthImage'
-import { shrinkPhoto } from '../../composables/useFieldEvents'
+import PhotoCapture from '../../components/mobile/PhotoCapture.vue'
 import { useToastStore } from '../../stores/toasts'
 import { date, money } from '../../utils/format'
 import { OWNERSHIP_STYLES, PERIODS, STATE_STYLES, VEHICLE_TYPES, km, remainingText } from '../../utils/vehicles'
@@ -125,12 +124,6 @@ async function load() {
 async function openDoc(d) {
   const src = await authImage(`/courier/vehicle/documents/${d.id}`).catch(() => null)
   if (src) window.open(src, '_blank')
-}
-
-async function addReceipt(e) {
-  const file = e.target.files[0]
-  e.target.value = ''
-  if (file) receipt.value = await shrinkPhoto(file)
 }
 
 async function sendFuel() {

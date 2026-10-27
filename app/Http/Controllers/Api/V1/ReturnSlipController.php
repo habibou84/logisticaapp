@@ -10,6 +10,7 @@ use App\Models\Order;
 use App\Models\ReturnSlip;
 use App\Models\User;
 use App\Services\Orders\ReturnSlips;
+use App\Services\Photos\DocumentPhoto;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -98,7 +99,7 @@ class ReturnSlipController extends Controller
         $data = $request->validate([
             'received_by_name' => ['required', 'string', 'max:120'],
             'signature' => ['nullable', 'string', 'max:800000'],
-            'photo' => ['nullable', 'image', 'max:5120'],
+            ...DocumentPhoto::rules('photo', false),
             'order_ids' => ['nullable', 'array'],
             'order_ids.*' => ['integer'],
             'lat' => ['nullable', 'numeric', 'between:-90,90'],
@@ -114,6 +115,8 @@ class ReturnSlipController extends Controller
             $data['order_ids'] ?? null,
             isset($data['lat']) ? (float) $data['lat'] : null,
             isset($data['lng']) ? (float) $data['lng'] : null,
+            $request->file('photo_original'),
+            $data['photo_meta'] ?? null,
         );
 
         return response()->json(['data' => $this->detail($slip)]);
@@ -136,6 +139,8 @@ class ReturnSlipController extends Controller
         $path = match ($kind) {
             'signature' => $returnSlip->signature_path,
             'photo' => $returnSlip->photo_path,
+            // Photo d'origine, avant le scanner : équipe seulement
+            'photo-original' => $request->user()->merchant_id === null ? $returnSlip->photo_original_path : null,
             default => null,
         };
         abort_if($path === null || ! Storage::disk('local')->exists($path), 404);
@@ -170,6 +175,7 @@ class ReturnSlipController extends Controller
             'orders' => $slip->orders->map(fn (Order $o) => $this->orderData($o))->values(),
             'signature_url' => $slip->signature_path ? "/api/v1/return-slips/{$slip->id}/proof/signature" : null,
             'photo_url' => $slip->photo_path ? "/api/v1/return-slips/{$slip->id}/proof/photo" : null,
+            'photo_original_url' => $slip->photo_original_path && request()->user()?->merchant_id === null ? "/api/v1/return-slips/{$slip->id}/proof/photo-original" : null,
         ];
     }
 

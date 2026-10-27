@@ -323,7 +323,7 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::get('return-slips/{returnSlip}', [ReturnSlipController::class, 'show'])->name('return-slips.show');
         Route::post('return-slips/{returnSlip}/hand-over', [ReturnSlipController::class, 'handOver'])->middleware('throttle:30,1')->name('return-slips.hand-over');
         Route::post('return-slips/{returnSlip}/cancel', [ReturnSlipController::class, 'cancel'])->name('return-slips.cancel');
-        Route::get('return-slips/{returnSlip}/proof/{kind}', [ReturnSlipController::class, 'proof'])->whereIn('kind', ['signature', 'photo'])->name('return-slips.proof');
+        Route::get('return-slips/{returnSlip}/proof/{kind}', [ReturnSlipController::class, 'proof'])->whereIn('kind', ['signature', 'photo', 'photo-original'])->name('return-slips.proof');
 
         // Colis chez les livreurs (droits vérifiés dans le contrôleur)
         Route::get('parcels/held', [ParcelController::class, 'index'])->name('parcels.held');

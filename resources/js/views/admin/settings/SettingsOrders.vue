@@ -202,6 +202,50 @@
         <p class="text-xs text-gray-500">Un client peut avoir son propre choix (Clients › Modifier › Étiquettes).</p>
       </section>
 
+      <!-- Photos de documents : scanner de l'application livreur (recadrage, redressement, nettoyage, contrôle) -->
+      <section v-if="form.photo_settings" class="card p-4 space-y-3">
+        <h2 class="font-semibold">Photos de documents</h2>
+        <p class="text-sm text-gray-600">
+          Le livreur photographie le document : l'application trouve la feuille, la redresse, efface les ombres, rend le fond
+          blanc et l'écriture nette, puis vérifie que la photo est lisible avant l'envoi.
+        </p>
+        <fieldset class="grid sm:grid-cols-2 gap-2 text-sm">
+          <legend class="label">Scanner utilisé pour</legend>
+          <label v-for="(label, key) in SCAN_PLACES" :key="key" class="flex items-center gap-2"><input v-model="form.photo_settings.scan[key]" type="checkbox"> {{ label }}</label>
+        </fieldset>
+        <div class="grid sm:grid-cols-2 gap-3">
+          <div>
+            <label class="label" for="photo-mode">Rendu proposé</label>
+            <select id="photo-mode" v-model="form.photo_settings.mode" class="input">
+              <option value="color">Couleur (garde le tampon bleu ou rouge)</option>
+              <option value="gray">Niveaux de gris</option>
+              <option value="bw">Noir et blanc</option>
+            </select>
+            <p class="text-xs text-gray-500 mt-1">Le livreur peut en choisir un autre pour chaque photo.</p>
+          </div>
+          <div>
+            <label class="label" for="photo-check">Contrôle de qualité</label>
+            <select id="photo-check" v-model="form.photo_settings.quality_check" class="input">
+              <option value="block">Bloquant : une photo floue ou trop sombre est à reprendre</option>
+              <option value="warn">Avertissement seulement</option>
+              <option value="off">Aucun contrôle</option>
+            </select>
+            <p class="text-xs text-gray-500 mt-1">Bloquant : après trois essais, le livreur peut l'envoyer quand même ; c'est signalé sur la course.</p>
+          </div>
+          <div>
+            <label class="label" for="photo-resolution">Résolution</label>
+            <select id="photo-resolution" v-model="form.photo_settings.resolution" class="input">
+              <option value="standard">Standard : 2 000 pixels (scan A4 à 200 points par pouce, 300 à 500 Ko)</option>
+              <option value="high">Haute : 3 000 pixels (envoi plus long)</option>
+            </select>
+          </div>
+        </div>
+        <label class="flex items-start gap-2 text-sm">
+          <input v-model="form.photo_settings.keep_original" type="checkbox" class="mt-1">
+          <span>Garder aussi la photo d'origine<span class="block text-xs text-gray-500">Valeur de preuve : l'équipe peut la voir (« Voir l'original ») ; le client et Jibiat Marchand reçoivent la version nette.</span></span>
+        </label>
+      </section>
+
       <!-- Distribution et MAD : au choix de l'administrateur ; chaque contrat peut faire autrement -->
       <section v-if="form.activity_options" class="card p-4 space-y-4">
         <div>
@@ -234,8 +278,14 @@ const { form, dirty, saving, error, save, reset } = useCompanySettings([
   'validation_mode', 'daily_cutoff_time', 'default_max_attempts', 'require_delivery_code', 'offline_courier_actions', 'pickup_mission_custody', 'depot_closes_at', 'auto_pickup',
   'mission_acceptance', 'unreachable_minutes', 'late_pickup_alert_minutes', 'courier_available_alert',
   'auto_delivery', 'auto_delivery_max_cod', 'same_courier_delivery', 'cutoff_by_day', 'internal_delays',
-  'activity_options', 'label_settings',
+  'activity_options', 'label_settings', 'photo_settings',
 ])
+const SCAN_PLACES = {
+  delivery_proof: 'Accusé de réception, décharge',
+  receipts: 'Tickets d\'expédition, reçus de frais',
+  returns: 'Remise des retours (bon signé)',
+  vehicle: 'Reçus de carburant',
+}
 const LABEL_FIELDS = {
   cod: 'Montant à encaisser (e-commerce)',
   recipient_phone: 'Téléphone du destinataire',

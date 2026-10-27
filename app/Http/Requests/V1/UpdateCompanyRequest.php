@@ -10,6 +10,7 @@ use App\Services\Finance\Fne;
 use App\Services\Finance\Vat;
 use App\Services\Labels\LabelSettings;
 use App\Services\Orders\ActivityOptions;
+use App\Services\Photos\PhotoSettings;
 use App\Services\Ratings\RatingSettings;
 use App\Services\Vehicles\VehicleSettings;
 use App\Support\InvoicePayments;
@@ -62,6 +63,7 @@ class UpdateCompanyRequest extends FormRequest
             ...Vat::rules(),
             ...Fne::rules(),
             ...LabelSettings::rules(),
+            ...PhotoSettings::rules(),
             // Moyens de paiement des factures : comptes bancaires, Mobile Money, chèque… au choix de l'entreprise
             ...InvoicePayments::rules(),
             // Délai interne de distribution par activité, en heures (vide : aucun)

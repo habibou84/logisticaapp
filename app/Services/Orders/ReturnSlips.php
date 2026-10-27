@@ -14,6 +14,7 @@ use App\Models\Order;
 use App\Models\ReturnSlip;
 use App\Models\User;
 use App\Services\Messaging\Messenger;
+use App\Services\Photos\DocumentPhoto;
 use App\Support\SignatureImage;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
@@ -116,7 +117,7 @@ class ReturnSlips
      *
      * @param  list<int>|null  $orderIds  colis effectivement remis (tous par défaut)
      */
-    public function handOver(User $actor, ReturnSlip $slip, string $receivedBy, ?string $signature, ?UploadedFile $photo, ?array $orderIds = null, ?float $lat = null, ?float $lng = null): ReturnSlip
+    public function handOver(User $actor, ReturnSlip $slip, string $receivedBy, ?string $signature, ?UploadedFile $photo, ?array $orderIds = null, ?float $lat = null, ?float $lng = null, ?UploadedFile $photoOriginal = null, ?string $photoMeta = null): ReturnSlip
     {
         if ($slip->status !== ReturnSlip::OPEN) {
             throw new BusinessRuleException('Ce bon de retour n\'est plus en cours.', 'status');
@@ -132,7 +133,7 @@ class ReturnSlips
             throw new BusinessRuleException('Faites signer le client ou prenez une photo de la remise.', 'signature');
         }
 
-        DB::transaction(function () use ($actor, $slip, $receivedBy, $signatureData, $photo, $orderIds, $lat, $lng) {
+        DB::transaction(function () use ($actor, $slip, $receivedBy, $signatureData, $photo, $photoOriginal, $photoMeta, $orderIds, $lat, $lng) {
             $orders = $slip->orders()->lockForUpdate()->get();
             $handed = $orderIds === null ? $orders : $orders->whereIn('id', $orderIds);
 
@@ -166,12 +167,15 @@ class ReturnSlips
             }
 
             $dir = "return-slips/{$slip->id}";
+            $stored = $photo ? app(DocumentPhoto::class)->store($slip->company, $photo, $photoOriginal, $photoMeta, $dir) : null;
             $slip->forceFill([
                 'status' => ReturnSlip::HANDED,
                 'handed_at' => now(),
                 'received_by_name' => $receivedBy,
                 'signature_path' => $signatureData !== null ? tap("{$dir}/signature.png", fn ($p) => Storage::disk('local')->put($p, $signatureData)) : null,
-                'photo_path' => $photo?->store($dir, 'local'),
+                'photo_path' => $stored['path'] ?? null,
+                'photo_original_path' => $stored['original_path'] ?? null,
+                'photo_meta' => $stored['meta'] ?? null,
                 'lat' => $lat,
                 'lng' => $lng,
             ])->save();

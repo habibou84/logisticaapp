@@ -102,10 +102,7 @@
             <button v-if="canReportIncident" class="m-btn-secondary py-3 px-1 text-sm text-red-600" @click="openIncident">⚠️ Problème</button>
             <button class="m-btn-secondary py-3 px-1 text-sm" @click="sheet = 'note'">💬 Note</button>
             <button class="m-btn-secondary py-3 px-1 text-sm" @click="openExpense">💸 Frais</button>
-            <label class="m-btn-secondary py-3 px-1 text-sm cursor-pointer">
-              📷 Photo
-              <input type="file" accept="image/*" capture="environment" class="hidden" @change="uploadPhoto">
-            </label>
+            <PhotoCapture class="m-btn-secondary py-3 px-1 text-sm" @captured="uploadPhoto">📷 Photo</PhotoCapture>
           </div>
           <!-- Mission confiée d'office, pas encore commencée : le livreur peut la rendre -->
           <button v-if="mission.can_report_impediment" class="w-full text-center text-sm text-slate-500 underline py-1" @click="sheet = 'refuse'">
@@ -136,10 +133,7 @@
             <label class="m-label" for="ticket">Numéro du ticket</label>
             <input id="ticket" v-model="delivery.shipping_reference" class="m-input" placeholder="Facultatif">
           </div>
-          <label class="m-btn-secondary cursor-pointer">
-            📷 Photographier le ticket
-            <input type="file" accept="image/*" capture="environment" class="hidden" @change="uploadPhoto">
-          </label>
+          <PhotoCapture class="m-btn-secondary" scan="receipts" @captured="uploadPhoto($event, false)">📷 Photographier le ticket</PhotoCapture>
         </template>
         <!-- Annuaire : position de l'adresse enregistrée avec la livraison -->
         <label v-if="locateAsk" class="flex items-start gap-2 rounded-xl bg-slate-50 p-3 text-sm">
@@ -162,10 +156,9 @@
             <SignaturePad v-model="delivery.signature" />
           </div>
           <button v-else type="button" class="text-sm font-medium text-[var(--app-color)]" @click="delivery.signature = ''">+ Faire signer</button>
-          <label :class="['m-btn-secondary cursor-pointer', order.proof?.proof_photo && !photoTaken ? 'ring-2 ring-amber-400' : '']">
+          <PhotoCapture :class="['m-btn-secondary', order.proof?.proof_photo && !photoTaken ? 'ring-2 ring-amber-400' : '']" scan="delivery_proof" @captured="uploadPhoto">
             📷 {{ photoTaken ? 'Photo envoyée ✓ (en reprendre une)' : `${order.proof?.receipt_label ? 'Photographier l\'accusé signé et tamponné' : 'Photographier la décharge'}${order.proof?.proof_photo ? ' *' : ''}` }}
-            <input type="file" accept="image/*" capture="environment" class="hidden" @change="uploadPhoto">
-          </label>
+          </PhotoCapture>
         </template>
         <div v-else-if="!shipping || order.amounts.cod_amount > 0">
           <label class="m-label" for="collected">Montant encaissé</label>
@@ -220,10 +213,9 @@
         </div>
         <textarea v-model="incident.note" rows="2" class="m-input" :placeholder="selectedReason?.requires_note ? 'Précisez ce qui se passe (obligatoire)' : 'Précisez (facultatif) : ex. téléphone éteint, 3 appels'" />
         <!-- Photo demandée par le motif (ex. bureau fermé) -->
-        <label v-if="selectedReason && selectedReason.photo !== 'off'" :class="['m-btn-secondary cursor-pointer', selectedReason.photo === 'required' && !incidentPhoto ? 'ring-2 ring-amber-400' : '']">
+        <PhotoCapture v-if="selectedReason && selectedReason.photo !== 'off'" :class="['m-btn-secondary', selectedReason.photo === 'required' && !incidentPhoto ? 'ring-2 ring-amber-400' : '']" @captured="uploadIncidentPhoto">
           📷 {{ incidentPhoto ? 'Photo envoyée ✓' : `Prendre une photo${selectedReason.photo === 'required' ? ' *' : ' (conseillée)'}` }}
-          <input type="file" accept="image/*" capture="environment" class="hidden" @change="uploadIncidentPhoto">
-        </label>
+        </PhotoCapture>
         <p class="text-xs text-slate-500">L'agence et le client sont prévenus immédiatement.</p>
         <p v-if="sheetError" class="text-red-600 text-sm">{{ sheetError }}</p>
         <button class="m-btn-danger" :disabled="busy || !incident.reason" @click="confirmIncident">Envoyer</button>
@@ -243,10 +235,7 @@
           </div>
         </div>
         <p class="text-sm text-slate-500">Payé de votre poche ou avec une avance de la caisse : le montant est déduit de votre prochain versement et facturé au client.</p>
-        <label class="m-btn-secondary cursor-pointer">
-          📷 Photographier le reçu
-          <input type="file" accept="image/*" capture="environment" class="hidden" @change="uploadPhoto">
-        </label>
+        <PhotoCapture class="m-btn-secondary" scan="receipts" @captured="uploadPhoto($event, false)">📷 Photographier le reçu</PhotoCapture>
         <p v-if="sheetError" class="text-red-600 text-sm">{{ sheetError }}</p>
         <button class="m-btn-primary" :disabled="busy || !expense.type || !(expense.amount > 0)" @click="saveExpense">Enregistrer les frais</button>
       </div>
@@ -290,6 +279,8 @@ import { cachedGet } from '../../composables/useCachedApi'
 import { useToastStore } from '../../stores/toasts'
 import { currentPosition } from '../../composables/useGeolocation'
 import { enqueue, isNetworkError, sendStatus, withPending } from '../../composables/useOfflineQueue'
+import { photoQueue, sendOrderPhoto, syncPhotoQueue } from '../../composables/usePhotoQueue'
+import PhotoCapture from '../../components/mobile/PhotoCapture.vue'
 import { pwa } from '../../composables/usePwa'
 import { date, DELIVERY_PAYMENT_METHODS, mapsLink, money, PAYMENT_METHODS, shipmentLabel, telLink, today, whatsappLink } from '../../utils/format'
 
@@ -457,6 +448,8 @@ async function load() {
 }
 
 async function post(status, extra = {}) {
+  // Photos gardées après une coupure : envoyées d'abord, le serveur vérifie la preuve demandée
+  if (photoQueue.count && navigator.onLine) await syncPhotoQueue()
   const position = await currentPosition()
   const result = await sendStatus(order.value, { status, ...extra, ...(position || {}) }, offlineEnabled.value)
   if (result.offline) mission.value = withPending([mission.value])[0]
@@ -651,35 +644,24 @@ async function sendNote() {
   }
 }
 
-async function uploadIncidentPhoto(e) {
-  const file = e.target.files[0]
-  if (!file) return
-  const form = new FormData()
-  form.append('file', file)
-  form.append('type', 'photo_incident')
+async function uploadIncidentPhoto(photo) {
   try {
-    await http.post(`/orders/${order.value.id}/attachments`, form)
+    await sendOrderPhoto(order.value, photo, { type: 'photo_incident' }, offlineEnabled.value)
     incidentPhoto.value = true
   } catch (err) {
     sheetError.value = apiErrorMessage(err)
   }
-  e.target.value = ''
 }
 
-async function uploadPhoto(e) {
-  const file = e.target.files[0]
-  if (!file) return
-  const form = new FormData()
-  form.append('file', file)
-  form.append('type', mission.value.type === 'pickup' ? 'photo_pickup' : 'photo_delivery')
+// Photo de la course ; proof : c'est la preuve de remise demandée (accusé, décharge), pas un ticket ou un reçu
+async function uploadPhoto(photo, proof = true) {
   try {
-    await http.post(`/orders/${order.value.id}/attachments`, form)
-    if (mission.value.type !== 'pickup') photoTaken.value = true
-    toasts.success('Photo envoyée.')
+    const result = await sendOrderPhoto(order.value, photo, { type: mission.value.type === 'pickup' ? 'photo_pickup' : 'photo_delivery' }, offlineEnabled.value)
+    if (proof && mission.value.type !== 'pickup') photoTaken.value = true
+    toasts.success(result.offline ? 'Photo gardée : elle partira au retour du réseau.' : 'Photo envoyée.')
   } catch (err) {
     toasts.error(apiErrorMessage(err))
   }
-  e.target.value = ''
 }
 
 // Actions hors connexion envoyées : état du serveur rechargé

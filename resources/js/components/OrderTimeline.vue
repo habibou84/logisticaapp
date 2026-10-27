@@ -20,8 +20,13 @@
         <li v-for="(change, field) in event.meta.changes" :key="field">{{ field }} : {{ change.from ?? '—' }} → {{ change.to ?? '—' }}</li>
       </ul>
       <p v-if="event.note" class="text-sm bg-slate-50 rounded px-2 py-1 mt-1 whitespace-pre-line">{{ event.note }}</p>
-      <div v-if="event.attachments?.length" class="flex gap-2 mt-1">
-        <button v-for="a in event.attachments" :key="a.id" class="text-sm text-blue-600 underline" @click="openAttachment(a)">{{ a.type?.startsWith('signature') ? '✍️ Voir la signature' : '📷 Voir la photo' }}</button>
+      <div v-if="event.attachments?.length" class="flex flex-wrap gap-x-3 gap-y-1 mt-1">
+        <template v-for="a in event.attachments" :key="a.id">
+          <button class="text-sm text-blue-600 underline" @click="openAttachment(a.url)">{{ a.type?.startsWith('signature') ? '✍️ Voir la signature' : a.scan?.scanned ? '📄 Voir le document' : '📷 Voir la photo' }}</button>
+          <!-- Photo d'origine, avant le scanner (équipe) -->
+          <button v-if="a.original_url" class="text-sm text-gray-600 underline" @click="openAttachment(a.original_url)">Voir l'original</button>
+          <span v-if="a.scan?.overridden" class="text-xs text-amber-700">⚠️ envoyée malgré le contrôle de qualité</span>
+        </template>
       </div>
     </li>
   </ol>
@@ -47,8 +52,8 @@ function dot(event) {
 }
 
 // Les photos sont protégées : on les charge avec le jeton puis on les ouvre
-async function openAttachment(attachment) {
-  const { data } = await http.get(attachment.url.replace(/^\/api\/v1/, ''), { responseType: 'blob' })
+async function openAttachment(url) {
+  const { data } = await http.get(url.replace(/^\/api\/v1/, ''), { responseType: 'blob' })
   window.open(URL.createObjectURL(data), '_blank')
 }
 </script>

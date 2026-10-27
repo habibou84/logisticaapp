@@ -87,6 +87,12 @@ export function withPending(missions) {
   })
 }
 
+/** Envoi hors connexion refusé par le serveur (photo d'une course…) : montré au livreur avec son motif */
+export function rejectOffline(entry) {
+  state.rejected.push(entry)
+  save()
+}
+
 export function dismissRejected(id) {
   state.rejected = state.rejected.filter((a) => a.id !== id)
   save()

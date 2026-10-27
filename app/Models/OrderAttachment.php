@@ -9,7 +9,13 @@ class OrderAttachment extends Model
 {
     public const UPDATED_AT = null;
 
-    protected $fillable = ['order_id', 'event_id', 'type', 'disk', 'path', 'mime_type', 'uploaded_by'];
+    protected $fillable = ['order_id', 'event_id', 'type', 'disk', 'path', 'original_path', 'meta', 'client_ref', 'mime_type', 'uploaded_by'];
+
+    /** Informations de la prise : rendu du scanner, qualité, heure et position */
+    protected function casts(): array
+    {
+        return ['meta' => 'array'];
+    }
 
     public function order(): BelongsTo
     {

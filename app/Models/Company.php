@@ -38,6 +38,8 @@ class Company extends Model
         'fne_api_key',
         // Étiquettes : qui imprime, champs, format
         'label_settings',
+        // Photos de documents : scanner, rendu, contrôle de qualité, original gardé
+        'photo_settings',
         'invoice_payment_methods',
         'internal_delays',
         'activity_options',
@@ -110,6 +112,7 @@ class Company extends Model
             'vat_settings' => 'array',
             'fne_settings' => 'array',
             'label_settings' => 'array',
+            'photo_settings' => 'array',
             'fne_api_key' => 'encrypted',
             'fne_warning' => 'boolean',
             'fne_balance_sticker' => 'integer',

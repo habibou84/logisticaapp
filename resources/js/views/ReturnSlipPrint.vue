@@ -73,6 +73,7 @@
         </div>
       </section>
       <img v-if="photo" :src="photo" alt="Photo de la remise" class="no-print max-h-64 rounded border">
+      <button v-if="slip.photo_original_url" type="button" class="no-print text-sm text-gray-600 underline" @click="openOriginal">Voir l'original de la photo</button>
     </div>
   </div>
   <p v-else-if="error" class="p-4 text-red-600">{{ error }}</p>
@@ -92,6 +93,12 @@ const signature = ref(null)
 const photo = ref(null)
 const error = ref('')
 const total = computed(() => (slip.value?.orders || []).reduce((s, o) => s + (o.items_amount || 0), 0))
+
+// Photo d'origine, avant le scanner (équipe)
+async function openOriginal() {
+  const src = await authImage(slip.value.photo_original_url).catch(() => null)
+  if (src) window.open(src, '_blank')
+}
 
 function print() {
   window.print()

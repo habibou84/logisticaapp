@@ -22,13 +22,14 @@ class ReturnSlip extends Model
 
     protected $fillable = [
         'company_id', 'merchant_id', 'courier_id', 'reference', 'status', 'created_by',
-        'handed_at', 'received_by_name', 'signature_path', 'photo_path', 'lat', 'lng', 'notes',
+        'handed_at', 'received_by_name', 'signature_path', 'photo_path', 'photo_original_path', 'photo_meta', 'lat', 'lng', 'notes',
     ];
 
     protected function casts(): array
     {
         return [
             'handed_at' => 'datetime',
+            'photo_meta' => 'array',
             'lat' => 'float',
             'lng' => 'float',
         ];
