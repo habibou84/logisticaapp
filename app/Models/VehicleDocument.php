@@ -13,11 +13,11 @@ class VehicleDocument extends Model
 {
     use BelongsToCompany;
 
-    protected $fillable = ['company_id', 'vehicle_id', 'courier_id', 'kind', 'label', 'reference', 'issuer', 'starts_on', 'ends_on', 'cost', 'file_path', 'file_mime', 'reminded'];
+    protected $fillable = ['company_id', 'vehicle_id', 'courier_id', 'kind', 'label', 'reference', 'issuer', 'starts_on', 'ends_on', 'cost', 'file_path', 'file_mime', 'original_path', 'file_meta', 'reminded'];
 
     protected function casts(): array
     {
-        return ['starts_on' => 'date:Y-m-d', 'ends_on' => 'date:Y-m-d', 'cost' => 'integer', 'reminded' => 'integer'];
+        return ['starts_on' => 'date:Y-m-d', 'ends_on' => 'date:Y-m-d', 'cost' => 'integer', 'reminded' => 'integer', 'file_meta' => 'array'];
     }
 
     public function vehicle(): BelongsTo

@@ -81,6 +81,7 @@
           <td>{{ d.cost ? money(d.cost) : '' }}</td>
           <td class="whitespace-nowrap text-right">
             <button v-if="d.has_file" type="button" class="text-blue-600" @click="openFile(`/vehicles/documents/${d.id}/file`)">Voir</button>
+            <button v-if="d.has_original" type="button" class="text-gray-600" @click="openFile(`/vehicles/documents/${d.id}/file?original=1`)">Original</button>
             <button type="button" class="ml-3 text-blue-600" @click="openDoc(d)">Modifier</button>
             <button type="button" class="ml-3 text-red-600" @click="removeDoc(d)">✕</button>
           </td>

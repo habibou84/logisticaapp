@@ -16,6 +16,7 @@ use App\Models\VehicleDocument;
 use App\Models\VehicleLease;
 use App\Models\VehicleLeasePayment;
 use App\Models\VehicleLog;
+use App\Services\Photos\DocumentPhoto;
 use App\Services\Vehicles\Fleet;
 use App\Services\Vehicles\VehicleCatalog;
 use App\Services\Vehicles\VehicleLeases;
@@ -218,7 +219,7 @@ class VehicleController extends Controller
         return [
             'id' => $d->id, 'kind' => $d->kind, 'kind_label' => VehicleCatalog::DOCUMENTS[$d->kind]['label'] ?? $d->kind, 'icon' => VehicleCatalog::DOCUMENTS[$d->kind]['icon'] ?? '📄',
             'label' => $d->label, 'reference' => $d->reference, 'issuer' => $d->issuer, 'starts_on' => $d->starts_on?->toDateString(), 'ends_on' => $d->ends_on?->toDateString(),
-            'cost' => $d->cost, 'has_file' => $d->file_path !== null, 'current' => $current, ...$this->fleet->documentState($d, $s),
+            'cost' => $d->cost, 'has_file' => $d->file_path !== null, 'has_original' => $d->original_path !== null, 'current' => $current, ...$this->fleet->documentState($d, $s),
             'vehicle_id' => $d->vehicle_id, 'courier_id' => $d->courier_id,
         ];
     }
@@ -302,7 +303,7 @@ class VehicleController extends Controller
             'courier_id' => ['nullable', 'required_without:vehicle_id', 'integer', Rule::exists('couriers', 'id')->where('company_id', $company)],
             ...$this->documentRules(),
         ]);
-        $doc = VehicleDocument::create([...collect($data)->except('file')->all(), 'company_id' => $company, ...$this->documentFile($request)]);
+        $doc = VehicleDocument::create([...collect($data)->except(['file', 'file_original', 'file_meta'])->all(), 'company_id' => $company, ...$this->documentFile($request)]);
 
         return response()->json(['data' => $this->document($doc, $this->settings->for($request->user()->company))], 201);
     }
@@ -310,7 +311,7 @@ class VehicleController extends Controller
     public function updateDocument(Request $request, VehicleDocument $document): JsonResponse
     {
         $data = $request->validate($this->documentRules(true));
-        $document->fill([...collect($data)->except('file')->all(), ...$this->documentFile($request)]);
+        $document->fill([...collect($data)->except(['file', 'file_original', 'file_meta'])->all(), ...$this->documentFile($request)]);
         // Nouvelle date de fin : les rappels repartent
         if ($document->isDirty('ends_on')) {
             $document->reminded = 0;
@@ -327,20 +328,27 @@ class VehicleController extends Controller
         return response()->json(['data' => true]);
     }
 
+    /**
+     * Fichier du papier : photo passée au scanner (avec sa photo d'origine, selon le réglage) ou PDF.
+     * Un nouveau fichier remplace aussi l'ancien original.
+     */
     private function documentFile(Request $request): array
     {
         if (! $request->hasFile('file')) {
             return [];
         }
+        $stored = app(DocumentPhoto::class)->store($request->user()->company, $request->file('file'), $request->file('file_original'), $request->input('file_meta'), 'vehicles/documents');
 
-        return ['file_path' => $request->file('file')->store('vehicles/documents', 'local'), 'file_mime' => $request->file('file')->getMimeType()];
+        return ['file_path' => $stored['path'], 'file_mime' => $stored['mime_type'], 'original_path' => $stored['original_path'], 'file_meta' => $stored['meta']];
     }
 
-    public function showDocumentFile(VehicleDocument $document): StreamedResponse
+    /** Fichier du papier ; ?original=1 : la photo d'origine, avant le scanner */
+    public function showDocumentFile(Request $request, VehicleDocument $document): StreamedResponse
     {
-        abort_unless($document->file_path, 404);
+        $path = $request->boolean('original') ? $document->original_path : $document->file_path;
+        abort_unless($path, 404);
 
-        return Storage::disk('local')->response($document->file_path);
+        return Storage::disk('local')->response($path);
     }
 
     /**
@@ -356,7 +364,9 @@ class VehicleController extends Controller
             'starts_on' => ['nullable', 'date'],
             'ends_on' => ['nullable', 'date'],
             'cost' => ['nullable', 'integer', 'min:0'],
-            'file' => ['nullable', 'file', 'max:10240', 'mimes:jpg,jpeg,png,webp,pdf'],
+            'file' => ['nullable', 'file', 'max:15360', 'mimes:jpg,jpeg,png,webp,pdf'],
+            'file_original' => ['nullable', 'image', 'max:15360'],
+            'file_meta' => ['nullable', 'string', 'max:2000'],
         ];
     }
 

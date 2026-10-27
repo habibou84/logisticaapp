@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\OrderAttachment;
 use App\Models\ReturnSlip;
 use App\Models\User;
+use App\Models\VehicleDocument;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -161,6 +162,28 @@ class DocumentPhotoTest extends TestCase
         Sanctum::actingAs($this->merchantUser);
         $this->assertNull($this->getJson("/api/v1/return-slips/{$slipId}")->json('data.photo_original_url'));
         $this->get($url)->assertNotFound();
+    }
+
+    public function test_vehicle_paper_keeps_its_original_and_a_pdf_stays_as_is(): void
+    {
+        Sanctum::actingAs($this->admin);
+        $vehicle = $this->postJson('/api/v1/vehicles', ['type' => 'moto', 'plate' => 'AB-1234-CI'])->assertCreated()->json('data.id');
+        $doc = $this->post('/api/v1/vehicles/documents', [
+            'vehicle_id' => $vehicle, 'kind' => 'insurance', 'ends_on' => '2027-03-01',
+            'file' => UploadedFile::fake()->image('document.jpg', 1400, 2000),
+            'file_original' => UploadedFile::fake()->image('original.jpg', 3000, 4000),
+            'file_meta' => json_encode(['scanned' => true, 'mode' => 'color']),
+        ], ['Accept' => 'application/json'])->assertCreated()->assertJsonPath('data.has_original', true)->json('data.id');
+
+        $paper = VehicleDocument::find($doc);
+        Storage::disk('local')->assertExists([$paper->file_path, $paper->original_path]);
+        $this->assertTrue($paper->file_meta['scanned']);
+        $this->get("/api/v1/vehicles/documents/{$doc}/file?original=1")->assertOk();
+
+        // Nouveau fichier en PDF : plus d'original (il ne correspondrait plus)
+        $this->post("/api/v1/vehicles/documents/{$doc}", ['file' => UploadedFile::fake()->create('attestation.pdf', 200, 'application/pdf')], ['Accept' => 'application/json'])
+            ->assertOk()->assertJsonPath('data.has_original', false);
+        $this->get("/api/v1/vehicles/documents/{$doc}/file?original=1")->assertNotFound();
     }
 
     private function move(Order $order, User $actor, string $status, array $extra = []): void

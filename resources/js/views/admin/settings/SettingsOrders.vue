@@ -284,7 +284,7 @@ const SCAN_PLACES = {
   delivery_proof: 'Accusé de réception, décharge',
   receipts: 'Tickets d\'expédition, reçus de frais',
   returns: 'Remise des retours (bon signé)',
-  vehicle: 'Reçus de carburant',
+  vehicle: 'Papiers des véhicules et permis, reçus de carburant',
 }
 const LABEL_FIELDS = {
   cod: 'Montant à encaisser (e-commerce)',
