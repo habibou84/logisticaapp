@@ -156,7 +156,8 @@
             <label class="m-label" for="received-role">Fonction{{ order.department_proof.received_role === 'required' ? ' *' : '' }}</label>
             <input id="received-role" v-model="delivery.received_by_role" class="m-input" maxlength="80" placeholder="Ex. : secrétaire de direction">
           </div>
-          <div v-if="order.proof?.proof_signature || delivery.signature">
+          <!-- Signature : demandée par les réglages, ou ouverte par « + Faire signer » ('' : zone ouverte, rien de signé) -->
+          <div v-if="order.proof?.proof_signature || delivery.signature !== null">
             <p class="m-label">Signature{{ order.proof?.proof_signature ? ' *' : '' }}</p>
             <SignaturePad v-model="delivery.signature" />
           </div>
@@ -272,7 +273,7 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import StatusBadge from '../../components/StatusBadge.vue'
@@ -348,6 +349,9 @@ const canReportIncident = computed(() => ['pickup_assigned', 'pickup_in_progress
 const targetDepartment = computed(() => (mission.value.type === 'pickup' ? order.value.department : order.value.to_department))
 const asksRole = computed(() => !!order.value?.department_proof && order.value.department_proof.received_role !== 'off')
 const handover = reactive({ handed_by_name: '', handed_by_role: '', signature: null })
+// Une fois signé, le message « Faites signer… » de l'essai précédent disparaît
+watch(() => delivery.signature, (v) => { if (v && /signe/i.test(sheetError.value)) sheetError.value = '' })
+watch(() => handover.signature, (v) => { if (v && /signe/i.test(sheetError.value)) sheetError.value = '' })
 function openHandover() {
   Object.assign(handover, blankHandover(order.value))
   sheetError.value = ''

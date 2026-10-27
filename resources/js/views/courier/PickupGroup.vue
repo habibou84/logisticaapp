@@ -108,7 +108,7 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import HandoverFields from '../../components/courier/HandoverFields.vue'
@@ -232,6 +232,8 @@ async function leave() {
 const handoverOrder = computed(() => picked.value.map((m) => m.order).find(asksHandover) || null)
 const handoverDepartments = computed(() => [...new Map(picked.value.filter((m) => m.order.department).map((m) => [m.order.department.id, m.order.department])).values()])
 const handover = reactive({ handed_by_name: '', handed_by_role: '', signature: null })
+// Une fois signé, le message « Faites signer… » de l'essai précédent disparaît
+watch(() => handover.signature, (v) => { if (v && /signe/i.test(sheetError.value)) sheetError.value = '' })
 
 function openPicked() {
   if (handoverOrder.value) {

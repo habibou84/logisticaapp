@@ -23,6 +23,7 @@ use App\Services\Destinations\DestinationSettings;
 use App\Services\Finance\FinanceRecorder;
 use App\Services\Merchants\MerchantLocation;
 use App\Services\Stock\StockKeeper;
+use App\Support\SignatureImage;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -442,15 +443,7 @@ class OrderWorkflow
     /** Signature dessinée sur le téléphone (image PNG en base64), ou null */
     private function decodeSignature(?string $signature): ?string
     {
-        if (blank($signature)) {
-            return null;
-        }
-        if (! preg_match('#^data:image/png;base64,([A-Za-z0-9+/=]+)$#', $signature, $m)) {
-            throw new BusinessRuleException('Signature illisible.', 'signature');
-        }
-        $data = base64_decode($m[1], true);
-
-        return $data === false || $data === '' ? null : $data;
+        return SignatureImage::decode($signature);
     }
 
     /**

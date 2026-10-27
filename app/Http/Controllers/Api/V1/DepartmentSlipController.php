@@ -13,6 +13,7 @@ use App\Models\Order;
 use App\Models\User;
 use App\Services\Departments\Departments;
 use App\Services\Departments\DepartmentSettings;
+use App\Support\SignatureImage;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -75,9 +76,7 @@ class DepartmentSlipController extends Controller
             'signed_by_role' => ['nullable', 'string', 'max:80'],
             'signature' => ['required', 'string', 'max:700000'],
         ], [], ['signed_by_name' => 'nom de la personne qui signe']);
-        if (! preg_match('#^data:image/png;base64,([A-Za-z0-9+/=]+)$#', $data['signature'], $m) || ($png = base64_decode($m[1], true)) === false || $png === '') {
-            throw new BusinessRuleException('Signature illisible.', 'signature');
-        }
+        $png = SignatureImage::decode($data['signature']) ?? throw new BusinessRuleException('Signature illisible.', 'signature');
         $day = CarbonImmutable::parse($data['day'])->toDateString();
         $ids = $this->orders($department, $data['kind'], $day)->modelKeys();
         if ($ids === []) {

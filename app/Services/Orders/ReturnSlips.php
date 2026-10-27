@@ -14,6 +14,7 @@ use App\Models\Order;
 use App\Models\ReturnSlip;
 use App\Models\User;
 use App\Services\Messaging\Messenger;
+use App\Support\SignatureImage;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -234,20 +235,6 @@ class ReturnSlips
      */
     private function decodeSignature(?string $signature): ?string
     {
-        if (blank($signature)) {
-            return null;
-        }
-
-        if (! preg_match('#^data:image/png;base64,([A-Za-z0-9+/=]+)$#', $signature, $m)) {
-            throw new BusinessRuleException('Signature illisible.', 'signature');
-        }
-
-        $data = base64_decode($m[1], true);
-
-        if ($data === false || strlen($data) > 512 * 1024 || ! str_starts_with($data, "\x89PNG")) {
-            throw new BusinessRuleException('Signature illisible.', 'signature');
-        }
-
-        return $data;
+        return SignatureImage::decode($signature);
     }
 }
