@@ -3,9 +3,10 @@
   <component
     :is="to ? RouterLink : 'button'"
     v-bind="to ? { to } : { type: 'button' }"
-    class="tap m-card block w-full p-3.5 text-left active:bg-slate-50 hover:ring-slate-300"
+    class="tap m-card block w-full p-3.5 text-left active:scale-[.99] transition"
   >
-    <span :class="['grid h-9 w-9 place-items-center rounded-lg', TONES[tone]]" aria-hidden="true"><StatusIcon :name="icon" class="h-5 w-5" /></span>
+    <ColorIcon v-if="color" :name="color" :size="40" />
+    <span v-else :class="['grid h-9 w-9 place-items-center rounded-lg', TONES[tone]]" aria-hidden="true"><StatusIcon :name="icon" class="h-5 w-5" /></span>
     <span class="mt-2 block truncate text-sm text-slate-600">{{ label }}</span>
     <span class="block truncate text-lg font-bold leading-snug">{{ value }}</span>
     <span v-if="sub" :class="['block truncate text-xs', subClass || 'text-slate-500']">{{ sub }}</span>
@@ -17,9 +18,12 @@
 
 <script setup>
 import { RouterLink } from 'vue-router'
+import ColorIcon from '../mobile/ColorIcon.vue'
 import StatusIcon from '../mobile/StatusIcon.vue'
 
 defineProps({
+  // Icône en couleur (ColorIcon), à la place de l'icône au trait
+  color: { type: String, default: '' },
   to: { type: String, default: '' },
   icon: { type: String, required: true },
   tone: { type: String, default: 'slate' },

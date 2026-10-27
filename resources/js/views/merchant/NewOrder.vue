@@ -35,13 +35,13 @@
 
     <!-- Client à plusieurs activités : la course en choisit une (facturation à part) -->
     <section v-if="activityChoices.length > 1" class="m-card p-4 space-y-2" aria-labelledby="step-activity">
-      <h2 id="step-activity" class="m-step">Pour quelle activité ?</h2>
+      <h2 id="step-activity" class="m-step"><ColorIcon name="colis" :size="34" />Pour quelle activité ?</h2>
       <ChoiceChips v-model="form.activity" :options="activityChoices" :columns="activityChoices.length === 2 ? 2 : 1" label="Activité de la course" />
     </section>
 
     <!-- Client à départements : qui envoie, et vers qui (personne extérieure ou autre département) -->
     <section v-if="billed && departments.all.value.length" id="step-department" class="m-card p-4 space-y-4" aria-labelledby="step-dep">
-      <h2 id="step-dep" class="m-step">Le département</h2>
+      <h2 id="step-dep" class="m-step"><ColorIcon name="departement" :size="34" />Le département</h2>
       <div v-if="departments.senders.value.length > 1 || !departments.settings.value.required">
         <p class="m-label">Qui envoie ? <span v-if="departments.settings.value.required" class="text-red-600">*</span></p>
         <ChoiceChips v-model="form.department_id" :options="senderChoices" :columns="senderChoices.length > 3 ? 1 : 2" label="Département qui envoie" />
@@ -67,7 +67,7 @@
 
     <!-- 1. Le destinataire -->
     <section v-if="!internal" class="m-card p-4 space-y-4" aria-labelledby="step-client">
-      <h2 id="step-client" class="m-step"><span class="m-step-num">1</span>Le destinataire</h2>
+      <h2 id="step-client" class="m-step"><ColorIcon name="profil" :size="34" />Le destinataire</h2>
       <!-- Annuaire des destinations (distribution, MAD) : la fiche se remplit toute seule -->
       <DestinationSearch
         v-if="directory" mobile :selected="destination"
@@ -101,7 +101,7 @@
 
     <!-- 2. Où livrer -->
     <section v-if="!internal" class="m-card p-4 space-y-4" aria-labelledby="step-where">
-      <h2 id="step-where" class="m-step"><span class="m-step-num">2</span>Où livrer</h2>
+      <h2 id="step-where" class="m-step"><ColorIcon name="lieu" :size="34" />Où livrer</h2>
       <div id="zone-field">
         <label class="m-label" for="zone">Commune ou quartier <span class="text-red-600">*</span></label>
         <p v-if="zoneChoices.length > 1" class="text-sm text-slate-600 mb-2">
@@ -123,7 +123,7 @@
 
     <!-- 3. Distribution, MAD : l'envoi (rien à encaisser, facture du mois) -->
     <section v-if="billed" class="m-card p-4 space-y-4" aria-labelledby="step-shipment">
-      <h2 id="step-shipment" class="m-step"><span class="m-step-num">3</span>L'envoi</h2>
+      <h2 id="step-shipment" class="m-step"><ColorIcon :name="form.activity === 'mad' ? 'mad' : form.activity === 'distribution' ? 'pli' : 'colis'" :size="34" />L'envoi</h2>
       <p class="text-sm text-slate-600">
         <template v-if="plan">{{ plan.lot_name || plan.formula_label }} : rien à encaisser, la course passe sur votre facture du mois.</template>
         <template v-else>Aucune formule {{ activityLabel(form.activity) }} en cours : contactez l'agence.</template>
@@ -164,7 +164,7 @@
 
     <!-- 3. L'argent (et les articles du stock) -->
     <section v-else class="m-card p-4 space-y-4" aria-labelledby="step-money">
-      <h2 id="step-money" class="m-step"><span class="m-step-num">3</span>L'argent</h2>
+      <h2 id="step-money" class="m-step"><ColorIcon name="argent" :size="34" />L'argent</h2>
       <button v-if="products.length && !showStock" type="button" class="tap w-full rounded-xl ring-1 ring-slate-200 px-4 py-3 flex items-center justify-between text-sm font-semibold active:bg-slate-50" @click="showStock = true">
         <span>📦 Prendre des articles de mon stock</span><span class="text-slate-400">›</span>
       </button>
@@ -217,7 +217,7 @@
 
     <!-- 4. Quand livrer -->
     <section class="m-card p-4 space-y-4" aria-labelledby="step-when">
-      <h2 id="step-when" class="m-step"><span class="m-step-num">4</span><span>Quand livrer <span class="text-red-600">*</span></span></h2>
+      <h2 id="step-when" class="m-step"><ColorIcon name="calendrier" :size="34" /><span>Quand livrer <span class="text-red-600">*</span></span></h2>
       <div id="when-field" :class="['rounded-2xl', missing.date ? 'ring-2 ring-red-500 p-2 -mx-2' : '']">
         <ChoiceChips v-model="when" :options="deliveryOptions" :columns="3" label="Jour de livraison" />
         <p v-if="closed" class="mt-2 text-xs text-slate-500">🌙 {{ closedReason }} : le ramassage peut quand même se faire aujourd'hui.</p>
@@ -258,7 +258,7 @@
     </section>
 
     <!-- Prix en direct et envoi -->
-    <div v-show="!keyboardOpen" class="fixed bottom-16 inset-x-0 z-20 bg-white/95 backdrop-blur border-t border-slate-200 pb-safe shadow-[0_-6px_18px_rgba(15,23,42,0.06)]">
+    <div v-show="!keyboardOpen" class="fixed bottom-0 inset-x-0 z-20 bg-white/95 backdrop-blur border-t border-slate-200 pb-safe shadow-[0_-6px_18px_rgba(15,23,42,0.06)]">
       <div class="mx-auto max-w-lg px-4 pt-3 pb-3 space-y-2">
         <!-- Distribution, MAD : comment la course sera facturée, et le forfait du mois -->
         <div v-if="billed && quote?.billing" class="text-sm space-y-0.5">
@@ -292,6 +292,7 @@
 </template>
 
 <script setup>
+import ColorIcon from '../../components/mobile/ColorIcon.vue'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
@@ -322,7 +323,9 @@ const activityChoices = computed(() => space.activities.map((a) => ({
   icon: { ecommerce: '🛍️', distribution: '✉️', mad: '🛵' }[a.value],
   description: { ecommerce: 'montant encaissé', distribution: 'plis, colis, chèques', mad: 'mes livreurs attitrés' }[a.value],
 })))
-const defaultActivity = () => space.current || (space.hasEcommerce ? 'ecommerce' : space.activities[0]?.value) || 'ecommerce'
+// Activité choisie dans le menu ＋ (?activite=), sinon celle regardée, sinon l'e-commerce
+const askedActivity = () => (space.activities.some((a) => a.value === route.query.activite) ? route.query.activite : null)
+const defaultActivity = () => askedActivity() || space.current || (space.hasEcommerce ? 'ecommerce' : space.activities[0]?.value) || 'ecommerce'
 const SHIPMENT_TYPES = [
   { value: 'pli', label: 'Pli', icon: '✉️', description: '0-500 g' },
   { value: 'colis', label: 'Colis', icon: '📦', description: '0-5 kg' },
@@ -412,6 +415,8 @@ const plan = computed(() => lots.value.find((l) => l.id === form.billing_plan_id
 // Consommation du forfait du mois (pas pour un lot)
 const usage = computed(() => (form.billing_plan_id ? null : space.planFor(form.activity)))
 // Valeurs par défaut de l'envoi selon l'activité
+// Autre choix dans le menu ＋ pendant la saisie
+watch(() => route.query.activite, () => { if (askedActivity()) form.activity = askedActivity() })
 watch([() => form.activity, plan], (current, old) => {
   if (!billed.value) {
     // Retour à l'e-commerce : « qui paie » redevient un choix explicite

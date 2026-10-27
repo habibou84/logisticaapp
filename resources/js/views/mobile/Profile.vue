@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-4">
     <div class="m-card p-5 flex items-center gap-4">
-      <div class="h-14 w-14 rounded-full grid place-items-center text-xl font-bold text-white" :style="{ backgroundColor: 'var(--app-color)' }">
+      <div class="h-14 w-14 rounded-2xl grid place-items-center text-xl font-bold text-white bg-brand-grad">
         {{ initials }}
       </div>
       <div class="min-w-0">
@@ -16,26 +16,26 @@
     <!-- Client : un menu court, chaque réglage sur sa propre page -->
     <template v-if="merchant">
       <div class="m-card divide-y divide-slate-100 overflow-hidden">
-        <MenuRow v-if="auth.can('integrations.manage')" to="/marchand/boutique" icon="store" label="Ma boutique en ligne" sub="Lien de commande à partager" />
+        <MenuRow v-if="auth.can('integrations.manage')" to="/marchand/boutique" color="boutique" icon="store" label="Ma boutique en ligne" sub="Lien de commande à partager" />
         <MenuRow
-          to="/marchand/lieu-de-ramassage" icon="pin" :tone="merchant.has_pickup_location ? 'slate' : 'amber'" label="Lieu de ramassage"
+          to="/marchand/lieu-de-ramassage" color="lieu" icon="pin" :tone="merchant.has_pickup_location ? 'slate' : 'amber'" label="Lieu de ramassage"
           :sub="!merchant.has_pickup_location ? 'Position à indiquer' : merchant.pickup_location_source === 'courier' ? 'Estimée par nos livreurs : à vérifier' : 'Position enregistrée'"
           :sub-class="merchant.has_pickup_location ? '' : 'text-amber-800 font-medium'"
         />
-        <MenuRow v-if="['merchant_owner', 'merchant_manager'].includes(auth.role)" to="/marchand/equipe" icon="user" tone="blue" label="Mon équipe" sub="Comptes et rôles : gestionnaire, agent, lecteur" />
-        <MenuRow v-if="merchant.activities?.some((a) => a !== 'ecommerce')" to="/marchand/departements" icon="building" tone="violet" label="Mes départements" sub="Qui envoie, qui reçoit, quotas du mois" />
-        <MenuRow to="/marchand/stock" icon="box" label="Mon stock" />
-        <MenuRow v-if="merchant.billing_plans?.length && auth.can('finance.view')" to="/marchand/factures" icon="file" tone="red" label="Mes factures" :sub="merchant.billing_plans.map((p) => p.formula_label).join(', ')" />
+        <MenuRow v-if="['merchant_owner', 'merchant_manager'].includes(auth.role)" to="/marchand/equipe" color="equipe" icon="user" tone="blue" label="Mon équipe" sub="Comptes et rôles : gestionnaire, agent, lecteur" />
+        <MenuRow v-if="merchant.activities?.some((a) => a !== 'ecommerce')" to="/marchand/departements" color="departement" icon="building" tone="violet" label="Mes départements" sub="Qui envoie, qui reçoit, quotas du mois" />
+        <MenuRow to="/marchand/stock" color="stock" icon="box" label="Mon stock" />
+        <MenuRow v-if="merchant.billing_plans?.length && auth.can('finance.view')" to="/marchand/factures" color="facture" icon="file" tone="red" label="Mes factures" :sub="merchant.billing_plans.map((p) => p.formula_label).join(', ')" />
       </div>
 
       <div class="m-card divide-y divide-slate-100 overflow-hidden">
-        <MenuRow to="/marchand/mes-notifications" icon="bell" tone="amber" label="Mes notifications" sub="WhatsApp, téléphone, point d'activité" />
-        <MenuRow v-if="auth.can('finance.view') && merchant.activities?.includes('ecommerce') !== false" to="/marchand/paiements" icon="wallet" tone="green" label="Mon argent" sub="Encaissements et reversements" />
-        <MenuRow to="/marchand/statistiques" icon="chart" tone="blue" label="Mes statistiques" />
-        <MenuRow to="/marchand/a-noter" icon="user" tone="amber" label="Noter les livreurs" sub="Vos dernières courses, votre livreur attitré" />
-        <MenuRow to="/marchand/mes-livreurs" icon="user" tone="slate" label="Mes livreurs" sub="Préféré ou écarté" />
-        <MenuRow v-if="auth.can('orders.create')" to="/marchand/courses/import" icon="upload" tone="blue" label="Importer des courses" sub="Fichier Excel ou CSV" />
-        <MenuRow v-if="auth.can('integrations.manage')" to="/marchand/integrations" icon="plug" tone="violet" label="Intégrations" sub="Jibiat Marchand, API, webhooks" />
+        <MenuRow to="/marchand/mes-notifications" color="cloche" icon="bell" tone="amber" label="Mes notifications" sub="WhatsApp, téléphone, point d'activité" />
+        <MenuRow v-if="auth.can('finance.view') && merchant.activities?.includes('ecommerce') !== false" to="/marchand/paiements" color="argent" icon="wallet" tone="green" label="Mon argent" sub="Encaissements et reversements" />
+        <MenuRow to="/marchand/statistiques" color="stats" icon="chart" tone="blue" label="Mes statistiques" />
+        <MenuRow to="/marchand/a-noter" color="avis" icon="user" tone="amber" label="Noter les livreurs" sub="Vos dernières courses, votre livreur attitré" />
+        <MenuRow to="/marchand/mes-livreurs" color="mad" icon="user" tone="slate" label="Mes livreurs" sub="Préféré ou écarté" />
+        <MenuRow v-if="auth.can('orders.create')" to="/marchand/courses/import" color="excel" icon="upload" tone="blue" label="Importer des courses" sub="Fichier Excel ou CSV" />
+        <MenuRow v-if="auth.can('integrations.manage')" to="/marchand/integrations" color="partage" icon="plug" tone="violet" label="Intégrations" sub="Jibiat Marchand, API, webhooks" />
       </div>
     </template>
 

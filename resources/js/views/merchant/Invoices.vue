@@ -3,7 +3,8 @@
     <ActivitySwitch billed />
 
     <!-- Reste à payer, toutes factures émises confondues -->
-    <div v-if="toPay" :class="['rounded-2xl p-5 text-white', overdue ? 'bg-red-600' : '']" :style="overdue ? {} : { backgroundColor: 'var(--app-color)' }">
+    <div v-if="toPay" :class="['relative overflow-hidden rounded-[24px] p-5 text-white', overdue ? 'bg-gradient-to-br from-[#F0587A] to-[#C02A4E]' : 'bg-brand-grad']">
+      <span class="pointer-events-none absolute -right-10 -top-12 h-40 w-40 rounded-full border-[24px] border-white/10" aria-hidden="true" />
       <p class="text-sm opacity-85">{{ overdue ? 'Dont en retard : ' + money(overdue) : 'Reste à payer' }}</p>
       <p class="text-3xl font-bold mt-0.5">{{ money(toPay) }}</p>
       <p class="mt-1 text-sm opacity-90">Touchez une facture pour voir comment la régler.</p>
@@ -26,8 +27,9 @@
     </section>
 
     <p class="px-1 text-sm text-slate-500">Vos courses de distribution et de MAD sont facturées chaque mois, une facture par activité. Touchez une facture pour la voir ou l'enregistrer en PDF.</p>
-    <RouterLink v-for="i in shown" :key="i.id" :to="`/marchand/factures/${i.id}`" class="tap m-card p-4 flex justify-between items-center gap-3 active:bg-slate-50">
-      <span class="min-w-0">
+    <RouterLink v-for="i in shown" :key="i.id" :to="`/marchand/factures/${i.id}`" class="tap m-card p-4 flex justify-between items-center gap-3 active:scale-[.99] transition">
+      <ColorIcon name="facture" :size="44" />
+      <span class="min-w-0 flex-1">
         <span class="font-medium">{{ i.period_label }}</span> <span class="text-sm text-slate-500">· {{ i.activity_label }}<template v-if="i.department"> · {{ i.department.label }}</template></span>
         <span class="block text-sm text-slate-500">{{ i.number }} · {{ money(i.total) }}</span>
         <span v-if="i.status === 'issued' && i.due_at" :class="['block text-xs', i.is_overdue ? 'text-red-600 font-medium' : 'text-slate-500']">
@@ -38,11 +40,13 @@
         {{ i.status === 'issued' ? `Reste ${money(i.balance)}` : i.status_label }}
       </span>
     </RouterLink>
-    <p v-if="loaded && !shown.length" class="m-card p-6 text-center text-slate-500">Aucune facture pour le moment.</p>
+    <EmptyState v-if="loaded && !shown.length" color="facture" title="Aucune facture pour le moment" text="Vos factures du mois arriveront ici." />
   </div>
 </template>
 
 <script setup>
+import ColorIcon from '../../components/mobile/ColorIcon.vue'
+import EmptyState from '../../components/mobile/EmptyState.vue'
 import { computed, onMounted, ref } from 'vue'
 import http from '../../bootstrap/axios'
 import ActivitySwitch from '../../components/client/ActivitySwitch.vue'

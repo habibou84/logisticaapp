@@ -1,7 +1,8 @@
 <template>
   <!-- Ligne d'un menu (profil) : icône, intitulé, détail, flèche -->
   <component :is="href ? 'a' : RouterLink" v-bind="href ? { href } : { to }" class="tap flex items-center gap-3 px-4 py-3.5 active:bg-slate-50 hover:bg-slate-50">
-    <span :class="['grid h-9 w-9 shrink-0 place-items-center rounded-lg', TONES[tone]]" aria-hidden="true"><StatusIcon :name="icon" class="h-5 w-5" /></span>
+    <ColorIcon v-if="color" :name="color" :size="40" />
+    <span v-else :class="['grid h-9 w-9 shrink-0 place-items-center rounded-lg', TONES[tone]]" aria-hidden="true"><StatusIcon :name="icon" class="h-5 w-5" /></span>
     <span class="min-w-0 flex-1">
       <span class="block font-semibold">{{ label }}</span>
       <span v-if="sub" :class="['block truncate text-sm', subClass || 'text-slate-600']">{{ sub }}</span>
@@ -12,9 +13,12 @@
 
 <script setup>
 import { RouterLink } from 'vue-router'
+import ColorIcon from './ColorIcon.vue'
 import StatusIcon from './StatusIcon.vue'
 
 defineProps({
+  // Icône en couleur (espace client), à la place de l'icône au trait
+  color: { type: String, default: '' },
   to: { type: String, default: '' },
   href: { type: String, default: '' },
   icon: { type: String, required: true },

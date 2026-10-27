@@ -8,8 +8,7 @@
       :style="{ backgroundColor: spaceColor('admin') }"
     >
       <div class="p-4 text-lg font-bold border-b border-white/15 flex items-center gap-2 min-w-0">
-        <img v-if="branding.logo_url" :src="branding.logo_url" alt="" class="h-8 w-8 object-contain shrink-0 rounded bg-white p-0.5">
-        <span v-else aria-hidden="true">🚚</span>
+        <img :src="branding.logo_url || '/brand/anneau.svg'" alt="" class="h-8 w-8 object-contain shrink-0 rounded bg-white p-0.5">
         <span class="truncate">{{ auth.user?.company?.name || 'Administration' }}</span>
       </div>
       <nav class="p-3 space-y-1 flex-1 overflow-y-auto" @click="sidebarOpen = false">

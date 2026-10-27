@@ -44,7 +44,7 @@ import { pwa, promptInstall } from '../../composables/usePwa'
 
 const props = defineProps({ app: { type: String, required: true } })
 
-const color = computed(() => (props.app === 'livreur' ? '#1d4ed8' : '#047857'))
+const color = computed(() => (props.app === 'livreur' ? '#c02125' : '#ec1d27'))
 
 // Icône « Partager » d'iOS : carré ouvert surmonté d'une flèche
 const ShareIcon = () => h('svg', { viewBox: '0 0 24 24', class: 'inline h-4 w-4 align-text-bottom', fill: 'none', stroke: 'currentColor', 'stroke-width': 2, 'aria-label': 'icône Partager' }, [

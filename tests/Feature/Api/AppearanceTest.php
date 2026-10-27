@@ -39,7 +39,7 @@ class AppearanceTest extends TestCase
     {
         Sanctum::actingAs($this->admin);
         $this->getJson('/api/v1/company/appearance')->assertOk()
-            ->assertJsonPath('data.spaces.livreur.color', '#1d4ed8');
+            ->assertJsonPath('data.spaces.livreur.color', '#c02125');
 
         $this->putJson('/api/v1/company/appearance', ['same' => false, 'spaces' => $this->spaces()])->assertOk()
             ->assertJsonPath('data.spaces.marchand.color', '#7c3aed')

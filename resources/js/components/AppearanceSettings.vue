@@ -89,7 +89,7 @@ const SPACES = [
   { key: 'livreur', label: 'Espace livreur', preview: 'Mes missions', app: true, defaultName: 'Livreur', emoji: '🛵' },
   { key: 'admin', label: 'Espace équipe', preview: 'Administration', app: false },
 ]
-const PRESETS = ['#047857', '#1d4ed8', '#0f172a', '#7c3aed', '#be123c', '#c2410c', '#0e7490', '#4d7c0f']
+const PRESETS = ['#ec1d27', '#c02125', '#f26a20', '#1f2937', '#047857', '#1d4ed8', '#7c3aed', '#be123c', '#c2410c', '#0e7490', '#4d7c0f']
 
 const toasts = useToastStore()
 const look = ref(null)

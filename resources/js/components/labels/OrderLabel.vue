@@ -90,6 +90,7 @@ import QRCode from 'qrcode'
 import { useAuthStore } from '../../stores/auth'
 import { dateTime, localPhone, money } from '../../utils/format'
 import { siteOrigin } from '../../native'
+import { DEFAULT_LOGO } from '../../composables/useBranding'
 
 /**
  * Étiquette d'une course (10 × 15 cm) : e-commerce avec le montant à encaisser, distribution avec l'accusé de
@@ -105,7 +106,8 @@ const props = defineProps({
 const auth = useAuthStore()
 const company = computed(() => props.company || auth.user?.company)
 const show = (field) => props.fields?.[field] !== false
-const logo = computed(() => (show('logo') ? company.value?.logo_url || null : null))
+// Sans logo envoyé : celui de Logistica
+const logo = computed(() => (show('logo') ? company.value?.logo_url || DEFAULT_LOGO : null))
 const qr = ref('')
 watchEffect(async () => {
   qr.value = await QRCode.toDataURL(`${siteOrigin()}/suivi/${props.order.tracking_code}`, { margin: 1, width: 240 })

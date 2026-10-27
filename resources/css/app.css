@@ -112,6 +112,36 @@
     @apply m-btn bg-emerald-600 text-white;
 }
 
+/* ─────────── Espace client : style « dégradé doux » (charte Logistica) ─────────── */
+
+/* Ombre très légère des cartes (à la place du contour) */
+@utility shadow-soft {
+    box-shadow: 0 1px 2px rgb(15 23 42 / 0.04), 0 6px 20px -8px rgb(15 23 42 / 0.12);
+}
+/* Dégradé de la couleur de l'entreprise (boutons principaux, carte du jour, bouton +) */
+@utility bg-brand-grad {
+    background-color: var(--app-color);
+    background-image: linear-gradient(135deg, color-mix(in srgb, var(--app-color) 78%, white), var(--app-color) 45%, color-mix(in srgb, var(--app-color) 80%, black));
+}
+/* Fond doux de la couleur de l'entreprise (onglet actif, choix mis en avant) */
+@utility bg-brand-soft {
+    background-color: color-mix(in srgb, var(--app-color) 9%, white);
+}
+/* Texte dans la couleur de l'entreprise, assez foncé pour se lire sur fond blanc */
+@utility text-brand {
+    color: color-mix(in srgb, var(--app-color) 82%, black);
+}
+
+/* Dans l'espace client, les cartes et boutons communs prennent le même style doux */
+.app-marchand .m-card {
+    --tw-ring-shadow: 0 0 #0000;
+    box-shadow: 0 1px 2px rgb(15 23 42 / 0.04), 0 6px 20px -8px rgb(15 23 42 / 0.12);
+}
+.app-marchand .m-btn-primary {
+    background-image: linear-gradient(135deg, color-mix(in srgb, var(--app-color) 78%, white), var(--app-color) 45%, color-mix(in srgb, var(--app-color) 80%, black));
+    box-shadow: 0 10px 24px -12px color-mix(in srgb, var(--app-color) 75%, transparent);
+}
+
 /* Bloc gris qui pulse : forme du contenu pendant le chargement */
 @utility skeleton {
     @apply animate-pulse rounded bg-slate-200 motion-reduce:animate-none;

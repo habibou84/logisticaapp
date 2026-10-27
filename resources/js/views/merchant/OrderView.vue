@@ -3,9 +3,7 @@
     <!-- L'essentiel : où en est la course, en une phrase -->
     <section class="m-card p-4 space-y-4">
       <div class="flex items-start gap-3">
-        <span class="h-12 w-12 shrink-0 rounded-2xl grid place-items-center bg-[color-mix(in_srgb,var(--app-color)_10%,white)] text-[var(--app-color)]" aria-hidden="true">
-          <StatusIcon name="package" class="h-6 w-6" />
-        </span>
+        <ColorIcon :name="state.art" :size="52" />
         <div class="min-w-0 flex-1">
           <p :class="['text-lg font-bold leading-snug flex items-start gap-2', state.color]">
             <StatusIcon :name="state.icon" class="h-[18px] w-[18px] shrink-0 mt-[5px]" /><span>{{ headline }}</span>
@@ -14,7 +12,7 @@
           <button class="mt-0.5 font-mono text-xs text-slate-400" @click="copy(order.tracking_code)">{{ order.tracking_code }} ⧉</button>
         </div>
       </div>
-      <OrderProgress :status="order.status" :incident="order.last_incident?.label" :rescheduled-to="order.delivery.scheduled_date" :shipping="order.is_shipping" />
+      <OrderProgress :status="order.status" :incident="order.last_incident?.label" :rescheduled-to="order.delivery.scheduled_date" :shipping="order.is_shipping" :activity="order.activity" />
       <p v-if="plannedDay" class="flex items-center gap-2 rounded-xl bg-sky-50 px-3 py-2 text-sm text-sky-900"><StatusIcon name="calendar" class="h-4 w-4 shrink-0" /><span>Livraison prévue le <strong>{{ plannedDay }}</strong></span></p>
 
       <!-- Note de suivi de l'agence, quand elle est montrée au client (Réglages › Motifs) -->
@@ -44,10 +42,10 @@
 
       <!-- Actions utiles en un toucher -->
       <div :class="['grid gap-2 text-center text-xs font-medium', courier ? 'grid-cols-3' : 'grid-cols-2']">
-        <a :href="telLink(order.recipient.phone)" class="tap rounded-2xl bg-slate-50 py-3 ring-1 ring-slate-200"><span class="block text-xl">📞</span>Destinataire</a>
-        <a v-if="courier" :href="telLink(courier.phone)" class="tap rounded-2xl bg-slate-50 py-3 ring-1 ring-slate-200"><span class="block text-xl">🛵</span>{{ courier.name.split(' ')[0] }}</a>
-        <a v-if="!isFinal" :href="whatsappShare" target="_blank" class="tap rounded-2xl bg-emerald-50 py-3 ring-1 ring-emerald-200 text-emerald-800"><span class="block text-xl">🔗</span>Envoyer le suivi</a>
-        <button v-else class="tap rounded-2xl bg-slate-50 py-3 ring-1 ring-slate-200" @click="copy(trackingUrl)"><span class="block text-xl">🔗</span>Lien de suivi</button>
+        <a :href="telLink(order.recipient.phone)" class="tap flex flex-col items-center gap-1 rounded-2xl bg-[#F7F8FA] py-3 active:scale-[.98] transition"><ColorIcon name="telephone" :size="34" :tile="false" />Destinataire</a>
+        <a v-if="courier" :href="telLink(courier.phone)" class="tap flex flex-col items-center gap-1 rounded-2xl bg-[#F7F8FA] py-3 active:scale-[.98] transition"><ColorIcon name="moto" :size="34" :tile="false" />{{ courier.name.split(' ')[0] }}</a>
+        <a v-if="!isFinal" :href="whatsappShare" target="_blank" class="tap flex flex-col items-center gap-1 rounded-2xl bg-[#E3F7EE] py-3 text-emerald-800 active:scale-[.98] transition"><ColorIcon name="whatsapp" :size="34" :tile="false" />Envoyer le suivi</a>
+        <button v-else class="tap flex flex-col items-center gap-1 rounded-2xl bg-[#F7F8FA] py-3 active:scale-[.98] transition" @click="copy(trackingUrl)"><ColorIcon name="partage" :size="34" :tile="false" />Lien de suivi</button>
       </div>
     </section>
 
@@ -57,7 +55,7 @@
         <p class="text-sm text-slate-600">{{ myRating.rating ? 'Votre note' : 'Comment s\'est passée la course ?' }}<template v-if="myRating.courier"> · {{ myRating.courier.name }}</template></p>
         <StarRating :model-value="myRating.rating?.stars ?? 0" readonly size="h-6 w-6" />
       </div>
-      <button v-if="myRating.can_rate" type="button" class="tap shrink-0 rounded-xl px-4 py-2.5 text-sm font-semibold text-white" :style="{ backgroundColor: 'var(--app-color)' }" @click="rater.openSheet()">
+      <button v-if="myRating.can_rate" type="button" class="tap shrink-0 rounded-xl bg-brand-grad px-4 py-2.5 text-sm font-semibold text-white" @click="rater.openSheet()">
         {{ myRating.rating ? 'Modifier' : 'Noter' }}
       </button>
     </section>
@@ -84,13 +82,22 @@
         <p class="text-sm text-slate-500">Destinataire</p>
         <button v-if="canEdit" class="text-sm font-medium text-[var(--app-color)]" @click="openEdit">Modifier</button>
       </div>
-      <p class="font-semibold text-lg">{{ order.recipient.name || '—' }}</p>
-      <div class="flex gap-3 text-sm">
-        <a :href="telLink(order.recipient.phone)" class="text-[var(--app-color)] font-medium">📞 {{ localPhone(order.recipient.phone) }}</a>
-        <a v-if="order.recipient.phone2" :href="telLink(order.recipient.phone2)" class="text-[var(--app-color)]">{{ localPhone(order.recipient.phone2) }}</a>
+      <div class="flex items-center gap-3 pt-1">
+        <ColorIcon :name="order.to_department || order.activity === 'distribution' ? 'departement' : 'profil'" :size="40" />
+        <p class="min-w-0 flex-1 truncate font-semibold text-lg">{{ order.recipient.name || '—' }}</p>
       </div>
-      <p class="pt-1">📍 {{ order.delivery.zone_name }}<span v-if="order.delivery.address"> · {{ order.delivery.address }}</span></p>
-      <p v-if="order.delivery.landmark" class="text-sm text-slate-500">Repère : {{ order.delivery.landmark }}</p>
+      <div class="flex items-center gap-3 pt-1 text-sm">
+        <ColorIcon name="telephone" :size="40" />
+        <span class="flex flex-wrap gap-x-3">
+          <a :href="telLink(order.recipient.phone)" class="text-brand font-semibold">{{ localPhone(order.recipient.phone) }}</a>
+          <a v-if="order.recipient.phone2" :href="telLink(order.recipient.phone2)" class="text-brand">{{ localPhone(order.recipient.phone2) }}</a>
+        </span>
+      </div>
+      <div class="flex items-center gap-3 pt-1">
+        <ColorIcon name="lieu" :size="40" />
+        <span class="min-w-0">{{ order.delivery.zone_name }}<span v-if="order.delivery.address"> · {{ order.delivery.address }}</span>
+          <span v-if="order.delivery.landmark" class="block text-sm text-slate-500">Repère : {{ order.delivery.landmark }}</span></span>
+      </div>
     </section>
 
     <!-- Articles -->
@@ -105,7 +112,7 @@
 
     <!-- L'argent de la course : ce qui vous revient -->
     <section class="m-card p-4 space-y-2 text-sm">
-      <h2 class="font-semibold text-base">{{ billedOrder ? 'La facturation de la course' : 'L\'argent de la course' }}</h2>
+      <h2 class="flex items-center gap-2.5 font-semibold text-base"><ColorIcon :name="billedOrder ? 'facture' : 'argent'" :size="34" />{{ billedOrder ? 'La facturation de la course' : 'L\'argent de la course' }}</h2>
       <div v-if="billedOrder" class="flex justify-between">
         <span class="text-slate-500">Activité</span><span>{{ order.activity_label }} · rien à encaisser</span>
       </div>
@@ -248,6 +255,7 @@ import { useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import OrderTimeline from '../../components/OrderTimeline.vue'
 import OrderProgress from '../../components/mobile/OrderProgress.vue'
+import ColorIcon from '../../components/mobile/ColorIcon.vue'
 import MerchantHistory from '../../components/mobile/MerchantHistory.vue'
 import { merchantStatus } from '../../utils/merchantStatus'
 import StatusIcon from '../../components/mobile/StatusIcon.vue'

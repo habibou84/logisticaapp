@@ -1,23 +1,24 @@
 <template>
   <div>
-    <div class="flex items-center">
-      <template v-for="(step, i) in steps" :key="step.key">
-        <div class="flex flex-col items-center gap-1 w-14">
-          <div :class="['h-9 w-9 rounded-full grid place-items-center text-sm font-bold', dotClass(i)]">
-            <span v-if="i < current || (i === current && done)">✓</span>
-            <span v-else>{{ step.icon }}</span>
-          </div>
-          <span :class="['text-[11px] text-center leading-tight', i <= current ? 'text-slate-800 font-medium' : 'text-slate-400']">{{ step.label }}</span>
+    <!-- Quatre étapes, chacune avec son icône en couleur ; la ligne se remplit jusqu'à l'étape atteinte -->
+    <div class="relative flex items-start justify-between px-1">
+      <span class="absolute left-7 right-7 top-[22px] h-1 rounded-full bg-slate-200" aria-hidden="true">
+        <span class="block h-full rounded-full bg-[var(--app-color)] transition-all" :style="{ width: `${(current / (steps.length - 1)) * 100}%` }" />
+      </span>
+      <div v-for="(step, i) in steps" :key="step.key" class="relative flex w-16 flex-col items-center gap-1">
+        <div :class="['grid h-12 w-12 place-items-center rounded-full bg-white border-[3px]', dotClass(i)]">
+          <ColorIcon :name="step.art" :size="28" :tile="false" :class="i > current ? 'opacity-40' : ''" />
         </div>
-        <div v-if="i < steps.length - 1" :class="['flex-1 h-1 rounded -mt-5', i < current ? 'bg-[var(--app-color)]' : 'bg-slate-200']" />
-      </template>
+        <span :class="['text-[11.5px] text-center leading-tight', i <= current ? 'text-slate-800 font-semibold' : 'text-slate-400']">{{ step.label }}</span>
+      </div>
     </div>
-    <p v-if="problem" class="mt-3 rounded-xl bg-red-50 text-red-700 text-sm px-3 py-2">{{ problem }}</p>
+    <p v-if="problem" class="mt-3 rounded-xl bg-[#FFECEF] text-[#C02A4E] text-sm px-3 py-2">{{ problem }}</p>
   </div>
 </template>
 
 <script setup>
 import { computed } from 'vue'
+import ColorIcon from './ColorIcon.vue'
 
 const props = defineProps({
   status: { type: String, required: true },
@@ -25,13 +26,15 @@ const props = defineProps({
   rescheduledTo: { type: String, default: '' },
   // Zone d'expédition : la dernière étape est le dépôt à la gare
   shipping: { type: Boolean, default: false },
+  // Distribution : le pli à la place du colis
+  activity: { type: String, default: '' },
 })
 
 const steps = computed(() => [
-  { key: 'created', label: 'Créée', icon: '1' },
-  { key: 'picked', label: 'Récupérée', icon: '2' },
-  { key: 'way', label: props.shipping ? 'Vers la gare' : 'En chemin', icon: '3' },
-  { key: 'done', label: props.shipping ? 'Expédiée' : 'Livrée', icon: '4' },
+  { key: 'created', label: 'Créée', art: 'plus' },
+  { key: 'picked', label: 'Récupérée', art: props.activity === 'distribution' ? 'pli' : 'colis' },
+  { key: 'way', label: props.shipping ? 'Vers la gare' : 'En chemin', art: 'route' },
+  { key: 'done', label: props.shipping ? 'Expédiée' : 'Livrée', art: 'livre' },
 ])
 
 // Étape atteinte selon le statut de la course
@@ -56,9 +59,9 @@ const problem = computed(() => {
 })
 
 function dotClass(i) {
-  if (failed.value && i === current.value + 1) return 'bg-red-100 text-red-600 ring-2 ring-red-300'
-  if (i < current.value || (i === current.value && done.value)) return 'bg-[var(--app-color)] text-white'
-  if (i === current.value) return 'bg-white ring-2 ring-[var(--app-color)] text-[var(--app-color)]'
-  return 'bg-slate-100 text-slate-400'
+  if (failed.value && i === current.value + 1) return 'border-[#F7B6C8]'
+  if (i < current.value || (i === current.value && done.value)) return 'border-[var(--app-color)]'
+  if (i === current.value) return 'border-[var(--app-color)] shadow-[0_0_0_6px_color-mix(in_srgb,var(--app-color)_15%,transparent)]'
+  return 'border-slate-200'
 }
 </script>

@@ -71,12 +71,12 @@
         <template v-if="needsDecision(o)" #actions>
           <a :href="telLink(o.recipient.phone)" class="tap flex-1 rounded-xl py-2.5 text-center text-sm font-semibold ring-1 ring-slate-200 active:bg-slate-50 inline-flex items-center justify-center gap-1.5"><StatusIcon name="phone" class="h-4 w-4" />Appeler</a>
           <RouterLink v-if="o.status === 'delivery_failed'" :to="`/marchand/courses/${o.id}?action=reporter`" class="tap flex-1 rounded-xl py-2.5 text-center text-sm font-semibold ring-1 ring-slate-200 active:bg-slate-50 inline-flex items-center justify-center gap-1.5"><StatusIcon name="calendar" class="h-4 w-4" />Reporter</RouterLink>
-          <RouterLink :to="`/marchand/courses/${o.id}`" class="tap flex-1 rounded-xl py-2.5 text-center text-sm font-semibold text-white" :style="{ backgroundColor: 'var(--app-color)' }">Décider</RouterLink>
+          <RouterLink :to="`/marchand/courses/${o.id}`" class="tap flex-1 rounded-xl bg-brand-grad py-2.5 text-center text-sm font-bold text-white">Décider</RouterLink>
         </template>
       </OrderCard>
     </section>
 
-    <EmptyState v-if="!loading && !orders.length" icon="search" :title="search ? 'Aucune course trouvée' : emptyTitle" :text="search ? 'Essayez un autre nom, numéro ou n° de course.' : emptyText">
+    <EmptyState v-if="!loading && !orders.length" icon="search" :color="search ? 'recherche' : 'colis'" :title="search ? 'Aucune course trouvée' : emptyTitle" :text="search ? 'Essayez un autre nom, numéro ou n° de course.' : emptyText">
       <RouterLink v-if="!search && filter === 'all' && auth.can('orders.create')" to="/marchand/courses/nouvelle" class="m-btn-primary">+ Nouvelle course</RouterLink>
     </EmptyState>
     <p v-if="loading && orders.length" class="text-center text-slate-500 py-6">Chargement…</p>
@@ -119,7 +119,8 @@ const auth = useAuthStore()
 const space = useClientSpaceStore()
 
 // Étiquettes : courses cochées (annulées et refusées exclues), « À ramasser » : pas encore récupérées
-const printMode = ref(false)
+// Mode étiquettes ouvert d'office depuis l'accueil (?etiquettes=1)
+const printMode = ref(useRoute().query.etiquettes === '1')
 const picked = ref([])
 const TO_COLLECT = ['pending', 'confirmed', 'pickup_assigned', 'pickup_in_progress']
 const printable = (o) => !['cancelled', 'rejected'].includes(o.status)

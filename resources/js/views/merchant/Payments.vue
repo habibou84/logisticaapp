@@ -1,6 +1,7 @@
 <template>
   <div class="space-y-4">
-    <section v-if="summary" class="rounded-2xl p-5 text-white" :style="{ backgroundColor: 'var(--app-color)' }">
+    <section v-if="summary" class="relative overflow-hidden rounded-[24px] bg-brand-grad p-5 text-white shadow-[0_14px_30px_-14px_color-mix(in_srgb,var(--app-color)_80%,transparent)]">
+      <span class="pointer-events-none absolute -right-10 -top-12 h-40 w-40 rounded-full border-[24px] border-white/10" aria-hidden="true" />
       <p class="text-sm opacity-80">{{ summary.available < 0 ? 'Vous devez à l\'agence' : 'On vous doit' }}</p>
       <p class="text-4xl font-bold mt-1">{{ money(Math.abs(summary.available)) }}</p>
       <div class="grid grid-cols-2 gap-3 mt-4 text-sm">
@@ -19,7 +20,7 @@
 
     <!-- Client aussi en distribution ou MAD : ses factures du mois sont à part -->
     <RouterLink v-if="space.hasBilled" to="/marchand/factures" class="tap m-card p-4 flex items-center justify-between text-sm active:bg-slate-50">
-      <span>📄 <strong>Mes factures</strong> <span class="text-slate-500">· distribution, MAD</span></span><span class="text-slate-400">›</span>
+      <span class="flex items-center gap-3"><ColorIcon name="facture" :size="40" /><span><strong>Mes factures</strong> <span class="text-slate-500">· distribution, MAD</span></span></span><span class="text-slate-400">›</span>
     </RouterLink>
 
     <div class="flex rounded-xl bg-slate-200 p-1">
@@ -37,7 +38,7 @@
         <p class="text-sm text-slate-500">{{ date(p.period_start) }} → {{ date(p.period_end) }}</p>
         <p v-if="p.paid_at" class="text-sm text-slate-500">Payé le {{ date(p.paid_at) }} · {{ p.method_label }}</p>
       </RouterLink>
-      <EmptyState v-if="loaded && !payouts.length" icon="💸" title="Aucun paiement pour le moment" text="Vos paiements apparaîtront ici dès que l'agence vous reversera l'argent encaissé." />
+      <EmptyState v-if="loaded && !payouts.length" icon="💸" color="billets" title="Aucun paiement pour le moment" text="Vos paiements apparaîtront ici dès que l'agence vous reversera l'argent encaissé." />
     </template>
 
     <template v-else>
@@ -50,7 +51,7 @@
           <p :class="['font-semibold whitespace-nowrap', signedClass(e.amount)]">{{ e.amount > 0 ? '+' : '' }}{{ money(e.amount) }}</p>
         </div>
       </div>
-      <EmptyState v-if="loaded && !entries.length" icon="🧾" title="Aucune opération" />
+      <EmptyState v-if="loaded && !entries.length" icon="🧾" color="argent" title="Aucune opération" />
     </template>
   </div>
 </template>
@@ -61,6 +62,7 @@ import { useClientSpaceStore } from '../../stores/clientSpace'
 import { cachedGet } from '../../composables/useCachedApi'
 import PayoutBadge from '../../components/PayoutBadge.vue'
 import EmptyState from '../../components/mobile/EmptyState.vue'
+import ColorIcon from '../../components/mobile/ColorIcon.vue'
 import { useAuthStore } from '../../stores/auth'
 import { date, dateTime, money, signedClass } from '../../utils/format'
 

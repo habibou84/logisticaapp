@@ -1,36 +1,66 @@
 <template>
   <div class="space-y-5 pb-14 lg:pb-0">
-    <div>
-      <p class="text-2xl font-bold lg:text-3xl">Bonjour {{ firstName }} 👋</p>
-      <p class="text-slate-600 first-letter:uppercase">{{ todayLabel }}<span v-if="subtitle"> · {{ subtitle }}</span></p>
-    </div>
-
     <ActivitySwitch @change="reload" />
+    <div class="grid gap-4 lg:grid-cols-3 lg:gap-6">
+      <!-- Carte du jour : les courses de la période en un coup d'œil (un appui filtre la liste) -->
+      <section class="relative overflow-hidden rounded-[24px] bg-brand-grad p-5 text-white shadow-[0_14px_30px_-14px_color-mix(in_srgb,var(--app-color)_80%,transparent)]" aria-label="Mes courses de la période">
+        <span class="pointer-events-none absolute -right-10 -top-12 h-44 w-44 rounded-full border-[26px] border-white/10" aria-hidden="true" />
+        <div class="relative flex items-end justify-between gap-3">
+          <div>
+            <p class="text-[13px] font-semibold opacity-90">{{ period.label }}</p>
+            <button type="button" class="tap text-left" :aria-pressed="homeFilter === 'all'" @click="setFilter('all')"><span class="text-[34px] font-extrabold leading-tight tracking-tight">{{ counts.all ?? '–' }}</span> <span class="font-semibold">course{{ counts.all > 1 ? 's' : '' }}</span></button>
+          </div>
+          <span class="rounded-2xl bg-white p-1.5" aria-hidden="true"><ColorIcon name="route" :size="40" :tile="false" /></span>
+        </div>
+        <!-- Catégories de la période : un appui filtre la liste en dessous (on reste sur l'accueil) -->
+        <div class="relative mt-3 grid grid-cols-4 gap-1.5" role="radiogroup" aria-label="Catégorie">
+          <button
+            v-for="b in dayBoxes" :key="b.value" type="button" role="radio" :aria-checked="homeFilter === b.value"
+            :class="['tap rounded-2xl px-2.5 py-2 text-left text-[11.5px] transition', homeFilter === b.value ? 'bg-white text-brand' : 'bg-white/15 active:bg-white/25']"
+            @click="setFilter(homeFilter === b.value ? 'all' : b.value)"
+          >
+            <b class="block text-lg leading-tight">{{ counts[b.value] ?? 0 }}</b>{{ b.label }}
+          </button>
+        </div>
+        <p v-if="todoCount" class="relative mt-3 text-[13px] font-medium opacity-95">⚠️ {{ subtitle }}</p>
+      </section>
+
+      <!-- Actions rapides : envoyer selon les activités du client, importer, coller un message, étiquettes -->
+      <section v-if="quick.length" class="lg:col-span-2 lg:m-card lg:p-5" aria-label="Actions rapides">
+        <h2 class="mb-3 hidden text-base font-bold text-slate-800 lg:block">Actions rapides</h2>
+        <div class="grid grid-cols-4 gap-2 lg:grid-cols-6">
+          <!-- Téléphone : une rangée de quatre ; ordinateur : jusqu'à six -->
+          <RouterLink v-for="(q, i) in quick" :key="q.to" :to="q.to" :class="i >= 4 ? 'hidden lg:flex' : 'flex'" class="tap flex-col items-center gap-1.5 text-center text-[11.5px] font-semibold leading-tight text-slate-700 active:scale-95 transition lg:text-[13px]">
+            <ColorIcon :name="q.color" :size="54" />{{ q.label }}
+          </RouterLink>
+        </div>
+      </section>
+    </div>
 
     <!-- Mobile : à faire, puis les courses, puis le compte. Ordinateur : le compte en haut, les courses à côté du « À faire » -->
     <div class="flex flex-col gap-5 lg:grid lg:grid-cols-3 lg:gap-6">
       <!-- Ce qui attend le client : décisions, lieu de ramassage, facture, stock bas -->
       <section v-if="todoCount" class="space-y-2 lg:col-start-3 lg:row-start-2 lg:self-start">
         <h2 class="px-1 text-base font-bold text-slate-800">À faire</h2>
-        <div class="m-card divide-y divide-slate-100 overflow-hidden ring-amber-200">
+        <div class="m-card divide-y divide-slate-100 overflow-hidden">
           <RouterLink v-if="needsPickupLocation" to="/marchand/lieu-de-ramassage" class="tap flex items-center gap-3 p-4 active:bg-slate-50">
-            <span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-amber-50 text-amber-700"><StatusIcon name="pin" class="h-5 w-5" /></span>
+            <ColorIcon name="lieu" :size="42" />
             <span class="min-w-0 flex-1"><strong class="block">Indiquez où récupérer vos colis</strong><span class="text-sm text-slate-600">En un geste, depuis votre boutique</span></span>
             <StatusIcon name="right" class="h-5 w-5 shrink-0 text-slate-400" />
           </RouterLink>
           <RouterLink v-for="o in visibleAlerts" :key="o.id" :to="`/marchand/courses/${o.id}`" class="tap flex items-center gap-3 p-4 active:bg-slate-50">
-            <span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-amber-50 text-amber-700"><StatusIcon name="alert" class="h-5 w-5" /></span>
+            <ColorIcon name="aregler" :size="42" />
             <span class="min-w-0 flex-1">
               <strong class="block truncate">{{ o.last_incident?.label || o.status_label }}</strong>
               <span class="block truncate text-sm text-slate-600">{{ o.recipient.name || localPhone(o.recipient.phone) }} · {{ o.delivery.zone_name }}</span>
             </span>
-            <span class="shrink-0 rounded-lg px-3 py-2 text-sm font-semibold text-white" :style="{ backgroundColor: 'var(--app-color)' }">Décider</span>
+            <span class="shrink-0 rounded-xl bg-brand-grad px-3 py-2 text-sm font-bold text-white">Décider</span>
           </RouterLink>
           <button v-if="alerts.length > visibleAlerts.length" type="button" class="w-full py-3 text-sm font-semibold text-amber-800" @click="showAllAlerts = true">
             Voir les {{ alerts.length - visibleAlerts.length }} autres
           </button>
           <RouterLink v-if="invoiceDue" to="/marchand/factures" class="tap flex items-center gap-3 p-4 active:bg-slate-50">
-            <span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-red-50 text-red-700"><StatusIcon name="file" class="h-5 w-5" /></span>
+            <ColorIcon name="facture" :size="42" />
             <span class="min-w-0 flex-1">
               <strong class="block">{{ invoices.overdue ? 'Facture en retard' : 'Facture à payer' }}</strong>
               <span :class="['text-sm', invoices.overdue ? 'font-medium text-red-700' : 'text-slate-600']">
@@ -41,18 +71,18 @@
           </RouterLink>
           <!-- Notation des livreurs : courses récentes, livreur attitré de la période -->
           <RouterLink v-if="toRate" to="/marchand/a-noter" class="tap flex items-center gap-3 p-4 active:bg-slate-50">
-            <span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-amber-50 text-amber-700"><StatusIcon name="user" class="h-5 w-5" /></span>
+            <ColorIcon name="avis" :size="42" />
             <span class="min-w-0 flex-1"><strong class="block">{{ toRateText }}</strong><span class="text-sm text-slate-600">Votre avis en quelques secondes</span></span>
             <StatusIcon name="right" class="h-5 w-5 shrink-0 text-slate-400" />
           </RouterLink>
           <!-- Étiquettes obligatoires avant le ramassage (réglage de l'agence) -->
           <RouterLink v-if="unprinted.length" :to="`/etiquettes?ids=${unprinted.join(',')}`" class="tap flex items-center gap-3 p-4 active:bg-slate-50">
-            <span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-amber-50 text-amber-700" aria-hidden="true">🏷️</span>
+            <ColorIcon name="etiquette" :size="42" />
             <span class="min-w-0 flex-1"><strong class="block">{{ unprinted.length }} étiquette{{ unprinted.length > 1 ? 's' : '' }} à imprimer</strong><span class="text-sm text-slate-600">À coller sur les colis avant le ramassage</span></span>
             <StatusIcon name="right" class="h-5 w-5 shrink-0 text-slate-400" />
           </RouterLink>
           <RouterLink v-if="stock.low" to="/marchand/stock?filtre=bas" class="tap flex items-center gap-3 p-4 active:bg-slate-50">
-            <span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-amber-50 text-amber-700"><StatusIcon name="box" class="h-5 w-5" /></span>
+            <ColorIcon name="stock" :size="42" />
             <span class="min-w-0 flex-1"><strong class="block">{{ stock.low }} produit{{ stock.low > 1 ? 's' : '' }} en stock bas</strong><span class="text-sm text-slate-600">À réapprovisionner</span></span>
             <StatusIcon name="right" class="h-5 w-5 shrink-0 text-slate-400" />
           </RouterLink>
@@ -68,25 +98,10 @@
 
         <PeriodPicker menu :model-value="period" @update:model-value="setPeriod" />
 
-        <!-- Catégories de la période : on choisit ici, la liste en dessous suit (on reste sur l'accueil) -->
         <!-- Chef de service : demandes de ses agents à valider -->
         <RouterLink v-if="counts.approval" :to="{ path: '/marchand/courses', query: { filtre: 'approval' } }" class="tap mb-2 flex items-center justify-between rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-900 ring-1 ring-amber-200">
           <span>✋ {{ counts.approval }} demande{{ counts.approval > 1 ? 's' : '' }} à valider</span><span aria-hidden="true">›</span>
         </RouterLink>
-        <div class="grid grid-cols-5 gap-1.5" role="radiogroup" aria-label="Catégorie">
-          <button
-            v-for="f in ORDER_FILTERS.filter((x) => !x.hideEmpty)"
-            :key="f.value"
-            type="button"
-            role="radio"
-            :aria-checked="homeFilter === f.value"
-            :class="['tap rounded-xl bg-white py-2.5 text-center ring-1 transition', homeFilter === f.value ? 'ring-2 ring-[var(--app-color)] bg-[color-mix(in_srgb,var(--app-color)_8%,white)]' : f.warn && counts[f.value] ? 'ring-amber-300' : 'ring-slate-200']"
-            @click="setFilter(f.value)"
-          >
-            <p :class="['text-lg font-bold leading-tight', counts[f.value] ? f.color : 'text-slate-300']">{{ counts[f.value] ?? '–' }}</p>
-            <p class="text-xs leading-tight text-slate-600">{{ f.short }}</p>
-          </button>
-        </div>
 
         <!-- Argent de la période, en une phrase -->
         <p v-if="summary && summary.amounts.collected && space.showsEcommerce" class="m-card px-4 py-3 text-sm text-slate-600">
@@ -99,14 +114,14 @@
         <OrderCard v-for="o in orders" :key="o.id" :order="o" :to="`/marchand/courses/${o.id}`" />
         <!-- Courses à livrer après aujourd'hui : elles arriveront dans « Aujourd'hui » le jour venu -->
         <button v-if="isToday && laterCount" type="button" class="tap w-full m-card px-4 py-3 flex items-center gap-3 text-sm text-left active:bg-slate-50" @click="setPeriod(laterPeriod())">
-          <span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-700"><StatusIcon name="calendar" class="h-5 w-5" /></span>
+          <ColorIcon name="calendrier" :size="42" />
           <span class="flex-1"><strong>Prévues plus tard ({{ laterCount }})</strong><span class="block text-slate-600">Courses à livrer les prochains jours</span></span>
           <StatusIcon name="right" class="h-5 w-5 text-slate-400" />
         </button>
         <button v-if="hasMore" type="button" class="m-btn-secondary" :disabled="loadingMore" @click="loadOrders(page + 1)">Voir plus</button>
         <EmptyState
           v-if="loaded && !orders.length"
-          icon="package"
+          icon="package" color="colis"
           :title="homeFilter !== 'all' ? 'Aucune course dans cette catégorie' : isToday ? 'Aucune course aujourd\'hui' : 'Aucune course sur cette période'"
           :text="isToday ? 'Créez une course en un instant.' : 'Choisissez d\'autres dates.'"
         >
@@ -123,14 +138,14 @@
           </template>
           <AccountTile
             v-if="balance && space.showsEcommerce"
-            to="/marchand/paiements" icon="wallet" :tone="balance.available < 0 ? 'red' : 'green'"
+            to="/marchand/paiements" icon="wallet" color="argent" :tone="balance.available < 0 ? 'red' : 'green'"
             :label="balance.available < 0 ? 'Vous devez à l\'agence' : 'On vous doit'"
             :value="money(Math.abs(balance.available))"
             :sub="balance.pending_cash ? `+ ${money(balance.pending_cash)} chez les livreurs` : 'Voir mes paiements'"
           />
           <AccountTile
             v-if="space.showsBilled && space.space && auth.can('finance.view')"
-            to="/marchand/factures" icon="file" :tone="invoices.to_pay ? 'red' : 'slate'"
+            to="/marchand/factures" icon="file" color="facture" :tone="invoices.to_pay ? 'red' : 'slate'"
             :label="invoices.to_pay ? (invoices.overdue ? 'Facture en retard' : 'Facture à payer') : 'Mes factures'"
             :value="invoices.to_pay ? money(invoices.to_pay) : 'À jour'"
             :sub="invoices.to_pay && invoices.next_due ? `${invoices.overdue ? 'depuis le' : 'avant le'} ${date(invoices.next_due)}` : 'aucune facture à payer'"
@@ -138,7 +153,7 @@
           />
           <AccountTile
             v-for="p in (space.showsBilled ? space.plans : [])" :key="`plan-${p.id}`"
-            icon="box" :tone="p.has_forfait && p.percent >= 80 ? 'amber' : 'violet'"
+            icon="box" color="forfait" :tone="p.has_forfait && p.percent >= 80 ? 'amber' : 'violet'"
             :label="p.has_forfait ? `Forfait ${p.activity === 'mad' ? 'MAD' : p.activity_label.toLowerCase()}` : p.formula_label"
             :value="p.has_forfait ? `${p.used} / ${p.included}` : `${p.orders} envoi${p.orders > 1 ? 's' : ''}`"
             :sub="p.has_forfait ? (p.over ? `${p.over} en plus du forfait` : `${p.unit_label} ce mois-ci`) : 'ce mois-ci'"
@@ -147,20 +162,20 @@
           />
           <AccountTile
             v-for="l in lots" :key="`lot-${l.id}`"
-            icon="package" tone="blue" :label="`Lot · ${l.lot_name}`"
+            icon="package" color="lot" tone="blue" :label="`Lot · ${l.lot_name}`"
             :value="`${l.delivered} / ${l.lot_quantity}`" :sub="l.done ? 'entièrement distribué' : 'colis livrés'"
             :percent="Math.round(100 * l.delivered / Math.max(1, l.lot_quantity))"
             @click="sheet = { type: 'lot', lot: l }"
           />
           <AccountTile
             v-if="couriers.length"
-            icon="phone" tone="violet" :label="couriers.length > 1 ? 'Mes livreurs MAD' : 'Mon livreur MAD'"
+            icon="phone" color="mad" tone="violet" :label="couriers.length > 1 ? 'Mes livreurs MAD' : 'Mon livreur MAD'"
             :value="couriers.length > 1 ? `${couriers.length} livreurs` : couriers[0].name" :sub="couriers.length > 1 ? 'les appeler' : couriers[0].status_label"
             @click="sheet = { type: 'couriers' }"
           />
-          <AccountTile v-if="loaded" to="/marchand/statistiques" icon="chart" tone="blue" label="Statistiques" :value="month ? `${month.counts.total} course${month.counts.total > 1 ? 's' : ''}` : 'Voir'" sub="ce mois-ci" />
+          <AccountTile v-if="loaded" to="/marchand/statistiques" icon="chart" color="stats" tone="blue" label="Statistiques" :value="month ? `${month.counts.total} course${month.counts.total > 1 ? 's' : ''}` : 'Voir'" sub="ce mois-ci" />
           <AccountTile
-            v-if="stock.total" :to="stock.low ? '/marchand/stock?filtre=bas' : '/marchand/stock'" icon="box" :tone="stock.low ? 'amber' : 'slate'"
+            v-if="stock.total" :to="stock.low ? '/marchand/stock?filtre=bas' : '/marchand/stock'" icon="box" color="stock" :tone="stock.low ? 'amber' : 'slate'"
             label="Mon stock" :value="`${stock.total} produit${stock.total > 1 ? 's' : ''}`" :sub="stock.low ? `${stock.low} en stock bas` : 'voir le stock'"
             :sub-class="stock.low ? 'font-medium text-amber-800' : ''"
           />
@@ -202,6 +217,7 @@ import OrderCard from '../../components/mobile/OrderCard.vue'
 import EmptyState from '../../components/mobile/EmptyState.vue'
 import BottomSheet from '../../components/mobile/BottomSheet.vue'
 import SkeletonList from '../../components/mobile/SkeletonList.vue'
+import ColorIcon from '../../components/mobile/ColorIcon.vue'
 import StatusIcon from '../../components/mobile/StatusIcon.vue'
 import AccountTile from '../../components/client/AccountTile.vue'
 import InstallBanner from '../../components/mobile/InstallBanner.vue'
@@ -223,8 +239,21 @@ const space = useClientSpaceStore()
 const scoped = (params = {}) => ({ ...params, activity: space.current || undefined })
 const route = useRoute()
 const router = useRouter()
-const firstName = computed(() => (auth.user?.name || '').split(' ')[0])
-const todayLabel = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
+// Carte du jour : en cours, livrées, à régler (un appui filtre la liste en dessous)
+const dayBoxes = [{ value: 'active', label: 'en cours' }, { value: 'delivered', label: 'livrées' }, { value: 'problems', label: 'à régler' }, { value: 'other', label: 'retours' }]
+// Actions rapides : envoyer selon les activités du client, puis importer, coller un message, étiquettes
+const has = (activity) => space.activities.some((a) => a.value === activity)
+const quick = computed(() => {
+  if (!auth.can('orders.create')) return []
+  return [
+    ...(has('ecommerce') ? [{ to: '/marchand/courses/nouvelle?activite=ecommerce', color: 'colis', label: 'Nouvelle course' }] : []),
+    ...(has('distribution') ? [{ to: '/marchand/courses/nouvelle?activite=distribution', color: 'pli', label: 'Envoyer des plis' }] : []),
+    ...(has('mad') ? [{ to: '/marchand/courses/nouvelle?activite=mad', color: 'mad', label: 'Demander un livreur' }] : []),
+    { to: '/marchand/courses/import', color: 'excel', label: 'Plusieurs courses' },
+    { to: '/marchand/courses/nouvelle?coller=1', color: 'coller', label: 'Coller WhatsApp' },
+    ...(auth.user?.merchant?.label_settings?.client_print !== 'no' ? [{ to: '/marchand/courses?etiquettes=1', color: 'etiquette', label: 'Étiquettes' }] : []),
+  ]
+})
 
 // Période affichée : aujourd'hui par défaut, ou celle de l'adresse (?periode=…) au retour d'une fiche
 const period = ref(periodFromQuery(route.query, 'today'))

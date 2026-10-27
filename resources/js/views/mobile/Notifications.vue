@@ -3,7 +3,7 @@
     <div class="flex justify-end">
       <button v-if="store.unread" class="text-sm font-medium text-[var(--app-color)]" @click="store.markAllRead()">Tout marquer comme lu</button>
     </div>
-    <EmptyState v-if="store.loaded && !store.items.length" icon="🔔" title="Aucune notification" text="Vous serez prévenu ici de chaque étape importante." />
+    <EmptyState v-if="store.loaded && !store.items.length" icon="🔔" color="cloche" title="Aucune notification" text="Vous serez prévenu ici de chaque étape importante." />
     <button
       v-for="n in store.items"
       :key="n.id"

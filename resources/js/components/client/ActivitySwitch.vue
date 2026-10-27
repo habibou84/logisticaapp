@@ -21,8 +21,7 @@
   <div v-else-if="choices.length > 1" class="flex gap-2 overflow-x-auto no-scrollbar -mx-1 px-1" role="group" aria-label="Activité affichée">
     <button
       v-for="a in [{ value: '', label: 'Tout' }, ...choices]" :key="a.value" type="button"
-      :class="['tap shrink-0 rounded-full px-3.5 py-1.5 text-sm font-medium ring-1', active === a.value ? 'text-white ring-transparent' : 'bg-white ring-slate-200 text-slate-700']"
-      :style="active === a.value ? { backgroundColor: 'var(--app-color)' } : {}"
+      :class="['tap shrink-0 rounded-full px-3.5 py-1.5 text-sm font-semibold transition', active === a.value ? 'bg-slate-900 text-white' : 'bg-white text-slate-600 shadow-soft']"
       :aria-pressed="active === a.value"
       @click="choose(a.value)"
     >

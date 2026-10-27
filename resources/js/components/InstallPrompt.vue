@@ -42,7 +42,7 @@ const dismissed = ref(readDismissed())
 
 const app = computed(() => (route.path.startsWith('/livreur') ? 'livreur' : 'marchand'))
 const label = computed(() => (app.value === 'livreur' ? 'livreur' : ''))
-const color = computed(() => (app.value === 'livreur' ? '#1d4ed8' : '#047857'))
+const color = computed(() => (app.value === 'livreur' ? '#c02125' : '#ec1d27'))
 const benefits = computed(() => (app.value === 'livreur'
   ? ['Vos missions en un geste, en plein écran', 'Notifications des nouvelles missions', 'Fonctionne même avec une connexion faible']
   : ['Créez et suivez vos courses en un geste', 'Vos encaissements et reversements toujours à portée', 'Fonctionne même avec une connexion faible']))

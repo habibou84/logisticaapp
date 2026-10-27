@@ -43,10 +43,23 @@ function line(order) {
   }
 }
 
+// Icône en couleur de l'étape (ColorIcon) : le pli pour la distribution, le colis sinon
+const ART = {
+  pending: 'attente', confirmed: 'attente', pickup_assigned: 'moto', pickup_in_progress: 'moto',
+  picked_up: 'colis', at_hub: 'colis', delivery_assigned: 'colis', out_for_delivery: 'route', delivered: 'livre',
+  delivery_failed: 'aregler', rescheduled: 'calendrier', return_assigned: 'retour', returning: 'retour', returned: 'retour',
+  cancelled: 'attente', rejected: 'aregler', lost: 'aregler',
+}
+
+function art(order) {
+  const name = order.status === 'delivery_failed' && order.return_requested ? 'retour' : ART[order.status] || 'colis'
+  return name === 'colis' && order.activity === 'distribution' ? 'pli' : name
+}
+
 export function merchantStatus(order) {
   const [icon, text, tone] = line(order)
 
-  return { icon, text, tone, ...TONES[tone] }
+  return { icon, text, tone, art: art(order), ...TONES[tone] }
 }
 
 /** La course attend-elle une décision ? (calculé par le serveur, comme la file « À décider » de l'agence) */

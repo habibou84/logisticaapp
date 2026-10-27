@@ -18,9 +18,10 @@ class Appearance
     public const APPS = ['marchand', 'livreur'];
 
     public const DEFAULTS = [
-        'marchand' => ['color' => '#047857', 'app_name' => 'Mes livraisons'],
-        'livreur' => ['color' => '#1d4ed8', 'app_name' => 'Livreur'],
-        'admin' => ['color' => '#0f172a'],
+        // Charte Logistica : rouge (client), rouge foncé (livreur, plus lisible en plein soleil), graphite (équipe)
+        'marchand' => ['color' => '#ec1d27', 'app_name' => 'Mes livraisons'],
+        'livreur' => ['color' => '#c02125', 'app_name' => 'Livreur'],
+        'admin' => ['color' => '#1f2937'],
     ];
 
     /** Tailles des icônes : nom => [taille, part occupée par le logo] */
