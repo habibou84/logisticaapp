@@ -14,6 +14,7 @@ use App\Services\Finance\Fne;
 use App\Services\Finance\Vat;
 use App\Services\Labels\LabelSettings;
 use App\Services\Orders\ActivityOptions;
+use App\Services\Orders\DeliveryDayRule;
 use App\Services\Photos\PhotoSettings;
 use App\Services\Ratings\RatingSettings;
 use App\Services\Vehicles\VehicleSettings;
@@ -53,6 +54,9 @@ class CompanyController extends Controller
         }
         if (array_key_exists('label_settings', $data)) {
             $data['label_settings'] = LabelSettings::clean((array) ($data['label_settings'] ?? []));
+        }
+        if (array_key_exists('delivery_day_rules', $data)) {
+            $data['delivery_day_rules'] = DeliveryDayRule::clean((array) ($data['delivery_day_rules'] ?? []));
         }
         if (array_key_exists('photo_settings', $data)) {
             $data['photo_settings'] = PhotoSettings::clean((array) ($data['photo_settings'] ?? []));

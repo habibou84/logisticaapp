@@ -81,7 +81,7 @@ class OrderWorkflow
                 throw new BusinessRuleException('Cette course attend la validation du chef de service du client.', 'status');
             }
 
-            $this->authorizeActor($actor, $order, $from, $to);
+            $this->authorizeActor($actor, $order, $from, $to, $context);
             $this->validate($order, $from, $to, $reason, $context);
 
             $assignment = $this->applyEffects($order, $from, $to, $reason, $context);
@@ -183,7 +183,7 @@ class OrderWorkflow
         return $reason;
     }
 
-    private function authorizeActor(User $actor, Order $order, OrderStatus $from, OrderStatus $to): void
+    private function authorizeActor(User $actor, Order $order, OrderStatus $from, OrderStatus $to, array $context = []): void
     {
         // Déclarer un colis perdu engage la caisse : administrateur (dispatch + finance) uniquement
         if ($to === OrderStatus::Lost) {
@@ -241,6 +241,12 @@ class OrderWorkflow
                 OrderStatus::Returning, OrderStatus::Returned => $holds(AssignmentType::Return),
                 default => false,
             };
+
+            // Livraison prévue un autre jour (réglage par activité) : à régler avec l'agence
+            if ($allowed && in_array($to, [OrderStatus::OutForDelivery, OrderStatus::Delivered, OrderStatus::DeliveryFailed, OrderStatus::Rescheduled], true)
+                && ($refusal = app(DeliveryDayRule::class)->refusal($order, $context['occurred_at'] ?? null)) !== null) {
+                throw new BusinessRuleException($refusal, 'status');
+            }
 
             if ($allowed) {
                 return;

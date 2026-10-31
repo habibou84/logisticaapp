@@ -18,6 +18,7 @@ use App\Services\Assignment\MadCouriers;
 use App\Services\Couriers\CourierCapabilities;
 use App\Services\Couriers\CourierTracker;
 use App\Services\Finance\CourierPay;
+use App\Services\Orders\DeliveryDayRule;
 use App\Services\Orders\OrderDispatcher;
 use App\Services\Vehicles\VehicleChecks;
 use Illuminate\Http\Request;
@@ -51,6 +52,18 @@ class CourierSpaceController extends Controller
             ->orderBy('assigned_at')
             ->get();
 
+        // Livraisons d'un autre jour (réglage par activité) : pas montrées, elles se règlent à l'agence
+        $otherDays = 0;
+        if (! $request->boolean('history')) {
+            $rule = app(DeliveryDayRule::class);
+            $assignments = $assignments->filter(function (OrderAssignment $a) use ($rule, &$otherDays) {
+                $keep = $a->type !== AssignmentType::Delivery || $rule->allows($a->order);
+                $otherDays += $keep ? 0 : 1;
+
+                return $keep;
+            })->values();
+        }
+
         // Consignes de l'agence non lues, par course
         $unread = CourierMessage::where('courier_id', $courier->id)->whereNull('read_at')
             ->whereIn('order_id', $assignments->pluck('order_id'))
@@ -79,6 +92,8 @@ class CourierSpaceController extends Controller
 
         return OrderAssignmentResource::collection($assignments)->additional(['meta' => [
             'acceptance' => $courier->acceptanceMode(),
+            // Livraisons confiées mais prévues un autre jour (cachées)
+            'other_days' => $otherDays,
             // Mis à disposition d'un client aujourd'hui (bandeau de l'application)
             'mad' => app(MadCouriers::class)->of($courier),
             // Toutes consignes non lues (y compris sur des missions terminées)

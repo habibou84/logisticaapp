@@ -64,6 +64,9 @@ class UpdateCompanyRequest extends FormRequest
             ...Fne::rules(),
             ...LabelSettings::rules(),
             ...PhotoSettings::rules(),
+            // Jour où le livreur peut livrer : jour même, dans le délai, sans limite
+            'delivery_day_rules' => ['sometimes', 'nullable', 'array:ecommerce,distribution,mad'],
+            'delivery_day_rules.*' => ['nullable', 'in:same_day,within_delay,none'],
             // Moyens de paiement des factures : comptes bancaires, Mobile Money, chèque… au choix de l'entreprise
             ...InvoicePayments::rules(),
             // Délai interne de distribution par activité, en heures (vide : aucun)

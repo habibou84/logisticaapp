@@ -124,7 +124,8 @@ class OrderIncidentTest extends TestCase
         $edit = $order->events()->where('type', 'edited')->first();
         $this->assertSame('Yopougon Siporex', $edit->meta['changes']['delivery_address']['from']);
 
-        // Nouvelle tentative
+        // Nouvelle tentative, le jour prévu (le livreur ne livre que les colis du jour)
+        $this->travel(1)->days();
         $this->sendOut($order);
         $this->move($order, 'delivered')->assertOk();
     }

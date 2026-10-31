@@ -66,6 +66,11 @@
       </p>
     </div>
 
+    <!-- Livraisons confiées mais prévues un autre jour : cachées, à voir avec l'agence -->
+    <p v-if="otherDays" class="rounded-2xl bg-slate-100 px-4 py-3 text-sm text-slate-700">
+      📅 {{ otherDays }} livraison{{ otherDays > 1 ? 's' : '' }} prévue{{ otherDays > 1 ? 's' : '' }} un autre jour ne {{ otherDays > 1 ? 'sont' : 'est' }} pas affichée{{ otherDays > 1 ? 's' : '' }} : voyez avec l'agence.
+    </p>
+
     <!-- Invitation à activer les notifications push -->
     <div v-if="showPushInvite" class="rounded-2xl bg-amber-50 ring-1 ring-amber-200 p-4 space-y-2">
       <p class="font-semibold text-amber-900">🔔 Soyez prévenu même téléphone en veille</p>
@@ -215,6 +220,7 @@ const visible = computed(() => {
   return [...list].sort((a, b) => (lotOf(a) === lotOf(b) ? 0 : lotOf(a) === 0 ? 1 : lotOf(b) === 0 ? -1 : lotOf(a) - lotOf(b)))
 })
 const mad = ref(null)
+const otherDays = ref(0)
 const vehicle = ref(null)
 // Événements terrain signalés et pas encore réglés
 const reporting = ref(false)
@@ -272,6 +278,7 @@ async function load() {
     missions.value = withPending(m.data.data)
     messages.setUnread(m.data.meta?.unread_messages)
     mad.value = m.data.meta?.mad || null
+    otherDays.value = m.data.meta?.other_days || 0
     vehicle.value = m.data.meta?.vehicle || null
     wallet.value = w.data.data
     stale.value = m.stale || w.stale

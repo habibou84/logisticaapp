@@ -202,6 +202,25 @@
         <p class="text-xs text-gray-500">Un client peut avoir son propre choix (Clients › Modifier › Étiquettes).</p>
       </section>
 
+      <!-- Jour où le livreur peut livrer, par activité -->
+      <section v-if="form.delivery_day_rules" class="card p-4 space-y-3">
+        <h2 class="font-semibold">Livraisons du jour dans l'application livreur</h2>
+        <p class="text-sm text-gray-600">
+          Le livreur ne voit et ne fait que les livraisons permises ici. Les retards et les jours à venir se règlent à
+          l'agence (nouvelle date ou annulation). Une action faite hors connexion est jugée au jour où elle a été faite.
+        </p>
+        <div class="grid sm:grid-cols-3 gap-3">
+          <div v-for="a in DAY_RULE_ACTIVITIES" :key="a.value">
+            <label class="label" :for="`day-rule-${a.value}`">{{ a.label }}</label>
+            <select :id="`day-rule-${a.value}`" v-model="form.delivery_day_rules[a.value]" class="input">
+              <option value="same_day">Jour même seulement</option>
+              <option value="within_delay">Jour même, ou encore dans le délai (délai interne, échéance du lot)</option>
+              <option value="none">Sans limite de date</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
       <!-- Photos de documents : scanner de l'application livreur (recadrage, redressement, nettoyage, contrôle) -->
       <section v-if="form.photo_settings" class="card p-4 space-y-3">
         <h2 class="font-semibold">Photos de documents</h2>
@@ -278,8 +297,13 @@ const { form, dirty, saving, error, save, reset } = useCompanySettings([
   'validation_mode', 'daily_cutoff_time', 'default_max_attempts', 'require_delivery_code', 'offline_courier_actions', 'pickup_mission_custody', 'depot_closes_at', 'auto_pickup',
   'mission_acceptance', 'unreachable_minutes', 'late_pickup_alert_minutes', 'courier_available_alert',
   'auto_delivery', 'auto_delivery_max_cod', 'same_courier_delivery', 'cutoff_by_day', 'internal_delays',
-  'activity_options', 'label_settings', 'photo_settings',
+  'activity_options', 'label_settings', 'photo_settings', 'delivery_day_rules',
 ])
+const DAY_RULE_ACTIVITIES = [
+  { value: 'ecommerce', label: 'E-commerce' },
+  { value: 'distribution', label: 'Distribution' },
+  { value: 'mad', label: 'Mise à disposition (MAD)' },
+]
 const SCAN_PLACES = {
   delivery_proof: 'Accusé de réception, décharge',
   receipts: 'Tickets d\'expédition, reçus de frais',

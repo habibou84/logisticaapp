@@ -40,6 +40,8 @@ class Company extends Model
         'label_settings',
         // Photos de documents : scanner, rendu, contrôle de qualité, original gardé
         'photo_settings',
+        // Jour où le livreur peut livrer, par activité
+        'delivery_day_rules',
         'invoice_payment_methods',
         'internal_delays',
         'activity_options',
@@ -113,6 +115,7 @@ class Company extends Model
             'fne_settings' => 'array',
             'label_settings' => 'array',
             'photo_settings' => 'array',
+            'delivery_day_rules' => 'array',
             'fne_api_key' => 'encrypted',
             'fne_warning' => 'boolean',
             'fne_balance_sticker' => 'integer',

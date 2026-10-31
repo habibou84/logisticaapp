@@ -11,6 +11,7 @@ use App\Services\Finance\Fne;
 use App\Services\Finance\Vat;
 use App\Services\Labels\LabelSettings;
 use App\Services\Orders\ActivityOptions;
+use App\Services\Orders\DeliveryDayRule;
 use App\Services\Photos\PhotoSettings;
 use App\Services\Ratings\RatingSettings;
 use App\Services\Vehicles\VehicleSettings;
@@ -76,6 +77,8 @@ class CompanyResource extends JsonResource
             'label_settings' => app(LabelSettings::class)->for($this->resource),
             // Photos de documents : scanner de l'application livreur
             'photo_settings' => app(PhotoSettings::class)->for($this->resource),
+            // Jour où le livreur peut livrer, par activité
+            'delivery_day_rules' => app(DeliveryDayRule::class)->for($this->resource),
             'fne_api_key_set' => filled($this->resource->fne_api_key),
             'fne_enabled' => app(Fne::class)->enabled($this->resource),
             'fne_balance_sticker' => $this->fne_balance_sticker,
