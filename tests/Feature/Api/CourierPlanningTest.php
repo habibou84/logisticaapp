@@ -177,4 +177,22 @@ class CourierPlanningTest extends TestCase
         Notification::assertNotSentTo($this->moussa->user, PlanningDigestNotice::class);
         $this->assertNotNull(Order::query()->getModel());
     }
+
+    public function test_gaps_only_list_clients_with_parcels_for_that_day(): void
+    {
+        Sanctum::actingAs($this->dispatcher);
+        $later = $this->createOrder();
+        $later->forceFill(['status' => OrderStatus::Confirmed, 'delivery_scheduled_date' => now()->addDays(2)->toDateString()])->save();
+
+        // Aujourd'hui : pas de colis pour aujourd'hui, le client est seulement « habituel »
+        $gaps = $this->getJson('/api/v1/planning')->assertOk()->json('data.gaps');
+        $this->assertSame([], $gaps[0]['merchants']);
+        $this->assertSame([$this->merchant->business_name], array_column($gaps[0]['others'], 'name'));
+
+        // Le jour de livraison du colis : il attend un ramasseur
+        $day = $this->getJson('/api/v1/planning?date='.now()->addDays(2)->toDateString())->json('data.gaps');
+        $this->assertSame(1, $day[0]['waiting']);
+        $this->assertSame([1], array_column($day[0]['merchants'], 'waiting'));
+        $this->assertArrayHasKey('usual', $day[0]['merchants'][0]);
+    }
 }

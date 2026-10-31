@@ -2,7 +2,7 @@
   <div class="space-y-4 max-w-6xl">
     <div class="flex flex-wrap items-center justify-between gap-2">
       <div>
-        <h1 class="text-xl font-bold">Remontées terrain</h1>
+        <h1 v-if="!embedded" class="text-xl font-bold">Remontées terrain</h1>
         <p class="text-sm text-gray-600">Événements sur la route (panne, accident…) et notes ou problèmes enregistrés sur les courses. Prenez-les en charge pour que l'équipe sache qui s'en occupe.</p>
       </div>
       <!-- Place réservée : la page ne bouge pas quand le son s'active au premier clic -->
@@ -154,6 +154,9 @@ import { useRoute, useRouter } from 'vue-router'
 import { useFieldReportStore } from '../../stores/fieldReports'
 import { useToastStore } from '../../stores/toasts'
 import { date, dateTime, money, telLink } from '../../utils/format'
+
+// Onglet de « Activité des livreurs » : le titre de la page n'est pas répété
+defineProps({ embedded: { type: Boolean, default: false } })
 
 const KINDS = {
   incident: { label: 'Problème', icon: '⚠️', border: 'border-l-red-500', badge: 'bg-red-100 text-red-800' },

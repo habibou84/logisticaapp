@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { ACTIVITY_TABS } from '../utils/courierActivity'
 import { SPACES } from '../roles'
 import { allowedInApp, appLock } from '../native'
 import { spaceForPath } from '../bootstrap/session'
@@ -87,11 +88,36 @@ const routes = [
       { path: 'marchands', component: () => import('../views/admin/Merchants.vue'), meta: { permission: 'merchants.view' } },
       { path: 'marchands/:id(\\d+)/departements', component: () => import('../views/admin/MerchantDepartments.vue'), meta: { permission: 'merchants.view' } },
       { path: 'marchands/:id(\\d+)/comptes', component: () => import('../views/admin/MerchantAccountsPage.vue'), meta: { permission: 'merchants.view' } },
-      { path: 'terrain', component: () => import('../views/admin/FieldReports.vue'), meta: { permission: 'field_events.manage' } },
-      { path: 'carte', component: () => import('../views/admin/CourierMap.vue'), meta: { permission: 'orders.dispatch' } },
-      { path: 'colis-livreurs', component: () => import('../views/admin/HeldParcels.vue'), meta: { permission: 'orders.dispatch' } },
-      { path: 'planning', component: () => import('../views/admin/Planning.vue'), meta: { permission: 'planning.manage' } },
-      { path: 'disponibilites', component: () => import('../views/admin/CourierAvailability.vue'), meta: { permission: 'orders.dispatch' } },
+      // Activité des livreurs : suivi du jour et, en onglets, carte, disponibles, colis en main, remontées terrain, planning
+      {
+        path: 'activite',
+        component: () => import('../views/admin/activity/CourierActivity.vue'),
+        meta: { permission: ACTIVITY_TABS.map((t) => t.permission) },
+        children: [
+          {
+            path: '',
+            component: () => import('../views/admin/activity/DailyTracking.vue'),
+            meta: { permission: 'orders.dispatch' },
+            // Sans le suivi du jour (planning ou remontées seulement) : le premier onglet permis
+            beforeEnter: () => {
+              const auth = useAuthStore()
+              return auth.can('orders.dispatch') ? true : (ACTIVITY_TABS.find((t) => auth.can(t.permission))?.to ?? '/admin')
+            },
+          },
+          { path: 'carte', component: () => import('../views/admin/CourierMap.vue'), meta: { permission: 'orders.dispatch' } },
+          { path: 'disponibles', component: () => import('../views/admin/CourierAvailability.vue'), meta: { permission: 'orders.dispatch' } },
+          { path: 'colis', component: () => import('../views/admin/HeldParcels.vue'), meta: { permission: 'orders.dispatch' } },
+          { path: 'remontees', component: () => import('../views/admin/FieldReports.vue'), meta: { permission: 'field_events.manage' } },
+          { path: 'planning', component: () => import('../views/admin/Planning.vue'), meta: { permission: 'planning.manage' } },
+        ],
+      },
+      { path: 'activite/mural', component: () => import('../views/admin/activity/WallScreen.vue'), meta: { permission: 'orders.dispatch' } },
+      // Anciennes adresses (liens des notifications, favoris) : vers l'onglet, en gardant les paramètres
+      { path: 'carte', redirect: (to) => ({ path: '/admin/activite/carte', query: to.query }) },
+      { path: 'disponibilites', redirect: (to) => ({ path: '/admin/activite/disponibles', query: to.query }) },
+      { path: 'colis-livreurs', redirect: (to) => ({ path: '/admin/activite/colis', query: to.query }) },
+      { path: 'terrain', redirect: (to) => ({ path: '/admin/activite/remontees', query: to.query }) },
+      { path: 'planning', redirect: (to) => ({ path: '/admin/activite/planning', query: to.query }) },
       { path: 'retours', component: () => import('../views/admin/MerchantReturns.vue'), meta: { permission: 'orders.dispatch' } },
       { path: 'livreurs', component: () => import('../views/admin/Couriers.vue'), meta: { permission: ['orders.dispatch', 'couriers.manage'] } },
       { path: 'utilisateurs', component: () => import('../views/admin/Users.vue'), meta: { permission: 'users.view' } },

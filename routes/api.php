@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\V1\ClientRateController;
 use App\Http\Controllers\Api\V1\ClientSpaceController;
 use App\Http\Controllers\Api\V1\ClientSupplementController;
 use App\Http\Controllers\Api\V1\CompanyController;
+use App\Http\Controllers\Api\V1\CourierActivityController;
 use App\Http\Controllers\Api\V1\CourierAvailabilityController;
 use App\Http\Controllers\Api\V1\CourierController;
 use App\Http\Controllers\Api\V1\CourierFieldEventController;
@@ -328,6 +329,7 @@ Route::prefix('v1')->name('v1.')->group(function () {
         // Colis chez les livreurs (droits vérifiés dans le contrôleur)
         Route::get('parcels/held', [ParcelController::class, 'index'])->name('parcels.held');
         Route::get('parcels/held/counts', [ParcelController::class, 'counts'])->name('parcels.held.counts');
+        Route::get('couriers/{courier}/parcels', [ParcelController::class, 'parcels'])->name('couriers.parcels');
         Route::post('couriers/{courier}/parcels/receive', [ParcelController::class, 'receive'])->name('couriers.parcels.receive');
 
         // Journal des messages WhatsApp et SMS
@@ -417,6 +419,9 @@ Route::prefix('v1')->name('v1.')->group(function () {
         });
 
         // Livreurs (gestion par le personnel)
+        // Activité des livreurs : suivi du jour de l'équipe, missions du jour d'un livreur
+        Route::get('couriers/activity', [CourierActivityController::class, 'index'])->middleware('can:orders.dispatch')->name('couriers.activity');
+        Route::get('couriers/{courier}/activity', [CourierActivityController::class, 'show'])->middleware('can:orders.dispatch')->whereNumber('courier')->name('couriers.activity.show');
         Route::get('couriers/map', [CourierController::class, 'map'])->middleware('can:orders.dispatch')->name('couriers.map');
         Route::get('couriers/availability', [CourierAvailabilityController::class, 'index'])->middleware('can:orders.dispatch')->name('couriers.availability');
         Route::get('couriers/{courier}/availability', [CourierAvailabilityController::class, 'show'])->middleware('can:orders.dispatch')->name('couriers.availability.show');

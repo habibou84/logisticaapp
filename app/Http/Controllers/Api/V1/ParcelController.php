@@ -7,8 +7,10 @@ use App\Http\Controllers\Controller;
 use App\Models\Courier;
 use App\Models\Order;
 use App\Services\Couriers\ParcelCustody;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 
 /**
@@ -18,8 +20,12 @@ class ParcelController extends Controller
 {
     public function __construct(private readonly ParcelCustody $custody) {}
 
+    /** Colis d'un livreur chargés à la fois */
+    public const PER_PAGE = 25;
+
     /**
-     * Colis en main des livreurs, regroupés par livreur (le plus ancien en tête).
+     * Résumé par livreur des colis en main (le plus ancien en tête), compté par la base : les colis eux-mêmes se
+     * chargent livreur par livreur (parcels()). Filtres : en retard, recherche (code, client, e-commerçant, livreur).
      */
     public function index(Request $request): JsonResponse
     {
@@ -28,36 +34,78 @@ class ParcelController extends Controller
         $request->validate([
             'courier_id' => ['nullable', 'integer'],
             'overdue' => ['nullable', 'boolean'],
+            'q' => ['nullable', 'string', 'max:100'],
         ]);
 
         $hours = $this->alertHours($request);
+        $limit = ($hours > 0 ? now()->subHours($hours) : now()->subYears(100))->toDateTimeString();
 
-        $orders = ParcelCustody::heldQuery()
-            ->with(['holder.user', 'merchant:id,business_name', 'deliveryZone:id,name', 'lastIncidentReason:id,label'])
+        $rows = $this->filtered($request, $hours)
             ->when($request->filled('courier_id'), fn ($q) => $q->where('held_by_courier_id', $request->integer('courier_id')))
-            ->when($request->boolean('overdue') && $hours > 0, fn ($q) => $q->where('held_since', '<=', now()->subHours($hours)))
-            ->orderBy('held_since')
+            ->groupBy('held_by_courier_id')
+            ->selectRaw('held_by_courier_id, COUNT(*) AS n, SUM(CASE WHEN held_since <= ? THEN 1 ELSE 0 END) AS overdue, MIN(held_since) AS oldest', [$limit])
             ->get();
 
-        $couriers = $orders->groupBy('held_by_courier_id')->map(function ($parcels) use ($hours) {
-            $courier = $parcels->first()->holder;
+        $couriers = Courier::query()->whereIn('id', $rows->pluck('held_by_courier_id'))->with('user:id,name,phone')->get()->keyBy('id');
 
-            return [
-                'courier_id' => $courier->id,
-                'name' => $courier->user?->name,
-                'phone' => $courier->user?->phone,
-                'is_available' => $courier->is_available,
-                'count' => $parcels->count(),
-                'overdue' => $hours > 0 ? $parcels->filter(fn (Order $o) => $o->held_since?->lte(now()->subHours($hours)))->count() : 0,
-                'oldest' => $parcels->first()->held_since,
-                'parcels' => $parcels->map(fn (Order $o) => ParcelCustody::parcelData($o))->values(),
-            ];
-        })->sortBy('oldest')->values();
+        $data = $rows->map(fn ($row) => [
+            'courier_id' => (int) $row->held_by_courier_id,
+            'name' => $couriers[$row->held_by_courier_id]?->user?->name,
+            'phone' => $couriers[$row->held_by_courier_id]?->user?->phone,
+            'is_available' => (bool) $couriers[$row->held_by_courier_id]?->is_available,
+            'count' => (int) $row->n,
+            'overdue' => $hours > 0 ? (int) $row->overdue : 0,
+            'oldest' => $row->oldest ? Carbon::parse($row->oldest)->toIso8601String() : null,
+        ])->sortBy('oldest')->values();
 
         return response()->json([
-            'data' => $couriers,
-            'meta' => ['alert_hours' => $hours, ...$this->countsData($hours)],
+            'data' => $data,
+            'meta' => ['alert_hours' => $hours, 'per_page' => self::PER_PAGE, ...$this->countsData($hours)],
         ]);
+    }
+
+    /**
+     * Colis en main d'un livreur, du plus ancien au plus récent, 25 par 25 (mêmes filtres que le résumé).
+     */
+    public function parcels(Request $request, Courier $courier): JsonResponse
+    {
+        $this->authorizeView($request);
+
+        $request->validate([
+            'overdue' => ['nullable', 'boolean'],
+            'q' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        $page = $this->filtered($request, $this->alertHours($request))
+            ->where('held_by_courier_id', $courier->id)
+            ->with(['merchant:id,business_name', 'deliveryZone:id,name', 'lastIncidentReason:id,label'])
+            ->orderBy('held_since')->orderBy('id')
+            ->paginate(self::PER_PAGE);
+
+        return response()->json([
+            'data' => collect($page->items())->map(fn (Order $o) => ParcelCustody::parcelData($o))->values(),
+            'meta' => ['current_page' => $page->currentPage(), 'last_page' => $page->lastPage(), 'total' => $page->total()],
+        ]);
+    }
+
+    /**
+     * Colis en main, filtrés : en retard seulement, recherche par code, client, téléphone, e-commerçant ou livreur.
+     *
+     * @return Builder<Order>
+     */
+    private function filtered(Request $request, int $hours): Builder
+    {
+        $term = trim((string) $request->input('q'));
+        $like = '%'.mb_strtolower($term).'%';
+
+        return ParcelCustody::heldQuery()
+            ->when($request->boolean('overdue') && $hours > 0, fn ($q) => $q->where('held_since', '<=', now()->subHours($hours)))
+            ->when($term !== '', fn ($q) => $q->where(fn ($q) => $q
+                ->whereRaw('LOWER(tracking_code) LIKE ?', [$like])
+                ->orWhereRaw('LOWER(recipient_name) LIKE ?', [$like])
+                ->orWhere('recipient_phone', 'like', '%'.$term.'%')
+                ->orWhereHas('merchant', fn ($m) => $m->whereRaw('LOWER(business_name) LIKE ?', [$like]))
+                ->orWhereHas('holder.user', fn ($u) => $u->whereRaw('LOWER(name) LIKE ?', [$like]))));
     }
 
     /**

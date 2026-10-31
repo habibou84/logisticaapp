@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-4">
     <div class="flex flex-wrap items-center justify-between gap-2">
-      <h1 class="text-xl font-bold">{{ track ? `Trajet de ${track.courier.name}` : 'Carte des livreurs' }}</h1>
+      <h1 v-if="!embedded || track" class="text-xl font-bold">{{ track ? `Trajet de ${track.courier.name}` : 'Carte des livreurs' }}</h1>
       <div v-if="!track" class="flex flex-wrap items-center gap-3 text-sm">
         <span class="flex items-center gap-1"><i class="legend bg-blue-600" /> En mission</span>
         <span class="flex items-center gap-1"><i class="legend bg-emerald-600" /> Disponible</span>
@@ -124,6 +124,9 @@ import { useAuthStore } from '../../stores/auth'
 import { orderChanges } from '../../composables/useRealtime'
 import { useToastStore } from '../../stores/toasts'
 import { today, waitDuration } from '../../utils/format'
+
+// Onglet de « Activité des livreurs » : le titre de la page n'est pas répété
+defineProps({ embedded: { type: Boolean, default: false } })
 
 // Au-delà, la position est considérée comme ancienne (téléphone éteint, réseau coupé…)
 const STALE_MINUTES = 15

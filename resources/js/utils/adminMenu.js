@@ -1,4 +1,5 @@
 import { SETTINGS_PERMISSIONS } from './permissions'
+import { ACTIVITY_TABS } from './courierActivity'
 
 /**
  * Menu de l'espace équipe, en rubriques. Partagé par le menu lui-même et par l'aperçu « Voir comme ce compte »
@@ -13,11 +14,8 @@ export function adminMenuGroups(badges = {}) {
       label: 'Opérations',
       items: [
         { to: '/admin/courses', icon: '📦', label: 'Courses', permission: 'orders.view', badge: badges.late },
-        { to: '/admin/carte', icon: '📍', label: 'Carte des livreurs', permission: 'orders.dispatch' },
-        { to: '/admin/disponibilites', icon: '🟢', label: 'Livreurs disponibles', permission: 'orders.dispatch' },
-        { to: '/admin/planning', icon: '📅', label: 'Planning des livreurs', permission: 'planning.manage' },
-        { to: '/admin/terrain', icon: '📣', label: 'Remontées terrain', permission: 'field_events.manage', badge: badges.fieldReports },
-        { to: '/admin/colis-livreurs', icon: '🎒', label: 'Colis chez les livreurs', permission: 'orders.dispatch', badge: badges.heldParcels },
+        // Suivi du jour, carte, disponibles, colis en main, remontées terrain et planning, en onglets
+        { to: '/admin/activite', icon: '🛵', label: 'Activité des livreurs', permission: ACTIVITY_TABS.map((t) => t.permission), badge: (badges.fieldReports || 0) + (badges.heldParcels || 0) },
         { to: '/admin/retours', icon: '📮', label: 'Retours clients', permission: 'orders.dispatch' },
       ],
     },

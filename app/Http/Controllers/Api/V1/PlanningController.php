@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Enums\AssignmentStatus;
 use App\Enums\AssignmentType;
 use App\Enums\BillingFormula;
 use App\Enums\OrderStatus;
@@ -14,6 +15,7 @@ use App\Models\CourierAbsence;
 use App\Models\CourierRule;
 use App\Models\Merchant;
 use App\Models\Order;
+use App\Models\OrderAssignment;
 use App\Models\User;
 use App\Models\Zone;
 use App\Services\Assignment\CourierPlanning;
@@ -267,28 +269,75 @@ class PlanningController extends Controller
      * @return list<array<string, mixed>>
      */
     /**
-     * @param  list<int>  $covered  clients déjà servis ce jour-là (MAD)
+     * Clients sans ramasseur ce jour-là, par zone (la plus chargée d'abord) : d'abord ceux qui ont des colis à ramasser
+     * pour ce jour (aujourd'hui, aussi ceux en retard), avec le livreur qui ramasse d'habitude chez eux ; puis, à part,
+     * les clients habituels (30 derniers jours) sans colis pour l'instant. Les clients couverts par une MAD n'y sont pas.
+     *
+     * @param  list<int>  $covered  clients servis par leur livreur MAD ce jour-là
+     * @return list<array<string, mixed>>
      */
     private function gaps(int $companyId, string $date, array $covered = []): array
     {
-        $active = Order::query()->where('created_at', '>=', now()->subDays(30))->distinct()->pluck('merchant_id')->filter();
+        $company = Company::findOrFail($companyId);
+        $isToday = $date === CarbonImmutable::now($company->timezone ?: config('app.timezone'))->toDateString();
+
         $waiting = Order::query()->where('status', OrderStatus::Confirmed->value)->whereNull('pickup_hub_id')
+            ->whereRaw(Order::DELIVERY_DAY_SQL.($isToday ? ' <= ?' : ' = ?'), [$date])
             ->whereDoesntHave('assignments', fn ($q) => $q->active()->where('type', AssignmentType::Pickup->value))
             ->selectRaw('merchant_id, count(*) as n')->groupBy('merchant_id')->pluck('n', 'merchant_id');
+        $regulars = Order::query()->where('created_at', '>=', now()->subDays(30))->distinct()->pluck('merchant_id')->filter();
 
+        $merchants = Merchant::query()->whereIn('id', $regulars->merge($waiting->keys())->unique()->diff($covered))->where('status', 'active')
+            ->get(['id', 'business_name', 'pickup_zone_id'])
+            ->filter(fn (Merchant $m) => $this->planning->resolveFor($companyId, CourierRule::PICKUP, $date, $m->pickup_zone_id, $m->id) === null);
+        $usual = $this->usualPickupCouriers($merchants->modelKeys());
         $zones = Zone::query()->pluck('name', 'id');
 
-        return Merchant::query()->whereIn('id', $active->merge($waiting->keys())->unique()->diff($covered))->where('status', 'active')
-            ->get(['id', 'business_name', 'pickup_zone_id'])
-            ->filter(fn (Merchant $m) => $this->planning->resolveFor($companyId, CourierRule::PICKUP, $date, $m->pickup_zone_id, $m->id) === null)
-            ->groupBy(fn (Merchant $m) => $m->pickup_zone_id ?? 0)
-            ->map(fn ($merchants, $zoneId) => [
-                'zone' => $zoneId ? ['id' => (int) $zoneId, 'name' => $zones[$zoneId] ?? '—'] : null,
-                'merchants' => $merchants->map(fn (Merchant $m) => [
-                    'id' => $m->id, 'name' => $m->business_name, 'waiting' => (int) ($waiting[$m->id] ?? 0),
-                ])->sortByDesc('waiting')->values(),
-                'waiting' => $merchants->sum(fn (Merchant $m) => (int) ($waiting[$m->id] ?? 0)),
-            ])
-            ->sortByDesc('waiting')->values()->all();
+        $line = fn (Merchant $m) => [
+            'id' => $m->id, 'name' => $m->business_name, 'waiting' => (int) ($waiting[$m->id] ?? 0), 'usual' => $usual[$m->id] ?? null,
+        ];
+
+        return $merchants->groupBy(fn (Merchant $m) => $m->pickup_zone_id ?? 0)
+            ->map(function ($list, $zoneId) use ($zones, $line) {
+                [$with, $without] = $list->map($line)->partition(fn (array $m) => $m['waiting'] > 0);
+
+                return [
+                    'zone' => $zoneId ? ['id' => (int) $zoneId, 'name' => $zones[$zoneId] ?? '—'] : null,
+                    'waiting' => (int) $with->sum('waiting'),
+                    'merchants' => $with->sortBy([['waiting', 'desc'], ['name', 'asc']])->values()->all(),
+                    'others' => $without->sortBy('name')->values()->all(),
+                ];
+            })
+            ->sortBy([['waiting', 'desc'], fn ($a, $b) => strcmp($a['zone']['name'] ?? '~', $b['zone']['name'] ?? '~')])
+            ->values()->all();
+    }
+
+    /**
+     * Livreur qui a fait le plus de ramassages chez chaque client ces 30 derniers jours.
+     *
+     * @param  list<int>  $merchantIds
+     * @return array<int, array{id: int, name: ?string}>
+     */
+    private function usualPickupCouriers(array $merchantIds): array
+    {
+        if ($merchantIds === []) {
+            return [];
+        }
+
+        $rows = OrderAssignment::query()->join('orders', 'orders.id', '=', 'order_assignments.order_id')
+            ->whereIn('orders.merchant_id', $merchantIds)
+            ->where('order_assignments.type', AssignmentType::Pickup->value)
+            ->where('order_assignments.status', AssignmentStatus::Completed->value)
+            ->where('order_assignments.completed_at', '>=', now()->subDays(30))
+            ->groupBy('orders.merchant_id', 'order_assignments.courier_id')
+            ->selectRaw('orders.merchant_id, order_assignments.courier_id, COUNT(*) AS n')
+            ->get()
+            ->groupBy('merchant_id')
+            ->map(fn ($list) => $list->sortByDesc('n')->first());
+
+        $names = Courier::query()->whereIn('id', $rows->pluck('courier_id')->unique())->with('user:id,name')->get()
+            ->mapWithKeys(fn (Courier $c) => [$c->id => $c->user?->name]);
+
+        return $rows->map(fn ($r) => ['id' => (int) $r->courier_id, 'name' => $names[$r->courier_id] ?? null])->all();
     }
 }

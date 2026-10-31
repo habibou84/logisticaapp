@@ -251,8 +251,7 @@ const tabs = computed(() => {
   const candidates = isDispatch.value
     ? [
         { to: '/admin/courses', icon: '📦', label: 'Courses', badge: dispatchCounts.counts.late.total },
-        { to: '/admin/carte', icon: '📍', label: 'Carte' },
-        { to: '/admin/terrain', icon: '📣', label: 'Alertes', badge: fieldReports.badge, permission: 'field_events.manage' },
+        { to: '/admin/activite', icon: '🛵', label: 'Livreurs', badge: fieldReports.badge },
       ].filter((t) => !t.permission || auth.can(t.permission))
     : [
         { to: '/admin/courses', icon: '📦', label: 'Courses', permission: 'orders.view' },

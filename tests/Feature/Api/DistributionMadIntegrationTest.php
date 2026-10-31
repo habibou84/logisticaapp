@@ -292,4 +292,20 @@ class DistributionMadIntegrationTest extends TestCase
             ->assertJsonPath('by_method.Mobile Money', 20000);
         $this->getJson('/api/v1/finance/invoice-payments?month=2026-11')->assertOk()->assertJsonPath('total', 0);
     }
+
+    public function test_daily_tracking_shows_the_mad_courier_at_the_client(): void
+    {
+        $this->plan($this->madClient, ['formula' => 'mad_contract', 'courier_ids' => [$this->courierB->id], 'options' => ['mad_from' => '08:00', 'mad_to' => '17:00']]);
+
+        Sanctum::actingAs($this->dispatcher);
+        $response = $this->getJson('/api/v1/couriers/activity')->assertOk();
+        $b = collect($response->json('data'))->firstWhere('id', $this->courierB->id);
+        $this->assertSame('mad', $b['state']);
+        $this->assertSame(['Ivoire Assurances', '08:00', '17:00', true], [$b['mad']['merchant'], $b['mad']['from'], $b['mad']['to'], $b['mad']['reserved_now']]);
+        $this->assertSame(1, $response->json('totals.mad'));
+
+        // Filtre MAD : seulement les livreurs mis à disposition
+        $ids = collect($this->getJson('/api/v1/couriers/activity?activity=mad')->json('data'))->pluck('id')->all();
+        $this->assertSame([$this->courierB->id], $ids);
+    }
 }

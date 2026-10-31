@@ -179,9 +179,15 @@ class ParcelCustodyTest extends TestCase
             ->assertJsonPath('data.0.courier_id', $this->courierB->id)
             ->assertJsonPath('data.0.count', 2)
             ->assertJsonPath('data.0.overdue', 1)
-            ->assertJsonPath('data.0.parcels.0.id', $old->id)
+            ->assertJsonMissingPath('data.0.parcels')
             ->assertJsonPath('meta.alert_hours', 24);
         $this->getJson('/api/v1/parcels/held?overdue=1')->assertJsonPath('data.0.count', 1);
+        // Les colis se chargent livreur par livreur, le plus ancien en tête, avec recherche
+        $this->getJson("/api/v1/couriers/{$this->courierB->id}/parcels")->assertOk()
+            ->assertJsonPath('data.0.id', $old->id)->assertJsonPath('meta.total', 2);
+        $this->getJson("/api/v1/couriers/{$this->courierB->id}/parcels?q=".strtolower($recent->tracking_code))
+            ->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $recent->id);
+        $this->getJson('/api/v1/parcels/held?q='.$recent->tracking_code)->assertJsonPath('data.0.count', 1);
         $this->getJson('/api/v1/parcels/held/counts')->assertJsonPath('data', ['total' => 2, 'overdue' => 1]);
 
         Sanctum::actingAs($this->merchantUser);

@@ -88,8 +88,8 @@ class DeliveryDayRule
         if ($order->billing_plan_id === null) {
             return false;
         }
-        $due = $this->lotDueOn[$order->billing_plan_id] ??= BillingPlan::withoutGlobalScopes()->whereKey($order->billing_plan_id)
-            ->whereNotNull('lot_quantity')->value('lot_due_on');
+        $due = $this->lotDueOn[$order->billing_plan_id] ??= BillingPlan::withoutGlobalScopes()->lots()->whereKey($order->billing_plan_id)
+            ->value('lot_due_on');
 
         return $due !== null && Carbon::parse($due)->toDateString() >= $day;
     }

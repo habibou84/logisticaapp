@@ -2,7 +2,7 @@
   <div class="space-y-4 max-w-5xl">
     <div class="flex flex-wrap items-center justify-between gap-2">
       <div>
-        <h1 class="text-xl font-bold">📅 Planning des livreurs</h1>
+        <h1 v-if="!embedded" class="text-xl font-bold">📅 Planning des livreurs</h1>
         <p class="text-sm text-gray-600">Qui ramasse et qui livre où et quand. Livreur absent ou en pause : son remplaçant prend le relais.</p>
       </div>
       <button class="btn-primary" @click="openRule()">+ Nouvelle règle</button>
@@ -51,15 +51,43 @@
           </li>
         </ul>
 
-        <div v-if="type === 'pickup' && board.gaps.length" class="rounded-lg bg-red-50 p-3 space-y-2">
-          <p class="text-sm font-semibold text-red-800">⚠️ Clients sans ramasseur ce jour-là</p>
-          <div v-for="g in board.gaps" :key="g.zone?.id || 0" class="text-sm">
-            <span class="font-medium">{{ g.zone?.name || 'Sans zone' }}</span>
-            <span v-if="g.waiting" class="ml-1 rounded-full bg-red-600 px-1.5 text-xs text-white">{{ g.waiting }} en attente</span>
-            :
-            <span v-for="(m, i) in g.merchants" :key="m.id">{{ i ? ', ' : '' }}{{ m.name }}<span v-if="m.waiting" class="text-red-700"> ({{ m.waiting }})</span></span>
+        <!-- Clients sans ramasseur : par zone (la plus chargée d'abord), une ligne par client -->
+        <div v-if="type === 'pickup' && board.gaps.length" :class="['rounded-lg border p-3 space-y-3', gapTotals.waiting ? 'border-red-200 bg-red-50/60' : 'border-slate-200 bg-slate-50']">
+          <div class="flex flex-wrap items-center gap-2">
+            <p v-if="gapTotals.waiting" class="flex-1 text-sm font-semibold text-red-800">
+              ⚠️ Clients sans ramasseur ce jour-là : {{ gapTotals.merchants }} client{{ gapTotals.merchants > 1 ? 's' : '' }}, {{ gapTotals.waiting }} colis à ramasser
+            </p>
+            <p v-else class="flex-1 text-sm text-slate-700">
+              ✅ Aucun colis à ramasser sans ramasseur ce jour-là. Clients habituels qu'aucune règle ne couvre :
+            </p>
+            <input v-model="gapSearch" type="search" class="input sm:w-56" placeholder="Chercher un client" aria-label="Chercher un client sans ramasseur">
           </div>
-          <button class="text-sm font-medium text-red-800 underline" @click="openRule()">Créer une règle</button>
+          <p v-if="!gapZones.length" class="text-sm text-gray-600">Aucun client ne correspond.</p>
+          <details v-for="g in gapZones" :key="g.zone?.id || 0" class="rounded-lg border border-slate-200 bg-white" :open="g.waiting > 0">
+            <summary class="flex cursor-pointer flex-wrap items-center gap-2 px-3 py-2">
+              <span class="font-semibold">{{ g.zone?.name || 'Sans zone' }}</span>
+              <span v-if="g.waiting" class="rounded-full bg-red-600 px-2 text-xs font-semibold text-white">{{ g.waiting }} colis</span>
+              <span class="text-xs text-gray-600"><template v-if="g.merchants.length">{{ g.merchants.length }} client{{ g.merchants.length > 1 ? 's' : '' }} à ramasser</template><template v-if="g.merchants.length && g.others.length"> · </template><template v-if="g.others.length">{{ g.others.length }} habituel{{ g.others.length > 1 ? 's' : '' }} sans colis</template></span>
+              <span class="flex-1" />
+              <button v-if="g.zone" type="button" class="text-sm font-medium text-red-800 underline" @click.prevent="openGapRule({ zone: g.zone })">Règle pour la zone</button>
+            </summary>
+            <table v-if="g.merchants.length" class="w-full text-sm stack-table">
+              <thead class="bg-slate-50 text-left text-gray-600">
+                <tr><th class="p-2">Client</th><th class="p-2 text-right">Colis à ramasser</th><th class="p-2">Ramasse d'habitude</th><th class="p-2" /></tr>
+              </thead>
+              <tbody class="divide-y">
+                <tr v-for="m in g.merchants" :key="m.id">
+                  <td data-label="Client" class="p-2 font-medium">{{ m.name }}</td>
+                  <td data-label="Colis" class="p-2 text-right font-semibold text-red-700">{{ m.waiting }}</td>
+                  <td data-label="D'habitude" class="p-2">{{ m.usual ? `🛵 ${m.usual.name}` : '—' }}</td>
+                  <td class="p-2 text-right"><button type="button" class="text-blue-700 hover:underline whitespace-nowrap" @click="openGapRule({ merchant: m })">Créer une règle</button></td>
+                </tr>
+              </tbody>
+            </table>
+            <p v-if="g.others.length" class="border-t px-3 py-2 text-xs text-gray-600">
+              Habituels sans colis pour l'instant : {{ g.others.map((m) => m.name).join(', ') }}
+            </p>
+          </details>
         </div>
       </section>
 
@@ -217,6 +245,9 @@ import { useAuthStore } from '../../stores/auth'
 import { useToastStore } from '../../stores/toasts'
 import { date as shortDate } from '../../utils/format'
 
+// Onglet de « Activité des livreurs » : le titre de la page n'est pas répété
+defineProps({ embedded: { type: Boolean, default: false } })
+
 /**
  * Planning des livreurs : règles « qui ramasse où et quand », remplaçants, absences, et vue d'un jour.
  */
@@ -305,6 +336,34 @@ function openRule(rule = null) {
     is_active: rule.is_active,
   })
 }
+
+// Règle de ramassage préremplie depuis un client ou une zone sans ramasseur (avec son livreur habituel)
+function openGapRule({ merchant = null, zone = null }) {
+  openRule()
+  form.type = 'pickup'
+  if (merchant) {
+    form.target = 'merchants'
+    form.merchant_ids = [merchant.id]
+    if (merchant.usual) form.courier_id = merchant.usual.id
+  } else if (zone) {
+    form.target = 'zones'
+    form.zone_ids = [zone.id]
+  }
+}
+
+const gapSearch = ref('')
+const gapZones = computed(() => {
+  const q = gapSearch.value.trim().toLowerCase()
+  if (!q) return board.value?.gaps || []
+  const match = (m) => m.name.toLowerCase().includes(q)
+  return (board.value?.gaps || [])
+    .map((g) => (g.zone?.name || '').toLowerCase().includes(q) ? g : { ...g, merchants: g.merchants.filter(match), others: g.others.filter(match) })
+    .filter((g) => g.merchants.length || g.others.length)
+})
+const gapTotals = computed(() => ({
+  merchants: (board.value?.gaps || []).reduce((n, g) => n + g.merchants.length, 0),
+  waiting: (board.value?.gaps || []).reduce((n, g) => n + g.waiting, 0),
+}))
 
 // Une livraison vise des zones (le client ne compte pas)
 function setType(type) {

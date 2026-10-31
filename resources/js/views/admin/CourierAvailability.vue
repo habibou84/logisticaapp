@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-4 max-w-6xl">
     <div>
-      <h1 class="text-xl font-bold">Disponibilité des livreurs</h1>
+      <h1 v-if="!embedded" class="text-xl font-bold">Disponibilité des livreurs</h1>
       <p class="text-sm text-gray-600">
         Qui a fini sa tournée (ou presque), où il se trouve, et les colis à ramasser près de lui.
         Une mission ramassage ne change pas la date de livraison : les colis seront prêts pour leur jour prévu.
@@ -118,6 +118,9 @@ import StatCard from '../../components/StatCard.vue'
 import { orderChanges } from '../../composables/useRealtime'
 import { useToastStore } from '../../stores/toasts'
 import { date, telLink } from '../../utils/format'
+
+// Onglet de « Activité des livreurs » : le titre de la page n'est pas répété
+defineProps({ embedded: { type: Boolean, default: false } })
 
 const STATES = {
   free: { label: 'Libre', class: 'bg-emerald-100 text-emerald-800' },

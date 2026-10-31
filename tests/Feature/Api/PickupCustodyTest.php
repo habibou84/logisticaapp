@@ -98,7 +98,7 @@ class PickupCustodyTest extends TestCase
         Notification::assertSentTo($this->dispatcher, OrderAlert::class, fn ($n) => $n->kind === 'parcel_overdue' && str_contains($n->body, $depot->tracking_code) && ! str_contains($n->body, $kept->tracking_code));
 
         // « Colis chez les livreurs » : gardé pour sa livraison, pas à rendre
-        $parcels = collect($this->getJson('/api/v1/parcels/held')->json('data.0.parcels'))->keyBy('id');
+        $parcels = collect($this->getJson('/api/v1/couriers/'.$this->getJson('/api/v1/parcels/held')->json('data.0.courier_id').'/parcels')->json('data'))->keyBy('id');
         $this->assertSame(today()->addDay()->toDateString(), $parcels[$kept->id]['kept_for']);
         $this->assertNull($parcels[$depot->id]['kept_for']);
         $this->assertSame('depot', $parcels[$depot->id]['custody_plan']);
