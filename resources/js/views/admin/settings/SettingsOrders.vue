@@ -1,7 +1,7 @@
 <template>
   <SettingsPage icon="📦" title="Courses et livraison" intro="Comment les courses sont validées, quand la journée se termine et comment les livreurs travaillent.">
     <template v-if="form">
-      <section class="card p-4 space-y-3">
+      <section id="validation" class="card p-4 space-y-3 scroll-mt-20">
         <h2 class="font-semibold">Validation des nouvelles courses</h2>
         <div class="space-y-2" role="radiogroup" aria-label="Validation des nouvelles courses">
           <label v-for="m in VALIDATION_MODES" :key="m.value" :class="['flex items-start gap-2 rounded-lg border p-3 text-sm cursor-pointer', form.validation_mode === m.value ? 'border-blue-500 bg-blue-50' : 'border-slate-200']">
@@ -14,7 +14,7 @@
         </div>
       </section>
 
-      <section class="card p-4 space-y-3">
+      <section id="journee" class="card p-4 space-y-3 scroll-mt-20">
         <h2 class="font-semibold">Journée</h2>
         <div>
           <label class="label" for="cutoff">Heure limite du jour</label>
@@ -76,11 +76,11 @@
         </div>
       </section>
 
-      <section class="card p-4 space-y-3">
+      <section id="ramassage-auto" class="card p-4 space-y-3 scroll-mt-20">
         <h2 class="font-semibold">Ramassage automatique</h2>
         <p class="text-sm text-gray-600">
           Les ramassages des courses validées vont au livreur prévu par le
-          <RouterLink to="/admin/planning" class="text-blue-600 underline">planning des livreurs</RouterLink>
+          <RouterLink to="/admin/activite/planning" class="text-blue-600 underline">planning des livreurs</RouterLink>
           (ou à son remplaçant). Sans règle pour la course, rien ne change : l'équipe la confie.
         </p>
         <div class="grid sm:grid-cols-3 gap-2" role="radiogroup" aria-label="Ramassage automatique">
@@ -92,7 +92,7 @@
         </div>
       </section>
 
-      <section class="card p-4 space-y-3">
+      <section id="livraison-auto" class="card p-4 space-y-3 scroll-mt-20">
         <h2 class="font-semibold">Livraison du jour même automatique</h2>
         <p class="text-sm text-gray-600">
           Un colis récupéré ou au dépôt, à livrer aujourd'hui avant l'heure limite, part seul au livreur qui convient :
@@ -208,6 +208,8 @@
         <p class="text-sm text-gray-600">
           Le livreur ne voit et ne fait que les livraisons permises ici. Les retards et les jours à venir se règlent à
           l'agence (nouvelle date ou annulation). Une action faite hors connexion est jugée au jour où elle a été faite.
+          La même règle range les retards dans « Courses non traitées » : dès le lendemain au jour même, après l'échéance
+          du lot pour la distribution « dans le délai », jamais sans limite de date.
         </p>
         <div class="grid sm:grid-cols-3 gap-3">
           <div v-for="a in DAY_RULE_ACTIVITIES" :key="a.value">
@@ -218,6 +220,31 @@
               <option value="none">Sans limite de date</option>
             </select>
           </div>
+        </div>
+      </section>
+
+      <!-- Tableau de bord de l'équipe et point du jour -->
+      <section v-if="form.dashboard_settings" id="tableau-de-bord" class="card p-4 space-y-3 scroll-mt-20">
+        <h2 class="font-semibold">Tableau de bord et point du jour</h2>
+        <fieldset class="grid sm:grid-cols-2 lg:grid-cols-3 gap-2 text-sm">
+          <legend class="label">Cartes « À faire maintenant » affichées (seulement quand il y a quelque chose à faire)</legend>
+          <label v-for="(label, key) in DASHBOARD_CARDS" :key="key" class="flex items-center gap-2">
+            <input type="checkbox" :checked="!form.dashboard_settings.hidden_cards.includes(key)" @change="toggleCard(key, $event.target.checked)"> {{ label }}
+          </label>
+        </fieldset>
+        <div class="grid sm:grid-cols-2 gap-3">
+          <div>
+            <label class="label" for="lot-due-hours">Signaler un lot de distribution quand son échéance arrive dans</label>
+            <div class="flex items-center gap-2">
+              <input id="lot-due-hours" v-model.number="form.dashboard_settings.lot_due_hours" type="number" min="0" max="720" class="input w-28">
+              <span class="text-sm text-gray-600">heures</span>
+            </div>
+          </div>
+          <label class="flex items-start gap-2 text-sm sm:pt-6">
+            <input v-model="form.dashboard_settings.share_amounts" type="checkbox" class="mt-1">
+            <span>Mettre les montants (recette, encaissé, à reverser) dans le point envoyé sur WhatsApp
+              <span class="block text-xs text-gray-500">Seulement pour les personnes qui ont accès à la caisse.</span></span>
+          </label>
         </div>
       </section>
 
@@ -286,6 +313,8 @@
 </template>
 
 <script setup>
+import { nextTick, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import SettingsPage from '../../../components/settings/SettingsPage.vue'
 import SaveBar from '../../../components/settings/SaveBar.vue'
 import MoreHelp from '../../../components/settings/MoreHelp.vue'
@@ -297,8 +326,36 @@ const { form, dirty, saving, error, save, reset } = useCompanySettings([
   'validation_mode', 'daily_cutoff_time', 'default_max_attempts', 'require_delivery_code', 'offline_courier_actions', 'pickup_mission_custody', 'depot_closes_at', 'auto_pickup',
   'mission_acceptance', 'unreachable_minutes', 'late_pickup_alert_minutes', 'courier_available_alert',
   'auto_delivery', 'auto_delivery_max_cod', 'same_courier_delivery', 'cutoff_by_day', 'internal_delays',
-  'activity_options', 'label_settings', 'photo_settings', 'delivery_day_rules',
+  'activity_options', 'label_settings', 'photo_settings', 'delivery_day_rules', 'dashboard_settings',
 ])
+// Lien d'un bandeau (ex. « Activer » le ramassage automatique) : le bon réglage à l'écran
+const route = useRoute()
+watch(form, async (value) => {
+  if (!value || !route.hash) return
+  await nextTick()
+  document.querySelector(route.hash)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}, { once: true })
+const DASHBOARD_CARDS = {
+  cutoff: 'Heure limite dépassée',
+  unassigned: 'Sans livreur',
+  to_confirm: 'À valider',
+  to_approve: 'À approuver par le chef de service',
+  untreated: 'Courses non traitées',
+  internal_late: 'Délai interne dépassé',
+  lots_due: 'Lots à échéance proche',
+  mad_uncovered: 'Contrats MAD sans livreur',
+  invoices_to_issue: 'Factures à émettre',
+  to_return: 'À retourner',
+  failed: 'Échec de livraison',
+  on_hold: 'En attente',
+  follow_up: 'Suivi',
+  to_prepare: 'À préparer',
+  code_to_verify: 'Codes à vérifier',
+}
+function toggleCard(key, shown) {
+  const hidden = form.value.dashboard_settings.hidden_cards.filter((k) => k !== key)
+  form.value.dashboard_settings.hidden_cards = shown ? hidden : [...hidden, key]
+}
 const DAY_RULE_ACTIVITIES = [
   { value: 'ecommerce', label: 'E-commerce' },
   { value: 'distribution', label: 'Distribution' },

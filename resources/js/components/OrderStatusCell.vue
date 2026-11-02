@@ -2,7 +2,11 @@
   <!-- Statut d'une course et ses pastilles (liste en tableau et cartes du téléphone) -->
   <div>
     <StatusBadge :status="order.status" :label="order.status_label" />
-    <div v-if="late" class="mt-1 inline-flex items-center gap-1 rounded-full bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-800 whitespace-nowrap">
+    <!-- Jour passé mais encore dans la règle de son activité (lot pas échu, MAD) : pas un retard -->
+    <div v-if="carried" class="mt-1 inline-flex items-center gap-1 rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-800 whitespace-nowrap">
+      📅 Prévue le {{ date(lateDay) }} · encore dans son délai
+    </div>
+    <div v-else-if="late" class="mt-1 inline-flex items-center gap-1 rounded-full bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-800 whitespace-nowrap">
       ⏳ En retard · prévue le {{ date(lateDay) }}
     </div>
     <div
@@ -42,6 +46,7 @@ defineProps({
   // Jour de livraison passé, course toujours en cours
   late: { type: Boolean, default: false },
   lateDay: { type: String, default: '' },
+  carried: { type: Boolean, default: false },
 })
 defineEmits(['decide'])
 

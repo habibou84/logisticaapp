@@ -239,6 +239,7 @@ onBeforeUnmount(() => clearInterval(countsTimer))
 // Menu en rubriques (utils/adminMenu) ; entrée propre à certaines activités : cachée aux comptes limités à d'autres
 const menu = computed(() => filterMenu((p) => auth.can(p), myActivities(auth.user).map((a) => a.value), {
   late: isDispatch.value ? dispatchCounts.counts.late.total : 0,
+  untreated: isDispatch.value ? dispatchCounts.counts.exceptions?.untreated || 0 : 0,
   fieldReports: fieldReports.badge,
   heldParcels: heldParcels.counts.overdue,
   vehicles: vehicleUrgent.value,

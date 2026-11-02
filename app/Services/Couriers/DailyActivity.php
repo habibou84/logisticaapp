@@ -437,7 +437,7 @@ class DailyActivity
         return null;
     }
 
-    private static function activityOf(?Order $order): string
+    public static function activityOf(?Order $order): string
     {
         $activity = $order?->activity;
 
@@ -445,7 +445,7 @@ class DailyActivity
     }
 
     /** Envois d'une course : plis et chèques comptés un à un (distribution), sinon 1 */
-    private static function units(?Order $order): int
+    public static function units(?Order $order): int
     {
         if ($order === null) {
             return 0;

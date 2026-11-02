@@ -14,6 +14,7 @@ use App\Models\Concerns\BelongsToCompany;
 use App\Models\Scopes\ActivityScope;
 use App\Models\Scopes\PerimeterScope;
 use App\Services\Departments\Departments;
+use App\Services\Orders\DeliveryDayRule;
 use App\Support\PhoneNumber;
 use Database\Factories\OrderFactory;
 use Illuminate\Database\Eloquent\Builder;
@@ -450,16 +451,63 @@ class Order extends Model
     }
 
     /**
-     * Courses d'un jour pour la liste de l'agence : celles à livrer ce jour-là et celles encore en cours dont
-     * le jour est déjà passé (en retard). Pour demain, les courses d'aujourd'hui ne sont pas encore en retard.
+     * Courses d'un jour pour la liste de l'agence : celles à livrer ce jour-là. Aujourd'hui, s'y ajoutent les
+     * courses d'avant encore dans leur règle (lot pas échu, MAD) ; les autres retards sont dans « Courses non traitées ».
      */
-    public function scopeOfDay(Builder $query, string $day): Builder
+    public function scopeOfDay(Builder $query, string $day, ?Company $company = null): Builder
     {
-        $final = OrderStatus::values(array_filter(OrderStatus::cases(), fn (OrderStatus $s) => $s->isFinal()));
-        $overdue = min($day, today()->toDateString());
+        $today = today()->toDateString();
 
-        return $query->where(fn ($q) => $q->whereRaw(self::DELIVERY_DAY_SQL.' = ?', [$day])
-            ->orWhere(fn ($q) => $q->whereRaw(self::DELIVERY_DAY_SQL.' < ?', [$overdue])->whereNotIn('status', $final)));
+        return $query->where(fn (Builder $q) => $q->whereRaw(self::DELIVERY_DAY_SQL.' = ?', [$day])
+            ->when($day === $today, fn (Builder $q) => $q->orWhere(fn (Builder $q) => $q->carried($company, $today))));
+    }
+
+    /**
+     * Non traitées : jour de livraison dépassé, course pas terminée et plus dans la règle de son activité
+     * (Réglages › Courses, « Livraisons du jour ») : jour même (e-commerce) dès le lendemain, distribution après
+     * l'échéance de son lot (sans lot : dès le lendemain), sans limite (MAD) jamais.
+     */
+    public function scopeUntreated(Builder $query, ?Company $company = null, ?string $today = null): Builder
+    {
+        $today ??= today()->toDateString();
+
+        return $query->whereRaw(self::DELIVERY_DAY_SQL.' < ?', [$today])
+            ->whereNotIn('orders.status', self::finalStatuses())
+            ->whereNot(fn (Builder $q) => self::stillInRule($q, $company, $today));
+    }
+
+    /**
+     * Encore dans sa règle malgré un jour de livraison passé : lot de distribution pas encore échu, MAD.
+     * Ces courses restent dans le travail du jour.
+     */
+    public function scopeCarried(Builder $query, ?Company $company = null, ?string $today = null): Builder
+    {
+        $today ??= today()->toDateString();
+
+        return $query->whereRaw(self::DELIVERY_DAY_SQL.' < ?', [$today])
+            ->whereNotIn('orders.status', self::finalStatuses())
+            ->where(fn (Builder $q) => self::stillInRule($q, $company, $today));
+    }
+
+    /** @return list<string> */
+    public static function finalStatuses(): array
+    {
+        return OrderStatus::values(array_filter(OrderStatus::cases(), fn (OrderStatus $s) => $s->isFinal()));
+    }
+
+    // Activités sans limite, ou distribution d'un lot dont l'échéance n'est pas passée (jamais NULL : NOT reste sûr)
+    private static function stillInRule(Builder $query, ?Company $company, string $today): void
+    {
+        $company ??= ($id = auth()->user()?->company_id) ? Company::query()->find($id) : null;
+        $rules = app(DeliveryDayRule::class)->for($company);
+        $free = array_keys(array_filter($rules, fn (string $r) => $r === 'none'));
+        $lot = array_keys(array_filter($rules, fn (string $r) => $r === 'within_delay'));
+
+        $query->whereRaw('1 = 0')
+            ->when($free !== [], fn (Builder $q) => $q->orWhereIn('orders.activity', $free))
+            ->when($lot !== [], fn (Builder $q) => $q->orWhere(fn (Builder $q) => $q->whereIn('orders.activity', $lot)
+                ->whereNotNull('orders.billing_plan_id')
+                ->whereIn('orders.billing_plan_id', BillingPlan::withoutGlobalScopes()->lots()->whereDate('lot_due_on', '>=', $today)->select('id'))));
     }
 
     public function activeAssignment(AssignmentType $type): ?OrderAssignment

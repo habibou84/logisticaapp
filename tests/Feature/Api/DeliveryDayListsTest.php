@@ -78,7 +78,7 @@ class DeliveryDayListsTest extends TestCase
 
         $this->assertSame([$tomorrow->id], $this->ids(['queue' => 'scheduled']));
         // Le ramassage reste dû aujourd'hui
-        $this->assertContains($tomorrow->id, $this->ids(['queue' => 'to_pickup']));
+        $this->assertContains($tomorrow->id, $this->ids(['queue' => 'unassigned', 'awaiting' => 'pickup']));
     }
 
     public function test_the_cutoff_separates_pickups_for_another_day(): void

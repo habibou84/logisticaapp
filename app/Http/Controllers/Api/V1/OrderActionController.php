@@ -24,6 +24,7 @@ use App\Services\Photos\DocumentPhoto;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
@@ -243,6 +244,63 @@ class OrderActionController extends Controller
         }
 
         foreach (array_diff($data['order_ids'], $result['confirmed'], array_keys($result['errors'])) as $missing) {
+            $result['errors'][$missing] = 'Course introuvable.';
+        }
+
+        return response()->json(['data' => $result]);
+    }
+
+    /**
+     * Courses non traitées : nouvelle date de livraison pour plusieurs courses d'un coup (le livreur pourra les faire
+     * ce jour-là). Les courses déjà parties en livraison ou terminées sont refusées une à une.
+     */
+    public function bulkReschedule(Request $request): JsonResponse
+    {
+        Gate::authorize('dispatch', Order::class);
+
+        $data = $request->validate([
+            'order_ids' => ['required', 'array', 'min:1', 'max:200'],
+            'order_ids.*' => ['integer', 'distinct'],
+            'date' => ['required', 'date', 'after_or_equal:today'],
+        ], [], ['date' => 'nouvelle date']);
+
+        $result = ['rescheduled' => [], 'errors' => []];
+        foreach (Order::whereIn('id', $data['order_ids'])->orderBy('id')->get() as $order) {
+            try {
+                $this->orders->update($request->user(), $order, ['delivery_scheduled_date' => Carbon::parse($data['date'])->toDateString()]);
+                $result['rescheduled'][] = $order->id;
+            } catch (BusinessRuleException|AuthorizationException $e) {
+                $result['errors'][$order->id] = $e->getMessage();
+            }
+        }
+        foreach (array_diff($data['order_ids'], $result['rescheduled'], array_keys($result['errors'])) as $missing) {
+            $result['errors'][$missing] = 'Course introuvable.';
+        }
+
+        return response()->json(['data' => $result]);
+    }
+
+    /** Courses non traitées : annuler plusieurs courses d'un coup (droit d'annuler, avant le départ en livraison) */
+    public function bulkCancel(Request $request): JsonResponse
+    {
+        Gate::authorize('dispatch', Order::class);
+
+        $data = $request->validate([
+            'order_ids' => ['required', 'array', 'min:1', 'max:200'],
+            'order_ids.*' => ['integer', 'distinct'],
+            'reason' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $result = ['cancelled' => [], 'errors' => []];
+        foreach (Order::whereIn('id', $data['order_ids'])->orderBy('id')->get() as $order) {
+            try {
+                $this->workflow->transition($request->user(), $order, OrderStatus::Cancelled, ['cancel_reason' => $data['reason'] ?? 'Course non traitée annulée par l\'agence']);
+                $result['cancelled'][] = $order->id;
+            } catch (BusinessRuleException|AuthorizationException $e) {
+                $result['errors'][$order->id] = $e->getMessage();
+            }
+        }
+        foreach (array_diff($data['order_ids'], $result['cancelled'], array_keys($result['errors'])) as $missing) {
             $result['errors'][$missing] = 'Course introuvable.';
         }
 

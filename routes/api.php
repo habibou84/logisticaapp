@@ -442,8 +442,13 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::post('orders/bulk-assign', [OrderActionController::class, 'bulkAssign'])->name('orders.bulk-assign');
         Route::post('orders/bulk-unassign', [OrderActionController::class, 'bulkUnassign'])->name('orders.bulk-unassign');
         Route::post('orders/bulk-confirm', [OrderActionController::class, 'bulkConfirm'])->name('orders.bulk-confirm');
+        // Courses non traitées : nouvelle date ou annulation de plusieurs courses
+        Route::post('orders/bulk-reschedule', [OrderActionController::class, 'bulkReschedule'])->name('orders.bulk-reschedule');
+        Route::post('orders/bulk-cancel', [OrderActionController::class, 'bulkCancel'])->name('orders.bulk-cancel');
         // Avant la ressource : « counts » n'est pas un identifiant de course
         Route::get('orders/counts', [OrderController::class, 'counts'])->name('orders.counts');
+        // Courses non traitées (jour dépassé, plus dans la règle de l'activité) regroupées par date, livreur ou client
+        Route::get('orders/untreated-groups', [OrderController::class, 'untreatedGroups'])->name('orders.untreated-groups');
         Route::get('orders/pickup-groups', [OrderController::class, 'pickupGroups'])->name('orders.pickup-groups');
         // Aide à la saisie : analyse d'un message collé, doublons du jour
         Route::post('orders/parse-message', [OrderDraftController::class, 'parse'])->middleware('throttle:30,1')->name('orders.parse-message');
@@ -534,6 +539,12 @@ Route::prefix('v1')->name('v1.')->group(function () {
         });
 
         Route::get('reports/summary', [ReportController::class, 'summary'])->name('reports.summary');
+        // Point du jour ou de la période (page Courses, tableau de bord) : montants pour qui voit la caisse
+        Route::get('reports/day', [ReportController::class, 'day'])->middleware('can:orders.dispatch')->name('reports.day');
+        // Réglages qui manquent pour l'assignation automatique (bandeau de la page Courses)
+        Route::get('reports/auto-assign-checks', [ReportController::class, 'autoAssignChecks'])->middleware('can:settings.manage')->name('reports.auto-assign-checks');
+        // « À faire maintenant » du tableau de bord : lots, MAD sans livreur, factures à émettre
+        Route::get('reports/todo', [ReportController::class, 'todo'])->middleware('can:orders.dispatch')->name('reports.todo');
 
         // Statistiques de l'entreprise (back-office)
         Route::prefix('stats')->name('stats.')->middleware('can:orders.view')->controller(StatisticsController::class)->group(function () {

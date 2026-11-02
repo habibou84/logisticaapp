@@ -9,6 +9,9 @@
       </div>
     </div>
 
+    <!-- Réglages manquants pour l'assignation automatique : bandeau d'action -->
+    <AutoAssignBanner v-if="isStaff" />
+
     <DeliveryDayBar v-if="isStaff && auth.can('orders.dispatch')" @changed="load(1); dispatchCounts.fetchCounts().catch(() => {})" />
 
     <!-- Jour affiché : aujourd'hui par défaut (retards compris), gardé d'un onglet à l'autre -->
@@ -28,7 +31,33 @@
         aria-label="Autre jour" title="Autre jour"
         @change="$event.target.value && setDay($event.target.value)"
       >
-      <span v-if="filters.day" class="hidden sm:inline text-gray-500">· courses du jour et retards encore en cours</span>
+      <span v-if="filters.day" class="hidden sm:inline text-gray-500">· seulement les courses prévues ce jour (jours passés dans « Courses non traitées »)</span>
+    </div>
+
+    <!-- Point du jour : livrées, argent (e-commerce), plis et accusés (distribution), MAD -->
+    <DayPoint v-if="isStaff && isDispatch && filters.day" :day="filters.day" :activity="filters.activity" @delivered="showDelivered" />
+
+    <!-- Courses non traitées (jour dépassé, plus dans la règle de l'activité) : page à part, toutes dates -->
+    <RouterLink
+      v-if="isStaff && untreatedCount" to="/admin/courses/non-traitees"
+      class="card flex items-center gap-3 border-red-300 bg-red-50 px-3 py-2 text-red-900 hover:bg-red-100"
+    >
+      <span class="text-2xl" aria-hidden="true">⏳</span>
+      <span class="min-w-0 flex-1 text-sm"><b>{{ untreatedCount }} course{{ untreatedCount > 1 ? 's' : '' }} non traitée{{ untreatedCount > 1 ? 's' : '' }}</b> : date de livraison dépassée, pas encore livrée{{ untreatedCount > 1 ? 's' : '' }}, retournée{{ untreatedCount > 1 ? 's' : '' }} ni annulée{{ untreatedCount > 1 ? 's' : '' }}</span>
+      <span class="text-sm font-semibold underline">Voir</span>
+    </RouterLink>
+
+    <!-- Cas à régler : cartes visibles seulement s'il y en a, jusqu'à ce qu'ils soient réglés -->
+    <div v-if="isStaff && exceptionCards.length" class="grid grid-cols-2 gap-2 lg:grid-cols-4">
+      <button
+        v-for="e in exceptionCards" :key="e.value" type="button"
+        :class="['card px-3 py-2 text-left text-sm', e.class, filters.queue === e.value ? 'ring-2 ring-slate-900' : '']"
+        :aria-pressed="filters.queue === e.value"
+        @click="setQueue(filters.queue === e.value ? '' : e.value)"
+      >
+        <b>{{ e.icon }} {{ e.count }} {{ e.count > 1 ? e.plural : e.label }}</b>
+        <span class="block text-xs opacity-90">{{ e.hint }}</span>
+      </button>
     </div>
 
     <!-- Activités côte à côte : toutes, ou une seule (e-commerce, distribution, MAD) -->
@@ -44,8 +73,8 @@
       </button>
     </div>
 
-    <!-- Files d'attente du dispatch -->
-    <div v-if="isStaff" class="flex gap-2 overflow-x-auto no-scrollbar pb-1 [mask-image:linear-gradient(to_right,black_88%,transparent)] md:[mask-image:none]">
+    <!-- Onglets : les courses du jour choisi ; files propres à Logistica visibles seulement s'il y en a -->
+    <div v-if="isStaff" class="flex gap-2 overflow-x-auto no-scrollbar pb-1 [mask-image:linear-gradient(to_right,black_88%,transparent)] md:[mask-image:none] md:flex-wrap md:overflow-visible">
       <button
         v-for="q in visibleQueues"
         :key="q.value"
@@ -86,7 +115,7 @@
         · <button type="button" class="font-medium underline" @click="toggleLater">Masquer</button>
       </template>
     </p>
-    <p v-else-if="filters.day && filters.queue && !isWorkQueue && filters.queue !== 'scheduled'" class="text-xs text-gray-500">
+    <p v-else-if="filters.day && ALL_DATES_QUEUES.includes(filters.queue)" class="text-xs text-gray-500">
       Cette file montre toutes les dates : chaque cas reste visible jusqu'à ce qu'il soit réglé.
     </p>
 
@@ -229,7 +258,7 @@
             <a v-if="o.recipient.phone" :href="`tel:${o.recipient.phone}`" class="tap shrink-0 grid h-10 w-10 place-items-center rounded-full bg-slate-100 text-lg" :aria-label="`Appeler ${o.recipient.name || 'le destinataire'}`" @click.stop>📞</a>
           </div>
           <div class="text-xs text-gray-600">{{ o.pickup.zone_name }} → {{ o.delivery.zone_name }}<span v-if="isStaff && o.merchant"> · {{ o.merchant.business_name }}</span></div>
-          <OrderStatusCell :order="o" :late="isLate(o)" :late-day="deliveryDay(o)" @decide="deciding = $event" />
+          <OrderStatusCell :order="o" :late="isLate(o)" :carried="isCarried(o)" :late-day="deliveryDay(o)" @decide="deciding = $event" />
           <div v-if="o.pickup_courier || o.delivery_courier || o.held_by" class="flex flex-wrap gap-x-3 text-xs text-gray-700">
             <span v-if="o.pickup_courier">↑ {{ o.pickup_courier.name }}</span>
             <span v-if="o.delivery_courier">↓ {{ o.delivery_courier.name }}</span>
@@ -278,7 +307,7 @@
               </td>
               <td class="p-2 whitespace-nowrap">{{ o.pickup.zone_name }} → {{ o.delivery.zone_name }}</td>
               <td class="p-2">
-                <OrderStatusCell :order="o" :late="isLate(o)" :late-day="deliveryDay(o)" @decide="deciding = $event" />
+                <OrderStatusCell :order="o" :late="isLate(o)" :carried="isCarried(o)" :late-day="deliveryDay(o)" @decide="deciding = $event" />
               </td>
               <td class="p-2 text-xs">
                 <div v-if="o.pickup_courier">↑ {{ o.pickup_courier.name }}</div>
@@ -317,6 +346,8 @@ import Pagination from '../../components/Pagination.vue'
 import OrderDecision from '../../components/OrderDecision.vue'
 import PickupGroupsPanel from '../../components/PickupGroupsPanel.vue'
 import DeliveryDayBar from '../../components/DeliveryDayBar.vue'
+import AutoAssignBanner from '../../components/AutoAssignBanner.vue'
+import DayPoint from '../../components/DayPoint.vue'
 import { useAuthStore } from '../../stores/auth'
 import { useToastStore } from '../../stores/toasts'
 import { useDispatchCountStore } from '../../stores/dispatchCounts'
@@ -344,33 +375,53 @@ const initialDay = () => {
   if (q === 'all') return ''
   return /^\d{4}-\d{2}-\d{2}$/.test(q || '') ? q : todayIso
 }
-// Files de travail (limitées au jour et aux retards) ; on peut y ajouter les courses prévues plus tard
-const WORK_QUEUES = ['to_pickup', 'by_client', 'to_prepare', 'to_deliver', 'unassigned']
+// Files de travail (limitées au jour) ; on peut y ajouter les courses prévues plus tard (ramassage en avance)
 const LATER_QUEUES = { to_pickup: 'à ramasser', by_client: 'à ramasser', to_prepare: 'à préparer', unassigned: 'à ramasser' }
 
 const queues = [
+  // Onglets du jour choisi (parcours d'une course)
   { value: '', label: 'Toutes' },
   { value: 'to_confirm', label: 'À valider' },
+  // Ramassages en cours (livreur assigné) ; sans livreur : « Sans livreur » et « Ramassages par client »
   { value: 'to_pickup', label: 'À ramasser' },
   { value: 'by_client', label: '🏪 Ramassages par client' },
-  { value: 'to_prepare', label: 'À préparer' },
-  { value: 'to_deliver', label: 'À livrer' },
+  { value: 'to_prepare', label: '📦 À préparer' },
   { value: 'unassigned', label: '🛵 Sans livreur' },
-  { value: 'to_decide', label: 'À décider' },
-  { value: 'scheduled', label: 'Prévues plus tard' },
-  { value: 'incidents', label: 'Incidents' },
+  { value: 'to_deliver', label: 'À livrer' },
+  { value: 'failed', label: '❌ Échec' },
+  { value: 'to_return', label: '↩️ À retourner' },
+  // Files toutes dates, visibles seulement s'il y en a
+  { value: 'to_approve', label: '🏢 À approuver', extra: true },
+  { value: 'to_decide', label: 'À décider', extra: true },
   // Notes de suivi de l'équipe (Réglages › Motifs) ; « En attente » : celles qui retiennent la course
-  { value: 'follow_up', label: '📌 Suivi' },
-  { value: 'on_hold', label: '⏸ En attente' },
-  { value: 'to_return', label: 'À retourner' },
-  // Livrées hors connexion avec un code client incorrect
-  { value: 'code_to_verify', label: '⚠️ Codes à vérifier' },
-  // Délai interne de distribution dépassé (toutes dates)
-  { value: 'internal_late', label: '⏰ Délai interne dépassé' },
+  { value: 'on_hold', label: '⏸ En attente', extra: true },
+  { value: 'follow_up', label: '📌 Suivi', extra: true },
+  // Délai interne de distribution dépassé
+  { value: 'internal_late', label: '⏰ Délai interne dépassé', extra: true },
+  { value: 'incidents', label: 'Incidents', extra: true },
+  { value: 'scheduled', label: 'Prévues plus tard', extra: true },
+  // Hors onglets : carte « à régler » et page « Courses non traitées »
+  { value: 'code_to_verify', label: '⚠️ Codes à vérifier', hidden: true },
+  { value: 'untreated', label: '⏳ Non traitées', hidden: true },
 ]
+// Files qui montrent toutes les dates, même quand un jour est choisi
+const ALL_DATES_QUEUES = queues.filter((q) => q.extra || q.hidden).map((q) => q.value)
 
-// Écran à part, réservé au dispatch (pas une file de la liste)
-const visibleQueues = computed(() => queues.filter((q) => q.value !== 'by_client' || auth.can('orders.dispatch')))
+// Files propres à Logistica : seulement quand il y en a (ou quand on y est) ; « Par client » réservé au dispatch
+const visibleQueues = computed(() => queues.filter((q) => {
+  if (q.hidden) return false
+  if (q.value === 'by_client') return isDispatch.value
+  if (q.extra) return filters.queue === q.value || exceptionCount(q.value) > 0
+  return true
+}))
+// Cas à régler, toutes dates : en cartes de couleur au-dessus des onglets, seulement quand il y en a
+const EXCEPTIONS = [
+  { value: 'code_to_verify', icon: '⚠️', label: 'code à vérifier', plural: 'codes à vérifier', hint: 'livrées hors connexion avec un code faux', class: 'border-red-300 bg-red-50 text-red-900' },
+]
+const exceptionCount = (queue) => (isDispatch.value ? dispatchCounts.counts.exceptions?.[queue] || 0 : 0)
+const exceptionCards = computed(() => EXCEPTIONS.map((e) => ({ ...e, count: exceptionCount(e.value) })).filter((e) => e.count > 0 || filters.queue === e.value))
+// Courses non traitées (jour dépassé, plus dans la règle de l'activité), toutes dates : page à part
+const untreatedCount = computed(() => exceptionCount('untreated'))
 
 const filters = reactive({
   queue: route.query.queue || '',
@@ -443,22 +494,26 @@ const dispatchCounts = useDispatchCountStore()
 const isDispatch = computed(() => auth.can('orders.dispatch'))
 const COUNTED = { to_confirm: 'to_confirm', to_pickup: 'to_pickup', to_deliver: 'to_deliver', unassigned: 'unassigned' }
 // Jour choisi : compteurs de ce jour (retards compris) ; sinon compteurs généraux
-const DAY_COUNTED = { '': 'all', to_confirm: 'to_confirm', to_pickup: 'to_pickup', by_client: 'to_pickup', to_prepare: 'to_prepare', to_deliver: 'to_deliver', unassigned: 'unassigned' }
+const DAY_COUNTED = { '': 'all', to_confirm: 'to_confirm', to_pickup: 'to_pickup', to_prepare: 'to_prepare', to_deliver: 'to_deliver', unassigned: 'unassigned', failed: 'failed', to_return: 'to_return' }
 const dayCounts = computed(() => (filters.day && dispatchCounts.dayCounts?.date === filters.day ? dispatchCounts.dayCounts : null))
 const tabCount = (queue) => {
   if (!isDispatch.value) return 0
-  if (queue === 'internal_late') return dispatchCounts.counts.internal_late || 0
+  if (ALL_DATES_QUEUES.includes(queue)) return exceptionCount(queue)
+  if (queue === 'by_client') return 0
   if (dayCounts.value) return dayCounts.value[DAY_COUNTED[queue]] || 0
-  return COUNTED[queue] ? dispatchCounts.counts[COUNTED[queue]] : 0
+  // Jour choisi, compteurs du jour pas encore arrivés : rien plutôt que le total de toutes les dates
+  if (filters.day) return 0
+  return COUNTED[queue] ? dispatchCounts.counts[COUNTED[queue]] : exceptionCount(queue)
 }
 // Courses prévues après le jour choisi, hors de la file tant qu'on ne les demande pas
 const laterCount = computed(() => {
   if (!filters.day || !LATER_QUEUES[filters.queue]) return 0
-  return dayCounts.value?.later?.[filters.queue === 'by_client' ? 'to_pickup' : filters.queue] || 0
+  return dayCounts.value?.later?.[filters.queue === 'by_client' ? 'unassigned' : filters.queue] || 0
 })
-const isWorkQueue = computed(() => WORK_QUEUES.includes(filters.queue))
 // En retard : le jour de livraison est passé et la course est toujours en cours
-const isLate = (o) => !!filters.day && !FINAL.includes(o.status) && deliveryDay(o) < (filters.day < todayIso ? filters.day : todayIso)
+// Jour choisi : une course d'un jour passé qui y figure est encore dans sa règle (lot pas échu, MAD), pas en retard
+const isCarried = (o) => !!filters.day && !ALL_DATES_QUEUES.includes(filters.queue) && !FINAL.includes(o.status) && deliveryDay(o) < todayIso
+const isLate = (o) => !isCarried(o) && !FINAL.includes(o.status) && deliveryDay(o) < todayIso && (!!filters.day || filters.queue === 'untreated')
 const DAY_CHOICES = computed(() => [
   { value: todayIso, label: 'Aujourd\'hui', count: dispatchCounts.dayCounts?.days?.today },
   { value: tomorrowIso, label: 'Demain', count: dispatchCounts.dayCounts?.days?.tomorrow },
@@ -547,6 +602,12 @@ function onPeriod() {
     syncQuery()
   }
   load(1)
+}
+
+// Point du jour : « Livrées » ouvre les courses livrées du jour
+function showDelivered() {
+  filters.status = 'delivered'
+  setQueue('')
 }
 
 function toggleLater() {

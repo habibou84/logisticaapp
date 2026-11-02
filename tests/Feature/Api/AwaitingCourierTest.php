@@ -43,7 +43,7 @@ class AwaitingCourierTest extends TestCase
 
         $this->assertSame('pickup', $this->awaiting($order)['stage']);
         $this->assertFalse($this->awaiting($order)['late']);
-        $this->getJson('/api/v1/orders/counts')->assertOk()->assertJsonPath('data.to_pickup', 1)->assertJsonPath('data.late.total', 0);
+        $this->getJson('/api/v1/orders/counts')->assertOk()->assertJsonPath('data.unassigned', 1)->assertJsonPath('data.late.total', 0);
 
         $this->travel(31)->minutes();
         $this->assertTrue($this->awaiting($order)['late']);
@@ -51,7 +51,7 @@ class AwaitingCourierTest extends TestCase
         $this->getJson('/api/v1/orders/counts')->assertJsonPath('data.late.pickup', 1)->assertJsonPath('data.late.delivery', 0)
             ->assertJsonPath('data.waiting.pickup', ['count' => 1, 'late' => 1, 'oldest_minutes' => 31, 'threshold_minutes' => 30])
             ->assertJsonPath('data.waiting.delivery', ['count' => 0, 'late' => 0, 'oldest_minutes' => null, 'threshold_minutes' => 60]);
-        $this->assertTrue(collect($this->getJson('/api/v1/orders?queue=to_pickup')->json('data'))->first()['awaiting_courier']['late']);
+        $this->assertTrue(collect($this->getJson('/api/v1/orders?queue=unassigned&awaiting=pickup')->json('data'))->first()['awaiting_courier']['late']);
 
         // Assignée : plus en attente
         app(OrderDispatcher::class)->assign($this->dispatcher, $order, AssignmentType::Pickup, $this->courierA);
@@ -147,7 +147,7 @@ class AwaitingCourierTest extends TestCase
         $this->travel(15)->minutes();
         $this->artisan('orders:unassigned')->assertSuccessful();
         Notification::assertSentTo($this->dispatcher, OrderAlert::class, fn (OrderAlert $n) => $n->kind === 'unassigned_pickup'
-            && str_contains($n->title, '2 courses toujours sans livreur de ramassage') && $n->extra['href'] === '/admin/courses?queue=to_pickup');
+            && str_contains($n->title, '2 courses toujours sans livreur de ramassage') && $n->extra['href'] === '/admin/courses?queue=unassigned&awaiting=pickup');
         Notification::assertSentTo($this->admin, OrderAlert::class);
         Notification::assertNotSentTo($this->merchantUser, OrderAlert::class);
         // Alertes « sans livreur » reçues par le dispatcher et l'administrateur
@@ -178,7 +178,7 @@ class AwaitingCourierTest extends TestCase
         Notification::assertNothingSent();
 
         Sanctum::actingAs($this->dispatcher);
-        $this->getJson('/api/v1/orders/counts')->assertJsonPath('data.late.total', 0)->assertJsonPath('data.to_pickup', 1);
+        $this->getJson('/api/v1/orders/counts')->assertJsonPath('data.late.total', 0)->assertJsonPath('data.unassigned', 1);
 
         Sanctum::actingAs($this->merchantUser);
         $this->getJson('/api/v1/orders/counts')->assertForbidden();

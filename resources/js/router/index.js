@@ -84,6 +84,8 @@ const routes = [
       { path: 'courses', component: shared.orders, meta: { permission: 'orders.view' } },
       { path: 'courses/nouvelle', component: shared.orderCreate, meta: { permission: 'orders.create' } },
       { path: 'courses/import', component: () => import('../views/admin/OrderImport.vue'), meta: { permission: 'orders.create' } },
+      // Courses non traitées : jour de livraison dépassé, plus dans la règle de l'activité
+      { path: 'courses/non-traitees', component: () => import('../views/admin/UntreatedOrders.vue'), meta: { permission: 'orders.dispatch' } },
       { path: 'courses/:id(\\d+)', component: shared.orderDetail, meta: { permission: 'orders.view' } },
       { path: 'marchands', component: () => import('../views/admin/Merchants.vue'), meta: { permission: 'merchants.view' } },
       { path: 'marchands/:id(\\d+)/departements', component: () => import('../views/admin/MerchantDepartments.vue'), meta: { permission: 'merchants.view' } },

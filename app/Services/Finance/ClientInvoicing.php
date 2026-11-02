@@ -44,15 +44,7 @@ class ClientInvoicing
      */
     public function generate(Company $company, CarbonImmutable $month, ?array $activities = null): int
     {
-        [$from, $to] = $this->bounds($company, $month);
-
-        // Couples client et activité : une formule dans le mois, ou des courses facturées au mois
-        $pairs = BillingPlan::forCompany($company->id)->overlapping($from->toDateString(), $to->toDateString())
-            ->get(['merchant_id', 'activity'])->map(fn ($p) => $p->merchant_id.'|'.$p->activity->value)
-            ->merge($this->orders($company->id, null, null, $from, $to)->get(['merchant_id', 'activity'])->map(fn ($o) => $o->merchant_id.'|'.$o->activity->value))
-            ->merge($this->supplements($company->id, null, null, $from, $to)->get(['merchant_id', 'activity'])->map(fn ($s) => $s->merchant_id.'|'.$s->activity->value))
-            ->unique()->sort()
-            ->filter(fn ($p) => $activities === null || in_array(explode('|', $p)[1], $activities, true))->values();
+        $pairs = $this->pairs($company, $month, $activities);
         $merchants = Merchant::withoutGlobalScopes()->with('company')->where('company_id', $company->id)->whereIn('id', $pairs->map(fn ($p) => (int) explode('|', $p)[0]))->get()->keyBy('id');
 
         $count = 0;
@@ -64,6 +56,45 @@ class ClientInvoicing
         }
 
         return $count;
+    }
+
+    /**
+     * Couples « client|activité » à facturer pour le mois : une formule dans le mois, ou des courses facturées au mois.
+     *
+     * @param  list<string>|null  $activities
+     * @return BaseCollection<int, string>
+     */
+    public function pairs(Company $company, CarbonImmutable $month, ?array $activities = null): BaseCollection
+    {
+        [$from, $to] = $this->bounds($company, $month);
+
+        return BillingPlan::forCompany($company->id)->overlapping($from->toDateString(), $to->toDateString())
+            ->get(['merchant_id', 'activity'])->map(fn ($p) => $p->merchant_id.'|'.$p->activity->value)
+            ->merge($this->orders($company->id, null, null, $from, $to)->get(['merchant_id', 'activity'])->map(fn ($o) => $o->merchant_id.'|'.$o->activity->value))
+            ->merge($this->supplements($company->id, null, null, $from, $to)->get(['merchant_id', 'activity'])->map(fn ($s) => $s->merchant_id.'|'.$s->activity->value))
+            ->unique()->sort()
+            ->filter(fn ($p) => $activities === null || in_array(explode('|', $p)[1], $activities, true))->values();
+    }
+
+    /**
+     * Factures à émettre : brouillons pas encore envoyés, et clients du mois dernier sans facture calculée.
+     *
+     * @param  list<string>  $activities
+     * @return array{drafts: int, missing: int, period: string}
+     */
+    public function toIssue(Company $company, array $activities): array
+    {
+        $tz = $company->timezone ?: (string) config('app.timezone', 'UTC');
+        $last = CarbonImmutable::now($tz)->startOfMonth()->subMonth();
+        $invoiced = ClientInvoice::withoutGlobalScopes()->where('company_id', $company->id)->whereDate('period', $last->toDateString())
+            ->get(['merchant_id', 'activity'])->map(fn ($i) => $i->merchant_id.'|'.($i->activity instanceof Activity ? $i->activity->value : $i->activity))->flip();
+
+        return [
+            'drafts' => ClientInvoice::withoutGlobalScopes()->where('company_id', $company->id)->whereIn('activity', $activities)
+                ->where('status', ClientInvoiceStatus::Draft->value)->count(),
+            'missing' => $activities === [] ? 0 : $this->pairs($company, $last, $activities)->reject(fn (string $p) => isset($invoiced[$p]))->count(),
+            'period' => $last->format('Y-m'),
+        ];
     }
 
     /**

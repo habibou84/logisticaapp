@@ -12,6 +12,7 @@ use App\Services\Labels\LabelSettings;
 use App\Services\Orders\ActivityOptions;
 use App\Services\Photos\PhotoSettings;
 use App\Services\Ratings\RatingSettings;
+use App\Services\Reports\DashboardSettings;
 use App\Services\Vehicles\VehicleSettings;
 use App\Support\InvoicePayments;
 use App\Support\PhoneNumber as Phone;
@@ -64,6 +65,8 @@ class UpdateCompanyRequest extends FormRequest
             ...Fne::rules(),
             ...LabelSettings::rules(),
             ...PhotoSettings::rules(),
+            // Tableau de bord : cartes « À faire maintenant », alerte des lots, montants partagés
+            ...DashboardSettings::rules(),
             // Jour où le livreur peut livrer : jour même, dans le délai, sans limite
             'delivery_day_rules' => ['sometimes', 'nullable', 'array:ecommerce,distribution,mad'],
             'delivery_day_rules.*' => ['nullable', 'in:same_day,within_delay,none'],

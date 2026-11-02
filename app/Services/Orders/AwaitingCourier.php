@@ -323,7 +323,7 @@ class AwaitingCourier
             'unassigned_'.$stage,
             $title,
             'En attente depuis plus de '.self::duration($minutes)." : {$codes}. Assignez un livreur.",
-            ['severity' => 'alert', 'count' => $count, 'href' => '/admin/courses?queue='.($stage === self::PICKUP ? 'to_pickup' : 'to_deliver')],
+            ['severity' => 'alert', 'count' => $count, 'href' => '/admin/courses?queue=unassigned&awaiting='.$stage],
         ));
 
         return 1;

@@ -1,5 +1,7 @@
 <template>
-  <div class="space-y-6">
+  <!-- Équipe du dispatch : à faire maintenant, point du jour ou de la période, livreurs -->
+  <StaffDashboard v-if="isDispatchStaff" />
+  <div v-else class="space-y-6">
     <div class="flex flex-wrap items-end justify-between gap-3">
       <h1 class="text-xl font-bold">{{ isMerchant ? 'Mon point de livraisons' : 'Tableau de bord' }}</h1>
       <div class="flex items-end gap-2">
@@ -172,6 +174,7 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import http from '../../bootstrap/axios'
 import StatCard from '../../components/StatCard.vue'
+import StaffDashboard from '../../components/StaffDashboard.vue'
 import GuideVideosCard from '../../components/guide/GuideVideosCard.vue'
 import StatusBadge from '../../components/StatusBadge.vue'
 import { useAuthStore } from '../../stores/auth'
@@ -182,6 +185,7 @@ import { myActivities } from '../../utils/activities'
 
 const auth = useAuthStore()
 const isMerchant = computed(() => !!auth.user?.merchant_id)
+const isDispatchStaff = computed(() => !isMerchant.value && auth.can('orders.dispatch'))
 // Équipe : activités de son périmètre ; « » = toutes
 const activityChoices = computed(() => (isMerchant.value ? [] : myActivities(auth.user)))
 const activity = ref('')
@@ -266,6 +270,7 @@ async function loadContracts() {
 }
 
 function refresh() {
+  if (isDispatchStaff.value) return
   if (!isMerchant.value && auth.can('orders.dispatch')) dispatchCounts.fetchCounts().catch(() => {})
   loadSummary()
   loadQueues()

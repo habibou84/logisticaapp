@@ -14,6 +14,7 @@ use App\Services\Orders\ActivityOptions;
 use App\Services\Orders\DeliveryDayRule;
 use App\Services\Photos\PhotoSettings;
 use App\Services\Ratings\RatingSettings;
+use App\Services\Reports\DashboardSettings;
 use App\Services\Vehicles\VehicleSettings;
 use App\Support\Branding;
 use Illuminate\Http\Request;
@@ -79,6 +80,8 @@ class CompanyResource extends JsonResource
             'photo_settings' => app(PhotoSettings::class)->for($this->resource),
             // Jour où le livreur peut livrer, par activité
             'delivery_day_rules' => app(DeliveryDayRule::class)->for($this->resource),
+            // Tableau de bord : cartes « À faire maintenant », alerte des lots, montants partagés
+            'dashboard_settings' => app(DashboardSettings::class)->for($this->resource),
             'fne_api_key_set' => filled($this->resource->fne_api_key),
             'fne_enabled' => app(Fne::class)->enabled($this->resource),
             'fne_balance_sticker' => $this->fne_balance_sticker,
