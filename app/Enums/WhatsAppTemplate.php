@@ -116,7 +116,7 @@ enum WhatsAppTemplate: string
             self::OrderHandedOver => 'Au client, quand sa course de distribution ou de MAD est remise (avec le nom de la personne qui a reçu)',
             self::RateCourse => 'Au client, après la livraison, pour noter le livreur (si l\'entreprise le veut : Réglages › Notation)',
             self::CourseDelayed => 'Au client, quand un imprévu sur le terrain (panne, accident…) retarde sa course (Réglages › Événements terrain)',
-            self::StatsAlert => 'Aux administrateurs, quand un indicateur passe un seuil (Statistiques › Objectifs › Alertes)',
+            self::StatsAlert => 'Aux administrateurs, quand un indicateur passe un seuil (Statistiques › Analyse et partage › Partage et alertes)',
         };
     }
 

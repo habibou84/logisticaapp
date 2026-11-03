@@ -2,6 +2,25 @@
 
 Menu **Statistiques** de l'équipe. Les montants sont réservés aux comptes qui voient la caisse.
 
+## Organisation de la page
+
+Cinq rubriques, du « où en est-on ? » au « pourquoi ? », puis l'analyse et le partage. Chaque vue dit en une phrase
+ce qu'elle montre ; la période et l'activité ne s'affichent que si elles s'y appliquent. En haut à droite :
+**Exporter en Excel** (toute la période) et **Rapport du mois** (à imprimer ou enregistrer en PDF).
+
+| Rubrique | Vues | Question à laquelle elle répond |
+|---|---|---|
+| 🎯 Pilotage | Vue d'ensemble · Objectifs et tendances | Où en est-on, et va-t-on atteindre nos objectifs ? |
+| 🚚 Opérations | Livraisons · Délais et échecs · Livreurs · Zones · Terrain · Véhicules | Comment se passent les livraisons, et où ça coince ? |
+| 🏪 Clients | Activité des clients · Fidélité et paiements | Qui envoie, qui baisse, qui paie en retard ? |
+| 💰 Argent | Rentabilité · Trésorerie | Que gagne-t-on (marge) et où est l'argent aujourd'hui ? |
+| 🔀 Analyse et partage | Analyse croisée · Partage et alertes | Creuser une question, être prévenu, partager les chiffres. |
+
+Une seule source par chiffre : le compte de résultat (revenus, coûts, frais fixes, marge) est dans **Rentabilité** ;
+**Trésorerie** ne montre que l'argent en circulation. Les seuils d'objectifs et de rentabilité se règlent dans
+**Objectifs et tendances** ; les alertes, e-mails, Google Sheets et rapports clients dans **Partage et alertes**.
+Les adresses gardent l'onglet (`?onglet=quality`, `?onglet=profitability`…), utilisées par les alertes.
+
 ## Étape 1 — Rentabilité et objectifs
 
 ### Onglet « 💹 Rentabilité » (droit caisse)
@@ -50,7 +69,7 @@ Menu **Statistiques** de l'équipe. Les montants sont réservés aux comptes qui
   interne dépassé et les courses sans livreur.
 
 ### Alertes du matin (07 h 35, `stats:daily --alerts`)
-Réglables dans Objectifs › Fixer les objectifs : zone sous un taux de réussite (80 %) sur 7 jours, livreur dont les
+Réglables dans Analyse et partage › Partage et alertes : zone sous un taux de réussite (80 %) sur 7 jours, livreur dont les
 échecs doublent par rapport à la semaine d'avant, client en baisse (−30 % sur 30 jours contre la moyenne des 3 mois
 d'avant), volume minimal (10). Cloche des administrateurs, et WhatsApp si coché (modèle « alerte_statistique »).
 Une même alerte n'est pas renvoyée avant 7 jours.
@@ -82,7 +101,7 @@ API : `GET /stats/clients`, `GET /stats/pivot?rows=&cols=&metric=`.
   montants : droit caisse. `GET /stats/export?from=&to=&activity=`.
 - **🖨 Rapport du mois** (`/admin/rapport-mensuel?mois=AAAA-MM`) : page à l'en-tête de l'entreprise, à imprimer ou
   enregistrer en PDF (chiffres clés, objectifs, rentabilité, 10 plus gros clients, qualité de service).
-- **Onglet « 🔗 Intégrations »** :
+- **Vue « Partage et alertes »** :
   - **Google Sheets** : « Créer le lien », puis copier une formule `=IMPORTDATA("…")` dans une cellule. Jeux : mois
     par mois, rentabilité clients, zones, livreurs, délais, échecs, relevés du soir ; `?jours=90` pour une autre
     période (30 jours par défaut). Le lien contient une clé secrète (`companies.stats_feed_token`) : « Nouveau lien »

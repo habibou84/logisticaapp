@@ -1,5 +1,35 @@
 <template>
   <div class="space-y-4">
+    <!-- Alertes du matin (cloche des administrateurs, WhatsApp au choix) -->
+    <section v-if="canManage" class="card space-y-3 p-4">
+      <div>
+        <h2 class="font-semibold">🔔 Alertes du matin</h2>
+        <p class="text-sm text-slate-500">Chaque matin à 7 h 35, les administrateurs sont prévenus quand un indicateur passe un seuil (une même alerte au plus une fois par semaine). Laissez vide pour ne pas être alerté.</p>
+      </div>
+      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div>
+          <label class="label" for="alert-zone">Zone dont la réussite passe sous (%)</label>
+          <input id="alert-zone" v-model="alerts.zone_success_min" type="number" min="0" max="100" class="input" placeholder="Pas d'alerte">
+        </div>
+        <div>
+          <label class="label" for="alert-client">Client en baisse de plus de (%)</label>
+          <input id="alert-client" v-model="alerts.client_drop_percent" type="number" min="1" max="100" class="input" placeholder="Pas d'alerte">
+        </div>
+        <div>
+          <label class="label" for="alert-volume">Seulement à partir de (courses)</label>
+          <input id="alert-volume" v-model.number="alerts.min_volume" type="number" min="1" class="input">
+        </div>
+        <div class="space-y-2 text-sm sm:pt-6">
+          <label class="flex items-center gap-2"><input v-model="alerts.courier_failures_double" type="checkbox"> Livreur dont les échecs doublent</label>
+          <label class="flex items-center gap-2"><input v-model="alerts.whatsapp" type="checkbox"> Aussi sur WhatsApp</label>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button type="button" class="btn-primary" :disabled="busy" @click="saveAlerts">Enregistrer</button>
+        <span v-if="alertsMessage" class="text-sm text-slate-600">{{ alertsMessage }}</span>
+      </div>
+    </section>
+
     <!-- Rapports mensuels des clients : relus puis envoyés -->
     <section v-if="auth.can('merchants.view')" class="card space-y-3 p-4">
       <div class="flex flex-wrap items-center justify-between gap-2">
@@ -162,6 +192,24 @@ async function copy(text) {
   }
 }
 
+// Alertes du matin
+const alerts = reactive({})
+const alertsMessage = ref('')
+async function saveAlerts() {
+  busy.value = true
+  alertsMessage.value = ''
+  try {
+    const blank = (v) => (v === '' || v === undefined ? null : v)
+    await http.patch(`/companies/${auth.user.company_id}`, { stats_settings: { ...settings, alerts: { ...alerts, zone_success_min: blank(alerts.zone_success_min), client_drop_percent: blank(alerts.client_drop_percent) } } })
+    alertsMessage.value = '✓ Enregistré'
+    await loadEmail()
+  } catch (e) {
+    alertsMessage.value = apiErrorMessage(e)
+  } finally {
+    busy.value = false
+  }
+}
+
 // E-mail
 const email = reactive({ weekly: false, monthly: false })
 const recipients = ref('')
@@ -169,6 +217,7 @@ let settings = null
 async function loadEmail() {
   settings = (await http.get(`/companies/${auth.user.company_id}`)).data.data.stats_settings
   Object.assign(email, { weekly: settings.email.weekly, monthly: settings.email.monthly })
+  Object.assign(alerts, settings.alerts)
   recipients.value = settings.email.recipients.join('\n')
 }
 async function saveEmail() {

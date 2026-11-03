@@ -1,40 +1,58 @@
 <template>
   <div class="space-y-4">
-    <div class="flex flex-wrap items-end justify-between gap-3">
+    <!-- En-tête : titre, actions (export Excel, rapport du mois à imprimer) -->
+    <div class="flex flex-wrap items-center justify-between gap-3">
       <h1 class="text-xl font-bold">Statistiques</h1>
-      <!-- Filtres : une seule ligne, au-dessus de tous les graphiques -->
+      <div class="flex flex-wrap gap-2">
+        <button type="button" class="btn-secondary" :disabled="exporting" title="Toutes les statistiques de la période, en plusieurs onglets" @click="exportXlsx">{{ exporting ? 'Export…' : '📥 Exporter en Excel' }}</button>
+        <a :href="`/admin/rapport-mensuel?mois=${from.slice(0, 7)}`" target="_blank" class="btn-secondary" title="À imprimer ou enregistrer en PDF">🖨 Rapport du mois</a>
+      </div>
+    </div>
+
+    <!-- Navigation en deux niveaux : rubrique, puis vue -->
+    <nav class="space-y-2" aria-label="Rubriques des statistiques">
+      <div class="flex gap-2 overflow-x-auto no-scrollbar" role="tablist">
+        <button
+          v-for="g in sections" :key="g.key" type="button" role="tab" :aria-selected="section.key === g.key"
+          :class="['flex shrink-0 items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium ring-1', section.key === g.key ? 'bg-slate-900 text-white ring-slate-900' : 'bg-white text-slate-700 ring-slate-300 hover:bg-slate-50']"
+          @click="selectTab(g.tabs[0].key)"
+        >
+          <span aria-hidden="true">{{ g.icon }}</span>{{ g.label }}
+        </button>
+      </div>
+      <div v-if="section.tabs.length > 1" ref="tabBar" class="flex gap-1 overflow-x-auto border-b" role="tablist">
+        <button
+          v-for="t in section.tabs" :key="t.key" :data-tab="t.key" type="button" role="tab" :aria-selected="tab === t.key"
+          :class="['-mb-px whitespace-nowrap border-b-2 px-4 py-2 text-sm font-medium', tab === t.key ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-800']"
+          @click="selectTab(t.key)"
+        >{{ t.label }}</button>
+      </div>
+    </nav>
+
+    <!-- Ce que montre la vue, et les filtres qui s'y appliquent -->
+    <div class="flex flex-wrap items-end justify-between gap-3">
+      <p class="max-w-2xl text-sm text-slate-600">{{ current.description }}</p>
       <div class="flex flex-wrap items-end gap-2">
-        <div>
-          <label class="label" for="st-preset">Période</label>
-          <select id="st-preset" v-model="preset" class="input w-auto" @change="applyPreset">
-            <option v-for="(p, key) in PRESETS" :key="key" :value="key">{{ p.label }}</option>
-            <option value="custom">Dates au choix</option>
-          </select>
-        </div>
-        <div v-if="activities.length > 1">
+        <template v-if="current.period !== false">
+          <div>
+            <label class="label" for="st-preset">Période</label>
+            <select id="st-preset" v-model="preset" class="input w-auto" @change="applyPreset">
+              <option v-for="(p, key) in PRESETS" :key="key" :value="key">{{ p.label }}</option>
+              <option value="custom">Dates au choix</option>
+            </select>
+          </div>
+          <div><label class="label" for="st-from">Du</label><input id="st-from" v-model="from" type="date" class="input w-auto" :max="to" @change="custom"></div>
+          <div><label class="label" for="st-to">Au</label><input id="st-to" v-model="to" type="date" class="input w-auto" :min="from" :max="today()" @change="custom"></div>
+        </template>
+        <div v-if="activities.length > 1 && current.activity !== false">
           <label class="label" for="st-activity">Activité</label>
           <select id="st-activity" v-model="activity" class="input w-auto" @change="reloadAll">
             <option value="">Toutes</option>
             <option v-for="a in activities" :key="a.value" :value="a.value">{{ a.label }}</option>
           </select>
         </div>
-        <div><label class="label" for="st-from">Du</label><input id="st-from" v-model="from" type="date" class="input w-auto" :max="to" @change="custom"></div>
-        <div><label class="label" for="st-to">Au</label><input id="st-to" v-model="to" type="date" class="input w-auto" :min="from" :max="today()" @change="custom"></div>
-        <!-- Export Excel complet de la période ; rapport mensuel à imprimer (PDF) -->
-        <button type="button" class="btn-secondary" :disabled="exporting" @click="exportXlsx">{{ exporting ? 'Export…' : '📥 Excel' }}</button>
-        <a :href="`/admin/rapport-mensuel?mois=${from.slice(0, 7)}`" target="_blank" class="btn-secondary">🖨 Rapport du mois</a>
       </div>
     </div>
-
-    <nav ref="tabBar" class="flex gap-1 overflow-x-auto border-b">
-      <button
-        v-for="t in tabs"
-        :key="t.key"
-        :data-tab="t.key"
-        :class="['-mb-px whitespace-nowrap border-b-2 px-4 py-2 text-sm font-medium', tab === t.key ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-800']"
-        @click="selectTab(t.key)"
-      >{{ t.label }}</button>
-    </nav>
 
     <p v-if="error" class="rounded bg-red-50 px-3 py-2 text-sm text-red-700">{{ error }}</p>
     <p v-if="loading && !data[tab]" class="text-slate-500">Chargement…</p>
@@ -252,26 +270,54 @@ const PRESETS = {
   },
 }
 
-const tabs = computed(() => [
-  { key: 'overview', label: 'Vue d\'ensemble' },
-  { key: 'deliveries', label: 'Livraisons' },
-  ...(auth.can('orders.dispatch') ? [{ key: 'couriers', label: 'Livreurs' }] : []),
-  ...(auth.can('merchants.view') ? [{ key: 'merchants', label: 'Clients' }] : []),
-  // Fidélité, clients en baisse, 80/20, paiements ; tableau croisé à deux axes
-  ...(auth.can('merchants.view') ? [{ key: 'clients', label: '🏪 Fidélité et paiements' }] : []),
-  { key: 'pivot', label: '🔀 Analyse croisée' },
-  // Google Sheets, point par e-mail, rapports mensuels des clients
-  ...(auth.can('settings.manage') || auth.can('merchants.view') ? [{ key: 'integrations', label: '🔗 Intégrations' }] : []),
-  { key: 'zones', label: 'Zones' },
-  // Objectifs du mois et tendances sur 13 mois ; rentabilité (droit caisse)
-  { key: 'goals', label: '🎯 Objectifs' },
-  // Respect des délais, échecs, distribution, courses non traitées dans le temps
-  { key: 'quality', label: '⏱ Délais et échecs' },
-  ...(auth.can('finance.view') ? [{ key: 'profitability', label: '💹 Rentabilité' }] : []),
-  ...(auth.can('finance.view') ? [{ key: 'finances', label: 'Finances' }] : []),
-  ...(auth.can('field_events.manage') ? [{ key: 'field', label: 'Terrain' }] : []),
-  ...(auth.can('fleet.manage') ? [{ key: 'vehicles', label: 'Véhicules' }] : []),
-])
+/**
+ * Rubriques et vues des statistiques : du pilotage (où en est-on ?) au détail (pourquoi ?), puis l'analyse et le partage.
+ * Chaque vue dit ce qu'elle montre ; période et activité ne s'affichent que si elles s'y appliquent.
+ */
+const SECTIONS = [
+  {
+    key: 'pilotage', label: 'Pilotage', icon: '🎯',
+    tabs: [
+      { key: 'overview', label: 'Vue d\'ensemble', description: 'Les chiffres clés de la période comparés à la période précédente, les courses jour par jour et les heures de pointe.' },
+      { key: 'goals', label: 'Objectifs et tendances', period: false, description: 'Le mois en cours face à ses objectifs, sa projection de fin de mois, la comparaison avec l\'an dernier et 13 mois d\'historique.' },
+    ],
+  },
+  {
+    key: 'operations', label: 'Opérations', icon: '🚚',
+    tabs: [
+      { key: 'deliveries', label: 'Livraisons', description: 'Réussite au premier passage, délais de ramassage et de livraison, issues des courses de la période.' },
+      { key: 'quality', label: 'Délais et échecs', description: 'Respect des délais par client, zone et livreur, lots et MAD, analyse des échecs, distribution et courses non traitées dans le temps.' },
+      { key: 'couriers', label: 'Livreurs', permission: 'orders.dispatch', description: 'Livraisons, réussite, rythme et caisse de chaque livreur sur la période.' },
+      { key: 'zones', label: 'Zones', description: 'Volumes, réussite et délais par zone de livraison.' },
+      { key: 'field', label: 'Terrain', permission: 'field_events.manage', description: 'Pannes, accidents et autres événements remontés par les livreurs.' },
+      { key: 'vehicles', label: 'Véhicules', permission: 'fleet.manage', activity: false, description: 'Coûts, consommation et immobilisations du parc.' },
+    ],
+  },
+  {
+    key: 'clients', label: 'Clients', icon: '🏪',
+    tabs: [
+      { key: 'merchants', label: 'Activité des clients', permission: 'merchants.view', description: 'Courses, réussite et montants de chaque client sur la période, clients inactifs à relancer.' },
+      { key: 'clients', label: 'Fidélité et paiements', permission: 'merchants.view', description: 'Concentration du chiffre d\'affaires, clients en baisse, fidélité des nouveaux clients, paiement des factures.' },
+    ],
+  },
+  {
+    key: 'argent', label: 'Argent', icon: '💰',
+    tabs: [
+      { key: 'profitability', label: 'Rentabilité', permission: 'finance.view', description: 'Ce que rapportent et coûtent les clients, les zones, les livreurs et les contrats : marge nette, frais fixes compris.' },
+      { key: 'finances', label: 'Trésorerie', permission: 'finance.view', activity: false, description: 'L\'argent en circulation aujourd\'hui : chez les livreurs, à reverser aux clients, dû par des clients.' },
+    ],
+  },
+  {
+    key: 'partage', label: 'Analyse et partage', icon: '🔀',
+    tabs: [
+      { key: 'pivot', label: 'Analyse croisée', description: 'Croisez deux axes (client, zone, livreur, activité, jour, mois, heure) avec l\'indicateur de votre choix.' },
+      { key: 'integrations', label: 'Partage et alertes', period: false, activity: false, permission: ['settings.manage', 'merchants.view'], description: 'Alertes du matin, point par e-mail, lien Google Sheets et rapports mensuels des clients sous contrat.' },
+    ],
+  },
+]
+const allowed = (t) => !t.permission || [t.permission].flat().some((p) => auth.can(p))
+const sections = computed(() => SECTIONS.map((g) => ({ ...g, tabs: g.tabs.filter(allowed) })).filter((g) => g.tabs.length))
+const tabs = computed(() => sections.value.flatMap((g) => g.tabs))
 const ENDPOINTS = {
   ...Object.fromEntries(['overview', 'deliveries', 'couriers', 'merchants', 'zones', 'finances'].map((k) => [k, `/stats/${k}`])),
   // Événements terrain (panne, accident…)
@@ -296,6 +342,8 @@ const activities = computed(() => myActivities(auth.user))
 const activity = ref('')
 const showTable = ref(false)
 
+const section = computed(() => sections.value.find((g) => g.tabs.some((t) => t.key === tab.value)) || sections.value[0])
+const current = computed(() => tabs.value.find((t) => t.key === tab.value) || tabs.value[0])
 const ov = computed(() => data.overview)
 const dl = computed(() => data.deliveries)
 const cr = computed(() => data.couriers)

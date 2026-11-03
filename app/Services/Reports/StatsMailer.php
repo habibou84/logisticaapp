@@ -9,7 +9,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Mail;
 
 /**
- * Point par e-mail (Statistiques › Objectifs › Intégrations) : la semaine écoulée chaque lundi, le mois écoulé le 1er,
+ * Point par e-mail (Statistiques › Analyse et partage › Partage et alertes) : la semaine écoulée chaque lundi, le mois écoulé le 1er,
  * aux adresses choisies, avec le fichier Excel complet.
  */
 class StatsMailer

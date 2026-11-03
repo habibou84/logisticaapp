@@ -23,7 +23,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Notification;
 
 /**
- * Alertes statistiques du matin (réglages : Statistiques › Objectifs › Alertes), aux administrateurs :
+ * Alertes statistiques du matin (réglages : Statistiques › Analyse et partage › Partage et alertes), aux administrateurs :
  * - taux de réussite d'une zone sous le seuil sur les 7 derniers jours (assez de passages) ;
  * - échecs d'un livreur doublés par rapport aux 7 jours d'avant ;
  * - client en baisse : courses des 30 derniers jours sous la moyenne mensuelle des 3 mois d'avant.

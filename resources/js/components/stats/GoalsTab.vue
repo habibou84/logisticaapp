@@ -7,7 +7,7 @@
           <h2 class="font-semibold">🎯 Objectifs de {{ data.current.label }}</h2>
           <p class="text-sm text-slate-500">Jour {{ data.current.elapsed_days }} sur {{ data.current.days_in_month }} · la projection suit le rythme actuel jusqu'à la fin du mois.</p>
         </div>
-        <button v-if="canEdit" type="button" class="btn-secondary" @click="editing = !editing">{{ editing ? 'Fermer' : '✏️ Fixer les objectifs' }}</button>
+        <button v-if="canEdit" type="button" class="btn-secondary" @click="editing = !editing">{{ editing ? 'Fermer' : '✏️ Objectifs et seuils' }}</button>
       </div>
 
       <form v-if="editing" class="grid gap-3 rounded-lg bg-slate-50 p-3 sm:grid-cols-2 lg:grid-cols-4" @submit.prevent="save">
@@ -27,25 +27,6 @@
           <label class="label" for="forfait-low">Forfait « sous-utilisé » en dessous de (%)</label>
           <input id="forfait-low" v-model.number="form.forfait_low" type="number" min="0" max="100" class="input">
         </div>
-        <fieldset class="grid gap-3 sm:col-span-2 lg:col-span-4 sm:grid-cols-2 lg:grid-cols-4 rounded-lg border border-slate-200 p-3">
-          <legend class="px-1 text-sm font-semibold">🔔 Alertes du matin aux administrateurs</legend>
-          <div>
-            <label class="label" for="alert-zone">Zone dont la réussite passe sous (%)</label>
-            <input id="alert-zone" v-model="form.alerts.zone_success_min" type="number" min="0" max="100" class="input" placeholder="Pas d'alerte">
-          </div>
-          <div>
-            <label class="label" for="alert-client">Client en baisse de plus de (%)</label>
-            <input id="alert-client" v-model="form.alerts.client_drop_percent" type="number" min="1" max="100" class="input" placeholder="Pas d'alerte">
-          </div>
-          <div>
-            <label class="label" for="alert-volume">Seulement à partir de (courses)</label>
-            <input id="alert-volume" v-model.number="form.alerts.min_volume" type="number" min="1" class="input">
-          </div>
-          <div class="space-y-2 text-sm">
-            <label class="flex items-center gap-2"><input v-model="form.alerts.courier_failures_double" type="checkbox"> Livreur dont les échecs doublent</label>
-            <label class="flex items-center gap-2"><input v-model="form.alerts.whatsapp" type="checkbox"> Aussi sur WhatsApp</label>
-          </div>
-        </fieldset>
         <div class="flex items-end gap-2">
           <button type="submit" class="btn-primary" :disabled="saving">Enregistrer</button>
           <span v-if="error" class="text-sm text-red-700">{{ error }}</span>
@@ -184,9 +165,7 @@ async function save() {
   error.value = ''
   try {
     const goals = Object.fromEntries(Object.entries(form.goals).map(([k, v]) => [k, v === '' || v === null || v === undefined ? null : Number(v)]))
-    const blank = (v) => (v === '' || v === undefined ? null : v)
-    const alerts = { ...form.alerts, zone_success_min: blank(form.alerts.zone_success_min), client_drop_percent: blank(form.alerts.client_drop_percent) }
-    await http.patch(`/companies/${companyId}`, { stats_settings: { ...form, goals, alerts } })
+    await http.patch(`/companies/${companyId}`, { stats_settings: { ...form, goals } })
     editing.value = false
     emit('reload')
   } catch (e) {
