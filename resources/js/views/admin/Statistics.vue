@@ -176,6 +176,8 @@
     <MerchantsTab v-if="tab === 'merchants' && data.merchants" :data="data.merchants" :with-amounts="withAmounts" exportable />
     <ZonesTab v-if="tab === 'zones' && data.zones" :data="data.zones" :with-amounts="withAmounts" exportable />
     <FinancesTab v-if="tab === 'finances' && data.finances" :data="data.finances" />
+    <GoalsTab v-if="tab === 'goals' && data.goals" :data="data.goals" @reload="load" />
+    <ProfitabilityTab v-if="tab === 'profitability' && data.profitability" :data="data.profitability" @reload="load" />
     <FieldTab v-if="tab === 'field' && data.field" :data="data.field" />
     <VehiclesTab v-if="tab === 'vehicles' && data.vehicles" :data="data.vehicles" />
   </div>
@@ -189,6 +191,8 @@ import BarList from '../../components/stats/BarList.vue'
 import ColumnChart from '../../components/stats/ColumnChart.vue'
 import Heatmap from '../../components/stats/Heatmap.vue'
 import FinancesTab from '../../components/stats/FinancesTab.vue'
+import GoalsTab from '../../components/stats/GoalsTab.vue'
+import ProfitabilityTab from '../../components/stats/ProfitabilityTab.vue'
 import FieldTab from '../../components/stats/FieldTab.vue'
 import VehiclesTab from '../../components/stats/VehiclesTab.vue'
 import KpiTile from '../../components/stats/KpiTile.vue'
@@ -243,6 +247,9 @@ const tabs = computed(() => [
   ...(auth.can('orders.dispatch') ? [{ key: 'couriers', label: 'Livreurs' }] : []),
   ...(auth.can('merchants.view') ? [{ key: 'merchants', label: 'Clients' }] : []),
   { key: 'zones', label: 'Zones' },
+  // Objectifs du mois et tendances sur 13 mois ; rentabilité (droit caisse)
+  { key: 'goals', label: '🎯 Objectifs' },
+  ...(auth.can('finance.view') ? [{ key: 'profitability', label: '💹 Rentabilité' }] : []),
   ...(auth.can('finance.view') ? [{ key: 'finances', label: 'Finances' }] : []),
   ...(auth.can('field_events.manage') ? [{ key: 'field', label: 'Terrain' }] : []),
   ...(auth.can('fleet.manage') ? [{ key: 'vehicles', label: 'Véhicules' }] : []),
@@ -251,6 +258,8 @@ const ENDPOINTS = {
   ...Object.fromEntries(['overview', 'deliveries', 'couriers', 'merchants', 'zones', 'finances'].map((k) => [k, `/stats/${k}`])),
   // Événements terrain (panne, accident…)
   field: '/field-events/stats',
+  goals: '/stats/performance',
+  profitability: '/stats/profitability',
   vehicles: '/vehicles/stats',
 }
 

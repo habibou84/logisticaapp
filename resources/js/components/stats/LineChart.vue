@@ -14,7 +14,7 @@
           <line :x1="pad.left" :x2="width - pad.right" :y1="y(t)" :y2="y(t)" :stroke="INK.grid" stroke-width="1" />
           <text :x="pad.left - 8" :y="y(t)" text-anchor="end" dominant-baseline="middle" font-size="11" :fill="INK.muted">{{ format(t) }}</text>
         </g>
-        <text v-for="i in xLabels" :key="`x${i}`" :x="x(i)" :y="height - 6" text-anchor="middle" font-size="11" :fill="INK.muted">{{ shortDate(labels[i]) }}</text>
+        <text v-for="i in xLabels" :key="`x${i}`" :x="x(i)" :y="height - 6" text-anchor="middle" font-size="11" :fill="INK.muted">{{ labelText(labels[i]) }}</text>
 
         <line v-if="hover !== null" :x1="x(hover)" :x2="x(hover)" :y1="pad.top" :y2="height - pad.bottom" :stroke="INK.muted" stroke-width="1" stroke-dasharray="3 3" />
 
@@ -33,7 +33,7 @@
         class="pointer-events-none absolute z-10 rounded-lg border bg-white px-3 py-2 text-sm shadow-lg"
         :style="tooltipStyle"
       >
-        <p class="font-medium text-slate-900">{{ shortDate(labels[hover], true) }}</p>
+        <p class="font-medium text-slate-900">{{ labelText(labels[hover], true) }}</p>
         <p v-for="s in series" :key="`t${s.label}`" class="flex items-center gap-2 text-slate-600">
           <span class="inline-block h-2 w-2 rounded-full" :style="{ background: s.color }" />
           {{ s.label }} <span class="ml-auto pl-3 font-semibold text-slate-900">{{ format(s.values[hover] ?? 0, true) }}</span>
@@ -56,7 +56,10 @@ const props = defineProps({
   // format(valeur, détaillé ?) : axe compact, info-bulle complète
   format: { type: Function, default: (v) => v.toLocaleString('fr-FR') },
   ariaLabel: { type: String, default: '' },
+  // Libellés : dates (AAAA-MM-JJ, par défaut) ou textes affichés tels quels (mois…)
+  dates: { type: Boolean, default: true },
 })
+const labelText = (v, full = false) => (props.dates ? shortDate(v, full) : v)
 
 const box = ref(null)
 const width = useWidth(box)

@@ -18,6 +18,7 @@ use App\Services\Orders\DeliveryDayRule;
 use App\Services\Photos\PhotoSettings;
 use App\Services\Ratings\RatingSettings;
 use App\Services\Reports\DashboardSettings;
+use App\Services\Reports\StatsSettings;
 use App\Services\Vehicles\VehicleSettings;
 use App\Support\InvoicePayments;
 use Illuminate\Support\Facades\Gate;
@@ -58,6 +59,9 @@ class CompanyController extends Controller
         }
         if (array_key_exists('delivery_day_rules', $data)) {
             $data['delivery_day_rules'] = DeliveryDayRule::clean((array) ($data['delivery_day_rules'] ?? []));
+        }
+        if (array_key_exists('stats_settings', $data)) {
+            $data['stats_settings'] = StatsSettings::clean((array) ($data['stats_settings'] ?? []));
         }
         if (array_key_exists('dashboard_settings', $data)) {
             $data['dashboard_settings'] = DashboardSettings::clean((array) ($data['dashboard_settings'] ?? []));

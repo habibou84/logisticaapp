@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api\V1;
 use App\Enums\Activity;
 use App\Enums\Permission;
 use App\Http\Controllers\Controller;
+use App\Services\Reports\Performance;
+use App\Services\Reports\Profitability;
 use App\Services\Reports\Statistics;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
@@ -65,6 +67,24 @@ class StatisticsController extends Controller
         [$from, $to] = $this->period($request);
 
         return response()->json(['data' => $this->stats($request)->finances($from, $to)]);
+    }
+
+    /** Rentabilité : clients, zones, livreurs, contrats (montants : droit caisse) */
+    public function profitability(Request $request, Profitability $profitability): JsonResponse
+    {
+        abort_unless($this->withAmounts($request), 403);
+        $this->stats($request);
+        [$from, $to] = $this->period($request);
+
+        return response()->json(['data' => $profitability->build($request->user()->company->fresh(), $from, $to, $request->input('activity'))]);
+    }
+
+    /** Objectifs du mois et tendances sur 13 mois (montants pour qui voit la caisse) */
+    public function performance(Request $request, Performance $performance): JsonResponse
+    {
+        $this->stats($request);
+
+        return response()->json(['data' => $performance->build($request->user()->company->fresh(), $this->withAmounts($request), $request->input('activity'))]);
     }
 
     /**

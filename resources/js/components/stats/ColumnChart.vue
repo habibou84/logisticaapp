@@ -5,7 +5,7 @@
         <line :x1="pad.left" :x2="width - pad.right" :y1="y(t)" :y2="y(t)" :stroke="INK.grid" stroke-width="1" />
         <text :x="pad.left - 8" :y="y(t)" text-anchor="end" dominant-baseline="middle" font-size="11" :fill="INK.muted">{{ format(t) }}</text>
       </g>
-      <text v-for="i in xLabels" :key="`x${i}`" :x="center(i)" :y="height - 6" text-anchor="middle" font-size="11" :fill="INK.muted">{{ shortDate(labels[i]) }}</text>
+      <text v-for="i in xLabels" :key="`x${i}`" :x="center(i)" :y="height - 6" text-anchor="middle" font-size="11" :fill="INK.muted">{{ labelText(labels[i]) }}</text>
 
       <!-- Colonnes fines, extrémité arrondie, posées sur la ligne de base -->
       <path v-for="(v, i) in values" :key="i" :d="column(i, v)" :fill="color" :opacity="hover === null || hover === i ? 1 : 0.55" />
@@ -25,7 +25,7 @@
     </svg>
 
     <div v-if="hover !== null" class="pointer-events-none absolute z-10 rounded-lg border bg-white px-3 py-2 text-sm shadow-lg" :style="tooltipStyle">
-      <p class="font-medium text-slate-900">{{ shortDate(labels[hover], true) }}</p>
+      <p class="font-medium text-slate-900">{{ labelText(labels[hover], true) }}</p>
       <p class="text-slate-600">{{ label }} : <span class="font-semibold text-slate-900">{{ format(values[hover], true) }}</span></p>
     </div>
   </div>
@@ -44,7 +44,10 @@ const props = defineProps({
   height: { type: Number, default: 200 },
   format: { type: Function, default: (v) => v.toLocaleString('fr-FR') },
   ariaLabel: { type: String, default: '' },
+  // Libellés : dates (AAAA-MM-JJ, par défaut) ou textes affichés tels quels (mois…)
+  dates: { type: Boolean, default: true },
 })
+const labelText = (v, full = false) => (props.dates ? shortDate(v, full) : v)
 
 const box = ref(null)
 const width = useWidth(box)

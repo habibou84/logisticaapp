@@ -29,6 +29,7 @@ use App\Http\Controllers\Api\V1\DestinationController;
 use App\Http\Controllers\Api\V1\FieldEventController;
 use App\Http\Controllers\Api\V1\FieldReportController;
 use App\Http\Controllers\Api\V1\FinanceController;
+use App\Http\Controllers\Api\V1\FixedCostController;
 use App\Http\Controllers\Api\V1\HubController;
 use App\Http\Controllers\Api\V1\IncidentReasonController;
 use App\Http\Controllers\Api\V1\LabelController;
@@ -554,7 +555,12 @@ Route::prefix('v1')->name('v1.')->group(function () {
             Route::get('merchants', 'merchants')->name('merchants');
             Route::get('zones', 'zones')->name('zones');
             Route::get('finances', 'finances')->name('finances');
+            // Rentabilité (clients, zones, livreurs, contrats) ; objectifs et tendances sur 13 mois
+            Route::get('profitability', 'profitability')->name('profitability');
+            Route::get('performance', 'performance')->name('performance');
         });
+        // Frais fixes (loyer, équipe…) comptés dans la marge nette
+        Route::apiResource('fixed-costs', FixedCostController::class)->except(['show']);
 
         // Caisse et finances (droits vérifiés dans le contrôleur : finance.view / finance.manage)
         Route::prefix('finance')->name('finance.')->controller(FinanceController::class)->group(function () {

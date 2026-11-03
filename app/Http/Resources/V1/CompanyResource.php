@@ -15,6 +15,7 @@ use App\Services\Orders\DeliveryDayRule;
 use App\Services\Photos\PhotoSettings;
 use App\Services\Ratings\RatingSettings;
 use App\Services\Reports\DashboardSettings;
+use App\Services\Reports\StatsSettings;
 use App\Services\Vehicles\VehicleSettings;
 use App\Support\Branding;
 use Illuminate\Http\Request;
@@ -82,6 +83,8 @@ class CompanyResource extends JsonResource
             'delivery_day_rules' => app(DeliveryDayRule::class)->for($this->resource),
             // Tableau de bord : cartes « À faire maintenant », alerte des lots, montants partagés
             'dashboard_settings' => app(DashboardSettings::class)->for($this->resource),
+            // Statistiques : objectifs du mois, seuils de rentabilité et des forfaits
+            'stats_settings' => app(StatsSettings::class)->for($this->resource),
             'fne_api_key_set' => filled($this->resource->fne_api_key),
             'fne_enabled' => app(Fne::class)->enabled($this->resource),
             'fne_balance_sticker' => $this->fne_balance_sticker,

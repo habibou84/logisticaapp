@@ -43,6 +43,7 @@ class Company extends Model
         // Jour où le livreur peut livrer, par activité
         'delivery_day_rules',
         'dashboard_settings',
+        'stats_settings',
         'invoice_payment_methods',
         'internal_delays',
         'activity_options',
@@ -118,6 +119,7 @@ class Company extends Model
             'photo_settings' => 'array',
             'delivery_day_rules' => 'array',
             'dashboard_settings' => 'array',
+            'stats_settings' => 'array',
             'fne_api_key' => 'encrypted',
             'fne_warning' => 'boolean',
             'fne_balance_sticker' => 'integer',
