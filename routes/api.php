@@ -560,6 +560,9 @@ Route::prefix('v1')->name('v1.')->group(function () {
             Route::get('performance', 'performance')->name('performance');
             // Délais, échecs, distribution, historique des courses non traitées
             Route::get('quality', 'quality')->name('quality');
+            // Clients (fidélité, baisse, 80/20, paiements) et analyse croisée
+            Route::get('clients', 'clients')->name('clients');
+            Route::get('pivot', 'pivot')->name('pivot');
         });
         // Frais fixes (loyer, équipe…) comptés dans la marge nette
         Route::apiResource('fixed-costs', FixedCostController::class)->except(['show']);

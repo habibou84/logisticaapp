@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Api\V1;
 use App\Enums\Activity;
 use App\Enums\Permission;
 use App\Http\Controllers\Controller;
+use App\Services\Reports\ClientInsights;
 use App\Services\Reports\Performance;
+use App\Services\Reports\Pivot;
 use App\Services\Reports\Profitability;
 use App\Services\Reports\ServiceQuality;
 use App\Services\Reports\Statistics;
@@ -87,6 +89,37 @@ class StatisticsController extends Controller
         [$from, $to] = $this->period($request);
 
         return response()->json(['data' => $quality->build($request->user()->company->fresh(), $from, $to, $request->input('activity'))]);
+    }
+
+    /** Clients : fidélité par mois d'arrivée, clients en baisse, concentration 80/20, délais de paiement */
+    public function clients(Request $request, ClientInsights $insights): JsonResponse
+    {
+        abort_unless($request->user()->can(Permission::MerchantsView->value), 403);
+        $this->stats($request);
+        [$from, $to] = $this->period($request);
+
+        return response()->json(['data' => $insights->build($request->user()->company->fresh(), $from, $to, $this->withAmounts($request), $request->input('activity'))]);
+    }
+
+    /** Analyse croisée : deux axes et un indicateur (chiffre d'affaires : droit caisse) */
+    public function pivot(Request $request, Pivot $pivot): JsonResponse
+    {
+        $this->stats($request);
+        $data = $request->validate([
+            'rows' => ['required', Rule::in(array_keys(Pivot::DIMENSIONS))],
+            'cols' => ['nullable', 'different:rows', Rule::in(array_keys(Pivot::DIMENSIONS))],
+            'metric' => ['required', Rule::in(array_keys(Pivot::METRICS))],
+        ]);
+        abort_if($data['metric'] === 'revenue' && ! $this->withAmounts($request), 403);
+        abort_if(in_array('courier', [$data['rows'], $data['cols'] ?? null], true) && ! $request->user()->can(Permission::OrdersDispatch->value), 403);
+        abort_if(in_array('client', [$data['rows'], $data['cols'] ?? null], true) && ! $request->user()->can(Permission::MerchantsView->value), 403);
+        [$from, $to] = $this->period($request);
+
+        return response()->json(['data' => [
+            ...$pivot->build($request->user()->company->fresh(), $from, $to, $data['rows'], $data['cols'] ?? null, $data['metric'], $request->input('activity')),
+            'dimensions' => Pivot::DIMENSIONS,
+            'metrics' => Pivot::METRICS,
+        ]]);
     }
 
     /** Objectifs du mois et tendances sur 13 mois (montants pour qui voit la caisse) */

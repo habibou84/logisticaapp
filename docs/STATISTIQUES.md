@@ -56,3 +56,21 @@ d'avant), volume minimal (10). Cloche des administrateurs, et WhatsApp si coché
 Une même alerte n'est pas renvoyée avant 7 jours.
 
 API : `GET /stats/quality?from=&to=&activity=`.
+
+## Étape 3 — Clients et analyse croisée
+
+### Onglet « 🏪 Fidélité et paiements » (droit Clients ; montants : caisse)
+- **Concentration (80/20)** : nombre de clients qui font 80 % du chiffre d'affaires, part du premier et des trois
+  premiers (alerte au-delà de 30 % pour un seul client).
+- **Clients en baisse** : 30 derniers jours contre la moyenne mensuelle des 3 mois d'avant (baisse de 20 % et plus),
+  avec boutons Appeler et WhatsApp (message de relance prérempli).
+- **Fidélité des nouveaux clients** : part des clients arrivés un mois qui envoient encore 1, 2, 3 et 6 mois après.
+- **Paiement des factures** : délai moyen de paiement, reste à payer pas encore échu puis par retard (1-30, 31-60,
+  61-90, plus de 90 jours), par client.
+
+### Onglet « 🔀 Analyse croisée »
+Deux axes au choix (client, zone, livreur, activité, jour de la semaine, mois, heure de création) et un indicateur
+(courses, livrées, échecs, taux de réussite, plis et colis, chiffre d'affaires), sur les courses créées pendant la
+période. Export du tableau.
+
+API : `GET /stats/clients`, `GET /stats/pivot?rows=&cols=&metric=`.
