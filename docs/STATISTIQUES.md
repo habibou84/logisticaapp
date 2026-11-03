@@ -74,3 +74,27 @@ Deux axes au choix (client, zone, livreur, activité, jour de la semaine, mois, 
 période. Export du tableau.
 
 API : `GET /stats/clients`, `GET /stats/pivot?rows=&cols=&metric=`.
+
+## Étape 4 — Intégrations (sans IA)
+
+- **📥 Excel** (en haut des statistiques) : un fichier de plusieurs onglets pour la période (synthèse, mois par mois,
+  rentabilité par client, zone et livreur, contrats, délais, échecs, clients en baisse, paiements). Onglets avec
+  montants : droit caisse. `GET /stats/export?from=&to=&activity=`.
+- **🖨 Rapport du mois** (`/admin/rapport-mensuel?mois=AAAA-MM`) : page à l'en-tête de l'entreprise, à imprimer ou
+  enregistrer en PDF (chiffres clés, objectifs, rentabilité, 10 plus gros clients, qualité de service).
+- **Onglet « 🔗 Intégrations »** :
+  - **Google Sheets** : « Créer le lien », puis copier une formule `=IMPORTDATA("…")` dans une cellule. Jeux : mois
+    par mois, rentabilité clients, zones, livreurs, délais, échecs, relevés du soir ; `?jours=90` pour une autre
+    période (30 jours par défaut). Le lien contient une clé secrète (`companies.stats_feed_token`) : « Nouveau lien »
+    rend l'ancien inutilisable, « Couper le lien » l'arrête. `GET /api/v1/stats-feed/{clé}/{jeu}.csv`.
+  - **Point par e-mail** : destinataires, chaque lundi (semaine écoulée) et/ou le 1er du mois (mois écoulé), avec le
+    fichier Excel. Bouton « Envoyer un essai ». Le serveur doit avoir un envoi d'e-mails configuré (`MAIL_MAILER`,
+    `MAIL_HOST`… dans `.env`).
+  - **Rapports mensuels des clients sous contrat** (distribution, MAD) : préparés en brouillon le 1er du mois
+    (`stats:email monthly`), relus par l'équipe (droit « Gérer les factures » pour envoyer), avec un mot facultatif.
+    Une fois envoyé, le rapport ne change plus ; le client (propriétaire, gestionnaire) est prévenu et le retrouve
+    dans **Mes rapports** (`/marchand/rapports`), imprimable.
+- **Espace client** : statistiques enrichies de la part des courses livrées dans le délai et des courses par
+  département.
+
+Tâches planifiées : `stats:email weekly` (lundi 07 h 40), `stats:email monthly` (1er du mois 07 h 45).

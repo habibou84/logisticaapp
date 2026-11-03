@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BillingPlanController;
 use App\Http\Controllers\Api\V1\ClientInvoiceController;
 use App\Http\Controllers\Api\V1\ClientRateController;
+use App\Http\Controllers\Api\V1\ClientReportController;
 use App\Http\Controllers\Api\V1\ClientSpaceController;
 use App\Http\Controllers\Api\V1\ClientSupplementController;
 use App\Http\Controllers\Api\V1\CompanyController;
@@ -65,6 +66,7 @@ use App\Http\Controllers\Api\V1\SetupGuideController;
 use App\Http\Controllers\Api\V1\ShopController;
 use App\Http\Controllers\Api\V1\SignupController;
 use App\Http\Controllers\Api\V1\StatisticsController;
+use App\Http\Controllers\Api\V1\StatsIntegrationController;
 use App\Http\Controllers\Api\V1\StockMovementController;
 use App\Http\Controllers\Api\V1\StorageContractController;
 use App\Http\Controllers\Api\V1\TrackingController;
@@ -166,6 +168,8 @@ Route::prefix('v1')->name('v1.')->group(function () {
         ->middleware('throttle:30,1')
         ->name('tracking.show');
     // Étiquette partagée par un lien signé (API publique : Jibiat Marchand)
+    // Statistiques pour Google Sheets (=IMPORTDATA) : CSV protégé par la clé secrète du lien
+    Route::get('stats-feed/{token}/{dataset}', [StatsIntegrationController::class, 'feed'])->where('dataset', '[a-z]+(\.csv)?')->middleware('throttle:60,1')->name('stats-feed.show');
     Route::get('shared-labels/{order}/{expires}/{token}', [LabelController::class, 'shared'])->whereNumber(['order', 'expires'])->middleware('throttle:60,1')->name('shared-labels.show');
     Route::post('shared-labels/{order}/{expires}/{token}/printed', [LabelController::class, 'sharedPrinted'])->whereNumber(['order', 'expires'])->middleware('throttle:30,1')->name('shared-labels.printed');
     // Note du destinataire sur la livraison (si l'entreprise le propose), avec le code de livraison
@@ -564,6 +568,17 @@ Route::prefix('v1')->name('v1.')->group(function () {
             Route::get('clients', 'clients')->name('clients');
             Route::get('pivot', 'pivot')->name('pivot');
         });
+        // Intégrations : Excel, lien Google Sheets, point par e-mail ; rapports mensuels des clients
+        Route::get('stats/export', [StatsIntegrationController::class, 'export'])->middleware('throttle:20,1')->name('stats.export');
+        Route::get('stats/feed-link', [StatsIntegrationController::class, 'feedLink'])->name('stats.feed-link');
+        Route::post('stats/feed-link', [StatsIntegrationController::class, 'regenerateFeed'])->name('stats.feed-link.regenerate');
+        Route::delete('stats/feed-link', [StatsIntegrationController::class, 'disableFeed'])->name('stats.feed-link.disable');
+        Route::post('stats/test-email', [StatsIntegrationController::class, 'testEmail'])->middleware('throttle:5,1')->name('stats.test-email');
+        Route::get('client-reports', [ClientReportController::class, 'index'])->name('client-reports.index');
+        Route::post('client-reports/generate', [ClientReportController::class, 'generate'])->name('client-reports.generate');
+        Route::get('client-reports/{clientReport}', [ClientReportController::class, 'show'])->whereNumber('clientReport')->name('client-reports.show');
+        Route::patch('client-reports/{clientReport}', [ClientReportController::class, 'update'])->whereNumber('clientReport')->name('client-reports.update');
+        Route::post('client-reports/{clientReport}/send', [ClientReportController::class, 'send'])->whereNumber('clientReport')->name('client-reports.send');
         // Frais fixes (loyer, équipe…) comptés dans la marge nette
         Route::apiResource('fixed-costs', FixedCostController::class)->except(['show']);
 

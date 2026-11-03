@@ -6,6 +6,7 @@ use App\Enums\Activity;
 use App\Enums\Permission;
 use App\Http\Controllers\Controller;
 use App\Services\Reports\ClientInsights;
+use App\Services\Reports\ClientReports;
 use App\Services\Reports\Performance;
 use App\Services\Reports\Pivot;
 use App\Services\Reports\Profitability;
@@ -162,6 +163,8 @@ class StatisticsController extends Controller
             // Distribution, MAD : envois par type, destination et délai
             'shipments' => $activity !== Activity::Ecommerce->value && ($merchant->hasActivity(Activity::Distribution) || $merchant->hasActivity(Activity::Mad))
                 ? $stats->shipments($from, $to) : null,
+            // Livrées dans le délai et courses par département
+            'punctuality' => app(ClientReports::class)->forClientSpace($merchant, $from, $to, $activity),
             'zones' => collect($stats->zones($from, $to, false)['zones'])->take(8)
                 ->map(fn (array $z) => collect($z)->only(['id', 'name', 'delivered', 'failed', 'success_rate'])->all())->values(),
         ]]);

@@ -39,6 +39,14 @@
       </div>
 
       <!-- Distribution, MAD : les envois de la période -->
+      <!-- Courses par département (clients à départements) -->
+      <section v-if="data.punctuality?.departments?.length" class="m-card p-4 space-y-2">
+        <h2 class="font-semibold">Par département</h2>
+        <ul class="divide-y text-sm">
+          <li v-for="d in data.punctuality.departments" :key="d.name" class="flex justify-between py-1.5"><span>{{ d.name }}</span><span class="text-slate-600">{{ d.created }} course(s) · {{ d.units }} pli(s)</span></li>
+        </ul>
+      </section>
+
       <section v-if="data.shipments?.total" class="m-card p-4 space-y-4">
         <h2 class="font-semibold">Mes envois ({{ data.shipments.total }})</h2>
         <div>
@@ -187,6 +195,8 @@ const tiles = computed(() => {
   return [
     { label: 'Courses créées', value: k.created, hint: trend(k.created, p.created) },
     { label: 'Réussies au 1er passage', value: percent(data.value.first_attempt_rate) },
+    // Livrées dans le délai : le jour prévu (e-commerce), avant le délai interne (distribution, MAD)
+    ...(data.value.punctuality?.delivered ? [{ label: 'Livrées dans le délai', value: percent(data.value.punctuality.rate), hint: `${data.value.punctuality.on_time} sur ${data.value.punctuality.delivered}` }] : []),
     { label: 'Passages ratés', value: k.failed_attempts, hint: k.failed_attempts ? 'destinataire absent, injoignable…' : '' },
     { label: 'Retournées · annulées', value: `${k.returned} · ${k.cancelled}` },
     // Encaissements : seulement l'e-commerce (distribution, MAD : facture du mois)

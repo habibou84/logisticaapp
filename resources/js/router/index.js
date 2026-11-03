@@ -57,6 +57,13 @@ const routes = [
     meta: { roles: [...SPACES.admin, ...SPACES.marchand] },
   },
   {
+    // Rapport mensuel imprimable de l'entreprise (PDF par l'impression)
+    path: '/admin/rapport-mensuel',
+    name: 'monthly-report',
+    component: () => import('../views/MonthlyReport.vue'),
+    meta: { roles: SPACES.admin },
+  },
+  {
     path: '/feuille-de-route',
     name: 'route-sheet',
     component: () => import('../views/RouteSheet.vue'),
@@ -208,6 +215,9 @@ const routes = [
       { path: 'paiements/:id(\\d+)', component: () => import('../views/merchant/PayoutView.vue'), meta: { title: 'Relevé', back: true, permission: 'finance.view' } },
       { path: 'factures', component: () => import('../views/merchant/Invoices.vue'), meta: { title: 'Mes factures', back: true, permission: 'finance.view' } },
       { path: 'factures/:id(\\d+)', component: shared.clientInvoice, meta: { title: 'Facture', back: true, permission: 'finance.view' } },
+      // Rapports mensuels envoyés par l'équipe (clients sous contrat)
+      { path: 'rapports', component: () => import('../views/merchant/Reports.vue'), meta: { title: 'Mes rapports', back: true, roles: ['merchant_owner', 'merchant_manager'] } },
+      { path: 'rapports/:id(\\d+)', component: () => import('../views/merchant/ReportView.vue'), meta: { title: 'Rapport du mois', back: true, roles: ['merchant_owner', 'merchant_manager'] } },
       { path: 'notifications', component: mobile.notifications, meta: { title: 'Notifications', back: true } },
       { path: 'a-noter', component: () => import('../views/merchant/RateCourses.vue'), meta: { title: 'Noter les livreurs', back: true } },
       { path: 'mes-livreurs', component: () => import('../views/merchant/MyCouriers.vue'), meta: { title: 'Mes livreurs', back: true } },

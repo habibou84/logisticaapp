@@ -62,6 +62,7 @@ const sidebar = computed(() => [
   ...(space.hasBilled ? [{ to: '/marchand/departements', label: 'Mes départements', color: 'departement' }] : []),
   ...(has('mad') ? [{ to: '/marchand/mes-livreurs', label: 'Mes livreurs', color: 'mad' }] : []),
   { to: '/marchand/statistiques', label: 'Statistiques', color: 'stats' },
+  ...(space.hasBilled && ['merchant_owner', 'merchant_manager'].includes(auth.role) ? [{ to: '/marchand/rapports', label: 'Mes rapports', color: 'facture' }] : []),
   { to: '/marchand/profil', label: 'Moi', color: 'profil' },
 ])
 

@@ -55,3 +55,6 @@ Schedule::command('orders:due-today')->dailyAt('06:50')->withoutOverlapping();
 // Statistiques : relevé du soir (courses non traitées…) et alertes du matin
 Schedule::command('stats:daily --snapshot')->dailyAt('23:50')->withoutOverlapping();
 Schedule::command('stats:daily --alerts')->dailyAt('07:35')->withoutOverlapping();
+// Point par e-mail (lundi, 1er du mois) ; le 1er : brouillons des rapports des clients sous contrat
+Schedule::command('stats:email weekly')->weeklyOn(1, '07:40')->withoutOverlapping();
+Schedule::command('stats:email monthly')->monthlyOn(1, '07:45')->withoutOverlapping();

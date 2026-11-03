@@ -27,6 +27,8 @@ class StatsSettings
             'min_volume' => 10,
             'whatsapp' => false,
         ],
+        // Point par e-mail (synthèse et fichier Excel) : destinataires, chaque lundi, le 1er du mois
+        'email' => ['recipients' => [], 'weekly' => false, 'monthly' => false],
     ];
 
     /** @return array<string, mixed> */
@@ -35,14 +37,20 @@ class StatsSettings
         $saved = self::clean((array) ($company?->stats_settings ?? []));
 
         return [...self::DEFAULTS, ...$saved, 'goals' => [...self::DEFAULTS['goals'], ...($saved['goals'] ?? [])],
-            'alerts' => [...self::DEFAULTS['alerts'], ...($saved['alerts'] ?? [])]];
+            'alerts' => [...self::DEFAULTS['alerts'], ...($saved['alerts'] ?? [])],
+            'email' => [...self::DEFAULTS['email'], ...($saved['email'] ?? [])]];
     }
 
     /** @return array<string, array<int, mixed>> */
     public static function rules(): array
     {
         return [
-            'stats_settings' => ['sometimes', 'nullable', 'array:goals,renegotiate_margin,forfait_high,forfait_low,alerts'],
+            'stats_settings' => ['sometimes', 'nullable', 'array:goals,renegotiate_margin,forfait_high,forfait_low,alerts,email'],
+            'stats_settings.email' => ['nullable', 'array:recipients,weekly,monthly'],
+            'stats_settings.email.recipients' => ['nullable', 'array', 'max:10'],
+            'stats_settings.email.recipients.*' => ['email:rfc', 'max:150'],
+            'stats_settings.email.weekly' => ['nullable', 'boolean'],
+            'stats_settings.email.monthly' => ['nullable', 'boolean'],
             'stats_settings.alerts' => ['nullable', 'array:zone_success_min,courier_failures_double,client_drop_percent,min_volume,whatsapp'],
             'stats_settings.alerts.zone_success_min' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'stats_settings.alerts.courier_failures_double' => ['nullable', 'boolean'],
@@ -88,6 +96,17 @@ class StatsSettings
             foreach (['courier_failures_double', 'whatsapp'] as $k) {
                 if (array_key_exists($k, $a) && $a[$k] !== null) {
                     $out['alerts'][$k] = (bool) $a[$k];
+                }
+            }
+        }
+        if (isset($input['email']) && is_array($input['email'])) {
+            $e = $input['email'];
+            if (array_key_exists('recipients', $e)) {
+                $out['email']['recipients'] = array_values(array_unique(array_filter(array_map(fn ($v) => mb_strtolower(trim((string) $v)), (array) $e['recipients']))));
+            }
+            foreach (['weekly', 'monthly'] as $k) {
+                if (array_key_exists($k, $e) && $e[$k] !== null) {
+                    $out['email'][$k] = (bool) $e[$k];
                 }
             }
         }

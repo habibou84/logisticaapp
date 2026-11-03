@@ -20,6 +20,9 @@
         </div>
         <div><label class="label" for="st-from">Du</label><input id="st-from" v-model="from" type="date" class="input w-auto" :max="to" @change="custom"></div>
         <div><label class="label" for="st-to">Au</label><input id="st-to" v-model="to" type="date" class="input w-auto" :min="from" :max="today()" @change="custom"></div>
+        <!-- Export Excel complet de la période ; rapport mensuel à imprimer (PDF) -->
+        <button type="button" class="btn-secondary" :disabled="exporting" @click="exportXlsx">{{ exporting ? 'Export…' : '📥 Excel' }}</button>
+        <a :href="`/admin/rapport-mensuel?mois=${from.slice(0, 7)}`" target="_blank" class="btn-secondary">🖨 Rapport du mois</a>
       </div>
     </div>
 
@@ -177,6 +180,7 @@
     <ZonesTab v-if="tab === 'zones' && data.zones" :data="data.zones" :with-amounts="withAmounts" exportable />
     <FinancesTab v-if="tab === 'finances' && data.finances" :data="data.finances" />
     <ClientInsightsTab v-if="tab === 'clients' && data.clients" :data="data.clients" />
+    <IntegrationsTab v-if="tab === 'integrations'" />
     <PivotTab v-if="tab === 'pivot'" :from="from" :to="to" :activity="activity" />
     <QualityTab v-if="tab === 'quality' && data.quality" :data="data.quality" />
     <GoalsTab v-if="tab === 'goals' && data.goals" :data="data.goals" @reload="load" />
@@ -198,6 +202,7 @@ import GoalsTab from '../../components/stats/GoalsTab.vue'
 import QualityTab from '../../components/stats/QualityTab.vue'
 import ClientInsightsTab from '../../components/stats/ClientInsightsTab.vue'
 import PivotTab from '../../components/stats/PivotTab.vue'
+import IntegrationsTab from '../../components/stats/IntegrationsTab.vue'
 import ProfitabilityTab from '../../components/stats/ProfitabilityTab.vue'
 import FieldTab from '../../components/stats/FieldTab.vue'
 import VehiclesTab from '../../components/stats/VehiclesTab.vue'
@@ -255,6 +260,8 @@ const tabs = computed(() => [
   // Fidélité, clients en baisse, 80/20, paiements ; tableau croisé à deux axes
   ...(auth.can('merchants.view') ? [{ key: 'clients', label: '🏪 Fidélité et paiements' }] : []),
   { key: 'pivot', label: '🔀 Analyse croisée' },
+  // Google Sheets, point par e-mail, rapports mensuels des clients
+  ...(auth.can('settings.manage') || auth.can('merchants.view') ? [{ key: 'integrations', label: '🔗 Intégrations' }] : []),
   { key: 'zones', label: 'Zones' },
   // Objectifs du mois et tendances sur 13 mois ; rentabilité (droit caisse)
   { key: 'goals', label: '🎯 Objectifs' },
@@ -307,6 +314,24 @@ async function load() {
     error.value = apiErrorMessage(e)
   } finally {
     loading.value = false
+  }
+}
+
+// Export Excel : plusieurs onglets (montants pour qui voit la caisse)
+const exporting = ref(false)
+async function exportXlsx() {
+  exporting.value = true
+  try {
+    const { data: blob } = await http.get('/stats/export', { params: { from: from.value, to: to.value, activity: activity.value || undefined }, responseType: 'blob' })
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = `statistiques-${from.value}-au-${to.value}.xlsx`
+    link.click()
+    URL.revokeObjectURL(link.href)
+  } catch (e) {
+    error.value = apiErrorMessage(e)
+  } finally {
+    exporting.value = false
   }
 }
 

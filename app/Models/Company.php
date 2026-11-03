@@ -44,6 +44,7 @@ class Company extends Model
         'delivery_day_rules',
         'dashboard_settings',
         'stats_settings',
+        'stats_feed_token',
         'invoice_payment_methods',
         'internal_delays',
         'activity_options',
@@ -96,7 +97,7 @@ class Company extends Model
     ];
 
     /** Empreinte de la clé de reprise : jamais renvoyée */
-    protected $hidden = ['legacy_import_key_hash', 'fne_api_key'];
+    protected $hidden = ['legacy_import_key_hash', 'fne_api_key', 'stats_feed_token'];
 
     protected function casts(): array
     {
