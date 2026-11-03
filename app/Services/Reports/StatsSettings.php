@@ -19,6 +19,14 @@ class StatsSettings
         'renegotiate_margin' => 10,
         'forfait_high' => 100,
         'forfait_low' => 50,
+        // Alertes (chaque matin, cloche des administrateurs ; WhatsApp si demandé) ; null : pas d'alerte
+        'alerts' => [
+            'zone_success_min' => 80,
+            'courier_failures_double' => true,
+            'client_drop_percent' => 30,
+            'min_volume' => 10,
+            'whatsapp' => false,
+        ],
     ];
 
     /** @return array<string, mixed> */
@@ -26,14 +34,21 @@ class StatsSettings
     {
         $saved = self::clean((array) ($company?->stats_settings ?? []));
 
-        return [...self::DEFAULTS, ...$saved, 'goals' => [...self::DEFAULTS['goals'], ...($saved['goals'] ?? [])]];
+        return [...self::DEFAULTS, ...$saved, 'goals' => [...self::DEFAULTS['goals'], ...($saved['goals'] ?? [])],
+            'alerts' => [...self::DEFAULTS['alerts'], ...($saved['alerts'] ?? [])]];
     }
 
     /** @return array<string, array<int, mixed>> */
     public static function rules(): array
     {
         return [
-            'stats_settings' => ['sometimes', 'nullable', 'array:goals,renegotiate_margin,forfait_high,forfait_low'],
+            'stats_settings' => ['sometimes', 'nullable', 'array:goals,renegotiate_margin,forfait_high,forfait_low,alerts'],
+            'stats_settings.alerts' => ['nullable', 'array:zone_success_min,courier_failures_double,client_drop_percent,min_volume,whatsapp'],
+            'stats_settings.alerts.zone_success_min' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'stats_settings.alerts.courier_failures_double' => ['nullable', 'boolean'],
+            'stats_settings.alerts.client_drop_percent' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'stats_settings.alerts.min_volume' => ['nullable', 'integer', 'min:1', 'max:1000'],
+            'stats_settings.alerts.whatsapp' => ['nullable', 'boolean'],
             'stats_settings.goals' => ['nullable', 'array:'.implode(',', self::GOALS)],
             'stats_settings.goals.delivered' => ['nullable', 'integer', 'min:0'],
             'stats_settings.goals.revenue' => ['nullable', 'integer', 'min:0'],
@@ -57,6 +72,22 @@ class StatsSettings
                 if (array_key_exists($key, $input['goals'])) {
                     $v = $input['goals'][$key];
                     $out['goals'][$key] = $v === null || $v === '' ? null : ($key === 'success_rate' ? (float) $v : (int) $v);
+                }
+            }
+        }
+        if (isset($input['alerts']) && is_array($input['alerts'])) {
+            $a = $input['alerts'];
+            foreach (['zone_success_min', 'client_drop_percent'] as $k) {
+                if (array_key_exists($k, $a)) {
+                    $out['alerts'][$k] = $a[$k] === null || $a[$k] === '' ? null : (int) $a[$k];
+                }
+            }
+            if (isset($a['min_volume']) && is_numeric($a['min_volume'])) {
+                $out['alerts']['min_volume'] = max(1, (int) $a['min_volume']);
+            }
+            foreach (['courier_failures_double', 'whatsapp'] as $k) {
+                if (array_key_exists($k, $a) && $a[$k] !== null) {
+                    $out['alerts'][$k] = (bool) $a[$k];
                 }
             }
         }

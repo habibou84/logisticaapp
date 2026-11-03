@@ -34,3 +34,25 @@ Menu **Statistiques** de l'équipe. Les montants sont réservés aux comptes qui
 - `GET /stats/performance?activity=` — objectifs et 13 mois.
 - `GET|POST /fixed-costs`, `PUT|DELETE /fixed-costs/{id}` — frais fixes (lecture : caisse ; saisie : « Encaisser et reverser »).
 - `PATCH /companies/{id}` avec `stats_settings` (`goals`, `renegotiate_margin`, `forfait_high`, `forfait_low`).
+
+## Étape 2 — Délais, échecs, distribution, alertes
+
+### Onglet « ⏱ Délais et échecs »
+- **Respect des délais** : e-commerce livré au plus tard le jour prévu ; distribution et MAD avant leur délai
+  interne (sans délai : le jour prévu) ; par activité, client, zone et livreur.
+- **Lots** arrivés à échéance sur la période : terminés à temps, en retard ou en cours.
+- **MAD** : jours de présence faits (hors absences) sur jours prévus par le contrat.
+- **Échecs** : motifs, heures, motifs × zone (carte de chaleur), par livreur, client et zone avec le motif le plus
+  fréquent (ex. un client aux numéros faux, une zone aux absences).
+- **Distribution** : plis et chèques remis par jour, accusés manquants, temps médian par pli, lots en cours contre
+  la courbe idéale jusqu'à l'échéance.
+- **Courses non traitées dans le temps** : relevé chaque soir à 23 h 50 (`stats:daily --snapshot`), avec le délai
+  interne dépassé et les courses sans livreur.
+
+### Alertes du matin (07 h 35, `stats:daily --alerts`)
+Réglables dans Objectifs › Fixer les objectifs : zone sous un taux de réussite (80 %) sur 7 jours, livreur dont les
+échecs doublent par rapport à la semaine d'avant, client en baisse (−30 % sur 30 jours contre la moyenne des 3 mois
+d'avant), volume minimal (10). Cloche des administrateurs, et WhatsApp si coché (modèle « alerte_statistique »).
+Une même alerte n'est pas renvoyée avant 7 jours.
+
+API : `GET /stats/quality?from=&to=&activity=`.

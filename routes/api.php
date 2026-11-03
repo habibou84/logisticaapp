@@ -558,6 +558,8 @@ Route::prefix('v1')->name('v1.')->group(function () {
             // Rentabilité (clients, zones, livreurs, contrats) ; objectifs et tendances sur 13 mois
             Route::get('profitability', 'profitability')->name('profitability');
             Route::get('performance', 'performance')->name('performance');
+            // Délais, échecs, distribution, historique des courses non traitées
+            Route::get('quality', 'quality')->name('quality');
         });
         // Frais fixes (loyer, équipe…) comptés dans la marge nette
         Route::apiResource('fixed-costs', FixedCostController::class)->except(['show']);

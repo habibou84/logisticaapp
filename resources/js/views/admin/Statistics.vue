@@ -176,6 +176,7 @@
     <MerchantsTab v-if="tab === 'merchants' && data.merchants" :data="data.merchants" :with-amounts="withAmounts" exportable />
     <ZonesTab v-if="tab === 'zones' && data.zones" :data="data.zones" :with-amounts="withAmounts" exportable />
     <FinancesTab v-if="tab === 'finances' && data.finances" :data="data.finances" />
+    <QualityTab v-if="tab === 'quality' && data.quality" :data="data.quality" />
     <GoalsTab v-if="tab === 'goals' && data.goals" :data="data.goals" @reload="load" />
     <ProfitabilityTab v-if="tab === 'profitability' && data.profitability" :data="data.profitability" @reload="load" />
     <FieldTab v-if="tab === 'field' && data.field" :data="data.field" />
@@ -192,6 +193,7 @@ import ColumnChart from '../../components/stats/ColumnChart.vue'
 import Heatmap from '../../components/stats/Heatmap.vue'
 import FinancesTab from '../../components/stats/FinancesTab.vue'
 import GoalsTab from '../../components/stats/GoalsTab.vue'
+import QualityTab from '../../components/stats/QualityTab.vue'
 import ProfitabilityTab from '../../components/stats/ProfitabilityTab.vue'
 import FieldTab from '../../components/stats/FieldTab.vue'
 import VehiclesTab from '../../components/stats/VehiclesTab.vue'
@@ -249,6 +251,8 @@ const tabs = computed(() => [
   { key: 'zones', label: 'Zones' },
   // Objectifs du mois et tendances sur 13 mois ; rentabilité (droit caisse)
   { key: 'goals', label: '🎯 Objectifs' },
+  // Respect des délais, échecs, distribution, courses non traitées dans le temps
+  { key: 'quality', label: '⏱ Délais et échecs' },
   ...(auth.can('finance.view') ? [{ key: 'profitability', label: '💹 Rentabilité' }] : []),
   ...(auth.can('finance.view') ? [{ key: 'finances', label: 'Finances' }] : []),
   ...(auth.can('field_events.manage') ? [{ key: 'field', label: 'Terrain' }] : []),
@@ -259,6 +263,7 @@ const ENDPOINTS = {
   // Événements terrain (panne, accident…)
   field: '/field-events/stats',
   goals: '/stats/performance',
+  quality: '/stats/quality',
   profitability: '/stats/profitability',
   vehicles: '/vehicles/stats',
 }

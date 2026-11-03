@@ -66,7 +66,7 @@ const width = useWidth(box)
 const hover = ref(null)
 const pad = { top: 10, right: 12, bottom: 24, left: 48 }
 
-const max = computed(() => Math.max(0, ...props.series.flatMap((s) => s.values)))
+const max = computed(() => Math.max(0, ...props.series.flatMap((s) => s.values).filter((v) => v !== null && v !== undefined)))
 const ticks = computed(() => niceTicks(max.value))
 const top = computed(() => ticks.value.at(-1) || 1)
 const xLabels = computed(() => labelIndexes(props.labels.length, Math.max(2, Math.floor(width.value / 90))))
@@ -78,8 +78,18 @@ function x(i) {
 function y(v) {
   return pad.top + (1 - v / top.value) * (props.height - pad.top - pad.bottom)
 }
+// Valeur absente (null : jour à venir) : la ligne s'arrête
 function path(values) {
-  return values.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v ?? 0).toFixed(1)}`).join(' ')
+  let started = false
+  return values.map((v, i) => {
+    if (v === null || v === undefined) {
+      started = false
+      return ''
+    }
+    const cmd = started ? 'L' : 'M'
+    started = true
+    return `${cmd}${x(i).toFixed(1)},${y(v).toFixed(1)}`
+  }).filter(Boolean).join(' ')
 }
 
 function move(event) {

@@ -27,6 +27,25 @@
           <label class="label" for="forfait-low">Forfait « sous-utilisé » en dessous de (%)</label>
           <input id="forfait-low" v-model.number="form.forfait_low" type="number" min="0" max="100" class="input">
         </div>
+        <fieldset class="grid gap-3 sm:col-span-2 lg:col-span-4 sm:grid-cols-2 lg:grid-cols-4 rounded-lg border border-slate-200 p-3">
+          <legend class="px-1 text-sm font-semibold">🔔 Alertes du matin aux administrateurs</legend>
+          <div>
+            <label class="label" for="alert-zone">Zone dont la réussite passe sous (%)</label>
+            <input id="alert-zone" v-model="form.alerts.zone_success_min" type="number" min="0" max="100" class="input" placeholder="Pas d'alerte">
+          </div>
+          <div>
+            <label class="label" for="alert-client">Client en baisse de plus de (%)</label>
+            <input id="alert-client" v-model="form.alerts.client_drop_percent" type="number" min="1" max="100" class="input" placeholder="Pas d'alerte">
+          </div>
+          <div>
+            <label class="label" for="alert-volume">Seulement à partir de (courses)</label>
+            <input id="alert-volume" v-model.number="form.alerts.min_volume" type="number" min="1" class="input">
+          </div>
+          <div class="space-y-2 text-sm">
+            <label class="flex items-center gap-2"><input v-model="form.alerts.courier_failures_double" type="checkbox"> Livreur dont les échecs doublent</label>
+            <label class="flex items-center gap-2"><input v-model="form.alerts.whatsapp" type="checkbox"> Aussi sur WhatsApp</label>
+          </div>
+        </fieldset>
         <div class="flex items-end gap-2">
           <button type="submit" class="btn-primary" :disabled="saving">Enregistrer</button>
           <span v-if="error" class="text-sm text-red-700">{{ error }}</span>
@@ -154,18 +173,20 @@ const monthColumns = [
 const editing = ref(false)
 const saving = ref(false)
 const error = ref('')
-const form = reactive({ goals: {}, renegotiate_margin: 10, forfait_high: 100, forfait_low: 50 })
+const form = reactive({ goals: {}, renegotiate_margin: 10, forfait_high: 100, forfait_low: 50, alerts: {} })
 const companyId = auth.user?.company_id
 async function openForm() {
   const s = (await http.get(`/companies/${companyId}`)).data.data.stats_settings || {}
-  Object.assign(form, { goals: { ...s.goals }, renegotiate_margin: s.renegotiate_margin, forfait_high: s.forfait_high, forfait_low: s.forfait_low })
+  Object.assign(form, { goals: { ...s.goals }, renegotiate_margin: s.renegotiate_margin, forfait_high: s.forfait_high, forfait_low: s.forfait_low, alerts: { ...s.alerts } })
 }
 async function save() {
   saving.value = true
   error.value = ''
   try {
     const goals = Object.fromEntries(Object.entries(form.goals).map(([k, v]) => [k, v === '' || v === null || v === undefined ? null : Number(v)]))
-    await http.patch(`/companies/${companyId}`, { stats_settings: { ...form, goals } })
+    const blank = (v) => (v === '' || v === undefined ? null : v)
+    const alerts = { ...form.alerts, zone_success_min: blank(form.alerts.zone_success_min), client_drop_percent: blank(form.alerts.client_drop_percent) }
+    await http.patch(`/companies/${companyId}`, { stats_settings: { ...form, goals, alerts } })
     editing.value = false
     emit('reload')
   } catch (e) {

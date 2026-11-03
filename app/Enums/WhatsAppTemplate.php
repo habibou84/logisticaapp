@@ -30,6 +30,7 @@ enum WhatsAppTemplate: string
     case OrderHandedOver = 'course_remise';
     case RateCourse = 'course_a_noter';
     case CourseDelayed = 'course_retardee';
+    case StatsAlert = 'alerte_statistique';
 
     public const LANGUAGE = 'fr';
 
@@ -57,6 +58,7 @@ enum WhatsAppTemplate: string
             self::OrderHandedOver => 'Bonjour {{1}}, la course {{2}} pour {{3}} a été remise le {{4}}. Reçue par : {{5}}. Merci de votre confiance.',
             self::RateCourse => 'Bonjour {{1}}, votre course {{2}} a été faite par {{3}}. Donnez votre avis en un clic : {{4}} . Merci, il nous aide à nous améliorer.',
             self::CourseDelayed => 'Bonjour {{1}}, votre course {{2}} pour {{3}} aura du retard à la suite d\'un imprévu sur le terrain. Nous faisons le nécessaire et vous tenons informé. Merci de votre compréhension.',
+            self::StatsAlert => 'Bonjour {{1}}, alerte de {{2}} : {{3}}. Voir les statistiques : {{4}}',
         };
     }
 
@@ -86,6 +88,7 @@ enum WhatsAppTemplate: string
             self::OrderHandedOver => '✅ Course remise',
             self::RateCourse => '⭐ Notez votre livreur',
             self::CourseDelayed => '⏳ Course retardée',
+            self::StatsAlert => '📉 Alerte statistique',
         };
     }
 
@@ -113,6 +116,7 @@ enum WhatsAppTemplate: string
             self::OrderHandedOver => 'Au client, quand sa course de distribution ou de MAD est remise (avec le nom de la personne qui a reçu)',
             self::RateCourse => 'Au client, après la livraison, pour noter le livreur (si l\'entreprise le veut : Réglages › Notation)',
             self::CourseDelayed => 'Au client, quand un imprévu sur le terrain (panne, accident…) retarde sa course (Réglages › Événements terrain)',
+            self::StatsAlert => 'Aux administrateurs, quand un indicateur passe un seuil (Statistiques › Objectifs › Alertes)',
         };
     }
 
@@ -145,6 +149,7 @@ enum WhatsAppTemplate: string
             self::OrderHandedOver => ['Ivoire Assurances', 'LV-7K2M-9PQX', 'Jean Kouadio (Plateau)', '24/10 à 10:42', 'Mme Bamba, secrétariat'],
             self::RateCourse => ['Boutique Chic', 'LV-7K2M-9PQX', 'Koffi', 'https://exemple.ci/marchand/courses/12'],
             self::CourseDelayed => ['Boutique Chic', 'LV-7K2M-9PQX', 'Awa Koné (Yopougon)'],
+            self::StatsAlert => ['Awa', 'Livraison Express', 'taux de réussite de Yopougon à 72 % (seuil 80 %)', 'https://app.exemple.com/admin/statistiques'],
         };
     }
 

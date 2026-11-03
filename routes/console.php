@@ -52,3 +52,6 @@ Schedule::command('assignments:watch')->everyMinute()->withoutOverlapping();
 Schedule::command('couriers:planning-digest')->everyFifteenMinutes()->withoutOverlapping();
 Schedule::command('parcels:kept-deliveries')->everyFifteenMinutes()->withoutOverlapping();
 Schedule::command('orders:due-today')->dailyAt('06:50')->withoutOverlapping();
+// Statistiques : relevé du soir (courses non traitées…) et alertes du matin
+Schedule::command('stats:daily --snapshot')->dailyAt('23:50')->withoutOverlapping();
+Schedule::command('stats:daily --alerts')->dailyAt('07:35')->withoutOverlapping();

@@ -7,6 +7,7 @@ use App\Enums\Permission;
 use App\Http\Controllers\Controller;
 use App\Services\Reports\Performance;
 use App\Services\Reports\Profitability;
+use App\Services\Reports\ServiceQuality;
 use App\Services\Reports\Statistics;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
@@ -77,6 +78,15 @@ class StatisticsController extends Controller
         [$from, $to] = $this->period($request);
 
         return response()->json(['data' => $profitability->build($request->user()->company->fresh(), $from, $to, $request->input('activity'))]);
+    }
+
+    /** Délais, échecs, distribution, historique des courses non traitées */
+    public function quality(Request $request, ServiceQuality $quality): JsonResponse
+    {
+        $this->stats($request);
+        [$from, $to] = $this->period($request);
+
+        return response()->json(['data' => $quality->build($request->user()->company->fresh(), $from, $to, $request->input('activity'))]);
     }
 
     /** Objectifs du mois et tendances sur 13 mois (montants pour qui voit la caisse) */
