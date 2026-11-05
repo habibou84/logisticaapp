@@ -170,7 +170,7 @@ class WhatsAppConversationTest extends TestCase
 
     public function test_meta_webhook_delivers_messages_once(): void
     {
-        WhatsAppAccount::create(['company_id' => $this->company->id, 'owner_type' => 'company', 'phone_number_id' => '1098765']);
+        WhatsAppAccount::create(['company_id' => $this->company->id, 'owner_type' => 'company', 'phone_number_id' => '1098765', 'status' => 'connected']);
 
         $payload = ['entry' => [['changes' => [['field' => 'messages', 'value' => [
             'metadata' => ['phone_number_id' => '1098765'],

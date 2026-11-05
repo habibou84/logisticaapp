@@ -7,6 +7,7 @@ use App\Models\OfflineAction;
 use App\Models\Order;
 use App\Models\User;
 use App\Notifications\OrderAlert;
+use App\Services\Finance\MerchantPayouts;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Laravel\Sanctum\Sanctum;
@@ -50,6 +51,8 @@ class OfflineCourierSyncTest extends TestCase
     public function test_an_offline_delivery_is_applied_once_at_its_real_time(): void
     {
         $order = $this->outForDelivery();
+        // Parti en livraison il y a 3 heures, livré hors connexion il y a 2 heures
+        $order->events()->update(['created_at' => now()->subHours(3)]);
         $at = now()->subHours(2)->startOfSecond();
         $action = [
             'id' => 'a1b2c3', 'kind' => 'status', 'order_id' => $order->id, 'occurred_at' => $at->toIso8601String(),
@@ -72,6 +75,42 @@ class OfflineCourierSyncTest extends TestCase
         $this->sync($this->courierA->user, $action)->assertOk()->assertJsonPath('data.result', 'ok');
         $this->assertSame(1, $order->events()->where('to_status', 'delivered')->count());
         $this->assertSame(1, OfflineAction::count());
+    }
+
+    /** Audit n° 2, point 11 : l'heure déclarée ne remonte pas avant le départ en livraison */
+    public function test_an_offline_action_cannot_be_dated_before_the_last_step(): void
+    {
+        $this->freezeSecond();
+        $order = $this->outForDelivery();
+        $order->events()->update(['created_at' => now()->subHour()->startOfSecond()]);
+
+        $this->sync($this->courierA->user, [
+            'id' => 'b1', 'kind' => 'status', 'order_id' => $order->id, 'occurred_at' => now()->subHours(5)->toIso8601String(),
+            'payload' => ['status' => 'delivered'],
+        ])->assertJsonPath('data.result', 'ok');
+
+        $this->assertTrue($order->fresh()->delivered_at->equalTo(now()->subHour()->startOfSecond()));
+    }
+
+    /** Audit n° 2, point 11 : 3 codes faux par jour au plus ; rien n'est reversé avant la vérification */
+    public function test_wrong_codes_offline_are_limited_and_block_the_payout(): void
+    {
+        Notification::fake();
+        $this->company->update(['require_delivery_code' => true]);
+        $results = [];
+        $orders = [];
+        for ($i = 0; $i < 4; $i++) {
+            $order = $orders[] = $this->outForDelivery();
+            $results[] = $this->sync($this->courierA->user, [
+                'id' => "w{$i}", 'kind' => 'status', 'order_id' => $order->id, 'occurred_at' => now()->toIso8601String(),
+                'payload' => ['status' => 'delivered', 'delivery_code' => $order->delivery_code === '0000' ? '1111' : '0000', 'collected_amount' => $order->cod_amount],
+            ])->json('data.result');
+        }
+        $this->assertSame(['ok', 'ok', 'ok', 'rejected'], $results);
+
+        // Les encaissements de ces livraisons ne sont pas reversables tant que le dispatch n'a pas vérifié
+        $eligible = app(MerchantPayouts::class)->eligibleEntries($this->merchant)->pluck('order_id')->unique();
+        $this->assertFalse($eligible->contains($orders[0]->id));
     }
 
     public function test_an_implausible_phone_time_falls_back_to_the_server_time(): void

@@ -41,7 +41,9 @@ class MerchantPayouts
             ->whereNull('payout_id')
             ->where('type', '!=', LedgerEntryType::Payout->value)
             // Course dont l'argent est encore chez le livreur : encaissement et frais attendent ensemble
-            ->whereDoesntHave('order.cashCollection', fn ($q) => $q->inCourierHands());
+            ->whereDoesntHave('order.cashCollection', fn ($q) => $q->inCourierHands())
+            // Livrée hors connexion avec un code client faux : rien n'est reversé avant la vérification du dispatch
+            ->whereDoesntHave('order', fn ($q) => $q->whereNotNull('delivery_code_unverified_at'));
     }
 
     /**

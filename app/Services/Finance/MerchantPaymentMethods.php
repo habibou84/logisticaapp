@@ -5,6 +5,7 @@ namespace App\Services\Finance;
 use App\Enums\PaymentMethod;
 use App\Enums\Role;
 use App\Enums\WhatsAppTemplate;
+use App\Exceptions\BusinessRuleException;
 use App\Models\Merchant;
 use App\Models\MerchantPaymentMethod;
 use App\Models\MerchantPaymentMethodEvent;
@@ -132,6 +133,12 @@ class MerchantPaymentMethods
 
     public function verify(User $actor, MerchantPaymentMethod $method): MerchantPaymentMethod
     {
+        // Double contrôle : celui qui a saisi le moyen de paiement (personnel) ne le valide pas lui-même
+        $enteredBy = MerchantPaymentMethodEvent::where('payment_method_id', $method->id)->whereIn('action', ['added', 'updated'])
+            ->where('by_merchant', false)->latest('id')->value('user_id');
+        if ($enteredBy !== null && $enteredBy === $actor->id) {
+            throw new BusinessRuleException('Vous avez saisi ce moyen de paiement : une autre personne de l\'équipe doit le vérifier.');
+        }
         $method->update(['status' => MerchantPaymentMethod::VERIFIED, 'verified_by' => $actor->id, 'verified_at' => now(), 'rejected_reason' => null]);
         $this->log($actor, $method, 'verified', 'Validé : '.$method->summary());
 
@@ -164,13 +171,14 @@ class MerchantPaymentMethods
     }
 
     /**
-     * Le marchand : à vérifier ; l'agence : vérifié d'office.
+     * Le marchand ou la caisse : à vérifier (par une autre personne pour la caisse) ; un administrateur : vérifié
+     * d'office. Un caissier ne peut pas ajouter son propre numéro et le payer aussitôt.
      *
      * @return array<string, mixed>
      */
     private function status(User $actor, bool $byMerchant): array
     {
-        return $byMerchant
+        return $byMerchant || ! $actor->hasRole(Role::Admin->value)
             ? ['status' => MerchantPaymentMethod::PENDING, 'verified_by' => null, 'verified_at' => null, 'rejected_reason' => null]
             : ['status' => MerchantPaymentMethod::VERIFIED, 'verified_by' => $actor->id, 'verified_at' => now(), 'rejected_reason' => null];
     }

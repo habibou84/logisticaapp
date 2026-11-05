@@ -5,6 +5,7 @@ namespace App\Services\Finance;
 use App\Enums\EarningType;
 use App\Enums\LedgerEntryType;
 use App\Exceptions\BusinessRuleException;
+use App\Models\CashClosing;
 use App\Models\CashCollection;
 use App\Models\Courier;
 use App\Models\CourierAdvance;
@@ -96,6 +97,9 @@ class CashDesk
         if (! $remittance->received_at->isToday()) {
             throw new BusinessRuleException('Un versement ne s\'annule que le jour même. Pour corriger, faites une prime ou une retenue.', 'remittance');
         }
+        if (self::closedAfter($remittance->company_id, $remittance->received_at)) {
+            throw new BusinessRuleException('La caisse a déjà été clôturée avec ce versement. Pour corriger, faites une prime ou une retenue.', 'remittance');
+        }
 
         return DB::transaction(function () use ($actor, $remittance, $reason) {
             $collections = CashCollection::where('remittance_id', $remittance->id)->lockForUpdate()->get();
@@ -120,7 +124,13 @@ class CashDesk
         });
     }
 
-    /** Annule une avance donnée par erreur, le jour même et tant qu'elle n'est pas réglée au versement */
+    /** Une clôture de caisse a compté ce mouvement : l'annuler fausserait la clôture */
+    private static function closedAfter(int $companyId, \DateTimeInterface $at): bool
+    {
+        return CashClosing::withoutGlobalScopes()->where('company_id', $companyId)->where('closed_at', '>=', $at)->exists();
+    }
+
+    /** Annule une avance donnée par erreur, le jour même, tant qu'elle n'est pas réglée au versement ni comptée dans une clôture */
     public function cancelAdvance(User $actor, CourierAdvance $advance, string $reason): CourierAdvance
     {
         if ($advance->cancelled_at !== null || $advance->remittance_id !== null || $advance->courier_payout_id !== null) {
@@ -128,6 +138,9 @@ class CashDesk
         }
         if (! $advance->given_at->isToday()) {
             throw new BusinessRuleException('Une avance ne s\'annule que le jour même.', 'advance');
+        }
+        if (self::closedAfter($advance->company_id, $advance->given_at)) {
+            throw new BusinessRuleException('La caisse a déjà été clôturée avec cette avance : elle sera réglée au prochain versement du livreur.', 'advance');
         }
         $advance->forceFill(['cancelled_at' => now(), 'cancelled_by' => $actor->id, 'cancel_reason' => $reason])->save();
 

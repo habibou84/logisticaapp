@@ -21,6 +21,7 @@ use App\Services\WhatsApp\Conversation;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Paramètres WhatsApp de l'entreprise : numéro (API Cloud de Meta), options
@@ -55,6 +56,20 @@ class WhatsAppSettingsController extends Controller
             'account.waba_id' => 'identifiant du compte WhatsApp Business',
             'account.access_token' => 'jeton d\'accès',
         ]);
+
+        // Numéro déjà relié et vérifié par une autre entreprise : refusé
+        $phoneNumberId = $data['account']['phone_number_id'] ?? null;
+        if (filled($phoneNumberId) && WhatsAppAccount::withoutGlobalScopes()->where('phone_number_id', $phoneNumberId)
+            ->where(fn ($q) => $q->where('company_id', '!=', $company->id)->orWhereNull('company_id'))
+            ->where('status', 'connected')->exists()) {
+            throw ValidationException::withMessages(['account.phone_number_id' => 'Ce numéro WhatsApp est déjà relié à un autre compte.']);
+        }
+        // Identifiant gardé par une autre entreprise sans vérification (il ne reçoit rien) : libéré pour le vrai titulaire
+        if (filled($phoneNumberId)) {
+            WhatsAppAccount::withoutGlobalScopes()->where('phone_number_id', $phoneNumberId)->where('company_id', '!=', $company->id)
+                ->where('status', '!=', 'connected')
+                ->update(['phone_number_id' => null, 'status' => 'pending']);
+        }
 
         DB::transaction(function () use ($company, $data) {
             $company->update(array_intersect_key($data, array_flip(['notify_recipients', 'sms_fallback', 'merchant_push_first', 'whatsapp_orders'])));

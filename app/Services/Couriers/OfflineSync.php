@@ -24,8 +24,10 @@ use Illuminate\Validation\ValidationException;
 /**
  * Actions d'un livreur faites sans réseau, envoyées une à une au retour de la connexion :
  *  - chaque action n'est appliquée qu'une fois (identifiant tiré par le téléphone) ;
- *  - elle est datée de son heure réelle, si elle est vraisemblable (3 jours au plus) ;
- *  - une livraison avec un code client faux est gardée mais signalée (code à vérifier) ;
+ *  - elle est datée de son heure réelle, si elle est vraisemblable (3 jours au plus, jamais avant la dernière étape
+ *    connue de la course) ;
+ *  - une livraison avec un code client faux est gardée mais signalée (code à vérifier), 3 par jour au plus ; rien
+ *    n'est reversé à l'e-commerçant pour elle avant la vérification du dispatch ;
  *  - une action devenue impossible (course annulée ou réattribuée entre-temps) est refusée :
  *    le livreur est prévenu et le refus est noté sur la course pour le dispatch.
  */
@@ -37,6 +39,9 @@ class OfflineSync
     private const MAX_AGE_HOURS = 72;
 
     private const MAX_AHEAD_MINUTES = 5;
+
+    // Livraisons « code à vérifier » acceptées par livreur et par jour : au-delà, le dispatch doit voir le livreur
+    public const MAX_UNVERIFIED_PER_DAY = 3;
 
     public function __construct(
         private readonly OrderWorkflow $workflow,
@@ -86,6 +91,20 @@ class OfflineSync
     private function transition(User $courier, Order $order, array $payload, Carbon $occurredAt): void
     {
         $data = Validator::make($payload, (new TransitionOrderRequest)->rules())->validate();
+
+        // L'heure déclarée ne remonte jamais avant la dernière étape connue de la course (départ en livraison…)
+        $last = $order->events()->max('created_at');
+        if ($last !== null && $occurredAt->lt(Carbon::parse($last))) {
+            $occurredAt = Carbon::parse($last)->min(now());
+        }
+
+        // Code client faux hors connexion : nombre limité par jour
+        if (($data['status'] ?? null) === OrderStatus::Delivered->value && $order->company?->require_delivery_code
+            && ! hash_equals((string) $order->delivery_code, (string) ($data['delivery_code'] ?? ''))
+            && Order::query()->whereNotNull('delivery_code_unverified_at')->where('delivery_code_unverified_at', '>=', today())
+                ->whereHas('assignments', fn ($q) => $q->where('courier_id', $courier->courier?->id))->count() >= self::MAX_UNVERIFIED_PER_DAY) {
+            throw new BusinessRuleException('Trop de livraisons avec un code client faux aujourd\'hui : appelez le dispatch pour faire vérifier cette livraison.', 'delivery_code');
+        }
 
         $order = $this->workflow->transition($courier, $order, OrderStatus::from($data['status']), [
             ...$data,

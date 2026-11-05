@@ -40,6 +40,22 @@ correction a son test. À rejouer chaque trimestre (voir `docs/MAINTENANCE.md`).
 | Haute | Lien « Ce n'était pas moi » de la console : nouveau mot de passe avec la seule boîte mail. | Le lien ne fait plus que verrouiller le compte ; réouverture par un autre propriétaire. |
 | Haute | Un administrateur pouvait rétrograder un autre administrateur puis changer ses identifiants. | Rôle et statut d'un administrateur modifiables par le super administrateur seulement. |
 
+## Audit n° 2, lot 2 corrigé
+
+| Gravité | Problème | Correction |
+|---|---|---|
+| Moyenne | Hors connexion : livraison avec un code client faux sans limite, action antidatée jusqu'à 72 h. | 3 livraisons « code à vérifier » par livreur et par jour au plus ; rien n'est reversé à l'e-commerçant pour elles avant la vérification du dispatch ; l'heure déclarée ne remonte jamais avant la dernière étape de la course. |
+| Moyenne | API publique : modification du montant ou de la zone sans la validation demandée par le réglage « Modifications des e-commerçants ». | Même validation que dans l'application. |
+| Moyenne | Versement ou avance annulable après la clôture de caisse du jour. | Annulation refusée après la clôture : faire un mouvement contraire daté du jour. |
+| Moyenne | Un caissier pouvait tout faire seul (ajustement sans plafond, moyen de paiement saisi et vérifié par lui). | Ajustement plafonné à 5 000 000 F, et au-delà de 500 000 F par un administrateur ; moyen de paiement saisi par l'équipe « à vérifier » (sauf administrateur), jamais vérifié par celui qui l'a saisi. |
+| Moyenne | Console : si l'envoi du code échouait, la session s'ouvrait avec le seul mot de passe. | Connexion bloquée ; procédure de secours sur le serveur : `php artisan console:code {identifiant}`. |
+| Moyenne | Limite des essais de mot de passe contournable en écrivant le numéro autrement. | Limite sur le numéro normalisé, et par compte toutes adresses IP confondues (10 par minute, 60 par heure). |
+| Moyenne | Session d'assistance : création possible de clés, invitations, comptes ou mots de passe ; jetons gardés après suspension du membre. | Ces actions sont refusées pendant l'assistance ; suspendre un membre de l'équipe Jibiat coupe ses sessions d'assistance. |
+| Moyenne | Adresse de l'ancienne application contrôlée une seule fois (redirection, changement DNS). | Contrôle à chaque appel, adresse IP fixée, sans redirection (comme les webhooks). |
+| Moyenne | Notifications push : adresse d'envoi libre. | Seulement les services push des navigateurs (Google, Mozilla, Apple, Microsoft), sans redirection. |
+| Moyenne | WhatsApp : identifiant du numéro d'une autre entreprise réservable. | Un numéro vérifié ne peut pas être repris ; un compte non vérifié auprès de Meta ne reçoit aucun message, et son identifiant est libéré pour le vrai titulaire. |
+| Moyenne | `symfony/mime` avec une faille connue. | Mise à jour (`composer audit` : 0 faille). |
+
 ## Vérifié et sain
 
 Isolement entre entreprises (scope global, jeton lié à l'adresse de l'entreprise), isolement entre marchands d'une

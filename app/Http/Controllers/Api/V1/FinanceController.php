@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Enums\PaymentMethod;
 use App\Enums\PayoutStatus;
 use App\Enums\Permission;
+use App\Enums\Role;
 use App\Enums\WhatsAppTemplate;
 use App\Exceptions\BusinessRuleException;
 use App\Http\Controllers\Controller;
@@ -42,6 +43,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Caisse de l'entreprise de livraison : versements des livreurs, grand livre et
@@ -429,14 +431,28 @@ class FinanceController extends Controller
         ]);
     }
 
+    /** Ajustement manuel (prime, retenue, correction) : au plus, et seuil au-delà duquel un administrateur le fait */
+    public const ADJUST_MAX = 5000000;
+
+    public const ADJUST_ADMIN_FROM = 500000;
+
+    /** Gros ajustement : réservé à un administrateur (un caissier seul ne crée pas de grosses sommes) */
+    private function ensureAdjustmentAllowed(Request $request, int $amount): void
+    {
+        if (abs($amount) > self::ADJUST_ADMIN_FROM && ! $request->user()->hasRole(Role::Admin->value)) {
+            throw ValidationException::withMessages(['amount' => 'Au-delà de '.Money::format(self::ADJUST_ADMIN_FROM).', l\'ajustement est fait par un administrateur.']);
+        }
+    }
+
     public function adjustMerchant(Request $request, Merchant $merchant): JsonResponse
     {
         $this->authorizeStaff($request, manage: true);
 
         $data = $request->validate([
-            'amount' => ['required', 'integer', 'not_in:0'],
+            'amount' => ['required', 'integer', 'not_in:0', 'between:-'.self::ADJUST_MAX.','.self::ADJUST_MAX],
             'description' => ['required', 'string', 'max:255'],
         ], [], ['amount' => 'montant', 'description' => 'motif']);
+        $this->ensureAdjustmentAllowed($request, $data['amount']);
 
         $entry = $this->payouts->adjust($request->user(), $merchant, $data['amount'], $data['description']);
         $this->journal->record($request->user(), $merchant->company_id, 'merchant_adjustment', $merchant->business_name.' · « '.$data['description'].' »',
@@ -616,9 +632,10 @@ class FinanceController extends Controller
         $this->authorizeStaff($request, manage: true);
 
         $data = $request->validate([
-            'amount' => ['required', 'integer', 'not_in:0'],
+            'amount' => ['required', 'integer', 'not_in:0', 'between:-'.self::ADJUST_MAX.','.self::ADJUST_MAX],
             'description' => ['required', 'string', 'max:255'],
         ], [], ['amount' => 'montant', 'description' => 'motif']);
+        $this->ensureAdjustmentAllowed($request, $data['amount']);
 
         $earning = $this->payroll->adjust($request->user(), $courier, $data['amount'], $data['description']);
         $this->journal->record($request->user(), $courier->company_id, 'courier_adjustment', ($courier->user?->name ?? 'Livreur').' · « '.$data['description'].' »',

@@ -57,13 +57,7 @@ class SendWebhook implements ShouldQueue
             return;
         }
         // Envoi vers l'adresse vérifiée : le nom n'est pas résolu une seconde fois (rebinding DNS)
-        $pin = [];
-        if ($target['ip'] !== null) {
-            $parts = parse_url($subscription->url);
-            $port = $parts['port'] ?? (($parts['scheme'] ?? 'https') === 'http' ? 80 : 443);
-            $ip = str_contains($target['ip'], ':') ? '['.$target['ip'].']' : $target['ip'];
-            $pin = ['curl' => [CURLOPT_RESOLVE => [trim((string) $parts['host'], '[]').':'.$port.':'.$ip]]];
-        }
+        $pin = UrlGuard::pin($subscription->url, $target['ip']);
 
         $body = json_encode($delivery->payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         $timestamp = (string) now()->timestamp;

@@ -120,6 +120,8 @@ class CourierDayMissionsTest extends TestCase
     {
         $this->company->update(['offline_courier_actions' => true]);
         $yesterday = $this->pickedUpFor(now()->subDay()->toDateString());
+        // Ramassé hier matin (l'heure d'une action hors connexion ne remonte jamais avant la dernière étape)
+        $yesterday->events()->update(['created_at' => now()->subDay()->setTime(9, 0)]);
         Sanctum::actingAs($this->courierB->user);
 
         // Partie hier hors connexion, envoyée aujourd'hui : acceptée
@@ -131,6 +133,7 @@ class CourierDayMissionsTest extends TestCase
 
         // Colis prévu aujourd'hui, action datée d'hier : refusée et mise de côté pour le livreur
         $today = $this->pickedUpFor(now()->toDateString());
+        $today->events()->update(['created_at' => now()->subDay()->setTime(9, 0)]);
         Sanctum::actingAs($this->courierB->user);
         $this->postJson('/api/v1/courier/sync', [
             'id' => 'd4e5f6', 'kind' => 'status', 'order_id' => $today->id, 'occurred_at' => now()->subDay()->setTime(10, 0)->toIso8601String(),

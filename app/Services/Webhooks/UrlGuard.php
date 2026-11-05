@@ -78,6 +78,23 @@ class UrlGuard
     }
 
     /**
+     * Options d'envoi qui fixent l'adresse IP vérifiée (pas de seconde résolution du nom : rebinding DNS).
+     *
+     * @return array<string, mixed>
+     */
+    public static function pin(string $url, ?string $ip): array
+    {
+        if ($ip === null) {
+            return [];
+        }
+        $parts = parse_url($url);
+        $port = $parts['port'] ?? (($parts['scheme'] ?? 'https') === 'http' ? 80 : 443);
+        $ip = str_contains($ip, ':') ? '['.$ip.']' : $ip;
+
+        return ['curl' => [CURLOPT_RESOLVE => [trim((string) $parts['host'], '[]').':'.$port.':'.$ip]]];
+    }
+
+    /**
      * Adresses IPv4 et IPv6 du nom.
      *
      * @return list<string>

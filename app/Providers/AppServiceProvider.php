@@ -15,6 +15,7 @@ use App\Services\Vehicles\Fleet;
 use App\Services\WhatsApp\ClaudeOrderParser;
 use App\Services\WhatsApp\HeuristicOrderParser;
 use App\Services\WhatsApp\OrderMessageParser;
+use App\Support\PhoneNumber;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
@@ -65,10 +66,18 @@ class AppServiceProvider extends ServiceProvider
 
         DB::prohibitDestructiveCommands($this->app->isProduction());
 
-        RateLimiter::for('login', fn (Request $request) => [
-            Limit::perMinute(5)->by(mb_strtolower((string) $request->input('login')).'|'.$request->ip()),
-            Limit::perMinute(20)->by($request->ip()),
-        ]);
+        // Identifiant normalisé (07…, +225…, espaces : même compte) ; limite par compte toutes adresses IP confondues
+        RateLimiter::for('login', function (Request $request) {
+            $login = mb_strtolower(trim((string) $request->input('login')));
+            $account = str_contains($login, '@') ? $login : (PhoneNumber::normalize($login) ?? $login);
+
+            return [
+                Limit::perMinute(5)->by('login:'.$account.'|'.$request->ip()),
+                Limit::perMinute(20)->by('login-ip:'.$request->ip()),
+                Limit::perMinute(10)->by('login-account:'.$account),
+                Limit::perHour(60)->by('login-account-hour:'.$account),
+            ];
+        });
 
         // API publique : quota par clé, identifiée par son préfixe (en-têtes X-RateLimit-* renvoyés)
         // Demandes de vérification de numéro (inscription, mot de passe oublié) et SMS envoyés

@@ -46,8 +46,12 @@ class WhatsAppWebhookController extends Controller
                     $this->applyStatus($status);
                 }
 
+                // Seulement un numéro vérifié auprès de Meta (connecté) : un identifiant recopié par une autre
+                // entreprise, jamais vérifié, ne reçoit rien
                 $account = WhatsAppAccount::withoutGlobalScopes()
                     ->where('phone_number_id', $change['value']['metadata']['phone_number_id'] ?? '')
+                    ->where('status', 'connected')
+                    ->orderByRaw("CASE WHEN status = 'connected' THEN 0 ELSE 1 END")
                     ->first();
 
                 foreach ($change['value']['messages'] ?? [] as $message) {

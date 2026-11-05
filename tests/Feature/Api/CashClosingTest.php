@@ -4,6 +4,8 @@ namespace Tests\Feature\Api;
 
 use App\Enums\Role;
 use App\Models\CashLog;
+use App\Models\CourierAdvance;
+use App\Models\CourierRemittance;
 use App\Models\Merchant;
 use App\Models\MerchantPaymentMethod;
 use App\Models\Order;
@@ -75,6 +77,14 @@ class CashClosingTest extends TestCase
             ->assertJsonPath('data.deposited', 3000)->assertJsonPath('data.difference', 0)->assertJsonPath('data.closed_by', $this->cashier->name);
         $this->postJson('/api/v1/finance/closing', ['counted' => ['cash' => 8000], 'float_kept' => 0])->assertUnprocessable();
         $this->getJson('/api/v1/finance/closing')->assertJsonPath('data.closed.float_kept', 5000)->assertJsonPath('data.figures', null);
+
+        // La clôture a compté le versement et l'avance : ils ne s'annulent plus
+        $remittance = CourierRemittance::latest('id')->first();
+        $advance = CourierAdvance::latest('id')->first();
+        $this->postJson("/api/v1/finance/remittances/{$remittance->id}/cancel", ['reason' => 'Erreur'])->assertUnprocessable();
+        $this->postJson("/api/v1/finance/advances/{$advance->id}/cancel", ['reason' => 'Erreur'])->assertUnprocessable();
+        $this->assertNull($remittance->fresh()->cancelled_at);
+        $this->assertNull($advance->fresh()->cancelled_at);
 
         // Résumé : cloche et WhatsApp aux administrateurs ; noté au journal
         Notification::assertSentTo($this->admin, CashClosed::class);

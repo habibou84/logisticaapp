@@ -37,6 +37,9 @@ class PushSubscriptionController extends Controller
             'keys.auth' => ['required', 'string', 'max:40'],
         ]);
 
+        if (! WebPush::allowedEndpoint($data['endpoint'])) {
+            abort(422, 'Adresse de notification inconnue : seuls les services push des navigateurs sont acceptés.');
+        }
         if (strlen(WebPush::unb64($data['keys']['p256dh'])) !== 65 || strlen(WebPush::unb64($data['keys']['auth'])) !== 16) {
             abort(422, 'Clés d\'abonnement invalides.');
         }

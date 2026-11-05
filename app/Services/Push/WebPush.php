@@ -16,6 +16,26 @@ use Throwable;
  */
 class WebPush
 {
+    /** Services push des navigateurs (Google, Mozilla, Apple, Microsoft) : seules adresses d'envoi acceptées */
+    private const PUSH_HOSTS = ['fcm.googleapis.com', '*.push.services.mozilla.com', 'web.push.apple.com', '*.notify.windows.com'];
+
+    /** Adresse d'abonnement d'un service push connu (jamais une adresse choisie librement : réseau interne) */
+    public static function allowedEndpoint(string $endpoint): bool
+    {
+        $parts = parse_url($endpoint);
+        $host = strtolower($parts['host'] ?? '');
+        if (($parts['scheme'] ?? '') !== 'https' || isset($parts['user']) || isset($parts['port']) || ! preg_match('/^[a-z0-9.-]+$/', $host)) {
+            return false;
+        }
+        foreach (self::PUSH_HOSTS as $allowed) {
+            if ($host === $allowed || (str_starts_with($allowed, '*.') && str_ends_with($host, substr($allowed, 1)))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private const RECORD_SIZE = 4096;
 
     public static function enabled(): bool
@@ -75,6 +95,12 @@ class WebPush
      */
     private function post(PushSubscription $subscription, array $payload, int $ttl, string $urgency): string
     {
+        if (! self::allowedEndpoint($subscription->endpoint)) {
+            $subscription->delete();
+
+            return 'gone';
+        }
+
         try {
             $body = $this->encrypt(
                 json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
@@ -82,7 +108,7 @@ class WebPush
                 self::unb64($subscription->auth),
             );
 
-            $response = Http::timeout(10)
+            $response = Http::timeout(10)->withoutRedirecting()
                 ->withHeaders([
                     'Authorization' => $this->vapidHeader($subscription->endpoint),
                     'Content-Encoding' => 'aes128gcm',
