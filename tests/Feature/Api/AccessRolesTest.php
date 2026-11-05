@@ -158,10 +158,11 @@ class AccessRolesTest extends TestCase
         $this->patchJson("/api/v1/users/{$other->id}", ['status' => UserStatus::Suspended->value])->assertOk();
         $this->assertTrue($access->isLastAdmin($this->admin->fresh()));
 
-        // Rétabli, puis il rétrograde le premier : celui-ci n'est plus le dernier
+        // Rétabli ; il ne peut pas rétrograder l'autre administrateur (ce serait prendre son compte), mais le suspendre oui
         $this->patchJson("/api/v1/users/{$other->id}", ['status' => UserStatus::Active->value])->assertOk();
         Sanctum::actingAs($other->fresh());
-        $this->patchJson("/api/v1/users/{$this->admin->id}", ['role' => 'dispatcher'])->assertOk();
+        $this->patchJson("/api/v1/users/{$this->admin->id}", ['role' => 'dispatcher'])->assertForbidden();
+        $this->patchJson("/api/v1/users/{$this->admin->id}", ['status' => UserStatus::Suspended->value])->assertOk();
         $this->assertTrue($access->isLastAdmin($other->fresh()));
     }
 

@@ -48,10 +48,15 @@ class AppConnect
      */
     private function redirectAllowed(string $uri, array $hosts): bool
     {
+        // Antislash, espaces, caractères de contrôle ou encodés : le navigateur peut lire un autre hôte que
+        // parse_url (« https://evil.com\.jibiat-marchand.com » part vers evil.com)
+        if (preg_match('/[\\\\\s\x00-\x1f\x7f]|%5c|%00/i', $uri)) {
+            return false;
+        }
         $parts = parse_url($uri);
         $host = mb_strtolower($parts['host'] ?? '');
         $scheme = $parts['scheme'] ?? '';
-        if ($host === '' || isset($parts['user']) || ! in_array($scheme, ['https', 'http'], true)) {
+        if ($host === '' || ! preg_match('/^[a-z0-9.-]+$/', $host) || isset($parts['user']) || ! in_array($scheme, ['https', 'http'], true)) {
             return false;
         }
         // http seulement pour un poste de développement

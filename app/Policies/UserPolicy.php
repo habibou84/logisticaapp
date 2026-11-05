@@ -44,6 +44,15 @@ class UserPolicy
             && ($actor->is($user) || ! $user->hasRole(Role::Admin->value));
     }
 
+    /**
+     * Rôle d'un autre administrateur : pas modifiable. Le rétrograder puis changer ses identifiants reviendrait à
+     * prendre son compte. (Le suspendre reste possible : un administrateur qui quitte l'entreprise.)
+     */
+    public function changeRole(User $actor, User $user): bool
+    {
+        return $this->changeRoleOrStatus($actor, $user) && ! $user->hasRole(Role::Admin->value);
+    }
+
     public function delete(User $actor, User $user): bool
     {
         return ! $actor->is($user) && $this->update($actor, $user)
@@ -52,8 +61,8 @@ class UserPolicy
     }
 
     /**
-     * Un utilisateur ne peut pas modifier son propre rôle ni son propre statut
-     * (évite qu'un admin se bloque lui-même ou s'attribue un rôle).
+     * Un utilisateur ne peut pas modifier son propre rôle ni son propre statut (évite qu'un admin se bloque
+     * lui-même ou s'attribue un rôle), ni ceux d'un autre administrateur.
      */
     public function changeRoleOrStatus(User $actor, User $user): bool
     {

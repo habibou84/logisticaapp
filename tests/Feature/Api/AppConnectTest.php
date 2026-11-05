@@ -167,6 +167,12 @@ class AppConnectTest extends TestCase
         $this->postJson('/api/v1/connect/authorize', [
             'client_id' => 'jibiat-marchand', 'redirect_uri' => 'https://pirate.example/retour', 'state' => 's', 'code_challenge' => self::challenge(),
         ])->assertStatus(422)->assertJsonValidationErrors('redirect_uri');
+        // Antislash : le serveur lirait un sous-domaine autorisé, le navigateur part vers pirate.example
+        foreach (['https://pirate.example\\.jibiat-marchand.com/retour', 'https://pirate.example%5c.jibiat-marchand.com/retour', "https://awa.jibiat-marchand.com\t/retour"] as $trap) {
+            $this->postJson('/api/v1/connect/authorize', [
+                'client_id' => 'jibiat-marchand', 'redirect_uri' => $trap, 'state' => 's', 'code_challenge' => self::challenge(),
+            ])->assertStatus(422)->assertJsonValidationErrors('redirect_uri');
+        }
         $this->getJson('/api/public/connect/client?client_id=inconnue&redirect_uri='.urlencode(self::REDIRECT))->assertStatus(422);
 
         // Seul le gérant d'une boutique autorise une application

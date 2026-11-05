@@ -32,6 +32,11 @@ class UpdateUserRequest extends FormRequest
 
         // Changer un rôle ou un statut demande un droit supplémentaire
         // (personne ne peut modifier son propre rôle ou statut)
+        // Rôle d'un autre administrateur : jamais (le rétrograder puis changer ses identifiants = prendre son compte)
+        if ($this->has('role') && $this->input('role') !== $user->accessRole()?->name && ! $this->user()->can('changeRole', $user)) {
+            return false;
+        }
+
         if ($this->hasAny(['role', 'status', 'activities', 'extra_permissions', 'denied_permissions', 'zone_ids', 'hub_ids'])) {
             return ! $this->user()->is($user)
                 && $this->user()->can('changeRoleOrStatus', $user);

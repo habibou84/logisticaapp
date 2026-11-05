@@ -21,6 +21,7 @@
         <ol class="text-sm text-slate-700 space-y-1 list-decimal list-inside">
           <li>Appuyez sur le bouton : WhatsApp s'ouvre avec un message déjà écrit.</li>
           <li>Envoyez-le <strong>depuis le WhatsApp du {{ state.phone }}</strong>, sans le modifier.</li>
+          <li v-if="state.purpose !== 'signup'">Le robot vous demande de confirmer : répondez <strong>OUI</strong>.</li>
           <li>Revenez ici : la page continue toute seule.</li>
         </ol>
         <a :href="state.whatsapp.link" target="_blank" rel="noopener" class="flex items-center justify-center gap-2 w-full rounded-xl bg-[#25D366] hover:bg-[#1ebe5b] py-3 font-semibold text-white shadow-sm">

@@ -66,6 +66,9 @@ class SecurityHardeningTest extends TestCase
         $this->patchJson("/api/v1/users/{$other->id}", ['password' => 'nouveau-mot-de-passe'])->assertForbidden();
         $this->patchJson("/api/v1/users/{$other->id}", ['phone' => '0709090909'])->assertForbidden();
         $this->postJson("/api/v1/users/{$other->id}/invitation")->assertForbidden();
+        // Ni en deux temps : le rétrograder pour changer ensuite ses identifiants
+        $this->patchJson("/api/v1/users/{$other->id}", ['role' => 'dispatcher'])->assertForbidden();
+        $this->assertTrue($other->fresh()->hasRole(Role::Admin->value));
         // Son nom reste modifiable, et ses propres identifiants aussi
         $this->patchJson("/api/v1/users/{$other->id}", ['name' => 'Co-gérant'])->assertOk();
         $this->patchJson("/api/v1/users/{$this->dispatcher->id}", ['password' => 'nouveau-mot-de-passe'])->assertOk();
