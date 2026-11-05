@@ -29,6 +29,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../bootstrap/axios'
+import { printPage } from '../native/print'
 import { useAuthStore } from '../stores/auth'
 import OrderLabel from '../components/labels/OrderLabel.vue'
 
@@ -91,8 +92,14 @@ function remember() {
 }
 
 // Impression notée sur les courses (date, nombre) : rappels et suivi de l'agence
-function print() {
-  window.print()
+// Application Android : module natif « Print » (la vue web ignore window.print) ; navigateur : window.print
+async function print() {
+  try {
+    await printPage(orders.value.length > 1 ? 'Étiquettes' : `Étiquette ${orders.value[0]?.tracking_code || ''}`.trim())
+  } catch (e) {
+    error.value = e?.message || 'Impression impossible sur ce téléphone.'
+    return
+  }
   const request = shared
     ? http.post(`/shared-labels/${route.params.id}/${route.params.expires}/${route.params.token}/printed`)
     : http.post('/orders/labels/printed', { ids: orders.value.map((o) => o.id) })
@@ -155,6 +162,10 @@ onMounted(async () => {
 .fmt-a6 .label, .fmt-a4 .label { height: 14.4cm; }
 .label-page .sheets { display: flex; flex-wrap: wrap; gap: 12px; }
 .label-page .sheet { display: contents; }
+/* Téléphone : l'aperçu tient dans l'écran (l'impression garde 10 × 15 cm) */
+@media screen and (max-width: 640px) {
+  .label { width: 100%; max-width: 10cm; }
+}
 @media print {
   .no-print { display: none; }
   .label-page { padding: 0 !important; }

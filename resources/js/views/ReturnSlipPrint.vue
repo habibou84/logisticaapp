@@ -81,6 +81,7 @@
 </template>
 
 <script setup>
+import { printPage } from '../native/print'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import http, { apiErrorMessage } from '../bootstrap/axios'
@@ -101,7 +102,7 @@ async function openOriginal() {
 }
 
 function print() {
-  window.print()
+  printPage('Bon de retour').catch(() => {})
 }
 
 onMounted(async () => {
