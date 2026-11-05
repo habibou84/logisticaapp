@@ -42,7 +42,7 @@
         </label>
       </section>
       <section class="card p-4 space-y-3">
-        <h2 class="font-semibold">Argent gardé par un livreur</h2>
+        <h2 class="font-semibold">Caisse : argent gardé et clôture</h2>
         <div class="flex flex-wrap gap-4">
           <div>
             <label class="label" for="cash-hours">Argent gardé depuis plus de (heures)</label>
@@ -58,6 +58,16 @@
           Alerte aux administrateurs et caissiers dans l'application, une fois par livreur et par jour ; le livreur apparaît
           « à surveiller » dans la caisse. 0 heure et plafond vide = pas d'alerte.
         </p>
+        <h3 class="text-sm font-semibold">Clôture de la caisse</h3>
+        <div>
+          <label class="label" for="cash-close">Rappeler de clôturer la caisse à</label>
+          <input id="cash-close" v-model="form.cash_close_reminder_at" type="time" class="input w-32">
+        </div>
+        <label class="flex items-center gap-2 text-sm"><input v-model="form.cash_close_summary" type="checkbox"> Envoyer le résumé de la clôture aux administrateurs par WhatsApp</label>
+        <p class="text-xs text-gray-500">
+          Rappel dans l'application aux administrateurs et caissiers si la journée n'est pas clôturée (une fois par jour).
+          Heure vide = pas de rappel. Le résumé arrive aussi dans la cloche.
+        </p>
       </section>
 
       <SaveBar :dirty="dirty" :saving="saving" :error="error" @save="save" @reset="reset" />
@@ -72,6 +82,6 @@ import MoreHelp from '../../../components/settings/MoreHelp.vue'
 import { useCompanySettings } from '../../../composables/useCompanySettings'
 
 const { form, dirty, saving, error, save, reset } = useCompanySettings([
-  'pickup_assign_alert_minutes', 'delivery_assign_alert_minutes', 'parcel_hold_alert_hours', 'field_alert_reminder_minutes', 'weekly_report', 'cash_alert_hours', 'cash_alert_amount', 'cash_alert_courier',
+  'pickup_assign_alert_minutes', 'delivery_assign_alert_minutes', 'parcel_hold_alert_hours', 'field_alert_reminder_minutes', 'weekly_report', 'cash_alert_hours', 'cash_alert_amount', 'cash_alert_courier', 'cash_close_reminder_at', 'cash_close_summary',
 ])
 </script>

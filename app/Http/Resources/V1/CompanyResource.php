@@ -51,6 +51,8 @@ class CompanyResource extends JsonResource
             'cash_alert_hours' => $this->cash_alert_hours,
             'cash_alert_amount' => $this->cash_alert_amount,
             'cash_alert_courier' => $this->cash_alert_courier,
+            'cash_close_reminder_at' => $this->cash_close_reminder_at ? substr((string) $this->cash_close_reminder_at, 0, 5) : null,
+            'cash_close_summary' => $this->cash_close_summary,
             'pickup_mission_custody' => $this->pickup_mission_custody ?? 'choose',
             'depot_closes_at' => $this->depot_closes_at,
             'pickup_assign_alert_minutes' => $this->pickup_assign_alert_minutes,

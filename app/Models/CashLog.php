@@ -27,6 +27,7 @@ class CashLog extends Model
         'payout_cancelled' => 'Paiement annulé',
         'payslip_paid' => 'Paie versée',
         'payslip_cancelled' => 'Fiche de paie annulée',
+        'cash_closed' => 'Clôture de la caisse',
     ];
 
     protected $fillable = ['company_id', 'user_id', 'action', 'courier_id', 'merchant_id', 'amount', 'reference', 'description'];

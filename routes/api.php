@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\ApiKeyController;
 use App\Http\Controllers\Api\V1\AppearanceController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BillingPlanController;
+use App\Http\Controllers\Api\V1\CashClosingController;
 use App\Http\Controllers\Api\V1\ClientInvoiceController;
 use App\Http\Controllers\Api\V1\ClientRateController;
 use App\Http\Controllers\Api\V1\ClientReportController;
@@ -607,6 +608,11 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::apiResource('fixed-costs', FixedCostController::class)->except(['show']);
 
         // Caisse et finances (droits vérifiés dans le contrôleur : finance.view / finance.manage)
+        Route::prefix('finance')->name('finance.')->controller(CashClosingController::class)->group(function () {
+            Route::get('closing', 'show')->name('closing.show');
+            Route::post('closing', 'store')->name('closing.store');
+            Route::get('closings', 'index')->name('closings.index');
+        });
         Route::prefix('finance')->name('finance.')->controller(FinanceController::class)->group(function () {
             Route::get('cash', 'cash')->name('cash');
             Route::get('couriers/{courier}/collections', 'collections')->name('couriers.collections');
@@ -628,6 +634,8 @@ Route::prefix('v1')->name('v1.')->group(function () {
                 Route::post('merchants/{merchant}/adjustments', 'adjustMerchant')->name('merchants.adjustments');
                 Route::get('payouts', 'payouts')->name('payouts.index');
                 Route::post('payouts', 'storePayout')->name('payouts.store');
+                Route::post('payouts/batch', 'storePayouts')->name('payouts.batch');
+                Route::post('payouts/pay-batch', 'payPayouts')->name('payouts.pay-batch');
                 Route::get('payouts/{payout}', 'showPayout')->name('payouts.show');
                 Route::post('payouts/{payout}/pay', 'payPayout')->name('payouts.pay');
                 Route::post('payouts/{payout}/cancel', 'cancelPayout')->name('payouts.cancel');
@@ -637,6 +645,7 @@ Route::prefix('v1')->name('v1.')->group(function () {
             Route::get('invoice-payments', 'invoicePayments')->name('invoice-payments.index');
             Route::get('courier-payouts', 'courierPayouts')->name('courier-payouts.index');
             Route::post('courier-payouts', 'storeCourierPayout')->name('courier-payouts.store');
+            Route::post('courier-payouts/pay-batch', 'payCourierPayouts')->name('courier-payouts.pay-batch');
             Route::get('courier-payouts/{courierPayout}', 'showCourierPayout')->name('courier-payouts.show');
             Route::post('courier-payouts/{courierPayout}/pay', 'payCourierPayout')->name('courier-payouts.pay');
             Route::post('courier-payouts/{courierPayout}/cancel', 'cancelCourierPayout')->name('courier-payouts.cancel');

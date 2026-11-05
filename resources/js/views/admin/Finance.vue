@@ -2,6 +2,7 @@
   <div class="space-y-4">
     <div class="flex flex-wrap items-center gap-2">
       <h1 class="flex-1 text-xl font-bold">Caisse</h1>
+      <RouterLink to="/admin/caisse/cloture" class="btn-secondary">Clôture du jour</RouterLink>
       <RouterLink to="/admin/caisse/journal" class="btn-secondary">Journal de la caisse</RouterLink>
     </div>
 
@@ -117,13 +118,20 @@
         <label class="flex items-center gap-2 text-sm"><input v-model="filters.allMerchants" type="checkbox" @change="load"> Afficher aussi les soldes à zéro</label>
         <button type="button" class="btn-secondary" @click="exportMerchants">Exporter</button>
       </div>
+      <div v-if="canManage && payableMerchants.length" class="card p-3 flex flex-wrap items-center gap-3">
+        <p class="flex-1 min-w-[14rem] text-sm text-gray-700">Cochez les clients, puis préparez leurs paiements d'un coup. Ceux dont le moyen de paiement n'est pas vérifié sont grisés.</p>
+        <button type="button" class="btn-primary" :disabled="!batch.merchants.length || batch.busy" @click="prepareSelected">
+          Préparer {{ batch.merchants.length }} paiement{{ batch.merchants.length > 1 ? 's' : '' }} ({{ money(selectedMerchantsTotal) }})
+        </button>
+      </div>
       <div class="card overflow-x-auto">
         <table class="w-full text-sm stack-table">
           <thead class="bg-slate-50 text-left text-gray-600">
-            <tr><th class="p-2">Client</th><th class="p-2 text-right">Disponible</th><th class="p-2 text-right">En attente</th><th class="p-2 text-right">Total à payer</th><th class="p-2">Payer avec</th><th /></tr>
+            <tr><th v-if="canManage" class="p-2 w-8"><input type="checkbox" aria-label="Tout cocher" :checked="payableMerchants.length > 0 && batch.merchants.length === payableMerchants.length" @change="toggleAllMerchants($event.target.checked)"></th><th class="p-2">Client</th><th class="p-2 text-right">Disponible</th><th class="p-2 text-right">En attente</th><th class="p-2 text-right">Total à payer</th><th class="p-2">Payer avec</th><th /></tr>
           </thead>
           <tbody class="divide-y">
-            <tr v-for="m in visibleMerchants" :key="m.merchant_id">
+            <tr v-for="m in visibleMerchants" :key="m.merchant_id" :class="canManage && m.available > 0 && !merchantPayable(m) ? 'bg-slate-50 text-gray-600' : ''">
+              <td v-if="canManage" class="p-2"><input v-model="batch.merchants" type="checkbox" :value="m.merchant_id" :disabled="!merchantPayable(m)" :aria-label="`Choisir ${m.business_name}`"></td>
               <td class="p-2 font-medium">{{ m.business_name }}</td>
               <td data-label="Disponible" :class="['p-2 text-right font-semibold', signedClass(m.available)]">{{ money(m.available) }}</td>
               <td data-label="En attente" class="p-2 text-right text-gray-600">{{ money(m.pending_cash) }}</td>
@@ -144,7 +152,7 @@
                 <button v-if="canManage && m.available !== 0" class="btn-primary" @click="preparePayout(m)">Préparer le paiement</button>
               </td>
             </tr>
-            <tr v-if="!visibleMerchants.length"><td colspan="6" class="p-4 text-center text-gray-500">Aucun montant à payer.</td></tr>
+            <tr v-if="!visibleMerchants.length"><td :colspan="canManage ? 7 : 6" class="p-4 text-center text-gray-500">Aucun montant à payer.</td></tr>
           </tbody>
         </table>
       </div>
@@ -164,6 +172,7 @@
           </select>
         </div>
         <button type="button" class="btn-secondary" @click="exportPayouts">Exporter</button>
+        <button v-if="canManage && draftPayouts.length" type="button" class="btn-primary" @click="openBatchPay">Marquer plusieurs comme payés ({{ draftPayouts.length }})</button>
       </div>
       <div class="card overflow-x-auto">
         <table class="w-full text-sm stack-table">
@@ -235,25 +244,71 @@
         </table>
       </div>
       <div class="card overflow-x-auto">
-        <h2 class="font-semibold p-4 border-b">Fiches de paie</h2>
+        <div class="flex flex-wrap items-end gap-3 p-4 border-b">
+          <h2 class="flex-1 font-semibold">Fiches de paie</h2>
+          <template v-if="canManage && draftPayslips.length">
+            <div>
+              <label class="label" for="payslips-method">Payé en</label>
+              <select id="payslips-method" v-model="batch.payslipMethod" class="input w-auto">
+                <option v-for="m in PAY_METHODS" :key="m.value" :value="m.value">{{ m.label }}</option>
+              </select>
+            </div>
+            <button type="button" class="btn-primary" :disabled="!batch.payslips.length || batch.busy" @click="paySelectedPayslips">
+              Payer {{ batch.payslips.length }} fiche{{ batch.payslips.length > 1 ? 's' : '' }} ({{ money(selectedPayslipsTotal) }})
+            </button>
+          </template>
+        </div>
         <table class="w-full text-sm stack-table">
           <thead class="bg-slate-50 text-left text-gray-600">
-            <tr><th class="p-2">Référence</th><th class="p-2">Livreur</th><th class="p-2">Période</th><th class="p-2 text-right">Montant</th><th class="p-2">Statut</th><th /></tr>
+            <tr><th v-if="canManage" class="p-2 w-8"><input v-if="draftPayslips.length" type="checkbox" aria-label="Tout cocher" :checked="batch.payslips.length === draftPayslips.length" @change="toggleAllPayslips($event.target.checked)"></th><th class="p-2">Référence</th><th class="p-2">Livreur</th><th class="p-2">Période</th><th class="p-2 text-right">Montant</th><th class="p-2">Statut</th><th /></tr>
           </thead>
           <tbody class="divide-y">
-            <tr v-for="p in courierPayouts" :key="p.id">
+            <tr v-for="p in courierPayouts" :key="p.id" :class="p.status === 'draft' && holding(p) ? 'bg-orange-50' : ''">
+              <td v-if="canManage" class="p-2"><input v-if="p.status === 'draft'" v-model="batch.payslips" type="checkbox" :value="p.id" :aria-label="`Choisir ${p.reference}`"></td>
               <td class="p-2 font-mono text-xs">{{ p.reference }}</td>
-              <td data-label="Livreur" class="p-2">{{ p.courier_name }}</td>
+              <td data-label="Livreur" class="p-2">{{ p.courier_name }}<span v-if="p.status === 'draft' && holding(p)" class="block text-xs font-semibold text-orange-800">Garde encore {{ money(holding(p)) }} : vous pouvez aussi garder la paie sur l'encaissé (Détail)</span></td>
               <td data-label="Période" class="p-2 whitespace-nowrap text-gray-600">{{ date(p.period_start) }} → {{ date(p.period_end) }}<span v-if="p.automatic" title="Préparée automatiquement en fin de période"> ⏱</span></td>
               <td data-label="Montant" :class="['p-2 text-right font-semibold', signedClass(p.amount)]">{{ money(p.amount) }}</td>
               <td data-label="Statut" class="p-2"><PayoutBadge :status="p.status" :label="p.status_label" /></td>
               <td class="p-2 text-right"><button class="text-blue-600" @click="openCourierPayout(p)">Détail</button></td>
             </tr>
-            <tr v-if="!courierPayouts.length"><td colspan="6" class="p-4 text-center text-gray-500">Aucune fiche de paie.</td></tr>
+            <tr v-if="!courierPayouts.length"><td :colspan="canManage ? 7 : 6" class="p-4 text-center text-gray-500">Aucune fiche de paie.</td></tr>
           </tbody>
         </table>
       </div>
     </template>
+
+    <!-- Paiements préparés : marquer payés ensemble -->
+    <Modal :open="batchPay.open" title="Marquer des paiements comme payés" @close="batchPay.open = false">
+      <p class="text-sm text-gray-600 mb-3">Après les transferts, vérifiez le moyen et saisissez la référence de chacun. Seuls les paiements cochés sont validés.</p>
+      <div class="space-y-2 max-h-[60vh] overflow-y-auto">
+        <div v-for="row in batchPay.rows" :key="row.id" class="rounded-lg border p-3 flex flex-wrap items-end gap-3">
+          <label class="flex items-center gap-2 flex-1 min-w-[12rem]">
+            <input v-model="row.selected" type="checkbox">
+            <span><span class="font-medium">{{ row.merchant }}</span> · <span :class="signedClass(row.amount)">{{ money(row.amount) }}</span>
+              <span class="block text-xs text-gray-600">{{ row.reference }}<template v-if="row.summary"> · {{ row.summary }}<span v-if="!row.verified" class="text-amber-700"> (pas vérifié)</span></template></span>
+            </span>
+          </label>
+          <div>
+            <label class="label" :for="`bp-method-${row.id}`">Moyen</label>
+            <select :id="`bp-method-${row.id}`" v-model="row.method" class="input w-auto">
+              <option v-for="m in PAY_METHODS" :key="m.value" :value="m.value">{{ m.label }}</option>
+            </select>
+          </div>
+          <div>
+            <label class="label" :for="`bp-ref-${row.id}`">Référence</label>
+            <input :id="`bp-ref-${row.id}`" v-model="row.transaction_ref" type="text" maxlength="100" class="input w-40" :placeholder="row.method === 'cash' ? 'Facultatif' : 'Réf. du transfert'">
+          </div>
+        </div>
+      </div>
+      <p v-if="batchPay.error" class="text-sm text-red-700 mt-2" role="alert">{{ batchPay.error }}</p>
+      <div class="flex justify-end gap-2 mt-4">
+        <button type="button" class="btn-secondary" @click="batchPay.open = false">Fermer</button>
+        <button type="button" class="btn-primary" :disabled="!batchPaySelected.length || batch.busy" @click="saveBatchPay">
+          Marquer {{ batchPaySelected.length }} paiement{{ batchPaySelected.length > 1 ? 's' : '' }} comme payé{{ batchPaySelected.length > 1 ? 's' : '' }}
+        </button>
+      </div>
+    </Modal>
 
     <!-- Versement d'un livreur -->
     <Modal :open="remit.open" :title="`${remitHasCash ? 'Versement' : 'Colis'} de ${remit.courier?.name}`" @close="remit.open = false">
@@ -491,6 +546,89 @@ const advance = reactive({ open: false, courier: null, amount: null, reason: 'Fr
 const ledger = reactive({ open: false, merchant: null, entries: [], page: 1, lastPage: 1, total: 0, adjust: { amount: null, description: '' }, error: '' })
 const adjust = reactive({ open: false, courier: null, amount: null, description: '', error: '' })
 const courierPayout = reactive({ open: false, data: null })
+
+// Paiements groupés
+const PAY_METHODS = [
+  { value: 'cash', label: 'Espèces' }, { value: 'wave', label: 'Wave' }, { value: 'orange_money', label: 'Orange Money' },
+  { value: 'mtn_momo', label: 'MTN MoMo' }, { value: 'moov_money', label: 'Moov Money' }, { value: 'bank', label: 'Virement bancaire' },
+]
+const batch = reactive({ merchants: [], payslips: [], payslipMethod: 'cash', busy: false })
+const batchPay = reactive({ open: false, rows: [], error: '' })
+const merchantPayable = (m) => m.available > 0 && (!m.payment_method || m.payment_method.status === 'verified')
+const payableMerchants = computed(() => visibleMerchants.value.filter(merchantPayable))
+const selectedMerchantsTotal = computed(() => merchantBalances.value.filter((m) => batch.merchants.includes(m.merchant_id)).reduce((s, m) => s + m.available, 0))
+const draftPayouts = computed(() => payouts.value.filter((p) => p.status === 'draft'))
+const batchPaySelected = computed(() => batchPay.rows.filter((r) => r.selected))
+const draftPayslips = computed(() => courierPayouts.value.filter((p) => p.status === 'draft'))
+const selectedPayslipsTotal = computed(() => draftPayslips.value.filter((p) => batch.payslips.includes(p.id)).reduce((s, p) => s + p.amount, 0))
+const holding = (payslip) => Math.max(0, (cash.value?.data || []).find((c) => c.courier_id === payslip.courier_id)?.cash_in_hand || 0)
+
+function toggleAllMerchants(on) {
+  batch.merchants = on ? payableMerchants.value.map((m) => m.merchant_id) : []
+}
+function toggleAllPayslips(on) {
+  batch.payslips = on ? draftPayslips.value.map((p) => p.id) : []
+}
+function reportBatch(done, errors, what) {
+  const failed = Object.entries(errors || {})
+  if (done) toasts.success(`${done} ${what}.`)
+  failed.forEach(([who, why]) => toasts.error(`${who} : ${why}`))
+}
+
+async function prepareSelected() {
+  batch.busy = true
+  try {
+    const { data } = await http.post('/finance/payouts/batch', { merchant_ids: batch.merchants })
+    reportBatch(data.data.length, data.errors, data.data.length > 1 ? 'paiements préparés' : 'paiement préparé')
+    batch.merchants = []
+    await load()
+  } catch (e) {
+    toasts.error(apiErrorMessage(e))
+  } finally {
+    batch.busy = false
+  }
+}
+
+function openBatchPay() {
+  batchPay.rows = draftPayouts.value.map((p) => ({
+    id: p.id, reference: p.reference, merchant: p.merchant.business_name, amount: p.net_amount, selected: true,
+    method: p.pay_with?.method || 'cash', summary: p.pay_with?.summary, verified: p.pay_with?.verified ?? true, transaction_ref: '',
+  }))
+  Object.assign(batchPay, { open: true, error: '' })
+}
+
+async function saveBatchPay() {
+  batch.busy = true
+  batchPay.error = ''
+  try {
+    const { data } = await http.post('/finance/payouts/pay-batch', {
+      payouts: batchPaySelected.value.map((r) => ({ id: r.id, method: r.method, transaction_ref: r.transaction_ref || null })),
+    })
+    reportBatch(data.data.length, data.errors, data.data.length > 1 ? 'paiements marqués payés' : 'paiement marqué payé')
+    batchPay.open = false
+    await load()
+  } catch (e) {
+    batchPay.error = apiErrorMessage(e)
+  } finally {
+    batch.busy = false
+  }
+}
+
+async function paySelectedPayslips() {
+  const label = PAY_METHODS.find((m) => m.value === batch.payslipMethod)?.label
+  if (!window.confirm(`Payer ${batch.payslips.length} fiche(s) pour ${money(selectedPayslipsTotal.value)} en ${label} ?`)) return
+  batch.busy = true
+  try {
+    const { data } = await http.post('/finance/courier-payouts/pay-batch', { ids: batch.payslips, method: batch.payslipMethod })
+    reportBatch(data.data.length, data.errors, data.data.length > 1 ? 'fiches payées' : 'fiche payée')
+    batch.payslips = []
+    await load()
+  } catch (e) {
+    toasts.error(apiErrorMessage(e))
+  } finally {
+    batch.busy = false
+  }
+}
 // Gains et retenues de la fiche ; un report de retenue réduit les retenues
 const payslipTotals = computed(() => {
   const lines = courierPayout.data?.earnings || []

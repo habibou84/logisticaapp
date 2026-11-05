@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Enums\PaymentMethod;
+use App\Enums\PayoutStatus;
 use App\Enums\Permission;
 use App\Enums\WhatsAppTemplate;
 use App\Exceptions\BusinessRuleException;
@@ -106,7 +107,7 @@ class FinanceController extends Controller
             ],
             'alert' => ['hours' => $company->cash_alert_hours, 'amount' => $company->cash_alert_amount],
             // Reçu et rappel WhatsApp : modèles soumis à Meta tout seuls s'ils ne l'ont pas encore été
-            'whatsapp_templates' => app(TemplateAutoSubmit::class)->ensure($company->id, [WhatsAppTemplate::CashReceipt, WhatsAppTemplate::CashReminder]),
+            'whatsapp_templates' => app(TemplateAutoSubmit::class)->ensure($company->id, [WhatsAppTemplate::CashReceipt, WhatsAppTemplate::CashReminder, WhatsAppTemplate::CashClosing]),
         ]);
     }
 
@@ -426,7 +427,7 @@ class FinanceController extends Controller
 
         $request->validate(['merchant_id' => ['nullable', 'integer'], 'status' => ['nullable', 'string']]);
 
-        $payouts = MerchantPayout::with('merchant')
+        $payouts = MerchantPayout::with($user->merchant_id === null ? ['merchant.paymentMethods'] : ['merchant'])
             ->when($user->merchant_id !== null, fn ($q) => $q->where('merchant_id', $user->merchant_id))
             ->when($user->merchant_id === null && $request->filled('merchant_id'), fn ($q) => $q->where('merchant_id', $request->integer('merchant_id')))
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
@@ -434,7 +435,90 @@ class FinanceController extends Controller
             ->limit(200)
             ->get();
 
-        return response()->json(['data' => $payouts->map(fn ($p) => $this->payoutData($p))]);
+        return response()->json(['data' => $payouts->map(fn ($p) => $this->payoutData($p) + ($user->merchant_id === null && $p->status === PayoutStatus::Draft
+            ? ['pay_with' => self::payWith($p->merchant)] : []))]);
+    }
+
+    /**
+     * Moyen proposé pour payer un e-commerçant : son moyen préféré (vérifié ou non), sinon les espèces.
+     *
+     * @return array{method: string, summary: ?string, verified: bool}
+     */
+    private static function payWith(Merchant $merchant): array
+    {
+        $preferred = $merchant->paymentMethods->firstWhere('is_preferred', true) ?? $merchant->paymentMethods->first();
+
+        return $preferred
+            ? ['method' => $preferred->type->value, 'summary' => $preferred->summary(), 'verified' => $preferred->isVerified()]
+            : ['method' => PaymentMethod::Cash->value, 'summary' => null, 'verified' => true];
+    }
+
+    /**
+     * Prépare d'un coup les paiements de plusieurs e-commerçants. Un e-commerçant dont le moyen de paiement attend
+     * d'être vérifié, ou sans rien de disponible, est laissé de côté avec la raison.
+     */
+    public function storePayouts(Request $request): JsonResponse
+    {
+        $this->authorizeStaff($request, manage: true);
+        $data = $request->validate([
+            'merchant_ids' => ['required', 'array', 'min:1', 'max:200'],
+            'merchant_ids.*' => ['integer', Rule::exists('merchants', 'id')->where('company_id', $request->user()->company_id)],
+        ]);
+
+        $created = [];
+        $errors = [];
+        foreach (Merchant::with('paymentMethods')->whereIn('id', $data['merchant_ids'])->orderBy('business_name')->get() as $merchant) {
+            if (! self::payWith($merchant)['verified']) {
+                $errors[$merchant->business_name] = 'Moyen de paiement pas encore vérifié.';
+
+                continue;
+            }
+            try {
+                $payout = $this->payouts->create($request->user(), $merchant);
+            } catch (BusinessRuleException $e) {
+                $errors[$merchant->business_name] = $e->getMessage();
+
+                continue;
+            }
+            $this->journal->record($request->user(), $payout->company_id, 'payout_prepared', $merchant->business_name.' · '.$payout->reference,
+                ['merchant_id' => $merchant->id, 'amount' => $payout->net_amount, 'reference' => $payout->reference]);
+            $created[] = $this->payoutData($payout->setRelation('merchant', $merchant));
+        }
+
+        return response()->json(['data' => $created, 'errors' => (object) $errors], 201);
+    }
+
+    /**
+     * Marque payés plusieurs paiements préparés, chacun avec son moyen et sa référence.
+     */
+    public function payPayouts(Request $request): JsonResponse
+    {
+        $this->authorizeStaff($request, manage: true);
+        $data = $request->validate([
+            'payouts' => ['required', 'array', 'min:1', 'max:200'],
+            'payouts.*.id' => ['required', 'integer', 'distinct', Rule::exists('merchant_payouts', 'id')->where('company_id', $request->user()->company_id)],
+            'payouts.*.method' => ['required', Rule::enum(PaymentMethod::class)],
+            'payouts.*.transaction_ref' => ['nullable', 'string', 'max:100'],
+        ], [], ['payouts.*.method' => 'mode de paiement', 'payouts.*.transaction_ref' => 'référence']);
+
+        $paid = [];
+        $errors = [];
+        foreach ($data['payouts'] as $row) {
+            $payout = MerchantPayout::with('merchant')->findOrFail($row['id']);
+            try {
+                $payout = $this->payouts->markPaid($request->user(), $payout, PaymentMethod::from($row['method']), $row['transaction_ref'] ?? null);
+            } catch (BusinessRuleException $e) {
+                $errors[$payout->reference] = $e->getMessage();
+
+                continue;
+            }
+            $this->journal->record($request->user(), $payout->company_id, 'payout_paid',
+                $payout->merchant->business_name.' · '.$payout->reference.' · '.$payout->method?->label().($payout->transaction_ref ? ', réf. '.$payout->transaction_ref : ''),
+                ['merchant_id' => $payout->merchant_id, 'amount' => $payout->net_amount, 'reference' => $payout->reference]);
+            $paid[] = $this->payoutData($payout->load('merchant'));
+        }
+
+        return response()->json(['data' => $paid, 'errors' => (object) $errors]);
     }
 
     public function storePayout(Request $request): JsonResponse
@@ -606,6 +690,38 @@ class FinanceController extends Controller
             ['courier_id' => $payout->courier_id, 'amount' => $payout->amount, 'reference' => $payout->reference]);
 
         return response()->json(['data' => $this->courierPayoutData($payout->load('courier.user'), withEarnings: true)]);
+    }
+
+    /**
+     * Paie d'un coup plusieurs fiches à payer, par le même moyen.
+     */
+    public function payCourierPayouts(Request $request): JsonResponse
+    {
+        $this->authorizeStaff($request, manage: true);
+        $data = $request->validate([
+            'ids' => ['required', 'array', 'min:1', 'max:200'],
+            'ids.*' => ['integer', 'distinct', Rule::exists('courier_payouts', 'id')->where('company_id', $request->user()->company_id)],
+            'method' => ['required', Rule::enum(PaymentMethod::class)],
+        ], [], ['method' => 'mode de paiement']);
+
+        $paid = [];
+        $errors = [];
+        foreach (CourierPayout::with('courier.user')->whereIn('id', $data['ids'])->orderBy('id')->get() as $payout) {
+            try {
+                $payout = $this->payroll->markPaid($request->user(), $payout, PaymentMethod::from($data['method']));
+            } catch (BusinessRuleException $e) {
+                $errors[$payout->reference] = $e->getMessage();
+
+                continue;
+            }
+            $payout->load('courier.user');
+            $this->journal->record($request->user(), $payout->company_id, 'payslip_paid',
+                ($payout->courier?->user?->name ?? 'Livreur').' · '.$payout->reference.' · '.$payout->method?->label(),
+                ['courier_id' => $payout->courier_id, 'amount' => $payout->amount, 'reference' => $payout->reference]);
+            $paid[] = $this->courierPayoutData($payout);
+        }
+
+        return response()->json(['data' => $paid, 'errors' => (object) $errors]);
     }
 
     public function cancelCourierPayout(Request $request, CourierPayout $courierPayout): JsonResponse

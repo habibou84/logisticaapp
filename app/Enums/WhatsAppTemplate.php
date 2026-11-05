@@ -34,6 +34,7 @@ enum WhatsAppTemplate: string
     case PaymentMethodChanged = 'moyen_paiement_modifie';
     case CashReceipt = 'versement_recu';
     case CashReminder = 'argent_a_remettre';
+    case CashClosing = 'cloture_caisse';
 
     public const LANGUAGE = 'fr';
 
@@ -65,6 +66,7 @@ enum WhatsAppTemplate: string
             self::PaymentMethodChanged => 'Bonjour {{1}}, un moyen de paiement a été {{2}} sur votre compte : {{3}}. Si ce n\'est pas vous, prévenez votre agence tout de suite. Merci.',
             self::CashReceipt => 'Bonjour {{1}}, {{2}} a bien reçu votre versement {{3}} du {{4}} : {{5}} (attendu {{6}}). {{7}} Colis rendus : {{8}}. Colis gardés : {{9}}. Merci.',
             self::CashReminder => 'Bonjour {{1}}, vous avez {{2}} encaissés depuis le {{3}} à remettre à la caisse de {{4}}. Passez faire votre versement dès que possible. Merci.',
+            self::CashClosing => 'Bonjour {{1}}, la caisse de {{2}} du {{3}} a été clôturée par {{4}}. Entré : {{5}}. Sorti : {{6}}. Espèces comptées : {{7}} (attendu {{8}}). {{9}} Encore chez les livreurs : {{10}}.',
         };
     }
 
@@ -98,6 +100,7 @@ enum WhatsAppTemplate: string
             self::PaymentMethodChanged => '🔒 Moyen de paiement modifié',
             self::CashReceipt => '🧾 Versement reçu',
             self::CashReminder => '💵 Argent à remettre',
+            self::CashClosing => '🔒 Caisse clôturée',
         };
     }
 
@@ -129,6 +132,7 @@ enum WhatsAppTemplate: string
             self::PaymentMethodChanged => 'Au marchand, quand un moyen de paiement est ajouté, modifié ou retiré sur son compte (sécurité)',
             self::CashReceipt => 'Au livreur, quand la caisse reçoit son versement (reçu : montant, écart, colis rendus et gardés)',
             self::CashReminder => 'Au livreur, quand il garde l\'argent encaissé trop longtemps ou au-delà du plafond de l\'entreprise',
+            self::CashClosing => 'Aux administrateurs de l\'entreprise, résumé de la clôture de la caisse du jour',
         };
     }
 
@@ -155,6 +159,7 @@ enum WhatsAppTemplate: string
             self::PaymentMethodChanged => ['Boutique Chic', 'ajouté', 'Wave 07 09 98 08 85'],
             self::CashReceipt => ['Koffi', 'Rapide Express', 'VR-261030-0042', '30/10 à 17:40', '118 000 F', '120 000 F', 'Écart de 2 000 F retenu sur votre paie.', '2', '1'],
             self::CashReminder => ['Koffi', '342 000 F', '28/10 à 16:00', 'Rapide Express'],
+            self::CashClosing => ['Awa', 'Rapide Express', '30/10', 'Mariam', '612 000 F', '438 500 F', '153 500 F', '155 500 F', 'Écart : −2 000 F (monnaie rendue à un livreur).', '128 000 F'],
             self::ManagerReport => ['Awa', 'du 05/10 au 11/10', 'Rapide Express', '312', '+12 %', '287', '94 %', '430 500 F', '+8 %', '3', 'https://exemple.ci/admin/statistiques'],
             self::InvoiceIssued => ['Boutique Chic', 'DIS-202610-0001', 'Distribution', 'octobre 2026', '53 800 F', '15/11/2026'],
             self::InvoiceReminder => ['Boutique Chic', 'DIS-202610-0001', '15/11/2026', '53 800 F'],

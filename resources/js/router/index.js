@@ -149,6 +149,7 @@ const routes = [
       { path: 'formules', component: () => import('../views/admin/ClientFormulas.vue'), meta: { permission: ['pricing.manage', 'rates.manage'] } },
       { path: 'caisse/versements/:id(\\d+)', component: () => import('../views/admin/RemittanceReceipt.vue'), meta: { permission: 'finance.view' } },
       { path: 'caisse/journal', component: () => import('../views/admin/CashJournal.vue'), meta: { permission: 'finance.view' } },
+      { path: 'caisse/cloture', component: () => import('../views/admin/CashClosing.vue'), meta: { permission: 'finance.view' } },
       // Réglages par thèmes (l'ancienne page « Paramètres » y mène)
       { path: 'mise-en-route', component: () => import('../views/admin/SetupGuide.vue'), meta: { permission: 'settings.manage' } },
       { path: 'reglages', component: () => import('../views/admin/settings/SettingsHub.vue'), meta: { permission: SETTINGS_PERMISSIONS } },
