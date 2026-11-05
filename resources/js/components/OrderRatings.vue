@@ -3,7 +3,7 @@
   <div class="card p-4 space-y-3 text-sm">
     <div class="flex items-center justify-between gap-2">
       <h2 class="font-semibold">⭐ Notes du livreur</h2>
-      <RouterLink v-if="couriers.length" :to="{ path: '/admin/qualite-livreurs', query: { livreur: couriers[0].id } }" class="text-blue-600">Sa note globale</RouterLink>
+      <RouterLink v-if="couriers.length" :to="{ path: `/admin/livreurs/${couriers[0].id}`, query: { onglet: 'notes' } }" class="text-blue-600">Sa note globale</RouterLink>
     </div>
     <ul v-if="ratings.length" class="divide-y">
       <li v-for="r in ratings" :key="r.id" :class="['py-1.5', r.neutralized_at ? 'opacity-60' : '']">

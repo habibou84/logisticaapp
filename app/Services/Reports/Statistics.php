@@ -286,6 +286,27 @@ class Statistics
     }
 
     /**
+     * Jour par jour pour un livreur : livraisons faites et échecs (fiche du livreur).
+     *
+     * @return list<array{day: string, delivered: int, failed: int}>
+     */
+    public function courierDays(int $courierId, CarbonInterface $from, CarbonInterface $to): array
+    {
+        $delivered = $this->ordersBetween('delivered_at', $from, $to, ['id', 'delivery_courier_id', 'delivered_at'])
+            ->where('delivery_courier_id', $courierId)
+            ->countBy(fn (Order $o) => $this->localDate($o->delivered_at));
+        $failed = $this->failureEvents($from, $to)
+            ->join('order_assignments', 'order_assignments.id', '=', 'order_events.assignment_id')
+            ->where('order_assignments.courier_id', $courierId)
+            ->get(['order_events.id', 'order_events.created_at'])
+            ->countBy(fn (OrderEvent $e) => $this->localDate($e->created_at));
+
+        return $this->days($from, $to)
+            ->map(fn (string $day) => ['day' => $day, 'delivered' => (int) ($delivered[$day] ?? 0), 'failed' => (int) ($failed[$day] ?? 0)])
+            ->all();
+    }
+
+    /**
      * Clients : volume, réussite et chiffre d'affaires de chacun ; nouveaux,
      * actifs, et ceux qui ne commandent plus (à relancer).
      *

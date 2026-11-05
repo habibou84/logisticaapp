@@ -42,7 +42,7 @@ class CourierRatingAlert extends Notification implements ShouldQueue
             'body' => $this->body,
             'severity' => 'warning',
             'courier_id' => $this->courier->id,
-            'href' => "/admin/qualite-livreurs?livreur={$this->courier->id}",
+            'href' => "/admin/livreurs/{$this->courier->id}?onglet=notes",
         ];
     }
 

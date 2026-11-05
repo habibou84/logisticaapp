@@ -54,9 +54,8 @@ export function adminMenuGroups(badges = {}) {
       id: 'equipe',
       label: 'Équipe',
       items: [
-        { to: '/admin/livreurs', icon: '🛵', label: 'Livreurs', permission: ['orders.dispatch', 'couriers.manage'] },
+        { to: '/admin/livreurs', icon: '🛵', label: 'Livreurs', permission: ['orders.dispatch', 'couriers.manage', 'ratings.manage'] },
         { to: '/admin/vehicules', icon: '🏍️', label: 'Véhicules', permission: 'fleet.manage', badge: badges.vehicles },
-        { to: '/admin/qualite-livreurs', icon: '⭐', label: 'Qualité des livreurs', permission: ['orders.dispatch', 'ratings.manage'] },
         { to: '/admin/utilisateurs', icon: '👥', label: 'Utilisateurs', permission: 'users.view' },
         { to: '/admin/roles', icon: '🔐', label: 'Rôles', permission: 'users.view' },
       ],

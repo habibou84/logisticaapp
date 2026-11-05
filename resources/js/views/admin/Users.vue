@@ -263,7 +263,7 @@ const meta = ref(null)
 const summary = ref(null)
 const loading = ref(false)
 const loadError = ref('')
-const search = ref('')
+const search = ref(route.query.search || '')
 const role = ref(route.query.role || '')
 const activity = ref('')
 const page = ref(1)
@@ -347,7 +347,7 @@ function run(key, u) {
   ;({
     edit: () => openForm(u),
     preview: () => { preview.value = u.id },
-    courier: () => router.push({ path: '/admin/livreurs', query: { id: u.courier_id } }),
+    courier: () => router.push(`/admin/livreurs/${u.courier_id}`),
     merchant: () => router.push({ path: '/admin/marchands', query: { id: u.merchant_id } }),
     merchant_accounts: () => router.push(`/admin/marchands/${u.merchant_id}/comptes`),
     invite: () => invite(u),
