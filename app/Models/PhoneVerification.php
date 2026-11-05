@@ -17,6 +17,9 @@ class PhoneVerification extends Model
 
     public const PASSWORD_RESET = 'password_reset';
 
+    // Lien de connexion envoyé par WhatsApp à un membre de l'équipe ou un livreur
+    public const INVITE = 'invite';
+
     protected $fillable = [
         'company_id', 'purpose', 'phone', 'token_hash', 'whatsapp_code', 'sms_code_hash',
         'sms_count', 'sms_sent_at', 'attempts', 'user_id', 'payload', 'ip',

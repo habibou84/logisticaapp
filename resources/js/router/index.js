@@ -22,6 +22,7 @@ const mobile = {
 
 const routes = [
   // Bouton « Connecter WhatsApp » : fenêtre de Meta ouverte depuis l'adresse de l'application (ticket)
+  { path: '/invitation/:token', name: 'invitation', component: () => import('../views/auth/Invitation.vue'), meta: { public: true } },
   { path: '/connecter-whatsapp', name: 'whatsapp-connect', component: () => import('../views/auth/WhatsAppConnect.vue'), meta: { public: true } },
   // Connexion en un clic d'une application (Jibiat Marchand) au compte du client : la page gère
   // elle-même la session de l'espace client (connexion, ouverture de compte ou demande, autorisation)

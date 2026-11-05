@@ -101,6 +101,12 @@ class User extends Authenticatable
     }
 
     /** Départements du client auxquels ce compte est rattaché */
+    /** Nom du client seulement (liste des utilisateurs, sans charger toute la fiche) */
+    public function merchantBrief(): BelongsTo
+    {
+        return $this->belongsTo(Merchant::class, 'merchant_id')->withoutGlobalScopes()->select(['id', 'business_name']);
+    }
+
     public function departments(): BelongsToMany
     {
         return $this->belongsToMany(Department::class)->withPivot('is_head');

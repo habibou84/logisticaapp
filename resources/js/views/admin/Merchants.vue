@@ -304,7 +304,11 @@ async function save() {
 }
 
 onMounted(async () => {
-  load()
+  // Depuis la page Utilisateurs : ouvre la fiche du client demandé
+  load().then(() => {
+    const m = route.query.id && merchants.value.find((x) => x.id === Number(route.query.id))
+    if (m) openForm(m)
+  })
   zones.value = (await http.get('/zones')).data.data
   if (auth.can(['pricing.manage', 'merchants.manage'])) grids.value = (await http.get('/pricing-grids')).data.data
 })

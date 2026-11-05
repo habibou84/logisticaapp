@@ -11,7 +11,7 @@ const APPS = {
     roles: ['courier'],
     login: '/livreur/connexion',
     home: '/livreur',
-    paths: ['/livreur', '/mot-de-passe-oublie'],
+    paths: ['/livreur', '/mot-de-passe-oublie', '/invitation'],
     other: 'Cette application est réservée aux livreurs. Les clients utilisent l\'application « Jibiat Client ».',
   },
   ecommercant: {

@@ -88,6 +88,11 @@ class UserResource extends JsonResource
                 $this->withPermissions,
                 fn () => $this->resource->effectivePermissions(),
             ),
+            // Page Utilisateurs : nom du client, fiche livreur, départements (chef de service), activité du compte
+            'merchant_name' => $this->whenLoaded('merchantBrief', fn () => $this->merchantBrief?->business_name),
+            'courier_id' => $this->whenLoaded('courier', fn () => $this->courier?->id),
+            'departments' => $this->whenLoaded('departments', fn () => $this->departments->map(fn ($d) => ['id' => $d->id, 'name' => $d->name, 'is_head' => (bool) $d->pivot->is_head])->values()),
+            'inactive_days' => $this->last_login_at ? (int) $this->last_login_at->diffInDays(now()) : null,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

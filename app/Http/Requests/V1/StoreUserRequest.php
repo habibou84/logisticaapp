@@ -39,7 +39,8 @@ class StoreUserRequest extends FormRequest
             // Unique dans l'entreprise du compte (un même numéro peut servir dans une autre entreprise)
             'phone' => ['required', 'string', new PhoneNumber, User::uniqueIn($companyId, 'phone')],
             'email' => ['nullable', 'email', 'max:255', User::uniqueIn($companyId, 'email')],
-            'password' => ['required', 'string', Password::min(8)],
+            // Facultatif : sans mot de passe, un lien de connexion est envoyé par WhatsApp
+            'password' => ['nullable', 'string', Password::min(8)],
             // Équipe : périmètre (activités visibles, vide : toutes) et réglage fin des permissions
             'activities' => ['sometimes', 'nullable', 'array'],
             'activities.*' => [Rule::enum(Activity::class)],

@@ -33,6 +33,7 @@ use App\Http\Controllers\Api\V1\FinanceController;
 use App\Http\Controllers\Api\V1\FixedCostController;
 use App\Http\Controllers\Api\V1\HubController;
 use App\Http\Controllers\Api\V1\IncidentReasonController;
+use App\Http\Controllers\Api\V1\InvitationController;
 use App\Http\Controllers\Api\V1\LabelController;
 use App\Http\Controllers\Api\V1\LegacyImportController;
 use App\Http\Controllers\Api\V1\MerchantAccountController;
@@ -168,6 +169,9 @@ Route::prefix('v1')->name('v1.')->group(function () {
         ->middleware('throttle:30,1')
         ->name('tracking.show');
     // Étiquette partagée par un lien signé (API publique : Jibiat Marchand)
+    // Lien de connexion (équipe, livreurs) : lecture puis ouverture de la session
+    Route::get('invitations/{token}', [InvitationController::class, 'show'])->middleware('throttle:30,1')->name('invitations.show');
+    Route::post('invitations/{token}/accept', [InvitationController::class, 'accept'])->middleware('throttle:10,1')->name('invitations.accept');
     // Statistiques pour Google Sheets (=IMPORTDATA) : CSV protégé par la clé secrète du lien
     Route::get('stats-feed/{token}/{dataset}', [StatsIntegrationController::class, 'feed'])->where('dataset', '[a-z]+(\.csv)?')->middleware('throttle:60,1')->name('stats-feed.show');
     Route::get('shared-labels/{order}/{expires}/{token}', [LabelController::class, 'shared'])->whereNumber(['order', 'expires'])->middleware('throttle:60,1')->name('shared-labels.show');
@@ -212,6 +216,11 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::delete('roles/{role}', [RoleController::class, 'destroy'])->name('roles.destroy');
         Route::apiResource('companies', CompanyController::class)->only(['show', 'update']);
         Route::get('users/{user}/access', [UserController::class, 'access'])->name('users.access');
+        // Page Utilisateurs : compteurs, déconnexion de tous les appareils, historique, lien de connexion WhatsApp
+        Route::get('users/summary', [UserController::class, 'summary'])->name('users.summary');
+        Route::post('users/{user}/logout', [UserController::class, 'logout'])->name('users.logout');
+        Route::get('users/{user}/history', [UserController::class, 'history'])->name('users.history');
+        Route::post('users/{user}/invitation', [InvitationController::class, 'store'])->middleware('throttle:20,1')->name('users.invitation');
         Route::apiResource('users', UserController::class);
 
         // Référentiels
