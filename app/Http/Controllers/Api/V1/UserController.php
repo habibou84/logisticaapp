@@ -48,7 +48,7 @@ class UserController extends Controller
             ->when($request->filled('scope'), fn ($q) => self::scope($q, $request->string('scope')->toString()))
             // Équipe d'une activité : comptes limités à elle, et ceux qui voient tout
             ->when($request->filled('activity'), fn ($q) => $q->where(fn ($q) => $q->whereJsonContains('activities', $request->string('activity')->toString())
-                ->orWhereNull('activities')->orWhere('activities', '[]')))
+                ->orWhereNull('activities')->orWhereJsonLength('activities', 0)))
             ->when($request->filled('role'), fn ($q) => $q->role($request->string('role')->toString()))
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
             ->when($request->filled('search'), function ($q) use ($request) {
