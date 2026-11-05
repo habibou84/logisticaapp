@@ -25,10 +25,11 @@
               <p class="font-medium truncate">{{ p.recipient_name || p.recipient_phone }}</p>
               <p class="text-xs text-slate-500">{{ p.tracking_code }} · {{ p.merchant }}</p>
             </div>
-            <p class="text-xs text-right text-indigo-700">Livraison {{ date(p.kept_for) }}</p>
+            <p v-if="p.date_to_confirm" class="text-xs text-right text-amber-700">📅 Date à confirmer</p>
+            <p v-else class="text-xs text-right text-indigo-700">Livraison {{ date(p.kept_for) }}</p>
           </div>
         </div>
-        <p class="text-sm text-slate-500 text-center">Gardez-les avec vous : la livraison vous sera confiée le jour prévu.</p>
+        <p class="text-sm text-slate-500 text-center">Gardez-les avec vous : la livraison vous sera confiée le jour prévu.<template v-if="parcelsKept.some((p) => p.date_to_confirm)"> « Date à confirmer » : l'agence vous dira quand le livrer ou le rapporter.</template></p>
       </template>
       <template v-if="parcelsToReturn.length">
         <h2 class="font-semibold">📦 Colis à rapporter au dépôt ({{ parcelsToReturn.length }})</h2>

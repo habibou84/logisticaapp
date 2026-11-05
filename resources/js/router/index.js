@@ -43,6 +43,7 @@ const routes = [
   // Pages publiques (destinataire)
   { path: '/b/:slug', name: 'shop', component: () => import('../views/shop/ShopPage.vue'), meta: { public: true } },
   { path: '/suivi/:code?', name: 'tracking', component: () => import('../views/Tracking.vue'), meta: { public: true } },
+  { path: '/reporter/:token', name: 'reschedule', component: () => import('../views/Reschedule.vue'), meta: { public: true } },
   {
     path: '/etiquette/:id',
     name: 'label',
@@ -94,6 +95,7 @@ const routes = [
       { path: 'courses/import', component: () => import('../views/admin/OrderImport.vue'), meta: { permission: 'orders.create' } },
       // Courses non traitées : jour de livraison dépassé, plus dans la règle de l'activité
       { path: 'courses/non-traitees', component: () => import('../views/admin/UntreatedOrders.vue'), meta: { permission: 'orders.dispatch' } },
+      { path: 'courses/a-reporter', component: () => import('../views/admin/RescheduleOrders.vue'), meta: { permission: 'orders.dispatch' } },
       { path: 'courses/:id(\\d+)', component: shared.orderDetail, meta: { permission: 'orders.view' } },
       { path: 'marchands', component: () => import('../views/admin/Merchants.vue'), meta: { permission: 'merchants.view' } },
       { path: 'marchands/:id(\\d+)/departements', component: () => import('../views/admin/MerchantDepartments.vue'), meta: { permission: 'merchants.view' } },

@@ -4,6 +4,7 @@ namespace Tests\Feature\Api;
 
 use App\Enums\AssignmentType;
 use App\Enums\OrderStatus;
+use App\Models\Merchant;
 use App\Models\Order;
 use App\Models\OutboundMessage;
 use App\Models\RescheduleRequest;
@@ -229,6 +230,26 @@ class RescheduleTest extends TestCase
         $this->assertNull($other->fresh()->reschedule_request_id);
         // Un message pour la date choisie par l'agence, un pour le report automatique
         $this->assertSame(2, OutboundMessage::where('template_name', 'colis_reportes')->count());
+    }
+
+    public function test_the_merchant_app_lists_and_reschedules_late_pickups(): void
+    {
+        $late = $this->confirmed('2026-11-04');
+        $other = $this->confirmed('2026-11-05');
+        Sanctum::actingAs($this->merchantUser);
+
+        $this->getJson('/api/v1/orders?queue=to_reschedule')->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $late->id);
+        $this->getJson("/api/v1/orders/{$late->id}")->assertJsonPath('data.to_reschedule', true);
+        $this->postJson("/api/v1/orders/{$other->id}/reschedule-date", ['date' => '2026-11-06'])->assertStatus(422);
+        $this->postJson("/api/v1/orders/{$late->id}/reschedule-date", ['date' => '2026-12-01'])->assertUnprocessable();
+        $this->postJson("/api/v1/orders/{$late->id}/reschedule-date", ['date' => '2026-11-05'])->assertOk();
+        $this->assertSame('2026-11-05', $late->fresh()->delivery_scheduled_date->toDateString());
+        $this->assertFalse($late->fresh()->needsReschedule('2026-11-05'));
+
+        // Une course d'un autre e-commerçant : refusée
+        $foreign = $this->confirmed('2026-11-04');
+        $foreign->forceFill(['merchant_id' => Merchant::factory()->create(['company_id' => $this->company->id])->id])->save();
+        $this->postJson("/api/v1/orders/{$foreign->id}/reschedule-date", ['date' => '2026-11-05'])->assertForbidden();
     }
 
     public function test_the_reply_parser(): void

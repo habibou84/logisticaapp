@@ -16,6 +16,8 @@ export function adminMenuGroups(badges = {}) {
         { to: '/admin/courses', icon: '📦', label: 'Courses', permission: 'orders.view', badge: badges.late },
         // Jour de livraison dépassé, plus dans la règle de l'activité : toutes dates
         { to: '/admin/courses/non-traitees', icon: '⏳', label: 'Courses non traitées', permission: 'orders.dispatch', badge: badges.untreated },
+        // Ramassages pas faits à leur date : nouvelle date à demander ou à choisir
+        { to: '/admin/courses/a-reporter', icon: '⏰', label: 'À reporter', permission: 'orders.dispatch', badge: badges.reschedule },
         // Suivi du jour, carte, disponibles, colis en main, remontées terrain et planning, en onglets
         { to: '/admin/activite', icon: '🛵', label: 'Activité des livreurs', permission: ACTIVITY_TABS.map((t) => t.permission), badge: (badges.fieldReports || 0) + (badges.heldParcels || 0) },
         { to: '/admin/retours', icon: '📮', label: 'Retours clients', permission: 'orders.dispatch' },

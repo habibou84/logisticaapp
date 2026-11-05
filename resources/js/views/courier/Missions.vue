@@ -113,6 +113,9 @@
       Hors ligne : voici vos missions telles qu'elles étaient à la dernière connexion.
     </p>
 
+    <p v-if="tab === 'pickup' && !error && !loading" class="px-1 text-xs text-slate-500">
+      Ramassages du jour et en avance. Un colis en retard revient ici quand sa nouvelle date est fixée.
+    </p>
     <p v-if="loading" class="text-center text-slate-400 py-8">Chargement…</p>
     <div v-else-if="error && !missions.length" class="text-center py-8 space-y-3">
       <p class="text-slate-600">{{ error }}</p>

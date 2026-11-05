@@ -163,6 +163,21 @@ class RescheduleController extends Controller
         return response()->json(['data' => ['updated' => $count]]);
     }
 
+    /**
+     * Application e-commerçant : nouvelle date pour un colis pas ramassé à sa date (entre aujourd'hui et la limite).
+     */
+    public function choose(Request $request, Order $order): JsonResponse
+    {
+        Gate::authorize('update', $order);
+        $data = $request->validate(['date' => ['required', 'date_format:Y-m-d']], [], ['date' => 'date de livraison']);
+        if (! $order->needsReschedule(Reschedules::today($request->user()->company)) && $order->reschedule_request_id === null) {
+            abort(422, 'Ce colis n\'attend pas de nouvelle date.');
+        }
+        $order = $this->reschedules->chooseDate($order, $data['date'], $request->user(), $request->user()->merchant_id ? 'app' : 'dispatch');
+
+        return response()->json(['data' => ['tracking_code' => $order->tracking_code, 'delivery_scheduled_date' => $order->delivery_scheduled_date?->toDateString()]]);
+    }
+
     private static function day(Order $order): string
     {
         return ($order->delivery_scheduled_date ?? $order->created_at)->toDateString();

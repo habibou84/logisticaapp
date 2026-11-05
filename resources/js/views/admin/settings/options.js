@@ -44,3 +44,9 @@ export function delay(minutes) {
   if (!minutes) return 'jamais'
   return minutes % 60 === 0 ? `${minutes / 60} h` : `${minutes} min`
 }
+
+// Colis non ramassés à leur date : ce qui se passe sans réponse du client au message du soir
+export const RESCHEDULE_NO_ANSWER = [
+  { value: 'remind', label: 'Rappel le lendemain à 08:00, puis file « À reporter » pour le dispatch', short: 'rappel' },
+  { value: 'auto_next_day', label: 'Reporter tout seul au lendemain et le prévenir', short: 'report auto' },
+]

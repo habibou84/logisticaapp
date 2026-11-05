@@ -240,6 +240,7 @@ onBeforeUnmount(() => clearInterval(countsTimer))
 const menu = computed(() => filterMenu((p) => auth.can(p), myActivities(auth.user).map((a) => a.value), {
   late: isDispatch.value ? dispatchCounts.counts.late.total : 0,
   untreated: isDispatch.value ? dispatchCounts.counts.exceptions?.untreated || 0 : 0,
+  reschedule: isDispatch.value ? dispatchCounts.counts.to_reschedule || 0 : 0,
   fieldReports: fieldReports.badge,
   heldParcels: heldParcels.counts.overdue,
   vehicles: vehicleUrgent.value,

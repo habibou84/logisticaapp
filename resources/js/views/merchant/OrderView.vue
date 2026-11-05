@@ -159,6 +159,22 @@
       <p class="text-slate-500">Frais d'expédition de {{ money(order.shipping.fee) }} déduits de votre point.</p>
     </section>
 
+    <!-- Pas ramassé à sa date : l'agence attend une nouvelle date (ou l'annulation) -->
+    <section v-if="order.to_reschedule" class="rounded-[22px] bg-[#FFF7EB] p-4 ring-1 ring-[#FFD89A]">
+      <div class="flex items-center gap-3">
+        <ColorIcon name="aregler" :size="44" />
+        <div class="min-w-0">
+          <p class="font-bold">📅 Colis à reporter</p>
+          <p class="text-sm text-slate-600">Pas ramassé à la date prévue. Choisissez une nouvelle date.</p>
+        </div>
+      </div>
+      <div class="mt-3 grid grid-cols-3 gap-2">
+        <button class="m-btn-primary !py-3 !text-[14px]" :disabled="busy" @click="setNewDate(todayIso)">Aujourd'hui</button>
+        <button class="m-btn-secondary !py-3 !text-[14px]" @click="openNewDate()">Autre date</button>
+        <button class="m-btn-secondary !py-3 !text-[14px] !text-red-700" @click="sheet = 'cancel'">Annuler</button>
+      </div>
+    </section>
+
     <!-- Autres actions -->
     <section v-if="!isFinal" class="space-y-2">
       <button class="m-btn-secondary" @click="sheet = 'note'">💬 Écrire au livreur / à l'agence</button>
@@ -195,6 +211,14 @@
         <button class="m-btn-primary" :disabled="busy || !dateChosen" @click="doReschedule">Confirmer la relivraison</button>
         <button v-if="!order.return_requested" class="w-full text-sm font-medium text-slate-600 py-1" @click="sheet = 'return'">Plutôt faire revenir le colis</button>
       </div>
+    </BottomSheet>
+
+    <BottomSheet :open="sheet === 'new-date'" title="Nouvelle date de livraison" @close="sheet = null">
+      <form class="space-y-3" @submit.prevent="setNewDate(newDate)">
+        <input v-model="newDate" type="date" class="m-input" :min="todayIso" :max="maxRescheduleDate" required aria-label="Nouvelle date de livraison">
+        <p class="text-xs text-slate-500">Jusqu'au {{ new Date(`${maxRescheduleDate}T12:00:00`).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }) }}. Le livreur passera ce jour-là.</p>
+        <button class="m-btn-primary" :disabled="busy || !newDate">Valider</button>
+      </form>
     </BottomSheet>
 
     <BottomSheet :open="sheet === 'return'" title="Demander le retour" @close="sheet = null">
@@ -390,6 +414,18 @@ async function load() {
     error.value = apiErrorMessage(e)
   }
 }
+
+// Colis pas ramassé à sa date : nouvelle date (aujourd'hui, ou au plus tard dans 14 jours)
+const localIso = (d) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10)
+const todayIso = localIso(new Date())
+const maxRescheduleDate = computed(() => order.value?.reschedule?.max_date || localIso(new Date(Date.now() + 14 * 86400000)))
+const newDate = ref('')
+function openNewDate() {
+  newDate.value = ''
+  sheet.value = 'new-date'
+}
+const setNewDate = (day) => run(() => http.post(`/orders/${order.value.id}/reschedule-date`, { date: day }),
+  `Nouvelle date enregistrée : ${new Date(`${day}T12:00:00`).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}.`)
 
 async function run(action, success) {
   busy.value = true

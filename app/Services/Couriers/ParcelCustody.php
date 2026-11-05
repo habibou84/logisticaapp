@@ -5,6 +5,7 @@ namespace App\Services\Couriers;
 use App\Enums\OrderEventType;
 use App\Enums\OrderStatus;
 use App\Exceptions\BusinessRuleException;
+use App\Models\Company;
 use App\Models\Courier;
 use App\Models\Order;
 use App\Models\User;
@@ -144,6 +145,8 @@ class ParcelCustody
             // Mission ramassage : gardé jusqu'à sa livraison (pas « à rendre »), ou à rapporter au dépôt
             'custody_plan' => $order->custody_plan,
             'kept_for' => PickupCustody::keptFor($order),
+            // Gardé, mais sa date de livraison est passée : l'agence dira quand le livrer ou le rapporter
+            'date_to_confirm' => ($kept = PickupCustody::keptFor($order)) !== null && $kept < now(Company::find($order->company_id)?->timezone ?: config('app.timezone'))->toDateString(),
         ];
     }
 }

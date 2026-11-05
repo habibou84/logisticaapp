@@ -47,6 +47,16 @@
       <span class="text-sm font-semibold underline">Voir</span>
     </RouterLink>
 
+    <!-- Ramassages pas faits à leur date : cachés chez les livreurs jusqu'à la nouvelle date -->
+    <RouterLink
+      v-if="isStaff && rescheduleCount" to="/admin/courses/a-reporter"
+      class="card flex items-center gap-3 border-amber-300 bg-amber-50 px-3 py-2 text-amber-900 hover:bg-amber-100"
+    >
+      <span class="text-2xl" aria-hidden="true">⏰</span>
+      <span class="min-w-0 flex-1 text-sm"><b>{{ rescheduleCount }} colis à reporter</b> : pas ramassé{{ rescheduleCount > 1 ? 's' : '' }} à la date prévue, caché{{ rescheduleCount > 1 ? 's' : '' }} chez les livreurs jusqu'à la nouvelle date</span>
+      <span class="text-sm font-semibold underline">Voir</span>
+    </RouterLink>
+
     <!-- Cas à régler : cartes visibles seulement s'il y en a, jusqu'à ce qu'ils soient réglés -->
     <div v-if="isStaff && exceptionCards.length" class="grid grid-cols-2 gap-2 lg:grid-cols-4">
       <button
@@ -416,6 +426,7 @@ const EXCEPTIONS = [
 const exceptionCount = (queue) => (isDispatch.value ? dispatchCounts.counts.exceptions?.[queue] || 0 : 0)
 const exceptionCards = computed(() => EXCEPTIONS.map((e) => ({ ...e, count: exceptionCount(e.value) })).filter((e) => e.count > 0 || filters.queue === e.value))
 // Courses non traitées (jour dépassé, plus dans la règle de l'activité), toutes dates : page à part
+const rescheduleCount = computed(() => (isDispatch.value ? dispatchCounts.counts.to_reschedule || 0 : 0))
 const untreatedCount = computed(() => exceptionCount('untreated'))
 
 const filters = reactive({

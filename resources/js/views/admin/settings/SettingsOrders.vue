@@ -42,6 +42,28 @@
         </div>
       </section>
 
+      <section id="a-reporter" class="card p-4 space-y-3 scroll-mt-20">
+        <h2 class="font-semibold">Colis à reporter</h2>
+        <p class="text-sm text-gray-600">
+          Ramassage pas commencé et date de livraison passée : le colis est caché chez les livreurs et attend une nouvelle date
+          (Courses › À reporter).
+        </p>
+        <label class="flex items-center gap-2 text-sm"><input v-model="form.reschedule_evening" type="checkbox"> Demander une nouvelle date au client par WhatsApp le soir</label>
+        <div v-if="form.reschedule_evening" class="grid gap-3 sm:grid-cols-2">
+          <div>
+            <label class="label" for="reschedule-time">Heure du message</label>
+            <input id="reschedule-time" v-model="form.reschedule_evening_time" type="time" class="input w-32">
+          </div>
+          <div>
+            <label class="label" for="reschedule-no-answer">Sans réponse</label>
+            <select id="reschedule-no-answer" v-model="form.reschedule_no_answer" class="input">
+              <option v-for="o in RESCHEDULE_NO_ANSWER" :key="o.value" :value="o.value">{{ o.label }}</option>
+            </select>
+          </div>
+        </div>
+        <MoreHelp>Le client répond sur WhatsApp (« 1 3 demain et 2 lundi », « tout le 9/11 », « 3 annuler ») ou sur la page du lien.</MoreHelp>
+      </section>
+
       <section class="card p-4 space-y-3">
         <h2 class="font-semibold">Livreurs</h2>
         <label class="flex items-start gap-2 text-sm">
@@ -320,13 +342,14 @@ import SaveBar from '../../../components/settings/SaveBar.vue'
 import MoreHelp from '../../../components/settings/MoreHelp.vue'
 import ActivityOptionsFields from '../../../components/settings/ActivityOptionsFields.vue'
 import { useCompanySettings } from '../../../composables/useCompanySettings'
-import { ACCEPT_MODES, AUTO_MODES, CUSTODY_MODES, DELIVERY_MODES, VALIDATION_MODES, WEEKDAYS } from './options'
+import { ACCEPT_MODES, AUTO_MODES, CUSTODY_MODES, DELIVERY_MODES, RESCHEDULE_NO_ANSWER, VALIDATION_MODES, WEEKDAYS } from './options'
 
 const { form, dirty, saving, error, save, reset } = useCompanySettings([
   'validation_mode', 'daily_cutoff_time', 'default_max_attempts', 'require_delivery_code', 'offline_courier_actions', 'pickup_mission_custody', 'depot_closes_at', 'auto_pickup',
   'mission_acceptance', 'unreachable_minutes', 'late_pickup_alert_minutes', 'courier_available_alert',
   'auto_delivery', 'auto_delivery_max_cod', 'same_courier_delivery', 'cutoff_by_day', 'internal_delays',
   'activity_options', 'label_settings', 'photo_settings', 'delivery_day_rules', 'dashboard_settings',
+  'reschedule_evening', 'reschedule_evening_time', 'reschedule_no_answer',
 ])
 // Lien d'un bandeau (ex. « Activer » le ramassage automatique) : le bon réglage à l'écran
 const route = useRoute()

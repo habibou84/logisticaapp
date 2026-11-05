@@ -506,6 +506,8 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::post('orders/{order}/notes', [OrderActionController::class, 'note'])->name('orders.notes');
         Route::post('orders/{order}/verify-delivery-code', [OrderActionController::class, 'verifyDeliveryCode'])->name('orders.verify-delivery-code');
         Route::post('orders/{order}/return-request', [OrderActionController::class, 'requestReturn'])->name('orders.return-request');
+        // Colis pas ramassé à sa date : nouvelle date choisie dans l'application e-commerçant
+        Route::post('orders/{order}/reschedule-date', [RescheduleController::class, 'choose'])->middleware('throttle:30,1')->name('orders.reschedule-date');
         Route::post('orders/{order}/attachments', [OrderActionController::class, 'storeAttachment'])->name('orders.attachments.store');
         Route::get('orders/{order}/messages', [MessageController::class, 'forOrder'])->name('orders.messages');
         Route::get('orders/{order}/courier-messages', [CourierMessageController::class, 'index'])->name('orders.courier-messages.index');

@@ -23,6 +23,19 @@
       </div>
     </div>
 
+    <!-- Pas ramassé à sa date : caché chez les livreurs jusqu'à la nouvelle date -->
+    <RouterLink
+      v-if="order.to_reschedule && isStaff" to="/admin/courses/a-reporter"
+      class="card flex items-center gap-3 border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 hover:bg-amber-100"
+    >
+      <span class="text-xl" aria-hidden="true">⏰</span>
+      <span class="flex-1">
+        <b>À reporter</b> : pas ramassé à la date prévue, caché chez les livreurs.
+        {{ order.reschedule ? `Nouvelle date demandée au client (jusqu'au ${order.reschedule.max_date.split('-').reverse().slice(0, 2).join('/')}).` : 'Demandez une nouvelle date ou choisissez-la.' }}
+      </span>
+      <span class="font-semibold underline">Ouvrir</span>
+    </RouterLink>
+
     <div class="grid lg:grid-cols-3 gap-4">
       <div class="lg:col-span-2 space-y-4">
         <div class="grid sm:grid-cols-2 gap-4">
