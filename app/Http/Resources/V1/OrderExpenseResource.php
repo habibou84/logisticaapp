@@ -25,6 +25,8 @@ class OrderExpenseResource extends JsonResource
             'courier_name' => $this->when($request->user()?->merchant_id === null, fn () => $this->relationLoaded('courier') ? $this->courier?->user?->name : null),
             'refunded' => $this->remittance_id !== null,
             'cancelled_at' => $this->cancelled_at,
+            // Déclarés par le livreur : sans effet tant que la caisse ou le dispatch ne les a pas validés
+            'awaiting_approval' => $this->approved_at === null && $this->cancelled_at === null,
             'created_at' => $this->created_at,
         ];
     }

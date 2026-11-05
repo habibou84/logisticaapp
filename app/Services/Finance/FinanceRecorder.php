@@ -66,8 +66,11 @@ class FinanceRecorder
                 'amount_expected' => $order->cod_amount,
                 'amount_collected' => $collected,
                 'method' => $method,
-                'received_by_company' => $method !== PaymentMethod::Cash && (bool) ($context['received_by_company'] ?? false),
+                'received_by_company' => $direct = $method !== PaymentMethod::Cash && (bool) ($context['received_by_company'] ?? false),
                 'transaction_ref' => $context['transaction_ref'] ?? null,
+                // Annoncé par le livreur : reste à sa charge tant que la caisse ne l'a pas retrouvé (relevé Wave…)
+                'company_confirmed_at' => $direct && ! $actor->isCourier() ? now() : null,
+                'confirmed_by' => $direct && ! $actor->isCourier() ? $actor->id : null,
                 'collected_at' => now(),
             ]);
 

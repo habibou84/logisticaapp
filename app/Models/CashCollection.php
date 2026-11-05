@@ -17,7 +17,7 @@ class CashCollection extends Model
 
     protected $fillable = [
         'company_id', 'order_id', 'courier_id', 'amount_expected', 'amount_collected',
-        'method', 'received_by_company', 'transaction_ref', 'collected_at', 'remittance_id',
+        'method', 'received_by_company', 'transaction_ref', 'company_confirmed_at', 'confirmed_by', 'collected_at', 'remittance_id',
     ];
 
     protected function casts(): array
@@ -25,6 +25,7 @@ class CashCollection extends Model
         return [
             'method' => PaymentMethod::class,
             'received_by_company' => 'boolean',
+            'company_confirmed_at' => 'datetime',
             'amount_expected' => 'integer',
             'amount_collected' => 'integer',
             'collected_at' => 'datetime',
@@ -47,11 +48,13 @@ class CashCollection extends Model
     }
 
     /**
-     * Encaissements encore entre les mains d'un livreur (à verser à la caisse).
+     * Encaissements encore à la charge d'un livreur (à verser à la caisse) : espèces non versées, et paiements
+     * « reçus par l'entreprise » qu'il a annoncés tant que la caisse ne les a pas confirmés.
      */
     public function scopeInCourierHands(Builder $query): Builder
     {
-        return $query->whereNull('remittance_id')->where('received_by_company', false);
+        return $query->whereNull('remittance_id')
+            ->where(fn (Builder $q) => $q->where('received_by_company', false)->orWhereNull('company_confirmed_at'));
     }
 
     /**
@@ -59,6 +62,12 @@ class CashCollection extends Model
      */
     public function isSettled(): bool
     {
-        return $this->received_by_company || $this->remittance_id !== null;
+        return ($this->received_by_company && $this->company_confirmed_at !== null) || $this->remittance_id !== null;
+    }
+
+    /** Paiement annoncé « reçu par l'entreprise », pas encore confirmé par la caisse */
+    public function awaitsConfirmation(): bool
+    {
+        return $this->received_by_company && $this->company_confirmed_at === null && $this->remittance_id === null;
     }
 }

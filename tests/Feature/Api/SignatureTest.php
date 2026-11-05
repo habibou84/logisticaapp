@@ -31,7 +31,7 @@ class SignatureTest extends TestCase
         $order = $this->createOrder();
         $order->forceFill(['status' => OrderStatus::OutForDelivery])->save();
 
-        return [$order, $this->postJson("/api/v1/orders/{$order->id}/status", ['status' => 'delivered', 'collected_amount' => 0, 'signature' => $signature])];
+        return [$order, $this->postJson("/api/v1/orders/{$order->id}/status", ['status' => 'delivered', 'collected_amount' => (int) $order->cod_amount, 'signature' => $signature])];
     }
 
     public function test_a_drawn_signature_is_kept_with_the_course(): void

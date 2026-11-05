@@ -8,10 +8,12 @@ use App\Http\Resources\V1\OrderExpenseResource;
 use App\Models\Order;
 use App\Models\OrderExpense;
 use App\Services\Finance\OrderExpenses;
+use App\Support\Money;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Frais d'une course : saisis par le livreur (toujours avancés par lui et facturés au
@@ -19,6 +21,9 @@ use Illuminate\Validation\Rule;
  */
 class OrderExpenseController extends Controller
 {
+    /** Frais déclarés par un livreur, au plus (au-delà, l'agence les saisit) */
+    public const COURIER_MAX = 200000;
+
     public function __construct(private readonly OrderExpenses $expenses) {}
 
     public function store(Request $request, Order $order): JsonResponse
@@ -36,7 +41,10 @@ class OrderExpenseController extends Controller
         ], [], ['amount' => 'montant', 'label' => 'précision', 'type' => 'type de frais']);
 
         if ($user->isCourier()) {
-            // Le livreur déclare ce qu'il a payé (de sa poche ou avec une avance de la caisse)
+            // Le livreur déclare ce qu'il a payé (de sa poche ou avec une avance de la caisse) : à valider, plafonné
+            if ($data['amount'] > self::COURIER_MAX) {
+                throw ValidationException::withMessages(['amount' => 'Au-delà de '.Money::format(self::COURIER_MAX).', les frais sont saisis par l\'agence.']);
+            }
             $data = [...$data, 'paid_by' => 'courier', 'courier_id' => $user->courier->id, 'billed_to' => 'merchant'];
         } elseif (($data['paid_by'] ?? 'courier') === 'courier') {
             $data['courier_id'] ??= OrderExpenses::defaultCourier($order)?->id;
@@ -45,6 +53,17 @@ class OrderExpenseController extends Controller
         $expense = $this->expenses->add($user, $order, $data);
 
         return response()->json(['data' => new OrderExpenseResource($expense->load('courier.user'))], 201);
+    }
+
+    /**
+     * Valide des frais déclarés par un livreur.
+     */
+    public function approve(Request $request, Order $order, OrderExpense $expense): OrderExpenseResource
+    {
+        Gate::authorize('cancelExpense', $order);
+        abort_unless($expense->order_id === $order->id, 404);
+
+        return new OrderExpenseResource($this->expenses->approve($request->user(), $expense)->load('courier.user'));
     }
 
     public function cancel(Request $request, Order $order, OrderExpense $expense): OrderExpenseResource

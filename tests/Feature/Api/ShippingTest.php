@@ -74,6 +74,11 @@ class ShippingTest extends TestCase
             'shipping_reference' => 'A-15234',
         ])->assertOk()->assertJsonPath('data.status_label', 'Expédié');
 
+        // Frais de gare déclarés par le livreur : sans effet tant que le dispatch ne les a pas validés
+        $expense = OrderExpense::where('order_id', $order->id)->sole();
+        $this->assertNull($expense->approved_at);
+        $this->as($this->dispatcher)->postJson("/api/v1/orders/{$order->id}/expenses/{$expense->id}/approve")->assertOk();
+
         return $order->fresh();
     }
 
@@ -106,8 +111,7 @@ class ShippingTest extends TestCase
         $this->assertSame('UTB Adjamé', $order->shipping_carrier);
         $this->assertSame('A-15234', $order->shipping_reference);
 
-        $event = $order->events()->latest('id')->first();
-        $this->assertSame('UTB Adjamé', $event->meta['shipping_carrier']);
+        $this->assertSame('UTB Adjamé', $order->events()->where('to_status', 'delivered')->latest('id')->first()->meta['shipping_carrier']);
 
         $this->as($this->merchantUser)->getJson("/api/v1/orders/{$order->id}")
             ->assertJsonPath('data.shipping.fee', 3000)

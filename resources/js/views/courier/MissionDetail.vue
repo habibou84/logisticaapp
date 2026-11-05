@@ -167,6 +167,8 @@
             <span class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-semibold">F</span>
           </div>
           <p v-if="delivery.collected_amount !== order.amounts.cod_amount" class="text-sm text-amber-700 mt-1">Attendu : {{ money(order.amounts.cod_amount) }}</p>
+          <!-- Moins que prévu : l'agence est prévenue, une explication est obligatoire -->
+          <textarea v-if="delivery.collected_amount < order.amounts.cod_amount" v-model="delivery.note" rows="2" class="m-input mt-2" placeholder="Pourquoi le client a payé moins ? (obligatoire)" />
         </div>
         <div v-if="!billed && delivery.collected_amount > 0">
           <p class="m-label">Le client a payé en</p>
@@ -177,11 +179,12 @@
             v-model="delivery.received_by_company"
             :options="[
               { value: false, label: 'Sur mon téléphone', description: 'je le verserai à la caisse' },
-              { value: true, label: 'Sur le compte de l\'agence', description: 'rien à verser' },
+              { value: true, label: 'Sur le compte de l\'agence', description: 'la caisse le vérifiera' },
             ]"
             label="Paiement reçu"
           />
-          <input v-model="delivery.transaction_ref" class="m-input" placeholder="Référence de la transaction (facultatif)">
+          <input v-model="delivery.transaction_ref" class="m-input" :placeholder="delivery.received_by_company ? 'Référence de la transaction (obligatoire)' : 'Référence de la transaction (facultatif)'">
+          <p v-if="delivery.received_by_company" class="text-xs text-slate-500">Tant que la caisse ne l'a pas retrouvé sur le relevé, ce montant reste à votre charge.</p>
         </template>
         <div v-if="auth.user?.company?.require_delivery_code && !shipping">
           <label class="m-label" for="code">Code donné par le client</label>
@@ -299,7 +302,7 @@ const sheetError = ref('')
 const noteText = ref('')
 const refusal = ref(null)
 const delivery = reactive({
-  collected_amount: 0, payment_method: 'cash', received_by_company: false, transaction_ref: '', delivery_code: '',
+  collected_amount: 0, payment_method: 'cash', received_by_company: false, transaction_ref: '', note: '', delivery_code: '',
   shipping_carrier: '', shipping_fee: 0, shipping_reference: '', locate: false,
 })
 const shipping = computed(() => order.value?.is_shipping && mission.value?.type === 'delivery')
@@ -478,7 +481,7 @@ async function move(status) {
 
 function openDelivered() {
   Object.assign(delivery, {
-    collected_amount: billed.value ? 0 : order.value.amounts.cod_amount, payment_method: 'cash', received_by_company: false, transaction_ref: '', delivery_code: '',
+    collected_amount: billed.value ? 0 : order.value.amounts.cod_amount, payment_method: 'cash', received_by_company: false, transaction_ref: '', note: '', delivery_code: '',
     received_by_name: '', received_by_role: '', signature: order.value.proof?.proof_signature ? '' : null,
     // Proposé coché quand l'adresse n'a pas encore de position
     locate: locateRequired.value || (locateAsk.value && !order.value.destination?.has_location),
@@ -493,6 +496,7 @@ async function confirmDelivered() {
   sheetError.value = ''
   try {
     const extra = { collected_amount: delivery.collected_amount }
+    if (delivery.note?.trim()) extra.note = delivery.note.trim()
     if (delivery.collected_amount > 0) {
       extra.payment_method = delivery.payment_method
       if (delivery.payment_method !== 'cash') {

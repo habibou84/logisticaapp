@@ -500,6 +500,7 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::get('orders/{order}/courier-messages', [CourierMessageController::class, 'index'])->name('orders.courier-messages.index');
         Route::post('orders/{order}/courier-messages', [CourierMessageController::class, 'store'])->middleware('throttle:60,1')->name('orders.courier-messages.store');
         Route::post('orders/{order}/expenses', [OrderExpenseController::class, 'store'])->name('orders.expenses.store');
+        Route::post('orders/{order}/expenses/{expense}/approve', [OrderExpenseController::class, 'approve'])->name('orders.expenses.approve');
         Route::post('orders/{order}/expenses/{expense}/cancel', [OrderExpenseController::class, 'cancel'])->name('orders.expenses.cancel');
         Route::get('orders/{order}/attachments/{attachment}', [OrderActionController::class, 'showAttachment'])->name('orders.attachments.show');
 
@@ -616,6 +617,7 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::prefix('finance')->name('finance.')->controller(FinanceController::class)->group(function () {
             Route::get('cash', 'cash')->name('cash');
             Route::get('couriers/{courier}/collections', 'collections')->name('couriers.collections');
+            Route::post('collections/{collection}/confirm', 'confirmCollection')->name('collections.confirm');
             Route::post('couriers/{courier}/advances', 'storeAdvance')->name('couriers.advances.store');
             Route::get('couriers/{courier}/earnings', 'earnings')->name('couriers.earnings');
             Route::post('couriers/{courier}/adjustments', 'adjustCourier')->name('couriers.adjustments');

@@ -355,8 +355,28 @@
             <span class="flex-1 truncate">{{ c.recipient_name }}</span>
             <span class="text-xs text-gray-500">{{ c.method_label }}</span>
             <span class="font-medium">{{ money(c.amount_collected) }}</span>
+            <!-- Annoncé « reçu par l'entreprise » par le livreur : à retrouver sur le relevé avant de compter -->
+            <button v-if="c.awaits_confirmation && canManage" type="button" class="rounded bg-blue-600 px-2 py-0.5 text-xs font-semibold text-white" :title="`Réf. ${c.transaction_ref} : vérifiez sur le relevé ${c.method_label}`" @click="confirmCollection(c)">Reçu ? Confirmer</button>
           </li>
         </ul>
+        <p v-if="remit.collections.some((c) => c.awaits_confirmation)" class="text-xs text-blue-800">
+          Paiements annoncés « reçus par l'entreprise » : vérifiez la référence sur le relevé Wave ou Mobile Money, puis confirmez. Tant qu'ils ne sont pas confirmés, le livreur doit cet argent.
+        </p>
+        <!-- Frais déclarés par le livreur : sans effet tant qu'ils ne sont pas validés -->
+        <template v-if="remit.expensesToApprove.length">
+          <p class="text-sm font-semibold pt-1">🧾 Frais à valider</p>
+          <ul class="border rounded divide-y text-sm">
+            <li v-for="e in remit.expensesToApprove" :key="`v${e.id}`" class="flex flex-wrap items-center gap-2 p-2">
+              <span class="font-mono text-xs">{{ e.tracking_code }}</span>
+              <span class="flex-1">{{ e.description }}</span>
+              <span class="font-medium">{{ money(e.amount) }}</span>
+              <template v-if="canManage">
+                <button type="button" class="rounded bg-emerald-700 px-2 py-0.5 text-xs font-semibold text-white" @click="decideExpense(e, true)">Valider</button>
+                <button type="button" class="text-xs text-red-700 underline" @click="decideExpense(e, false)">Refuser</button>
+              </template>
+            </li>
+          </ul>
+        </template>
         <ul v-if="remit.advances.length || remit.expenses.length" class="border rounded divide-y text-sm">
           <li v-for="a in remit.advances" :key="`a${a.id}`" class="flex items-center gap-2 p-2">
             <span class="flex-1">{{ a.pay_kept ? '🧾' : '💵 Avance :' }} {{ a.reason }} <span class="text-xs text-gray-500">{{ dateTime(a.given_at) }}</span></span>
@@ -530,7 +550,7 @@ const alertText = computed(() => {
 const today = new Date().toISOString().slice(0, 10)
 const remitFilter = reactive({ from: today, to: today })
 
-const remit = reactive({ open: false, courier: null, collections: [], advances: [], expenses: [], parcels: [], returned: [], selected: [], amount_received: 0, notes: '', error: '' })
+const remit = reactive({ open: false, courier: null, collections: [], advances: [], expenses: [], expensesToApprove: [], parcels: [], returned: [], selected: [], amount_received: 0, notes: '', error: '' })
 const remitHasCash = computed(() => remit.collections.length > 0 || remit.advances.length > 0 || remit.expenses.length > 0)
 const remitOnTheRoad = computed(() => remit.parcels.filter((p) => p.on_the_road))
 const remitParcels = computed(() => remit.parcels.filter((p) => !p.on_the_road))
@@ -720,6 +740,7 @@ async function openRemit(courier) {
     collections: data.data,
     advances: data.advances || [],
     expenses: data.expenses || [],
+    expensesToApprove: data.expenses_to_approve || [],
     parcels: data.parcels || [],
     returned: [],
     selected: data.data.map((c) => c.id),
@@ -727,6 +748,32 @@ async function openRemit(courier) {
     notes: '',
     error: '',
   })
+}
+
+// Paiement Wave ou Mobile Money retrouvé sur le relevé : il n'est plus dû par le livreur
+async function confirmCollection(c) {
+  if (!confirm(`Confirmer que ${money(c.amount_collected)} (${c.method_label}, réf. ${c.transaction_ref}) est bien arrivé sur le compte de l'entreprise ?`)) return
+  try {
+    await http.post(`/finance/collections/${c.id}/confirm`)
+    toasts.success('Paiement confirmé.')
+    await openRemit(remit.courier)
+    load()
+  } catch (e) {
+    toasts.error(apiErrorMessage(e))
+  }
+}
+
+// Frais déclarés par le livreur : validés (déduits de son versement, facturés au marchand) ou refusés
+async function decideExpense(e, approve) {
+  if (!approve && !confirm(`Refuser les frais « ${e.description} » (${money(e.amount)}) ?`)) return
+  try {
+    await http.post(`/orders/${e.order_id}/expenses/${e.id}/${approve ? 'approve' : 'cancel'}`)
+    toasts.success(approve ? 'Frais validés.' : 'Frais refusés.')
+    await openRemit(remit.courier)
+    load()
+  } catch (err) {
+    toasts.error(apiErrorMessage(err))
+  }
 }
 
 async function saveRemit() {

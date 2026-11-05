@@ -129,6 +129,31 @@ class FinanceController extends Controller
     }
 
     /**
+     * Paiement annoncé « reçu par l'entreprise » par un livreur (Wave, Mobile Money), retrouvé sur le relevé : il
+     * n'est plus à la charge du livreur et le marchand peut être reversé.
+     */
+    public function confirmCollection(Request $request, CashCollection $collection): JsonResponse
+    {
+        $this->authorizeStaff($request, manage: true);
+
+        $collection = DB::transaction(function () use ($request, $collection) {
+            $collection = CashCollection::query()->lockForUpdate()->findOrFail($collection->id);
+            if (! $collection->awaitsConfirmation()) {
+                throw new BusinessRuleException('Ce paiement n\'est pas en attente de confirmation.');
+            }
+            $collection->forceFill(['company_confirmed_at' => now(), 'confirmed_by' => $request->user()->id])->save();
+
+            return $collection;
+        });
+
+        $this->journal->record($request->user(), $collection->company_id, 'collection_confirmed',
+            ($collection->courier?->user?->name ?? 'Livreur').' · '.$collection->method->label().' réf. '.$collection->transaction_ref,
+            ['courier_id' => $collection->courier_id, 'amount' => $collection->amount_collected]);
+
+        return response()->json(['data' => $this->collectionData($collection->load('order:id,tracking_code,recipient_name,merchant_id'))]);
+    }
+
+    /**
      * Avance remise par la caisse au livreur (frais de gare, transport…) ; ce qu'il
      * n'a pas dépensé revient à la caisse lors de son versement.
      */
@@ -828,6 +853,9 @@ class FinanceController extends Controller
             'method' => $c->method,
             'method_label' => $c->method->label(),
             'received_by_company' => $c->received_by_company,
+            'transaction_ref' => $c->transaction_ref,
+            // Annoncé reçu par l'entreprise par le livreur : à retrouver sur le relevé et confirmer
+            'awaits_confirmation' => $c->awaitsConfirmation(),
             'collected_at' => $c->collected_at,
             'remittance_id' => $c->remittance_id,
         ];
@@ -852,6 +880,16 @@ class FinanceController extends Controller
                     'tracking_code' => $e->order?->tracking_code,
                     'recipient_name' => $e->order?->recipient_name,
                     'type' => $e->type,
+                    'description' => $e->description(),
+                    'amount' => $e->amount,
+                    'created_at' => $e->created_at,
+                ]),
+            // Frais déclarés par le livreur, sans effet tant qu'ils ne sont pas validés
+            'expenses_to_approve' => $courier->expenses()->awaitingApproval()->with('order:id,tracking_code,recipient_name')->orderBy('created_at')->get()
+                ->map(fn (OrderExpense $e) => [
+                    'id' => $e->id,
+                    'order_id' => $e->order_id,
+                    'tracking_code' => $e->order?->tracking_code,
                     'description' => $e->description(),
                     'amount' => $e->amount,
                     'created_at' => $e->created_at,

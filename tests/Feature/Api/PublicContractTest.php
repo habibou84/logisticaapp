@@ -112,7 +112,7 @@ class PublicContractTest extends TestCase
         $delivered = $this->pickedUp();
         $this->move($delivered, $this->courierB->user, 'out_for_delivery');
         $delivered->refresh();
-        $this->move($delivered, $this->courierB->user, 'delivered', ['delivery_code' => $delivered->delivery_code, 'collected_amount' => 16500]);
+        $this->move($delivered, $this->courierB->user, 'delivered', ['delivery_code' => $delivered->delivery_code, 'collected_amount' => $delivered->cod_amount]);
         Storage::disk('local')->put("orders/{$delivered->id}/colis.jpg", UploadedFile::fake()->image('colis.jpg')->getContent());
         OrderAttachment::create(['order_id' => $delivered->id, 'type' => 'photo_delivery', 'disk' => 'local', 'path' => "orders/{$delivered->id}/colis.jpg", 'mime_type' => 'image/jpeg']);
         $response = $this->api('GET', "orders/{$delivered->tracking_code}")->assertJsonPath('data.status', 'delivered')->assertJsonCount(1, 'data.proof.photos');

@@ -250,9 +250,11 @@ class MessagingTest extends TestCase
     {
         $cashier = $this->userWithRole(Role::Cashier);
         $order = $this->outForDelivery($this->createOrder(['items_amount' => 10000]));
-        $this->move($order, 'delivered', ['received_by_company' => true, 'payment_method' => 'wave'])->assertOk();
+        $this->move($order, 'delivered', ['received_by_company' => true, 'payment_method' => 'wave', 'transaction_ref' => 'WV-1234'])->assertOk();
 
+        // La caisse retrouve le paiement sur le relevé, puis paie le marchand
         $this->as($cashier);
+        $this->postJson('/api/v1/finance/collections/'.$order->fresh()->cashCollection->id.'/confirm')->assertOk();
         $payout = $this->postJson('/api/v1/finance/payouts', ['merchant_id' => $this->merchant->id])->assertCreated()->json('data');
         $this->postJson("/api/v1/finance/payouts/{$payout['id']}/pay", ['method' => 'wave'])->assertOk();
 

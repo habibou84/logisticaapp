@@ -100,11 +100,54 @@ class FinanceTest extends TestCase
             'payment_method' => 'wave', 'received_by_company' => true, 'transaction_ref' => 'WV123',
         ]);
 
-        $this->assertTrue($order->cashCollection->isSettled());
-        $this->assertSame('WV123', $order->cashCollection->transaction_ref);
+        // Annoncé par le livreur : à sa charge tant que la caisse ne l'a pas retrouvé sur le relevé
+        $collection = $order->cashCollection;
+        $this->assertFalse($collection->isSettled());
+        $this->assertTrue($collection->awaitsConfirmation());
+        $this->assertSame('WV123', $collection->transaction_ref);
+        $this->as($this->cashier)->getJson('/api/v1/finance/cash')->assertJsonPath('totals.cash_in_hands', $collection->amount_collected);
+        $this->getJson("/api/v1/finance/couriers/{$this->courierB->id}/collections")->assertJsonPath('data.0.awaits_confirmation', true);
 
-        $this->as($this->cashier)->getJson('/api/v1/finance/cash')
-            ->assertJsonPath('totals.cash_in_hands', 0);
+        // Le livreur ne peut pas le confirmer lui-même
+        $this->as($this->courierB->user)->postJson("/api/v1/finance/collections/{$collection->id}/confirm")->assertForbidden();
+
+        $this->as($this->cashier)->postJson("/api/v1/finance/collections/{$collection->id}/confirm")->assertOk()
+            ->assertJsonPath('data.awaits_confirmation', false);
+        $this->assertTrue($collection->fresh()->isSettled());
+        $this->getJson('/api/v1/finance/cash')->assertJsonPath('totals.cash_in_hands', 0);
+        $this->postJson("/api/v1/finance/collections/{$collection->id}/confirm")->assertUnprocessable();
+    }
+
+    public function test_a_transaction_reference_is_required_and_used_once(): void
+    {
+        $this->deliver($this->createOrder(), ['payment_method' => 'wave', 'received_by_company' => true, 'transaction_ref' => 'WV-777']);
+
+        foreach ([['transaction_ref' => ''], ['transaction_ref' => 'WV-777']] as $extra) {
+            $order = $this->createOrder();
+            $this->as($this->dispatcher);
+            $this->postJson("/api/v1/orders/{$order->id}/assign", ['type' => 'pickup', 'courier_id' => $this->courierA->id]);
+            $this->postJson("/api/v1/orders/{$order->id}/assign", ['type' => 'delivery', 'courier_id' => $this->courierA->id]);
+            $this->as($this->courierA->user)->move($order, 'picked_up');
+            $this->move($order, 'out_for_delivery');
+            $this->move($order, 'delivered', ['payment_method' => 'wave', 'received_by_company' => true, ...$extra])
+                ->assertJsonValidationErrors('transaction_ref');
+        }
+    }
+
+    public function test_the_collected_amount_cannot_exceed_and_needs_a_reason_when_lower(): void
+    {
+        $order = $this->createOrder(['items_amount' => 10000]);
+        $this->as($this->dispatcher);
+        $this->postJson("/api/v1/orders/{$order->id}/assign", ['type' => 'pickup', 'courier_id' => $this->courierA->id]);
+        $this->postJson("/api/v1/orders/{$order->id}/assign", ['type' => 'delivery', 'courier_id' => $this->courierA->id]);
+        $this->as($this->courierA->user)->move($order, 'picked_up');
+        $this->move($order, 'out_for_delivery');
+        $cod = $order->fresh()->cod_amount;
+
+        $this->move($order, 'delivered', ['collected_amount' => $cod + 1])->assertJsonValidationErrors('collected_amount');
+        $this->move($order, 'delivered', ['collected_amount' => $cod - 2000])->assertJsonValidationErrors('note');
+        $this->move($order, 'delivered', ['collected_amount' => $cod - 2000, 'note' => 'Le client a négocié'])->assertOk();
+        $this->assertSame($cod - 2000, $order->fresh()->collected_amount);
     }
 
     public function test_cash_cannot_be_declared_as_received_by_the_company(): void

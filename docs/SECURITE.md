@@ -26,6 +26,20 @@ correction a son test. À rejouer chaque trimestre (voir `docs/MAINTENANCE.md`).
 | Basse | Connexion par WhatsApp d'un compte de la console : erreur 500. | Refusée proprement (mot de passe seulement). |
 | Basse | Dépendances JavaScript avec des failles connues (vue, postcss). | Mises à jour (`npm audit` : 0 faille). `composer audit` : 0 faille. |
 
+## Audit n° 2 (31 octobre 2026), lot 1 corrigé
+
+| Gravité | Problème | Correction |
+|---|---|---|
+| Critique | Un livreur pouvait déclarer un paiement Wave ou Mobile Money « reçu par l'entreprise » sans contrôle : l'argent n'était plus à sa charge. | Le paiement reste à sa charge tant que la caisse ne l'a pas confirmé (bouton « Reçu ? Confirmer » au versement). Référence obligatoire et jamais deux fois la même. La clôture compte ces paiements le jour de leur confirmation. |
+| Haute | Montant encaissé libre à la livraison. | Jamais plus que le montant à encaisser ; moins seulement avec une explication, et le dispatch est prévenu. |
+| Haute | Frais déclarés par un livreur (et frais de gare) appliqués tout de suite, sans plafond. | « À valider » : aucun effet tant que la caisse ou le dispatch ne les a pas validés ; 200 000 F au plus par déclaration du livreur. |
+| Haute | Vol de la clé API d'un e-commerçant par une adresse de retour piégée (antislash) dans la connexion en un clic. | Adresses avec antislash, espace ou caractère de contrôle refusées ; hôte limité aux lettres, chiffres, points et tirets. |
+| Haute | Inscription : numéro « vérifié » par un code envoyé à un e-mail choisi par l'inscrit. | Pas de vérification par e-mail à l'inscription. |
+| Haute | Codes à 6 chiffres essayables en masse (compteur remis à zéro, requêtes simultanées). | Compteur d'essais atomique, non remis à zéro au renvoi ; 10 codes faux par numéro et par heure au plus ; idem pour la console. |
+| Haute | Hameçonnage du message WhatsApp de connexion. | Message prérempli explicite (« Je me connecte à mon compte … ») ; connexion et mot de passe oublié demandent une confirmation « OUI » avec un avertissement. |
+| Haute | Lien « Ce n'était pas moi » de la console : nouveau mot de passe avec la seule boîte mail. | Le lien ne fait plus que verrouiller le compte ; réouverture par un autre propriétaire. |
+| Haute | Un administrateur pouvait rétrograder un autre administrateur puis changer ses identifiants. | Rôle et statut d'un administrateur modifiables par le super administrateur seulement. |
+
 ## Vérifié et sain
 
 Isolement entre entreprises (scope global, jeton lié à l'adresse de l'entreprise), isolement entre marchands d'une

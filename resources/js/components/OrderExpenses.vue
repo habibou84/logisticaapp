@@ -13,10 +13,12 @@
             {{ e.paid_by === 'courier' ? `Payé par ${e.courier_name || 'le livreur'}${e.refunded ? ' (remboursé)' : ''}` : 'Payé par l\'agence' }}
             · {{ e.billed_to === 'merchant' ? 'facturé au client' : 'à la charge de l\'agence' }}
           </span>
+          <span v-if="e.awaiting_approval" class="block text-xs font-semibold text-amber-700">À valider : sans effet tant qu'ils ne sont pas validés</span>
         </span>
         <span class="flex items-start gap-2">
           <span class="font-semibold whitespace-nowrap">{{ money(e.amount) }}</span>
-          <button v-if="canAdd && !e.cancelled_at && !e.refunded" class="text-red-600 text-xs" :aria-label="`Annuler ${e.description}`" @click="cancel(e)">Annuler</button>
+          <button v-if="canAdd && e.awaiting_approval" class="text-emerald-700 text-xs font-semibold" :aria-label="`Valider ${e.description}`" @click="approve(e)">Valider</button>
+          <button v-if="canAdd && !e.cancelled_at && !e.refunded" class="text-red-600 text-xs" :aria-label="`${e.awaiting_approval ? 'Refuser' : 'Annuler'} ${e.description}`" @click="cancel(e)">{{ e.awaiting_approval ? 'Refuser' : 'Annuler' }}</button>
         </span>
       </li>
     </ul>
@@ -97,6 +99,16 @@ async function save() {
     error.value = apiErrorMessage(e)
   } finally {
     saving.value = false
+  }
+}
+
+async function approve(expense) {
+  try {
+    await http.post(`/orders/${props.orderId}/expenses/${expense.id}/approve`)
+    toasts.success('Frais validés.')
+    emit('changed')
+  } catch (e) {
+    toasts.error(apiErrorMessage(e))
   }
 }
 

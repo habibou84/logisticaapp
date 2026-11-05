@@ -67,8 +67,9 @@ class CashClosings
             $amount >= 0 ? $add($in, PaymentMethod::Cash->value, (int) $amount) : $add($out, PaymentMethod::Cash->value, -(int) $amount);
         }
 
+        // Reçu directement sur le compte de l'entreprise : compté le jour où la caisse l'a confirmé
         $direct = $scoped(CashCollection::class)->where('received_by_company', true)->whereNull('legacy_cash_baseline_id')
-            ->where('collected_at', '>=', $from)->groupBy('method')->selectRaw('method, SUM(amount_collected) AS total')->pluck('total', 'method');
+            ->whereNotNull('company_confirmed_at')->where('company_confirmed_at', '>=', $from)->groupBy('method')->selectRaw('method, SUM(amount_collected) AS total')->pluck('total', 'method');
         foreach ($direct as $method => $total) {
             $add($in, $method instanceof PaymentMethod ? $method->value : (string) $method, (int) $total);
         }

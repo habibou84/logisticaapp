@@ -20,6 +20,7 @@ class CashLog extends Model
         'remittance_cancelled' => 'Versement annulé',
         'advance' => 'Avance',
         'advance_cancelled' => 'Avance annulée',
+        'collection_confirmed' => 'Paiement reçu confirmé',
         'merchant_adjustment' => 'Ajustement e-commerçant',
         'courier_adjustment' => 'Prime ou retenue',
         'payout_prepared' => 'Paiement préparé',

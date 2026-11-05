@@ -17,7 +17,9 @@ use Illuminate\Support\Facades\DB;
 /**
  * Frais engagés pour une course. Facturés au client, ils sont inscrits à son grand
  * livre (et donc déduits de son point) ; avancés par un livreur, ils sont déduits de
- * son prochain versement à la caisse.
+ * son prochain versement à la caisse. Déclarés par un livreur, ils n'ont d'effet qu'une
+ * fois validés par la caisse ou le dispatch (sinon un livreur pourrait garder l'argent
+ * encaissé en déclarant des frais).
  */
 class OrderExpenses
 {
@@ -51,26 +53,20 @@ class OrderExpenses
                 'courier_id' => $courierId,
                 'billed_to' => $data['billed_to'] ?? 'merchant',
                 'created_by' => $actor->id,
+                'approved_at' => $actor->isCourier() ? null : now(),
+                'approved_by' => $actor->isCourier() ? null : $actor->id,
             ]);
 
-            if ($expense->billed_to === 'merchant' && $expense->amount > 0) {
-                $expense->ledger_entry_id = MerchantLedgerEntry::create([
-                    'company_id' => $order->company_id,
-                    'merchant_id' => $order->merchant_id,
-                    'type' => $type->ledgerType(),
-                    'amount' => -$expense->amount,
-                    'order_id' => $order->id,
-                    'description' => $expense->description(),
-                    'created_by' => $actor->id,
-                ])->id;
+            if ($expense->approved_at !== null) {
+                $this->bill($expense, $actor);
             }
 
             $expense->save();
 
             if ($journal) {
                 $this->journal->record($order, $actor, OrderEventType::ExpenseAdded, [
-                    'note' => $expense->description().' : '.Money::format($expense->amount),
-                    'visible_to_merchant' => $expense->billed_to === 'merchant',
+                    'note' => $expense->description().' : '.Money::format($expense->amount).($expense->approved_at === null ? ' (à valider par la caisse)' : ''),
+                    'visible_to_merchant' => $expense->billed_to === 'merchant' && $expense->approved_at !== null,
                     'meta' => $this->meta($expense),
                 ]);
             }
@@ -80,7 +76,53 @@ class OrderExpenses
     }
 
     /**
-     * Annule des frais saisis par erreur : contre-écriture au grand livre du client.
+     * Valide des frais déclarés par un livreur : facturés au client et déduits de son prochain versement.
+     */
+    public function approve(User $actor, OrderExpense $expense): OrderExpense
+    {
+        return DB::transaction(function () use ($actor, $expense) {
+            $expense = OrderExpense::query()->lockForUpdate()->findOrFail($expense->id);
+            if ($expense->cancelled_at !== null) {
+                throw new BusinessRuleException('Ces frais sont annulés.');
+            }
+            if ($expense->approved_at !== null) {
+                return $expense;
+            }
+
+            $expense->forceFill(['approved_at' => now(), 'approved_by' => $actor->id]);
+            $this->bill($expense, $actor);
+            $expense->save();
+
+            $this->journal->record($expense->order, $actor, OrderEventType::ExpenseAdded, [
+                'note' => 'Frais validés : '.$expense->description().' ('.Money::format($expense->amount).')',
+                'visible_to_merchant' => $expense->billed_to === 'merchant',
+                'meta' => $this->meta($expense),
+            ]);
+
+            return $expense;
+        });
+    }
+
+    /** Frais facturés au client : inscrits à son grand livre */
+    private function bill(OrderExpense $expense, User $actor): void
+    {
+        if ($expense->billed_to !== 'merchant' || $expense->amount <= 0 || $expense->ledger_entry_id !== null) {
+            return;
+        }
+        $order = $expense->order;
+        $expense->ledger_entry_id = MerchantLedgerEntry::create([
+            'company_id' => $order->company_id,
+            'merchant_id' => $order->merchant_id,
+            'type' => $expense->type->ledgerType(),
+            'amount' => -$expense->amount,
+            'order_id' => $order->id,
+            'description' => $expense->description(),
+            'created_by' => $actor->id,
+        ])->id;
+    }
+
+    /**
+     * Annule des frais saisis par erreur (ou refuse des frais déclarés) : contre-écriture au grand livre du client.
      */
     public function cancel(User $actor, OrderExpense $expense): OrderExpense
     {

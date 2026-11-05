@@ -9,6 +9,7 @@ use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\Permission;
 use App\Exceptions\BusinessRuleException;
+use App\Models\CashCollection;
 use App\Models\Destination;
 use App\Models\IncidentReason;
 use App\Models\Order;
@@ -23,6 +24,7 @@ use App\Services\Destinations\DestinationSettings;
 use App\Services\Finance\FinanceRecorder;
 use App\Services\Merchants\MerchantLocation;
 use App\Services\Stock\StockKeeper;
+use App\Support\Money;
 use App\Support\SignatureImage;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Carbon;
@@ -401,10 +403,30 @@ class OrderWorkflow
             throw new BusinessRuleException('Montant encaissé invalide.', 'collected_amount');
         }
 
+        // Pas plus que le montant à encaisser ; moins seulement avec une explication (le dispatch est prévenu)
+        $cod = (int) $order->cod_amount;
+        if ($collected !== null && $collected > $cod) {
+            throw new BusinessRuleException('Le montant encaissé ne peut pas dépasser le montant à encaisser ('.Money::format($cod).').', 'collected_amount');
+        }
+        if ($collected !== null && $collected < $cod && blank($context['note'] ?? null)) {
+            throw new BusinessRuleException('Montant encaissé inférieur à '.Money::format($cod).' : indiquez pourquoi dans la note.', 'note');
+        }
+
         $method = PaymentMethod::tryFrom($context['payment_method'] ?? 'cash');
 
         if (! empty($context['received_by_company']) && $method === PaymentMethod::Cash) {
             throw new BusinessRuleException('Des espèces ne peuvent pas être reçues directement sur le compte de l\'entreprise.', 'received_by_company');
+        }
+
+        // Paiement reçu sur le compte de l'entreprise : référence obligatoire et jamais deux fois la même
+        if (! empty($context['received_by_company'])) {
+            $ref = trim((string) ($context['transaction_ref'] ?? ''));
+            if (mb_strlen($ref) < 4) {
+                throw new BusinessRuleException('Indiquez la référence de la transaction (reçue par SMS du client).', 'transaction_ref');
+            }
+            if (CashCollection::query()->where('company_id', $order->company_id)->where('received_by_company', true)->where('transaction_ref', $ref)->exists()) {
+                throw new BusinessRuleException('Cette référence de transaction a déjà été utilisée pour une autre course.', 'transaction_ref');
+            }
         }
     }
 

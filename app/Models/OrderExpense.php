@@ -18,7 +18,7 @@ class OrderExpense extends Model
 
     protected $fillable = [
         'company_id', 'order_id', 'type', 'label', 'amount', 'paid_by', 'courier_id', 'billed_to',
-        'ledger_entry_id', 'remittance_id', 'created_by', 'cancelled_at', 'cancelled_by',
+        'ledger_entry_id', 'remittance_id', 'created_by', 'approved_at', 'approved_by', 'cancelled_at', 'cancelled_by',
     ];
 
     protected function casts(): array
@@ -27,6 +27,7 @@ class OrderExpense extends Model
             'type' => ExpenseType::class,
             'amount' => 'integer',
             'cancelled_at' => 'datetime',
+            'approved_at' => 'datetime',
         ];
     }
 
@@ -55,12 +56,18 @@ class OrderExpense extends Model
         return $query->whereNull('cancelled_at');
     }
 
+    /** Frais déclarés par un livreur, en attente de validation par la caisse ou le dispatch */
+    public function scopeAwaitingApproval(Builder $query): Builder
+    {
+        return $query->active()->whereNull('approved_at');
+    }
+
     /**
-     * Frais avancés par un livreur et pas encore remboursés (déduits de son prochain versement).
+     * Frais avancés par un livreur, validés et pas encore remboursés (déduits de son prochain versement).
      */
     public function scopeOwedToCourier(Builder $query): Builder
     {
-        return $query->active()->where('paid_by', 'courier')->whereNull('remittance_id');
+        return $query->active()->whereNotNull('approved_at')->where('paid_by', 'courier')->whereNull('remittance_id');
     }
 
     public function description(): string

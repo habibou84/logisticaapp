@@ -46,6 +46,12 @@ class OrderExpenseTest extends TestCase
         return $this->postJson("/api/v1/orders/{$this->order->id}/expenses", $data);
     }
 
+    /** Frais déclarés par le livreur, validés par le dispatch */
+    private function approve(int $id)
+    {
+        return $this->as($this->dispatcher)->postJson("/api/v1/orders/{$this->order->id}/expenses/{$id}/approve");
+    }
+
     public function test_courier_declares_fees_billed_to_the_merchant(): void
     {
         $this->as($this->courierA->user)->addExpense([
@@ -54,7 +60,16 @@ class OrderExpenseTest extends TestCase
         ])->assertCreated()
             ->assertJsonPath('data.paid_by', 'courier')
             ->assertJsonPath('data.billed_to', 'merchant')
-            ->assertJsonPath('data.description', 'Transport (taxi, moto-taxi…) : Taxi pour colis volumineux');
+            ->assertJsonPath('data.description', 'Transport (taxi, moto-taxi…) : Taxi pour colis volumineux')
+            ->assertJsonPath('data.awaiting_approval', true);
+        $id = OrderExpense::latest('id')->value('id');
+
+        // À valider : ni facturés au marchand, ni retirés de ce que le livreur doit verser
+        $this->assertSame(0, MerchantLedgerEntry::where('order_id', $this->order->id)->where('type', 'other_fee')->count());
+        $this->getJson('/api/v1/courier/wallet')->assertJsonPath('data.cash_in_hand', 0);
+        // Le livreur ne valide pas ses propres frais
+        $this->postJson("/api/v1/orders/{$this->order->id}/expenses/{$id}/approve")->assertForbidden();
+        $this->approve($id)->assertOk()->assertJsonPath('data.awaiting_approval', false);
 
         $entry = MerchantLedgerEntry::where('order_id', $this->order->id)->where('type', 'other_fee')->sole();
         $this->assertSame(-2000, $entry->amount);
@@ -66,6 +81,11 @@ class OrderExpenseTest extends TestCase
             ->assertJsonPath('data.amounts.net_to_merchant', -2000);
         $this->assertSame('expense', $this->merchantUser->notifications()->latest()->first()->data['kind']);
         $this->getJson("/api/v1/orders/{$this->order->id}")->assertJsonPath('data.expenses.0.amount', 2000);
+    }
+
+    public function test_courier_fees_are_capped(): void
+    {
+        $this->as($this->courierA->user)->addExpense(['type' => 'transport', 'amount' => 9000000])->assertJsonValidationErrors('amount');
     }
 
     public function test_other_fees_need_a_description_and_merchants_cannot_add_fees(): void
@@ -96,8 +116,9 @@ class OrderExpenseTest extends TestCase
     public function test_cancelling_fees_reverses_the_ledger_until_refunded(): void
     {
         $expense = $this->as($this->courierA->user)->addExpense(['type' => 'transport', 'amount' => 1500])->json('data');
+        $this->approve($expense['id'])->assertOk();
 
-        $this->postJson("/api/v1/orders/{$this->order->id}/expenses/{$expense['id']}/cancel")->assertForbidden();
+        $this->as($this->courierA->user)->postJson("/api/v1/orders/{$this->order->id}/expenses/{$expense['id']}/cancel")->assertForbidden();
 
         $this->as($this->dispatcher)->postJson("/api/v1/orders/{$this->order->id}/expenses/{$expense['id']}/cancel")
             ->assertOk()->assertJsonPath('data.cancelled_at', fn ($v) => $v !== null);
@@ -106,6 +127,7 @@ class OrderExpenseTest extends TestCase
 
         // Une fois le livreur remboursé, on passe par un ajustement
         $second = $this->addExpense(['type' => 'transport', 'amount' => 1000])->json('data');
+        $this->approve($second['id'])->assertOk();
         $this->as($this->cashier)->postJson('/api/v1/finance/remittances', ['courier_id' => $this->courierA->id, 'amount_received' => -1000])
             ->assertCreated()->assertJsonPath('data.amount_expected', -1000);
         $this->as($this->dispatcher)->postJson("/api/v1/orders/{$this->order->id}/expenses/{$second['id']}/cancel")
@@ -114,7 +136,8 @@ class OrderExpenseTest extends TestCase
 
     public function test_fees_appear_on_the_merchant_statement(): void
     {
-        $this->as($this->courierA->user)->addExpense(['type' => 'packaging', 'amount' => 800]);
+        $id = $this->as($this->courierA->user)->addExpense(['type' => 'packaging', 'amount' => 800])->json('data.id');
+        $this->approve($id)->assertOk();
 
         $payout = $this->as($this->cashier)->postJson('/api/v1/finance/payouts', ['merchant_id' => $this->merchant->id])
             ->assertCreated()->json('data');
