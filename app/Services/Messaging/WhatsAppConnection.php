@@ -253,11 +253,12 @@ class WhatsAppConnection
 
     /**
      * Soumet à Meta les modèles du catalogue qui ne sont ni approuvés ni en cours de
-     * validation. Renvoie, par modèle soumis, « ok » ou le message d'erreur.
+     * validation (seulement ceux jamais soumis avec $onlyNew : un modèle refusé attend
+     * qu'on le corrige). Renvoie, par modèle soumis, « ok » ou le message d'erreur.
      *
      * @return array<string, string>
      */
-    public function submitTemplates(WhatsAppAccount $account): array
+    public function submitTemplates(WhatsAppAccount $account, bool $onlyNew = false): array
     {
         if (! $account->isConfigured() || blank($account->waba_id)) {
             throw new MessagingException('Renseignez et connectez d\'abord le numéro, avec l\'identifiant du compte WhatsApp Business (WABA ID).');
@@ -267,7 +268,7 @@ class WhatsAppConnection
         $results = [];
 
         foreach (WhatsAppTemplate::cases() as $template) {
-            if (in_array($known[$template->value] ?? null, ['approved', 'pending'], true)) {
+            if (in_array($known[$template->value] ?? null, ['approved', 'pending'], true) || ($onlyNew && isset($known[$template->value]))) {
                 continue;
             }
 

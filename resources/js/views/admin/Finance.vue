@@ -18,6 +18,12 @@
 
     <!-- Argent chez les livreurs -->
     <template v-if="tab === 'cash'">
+      <p v-if="cash?.whatsapp_templates === 'pending'" class="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-900" role="status">
+        Reçu de versement et rappel aux livreurs par WhatsApp : messages envoyés à Meta pour acceptation (de quelques minutes à 24 h). Ils partiront tout seuls ensuite.
+      </p>
+      <p v-else-if="cash?.whatsapp_templates === 'rejected'" class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900" role="alert">
+        Meta a refusé un message WhatsApp de la caisse (reçu ou rappel). Voir la page <RouterLink to="/admin/whatsapp" class="underline font-medium">WhatsApp</RouterLink>.
+      </p>
       <div v-if="cash" class="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard title="Argent chez les livreurs" :value="money(cash.totals.cash_in_hands)" icon="🛵" :subtitle="cash.totals.owed_to_couriers ? `La caisse leur doit ${money(cash.totals.owed_to_couriers)} (à part)` : ''" />
         <StatCard title="Encaissé aujourd'hui" :value="money(cash.totals.collected_today)" icon="💵" />

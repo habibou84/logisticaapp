@@ -35,6 +35,8 @@ Schedule::command('couriers:rating-alerts')->dailyAt('08:20')->withoutOverlappin
 Schedule::command('vehicles:daily')->dailyAt('06:40')->withoutOverlapping();
 // Accès WhatsApp du bouton « Connecter WhatsApp » (60 jours) : relais par la plateforme ou alerte avant l'échéance
 Schedule::command('whatsapp:tokens')->dailyAt('08:15')->withoutOverlapping();
+// Modèles WhatsApp ajoutés depuis la connexion du numéro : soumis à Meta chaque nuit, état relu
+Schedule::command('whatsapp:templates')->dailyAt('04:20')->withoutOverlapping();
 Schedule::command('model:prune', ['--model' => [IdempotencyKey::class, WebhookDelivery::class, CourierLocation::class]])->daily();
 // Cloche : anciennes notifications supprimées chaque nuit
 Schedule::command('notifications:prune')->dailyAt('03:40')->withoutOverlapping();

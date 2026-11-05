@@ -389,6 +389,8 @@ Caisse : clarté et sécurité (ajoutée après la reprise) :
 - **Journal de la caisse** (`cash_logs`, `/admin/caisse/journal`) : versements, avances, ajustements, paiements aux client, paie et annulations, avec qui et quand. Rien ne s'efface.
 - **Livreurs à surveiller** : argent gardé plus de `companies.cash_alert_hours` (24 h par défaut) ou au-dessus de `cash_alert_amount`. Alerte une fois par jour et par livreur aux administrateurs et caissiers (cloche de l'application) et rappel WhatsApp au livreur si `cash_alert_courier` (modèle `argent_a_remettre`) ; tâche `cash:held` chaque heure de 7 h à 21 h.
 - Caisse plus lisible : noms clairs (« À payer aux client », « Règles de paie »), recherche, filtres, export Excel de chaque tableau, solde après chaque ligne du grand livre.
+- **Modèles WhatsApp soumis tout seuls** : à l'ouverture de la caisse, les modèles du reçu et du rappel jamais soumis partent chez Meta et l'état des autres est relu (au plus toutes les 10 minutes, `RefreshWhatsAppTemplates`) ; un bandeau indique s'ils attendent l'acceptation ou ont été refusés. Chaque nuit, `whatsapp:templates` fait de même pour tous les modèles de toutes les entreprises. Un modèle refusé n'est pas renvoyé en boucle. Numéro par QR code : rien à soumettre.
+- Caisse plus lisible : noms clairs (« À payer aux e-commerçants », « Règles de paie »), recherche, filtres, export Excel de chaque tableau, solde après chaque ligne du grand livre.
 
 ### Applications mobiles PWA marchand et livreur ✅ *réalisée (avant la phase 4)*
 - [x] Deux applications installables (`/marchand` vert, `/livreur` bleu) : manifeste, icônes et couleur propres à chacune, distinctes du back-office.
