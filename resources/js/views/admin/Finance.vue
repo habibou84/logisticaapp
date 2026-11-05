@@ -17,21 +17,9 @@
       </button>
     </div>
 
-    <!-- Date de livraison des courses : même règle que la page Courses -->
-    <div v-if="tab === 'cash' || tab === 'merchants'" class="card p-3 flex flex-wrap items-center gap-2 text-sm" role="group" aria-label="Date de livraison des courses">
-      <span class="font-semibold">📅 Date de livraison des courses :</span>
-      <button
-        v-for="p in PERIODS" :key="p.key" type="button"
-        :class="['rounded-full px-3 py-1 ring-1', period.key === p.key ? 'bg-slate-900 text-white ring-slate-900' : 'bg-white ring-slate-300']"
-        :aria-pressed="period.key === p.key" @click="choosePeriod(p.key)"
-      >
-        {{ p.label }}
-      </button>
-      <template v-if="period.key === 'custom'">
-        <input v-model="period.from" type="date" class="input w-auto py-1" aria-label="Du" @change="periodChanged">
-        <input v-model="period.to" type="date" class="input w-auto py-1" :min="period.from" aria-label="Au" @change="periodChanged">
-      </template>
-      <span class="ml-auto text-xs text-gray-500">{{ periodLabel }}</span>
+    <!-- E-commerçants : la date de livraison des courses s'applique à tout l'onglet -->
+    <div v-if="tab === 'merchants'" class="card p-3">
+      <DeliveryDatePicker :period="period" :periods="PERIODS" :summary="periodLabel" @choose="choosePeriod" @changed="periodChanged" />
     </div>
 
     <!-- Argent chez les livreurs -->
@@ -42,102 +30,194 @@
       <p v-else-if="cash?.whatsapp_templates === 'rejected'" class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900" role="alert">
         Meta a refusé un message WhatsApp de la caisse (reçu ou rappel). Voir la page <RouterLink to="/admin/whatsapp" class="underline font-medium">WhatsApp</RouterLink>.
       </p>
-      <div v-if="cash" class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard title="Argent chez les livreurs" :value="money(cash.totals.cash_in_hands)" icon="🛵" :subtitle="cash.totals.owed_to_couriers ? `La caisse leur doit ${money(cash.totals.owed_to_couriers)} (à part)` : ''" />
-        <StatCard title="Encaissé aujourd'hui" :value="money(cash.totals.collected_today)" icon="💵" />
-        <StatCard title="Reçu des livreurs aujourd'hui" :value="money(cash.totals.received_today)" icon="🏦" />
-        <button type="button" :class="['card p-4 text-left', cash.totals.watched ? 'border-orange-300 bg-orange-50' : '']" @click="filters.watchOnly = !filters.watchOnly">
-          <p :class="['text-sm', cash.totals.watched ? 'text-orange-800' : 'text-gray-600']">À surveiller</p>
-          <p :class="['text-2xl font-bold', cash.totals.watched ? 'text-orange-800' : '']">{{ cash.totals.watched }} livreur{{ cash.totals.watched > 1 ? 's' : '' }}</p>
-          <p class="text-xs text-gray-600">{{ alertText }}</p>
-        </button>
-      </div>
-      <div v-if="days" class="card overflow-x-auto">
-        <div class="flex flex-wrap items-center gap-2 p-4 border-b">
-          <h2 class="flex-1 font-semibold">📊 Point par date de livraison</h2>
-          <span class="text-xs text-gray-500">{{ period.key === 'all' ? '31 derniers jours · ' : '' }}un toucher sur une date : toute la caisse sur ce jour</span>
-          <button type="button" class="btn-secondary" @click="exportDays">Exporter</button>
+
+      <!-- 1. En ce moment : toutes dates confondues, ne dépend pas de la date choisie -->
+      <section v-if="cash" class="space-y-2">
+        <div class="flex flex-wrap items-baseline gap-x-2">
+          <h2 class="font-semibold">💼 En ce moment</h2>
+          <span class="text-xs text-gray-500">toutes dates confondues · ne dépend pas de la date choisie plus bas</span>
         </div>
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 p-3">
-          <StatCard title="Encaissé chez les clients" :value="money(days.totals.collected)" icon="💵" :subtitle="`${days.totals.delivered} course${days.totals.delivered > 1 ? 's' : ''} livrée${days.totals.delivered > 1 ? 's' : ''}`" />
-          <StatCard title="Déjà à la caisse" :value="money(days.totals.at_desk)" icon="🏦" subtitle="reçu des livreurs" />
-          <StatCard title="Encore chez les livreurs" :value="money(days.totals.with_couriers)" icon="🛵" :subtitle="days.totals.with_couriers ? 'à recevoir' : '✓ tout est arrivé'" />
-          <StatCard title="À reverser aux clients" :value="money(days.totals.net_to_merchants)" icon="🏪" :subtitle="`encaissé moins les frais (${money(days.totals.fees)})`" />
+        <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <div class="card p-4">
+            <p class="text-sm text-gray-600">🛵 Total chez les livreurs</p>
+            <p class="text-2xl font-bold tabular-nums">{{ money(cash.totals.cash_in_hands) }}</p>
+            <p class="text-xs text-gray-500">toutes dates de livraison · {{ couriersWithMoney }} livreur{{ couriersWithMoney > 1 ? 's' : '' }}</p>
+            <p v-if="cash.totals.owed_to_couriers" class="text-xs text-violet-700">La caisse leur doit {{ money(cash.totals.owed_to_couriers) }} (à part)</p>
+          </div>
+          <div class="card p-4">
+            <p class="text-sm text-gray-600">💵 Encaissé aujourd'hui</p>
+            <p class="text-2xl font-bold tabular-nums">{{ money(cash.totals.collected_today) }}</p>
+            <p class="text-xs text-gray-500">chez les clients, depuis minuit</p>
+          </div>
+          <div class="card p-4">
+            <p class="text-sm text-gray-600">🏦 Reçu des livreurs aujourd'hui</p>
+            <p class="text-2xl font-bold tabular-nums">{{ money(cash.totals.received_today) }}</p>
+            <p class="text-xs text-gray-500">versements à la caisse</p>
+          </div>
+          <button type="button" :class="['card p-4 text-left', cash.totals.watched ? 'border-orange-300 bg-orange-50' : '']" @click="filters.watchOnly = !filters.watchOnly">
+            <p :class="['text-sm', cash.totals.watched ? 'text-orange-800' : 'text-gray-600']">{{ cash.totals.watched ? '⚠️ ' : '' }}À surveiller</p>
+            <p :class="['text-2xl font-bold', cash.totals.watched ? 'text-orange-800' : '']">{{ cash.totals.watched }} livreur{{ cash.totals.watched > 1 ? 's' : '' }}</p>
+            <p :class="['text-xs', cash.totals.watched ? 'text-orange-800' : 'text-gray-500']">{{ alertText }}</p>
+          </button>
         </div>
-        <table class="w-full text-sm stack-table">
-          <thead class="bg-slate-50 text-left text-gray-600">
-            <tr><th class="p-2">Date de livraison</th><th class="p-2 text-right">Livrées</th><th class="p-2 text-right">Encaissé</th><th class="p-2 text-right">Déjà à la caisse</th><th class="p-2 text-right">Chez les livreurs</th><th class="p-2 text-right">Frais de livraison</th><th class="p-2 text-right">À reverser</th></tr>
+      </section>
+
+      <!-- 2. Point par date de livraison : le choix de la date est juste au-dessus de ses chiffres -->
+      <section class="card">
+        <div class="space-y-3 border-b p-4">
+          <div class="flex flex-wrap items-center gap-2">
+            <h2 class="flex-1 font-semibold">📊 Point par date de livraison</h2>
+            <button v-if="days" type="button" class="btn-secondary" @click="exportDays">Exporter</button>
+          </div>
+          <div class="rounded-xl bg-slate-50 p-2">
+            <DeliveryDatePicker :period="period" :periods="PERIODS" label="Courses livrées" :summary="periodLabel" @choose="choosePeriod" @changed="periodChanged" />
+          </div>
+          <p class="text-sm">
+            <span class="font-semibold text-slate-800">📅 Date choisie : <span class="text-amber-700">{{ period.key === 'all' ? 'toutes les dates' : chosenDate }}</span></span>
+            <span class="block text-xs text-gray-500">S'applique au point ci-dessous et à la liste des livreurs.{{ period.key === 'all' ? ' « Tout » : 31 derniers jours pour le point.' : '' }}</span>
+          </p>
+        </div>
+        <template v-if="days">
+          <div class="grid grid-cols-2 gap-3 p-4 lg:grid-cols-4">
+            <div class="rounded-xl bg-slate-50 p-3">
+              <p class="text-xs text-gray-500">Encaissé chez les clients</p>
+              <p class="text-xl font-bold tabular-nums">{{ money(days.totals.collected) }}</p>
+              <p class="text-xs text-gray-500">{{ days.totals.delivered }} course{{ days.totals.delivered > 1 ? 's' : '' }} livrée{{ days.totals.delivered > 1 ? 's' : '' }}</p>
+            </div>
+            <div class="rounded-xl bg-slate-50 p-3">
+              <p class="text-xs text-gray-500">Déjà à la caisse</p>
+              <p class="text-xl font-bold tabular-nums text-emerald-700">{{ money(days.totals.at_desk) }}</p>
+              <p class="text-xs text-gray-500">reçu des livreurs</p>
+            </div>
+            <div :class="['rounded-xl p-3', days.totals.with_couriers ? 'bg-amber-50' : 'bg-slate-50']">
+              <p :class="['text-xs', days.totals.with_couriers ? 'text-amber-800' : 'text-gray-500']">Encore chez les livreurs</p>
+              <p :class="['text-xl font-bold tabular-nums', days.totals.with_couriers ? 'text-amber-800' : '']">{{ money(days.totals.with_couriers) }}</p>
+              <p :class="['text-xs', days.totals.with_couriers ? 'text-amber-800' : 'text-emerald-700']">{{ days.totals.with_couriers ? 'à recevoir' : '✓ tout est arrivé' }}</p>
+            </div>
+            <div class="rounded-xl bg-slate-50 p-3">
+              <p class="text-xs text-gray-500">À reverser aux e-commerçants</p>
+              <p class="text-xl font-bold tabular-nums">{{ money(days.totals.net_to_merchants) }}</p>
+              <p class="text-xs text-gray-500">après {{ money(days.totals.fees) }} de frais</p>
+            </div>
+          </div>
+          <!-- Une ligne par jour quand plusieurs dates sont choisies -->
+          <table v-if="days.days.length > 1" class="w-full text-sm stack-table">
+            <thead class="bg-slate-50 text-left text-gray-600">
+              <tr><th class="p-2">Date de livraison</th><th class="p-2 text-right">Livrées</th><th class="p-2 text-right">Encaissé</th><th class="p-2 text-right">Déjà à la caisse</th><th class="p-2 text-right">Chez les livreurs</th><th class="p-2 text-right">Frais de livraison</th><th class="p-2 text-right">À reverser</th></tr>
+            </thead>
+            <tbody class="divide-y">
+              <tr v-for="d in days.days" :key="d.day" :class="d.with_couriers ? 'bg-amber-50/60' : ''">
+                <td class="p-2"><button type="button" class="font-medium hover:underline first-letter:uppercase" title="Voir seulement ce jour" @click="chooseDay(d.day)">{{ dayLabel(d.day) }} ›</button></td>
+                <td data-label="Livrées" class="p-2 text-right">{{ d.delivered }}</td>
+                <td data-label="Encaissé" class="p-2 text-right tabular-nums">{{ money(d.collected) }}</td>
+                <td data-label="Déjà à la caisse" class="p-2 text-right tabular-nums">{{ money(d.at_desk) }}</td>
+                <td data-label="Chez les livreurs" :class="['p-2 text-right tabular-nums', d.with_couriers ? 'font-semibold text-amber-700' : 'text-emerald-700']">{{ d.with_couriers ? money(d.with_couriers) : '✓ 0' }}</td>
+                <td data-label="Frais" class="p-2 text-right tabular-nums">{{ money(d.fees) }}</td>
+                <td data-label="À reverser" class="p-2 text-right tabular-nums">{{ money(d.net_to_merchants) }}</td>
+              </tr>
+              <tr class="bg-slate-100 font-bold">
+                <td class="p-2">Total</td><td data-label="Livrées" class="p-2 text-right">{{ days.totals.delivered }}</td><td data-label="Encaissé" class="p-2 text-right">{{ money(days.totals.collected) }}</td>
+                <td data-label="Déjà à la caisse" class="p-2 text-right">{{ money(days.totals.at_desk) }}</td><td data-label="Chez les livreurs" class="p-2 text-right text-amber-700">{{ money(days.totals.with_couriers) }}</td>
+                <td data-label="Frais" class="p-2 text-right">{{ money(days.totals.fees) }}</td><td data-label="À reverser" class="p-2 text-right">{{ money(days.totals.net_to_merchants) }}</td>
+              </tr>
+            </tbody>
+          </table>
+          <p v-else-if="!days.days.length" class="px-4 pb-4 text-sm text-gray-500">Aucune course livrée à ces dates.</p>
+        </template>
+      </section>
+
+      <!-- 3. Argent par livreur : une ligne simple, le détail par date en dépliant -->
+      <section class="card">
+        <div class="flex flex-wrap items-center gap-2 border-b p-4">
+          <h2 class="basis-full font-semibold sm:basis-auto sm:flex-1">🛵 Argent par livreur <span class="text-sm font-normal text-gray-500">· {{ period.key === 'all' ? 'toutes dates' : `courses livrées ${periodLabel}` }}</span></h2>
+          <input id="cash-search" v-model="filters.search" type="search" class="input w-full sm:!w-56" placeholder="🔍 Nom ou téléphone" aria-label="Chercher un livreur">
+          <button type="button" :class="['rounded-full px-3 py-1 text-xs ring-1', filters.withMoney ? 'bg-slate-900 text-white ring-slate-900' : 'bg-white ring-slate-300']" :aria-pressed="filters.withMoney" @click="filters.withMoney = !filters.withMoney">Avec argent ou colis</button>
+          <button type="button" :class="['rounded-full px-3 py-1 text-xs ring-1', filters.watchOnly ? 'bg-orange-600 text-white ring-orange-600' : 'bg-white ring-slate-300']" :aria-pressed="filters.watchOnly" @click="filters.watchOnly = !filters.watchOnly">À surveiller</button>
+          <button type="button" class="btn-secondary" @click="exportCash">Exporter</button>
+        </div>
+
+        <!-- Ordinateur : tableau -->
+        <table class="hidden w-full text-sm md:table">
+          <thead class="border-b-2 border-slate-300 bg-slate-100 text-left text-sm font-bold text-slate-800">
+            <tr>
+              <th class="p-3">Livreur</th>
+              <th v-if="period.key !== 'all'" class="p-3 text-right">Date choisie<span class="block text-xs font-semibold text-amber-700 first-letter:uppercase">{{ chosenDate }}</span></th>
+              <th class="p-3 text-right" title="Encaissé + avances − frais payés">Total à remettre<span class="block text-xs font-normal text-slate-500">toutes dates</span></th>
+              <th class="hidden p-3 xl:table-cell">Colis</th>
+              <th class="hidden p-3 xl:table-cell">Garde l'argent depuis</th>
+              <th class="p-3" />
+            </tr>
           </thead>
           <tbody class="divide-y">
-            <tr v-for="d in days.days" :key="d.day" :class="d.with_couriers ? 'bg-amber-50/60' : ''">
-              <td class="p-2"><button type="button" class="font-medium text-blue-700 hover:underline first-letter:uppercase" @click="chooseDay(d.day)">{{ dayLabel(d.day) }}</button></td>
-              <td data-label="Livrées" class="p-2 text-right">{{ d.delivered }}</td>
-              <td data-label="Encaissé" class="p-2 text-right">{{ money(d.collected) }}</td>
-              <td data-label="Déjà à la caisse" class="p-2 text-right">{{ money(d.at_desk) }}</td>
-              <td data-label="Chez les livreurs" :class="['p-2 text-right', d.with_couriers ? 'font-semibold text-amber-700' : 'text-emerald-700']">{{ d.with_couriers ? money(d.with_couriers) : '✓ 0' }}</td>
-              <td data-label="Frais" class="p-2 text-right">{{ money(d.fees) }}</td>
-              <td data-label="À reverser" class="p-2 text-right">{{ money(d.net_to_merchants) }}</td>
-            </tr>
-            <tr v-if="!days.days.length"><td colspan="7" class="p-4 text-center text-gray-500">Aucune course livrée à ces dates.</td></tr>
-            <tr v-else class="bg-slate-100 font-bold">
-              <td class="p-2">Total</td><td data-label="Livrées" class="p-2 text-right">{{ days.totals.delivered }}</td><td data-label="Encaissé" class="p-2 text-right">{{ money(days.totals.collected) }}</td>
-              <td data-label="Déjà à la caisse" class="p-2 text-right">{{ money(days.totals.at_desk) }}</td><td data-label="Chez les livreurs" class="p-2 text-right text-amber-700">{{ money(days.totals.with_couriers) }}</td>
-              <td data-label="Frais" class="p-2 text-right">{{ money(days.totals.fees) }}</td><td data-label="À reverser" class="p-2 text-right">{{ money(days.totals.net_to_merchants) }}</td>
+            <template v-for="c in visibleCouriers" :key="c.courier_id">
+              <tr :class="['cursor-pointer align-top hover:bg-slate-50', c.watch ? 'bg-orange-50/60' : '']" @click="toggleCourier(c)">
+                <td class="p-3">
+                  <p class="font-semibold"><span class="inline-block w-4 text-gray-400">{{ opened.has(c.courier_id) ? '▾' : '▸' }}</span>{{ c.name }}</p>
+                  <p class="pl-4 text-xs text-gray-500">{{ c.phone }}</p>
+                  <p v-if="c.watch" class="ml-4 mt-1 inline-block rounded bg-orange-100 px-1.5 py-0.5 text-xs font-medium text-orange-800">⚠️ {{ c.watch }}</p>
+                </td>
+                <td v-if="period.key !== 'all'" class="p-3 text-right">
+                  <template v-if="periodAmount(c)"><p class="font-semibold tabular-nums">{{ money(periodAmount(c)) }}</p><p class="text-xs text-gray-500">{{ countLabel(periodCount(c)) }}</p></template>
+                  <template v-else><p class="text-gray-300">—</p><p class="text-xs text-gray-400">rien à ces dates</p></template>
+                </td>
+                <td class="p-3 text-right">
+                  <template v-if="c.cash_in_hand < 0"><p class="font-semibold text-violet-700">La caisse lui doit {{ money(-c.cash_in_hand) }}</p><p class="text-xs text-gray-500">frais payés de sa poche</p></template>
+                  <template v-else><p class="text-lg font-bold tabular-nums">{{ money(c.cash_in_hand) }}</p><p class="text-xs text-gray-500">{{ spreadLabel(c) }}</p></template>
+                </td>
+                <td class="hidden p-3 xl:table-cell"><span v-if="c.parcels_in_hand" class="rounded-full bg-slate-100 px-2 py-0.5 text-xs">📦 {{ c.parcels_in_hand }}</span><span v-else class="text-gray-300">—</span></td>
+                <td class="hidden p-3 text-xs text-gray-600 xl:table-cell">{{ c.oldest_collected_at ? dateTime(c.oldest_collected_at) : '—' }}</td>
+                <td class="whitespace-nowrap p-3 text-right" @click.stop>
+                  <template v-if="canManage">
+                    <button v-if="c.cash_in_hand < 0" type="button" class="rounded-lg border border-violet-400 px-3 py-1.5 text-violet-700" @click="openRemit(c)">Rembourser</button>
+                    <button v-else-if="c.pending_collections || c.advances || c.expenses" type="button" class="btn-primary" @click="openRemit(c)">Recevoir</button>
+                    <button v-else-if="c.parcels_in_hand" type="button" class="btn-primary" @click="openRemit(c)">Recevoir les colis</button>
+                  </template>
+                </td>
+              </tr>
+              <tr v-if="opened.has(c.courier_id)" :class="c.watch ? 'bg-orange-50/60' : 'bg-slate-50/60'">
+                <td :colspan="period.key !== 'all' ? 6 : 5" class="px-3 pb-4">
+                  <CourierCashDetail :courier="c" :in-period="inPeriod" :period-key="period.key" :period-label="periodLabel" :can-manage="canManage" :short-day="dayLabel" @remit-all="openRemit(c, true)" @advance="openAdvance(c)" />
+                </td>
+              </tr>
+            </template>
+            <tr v-if="cash && !visibleCouriers.length"><td :colspan="period.key !== 'all' ? 6 : 5" class="p-4 text-center text-gray-500">Aucun livreur à afficher.</td></tr>
+            <tr v-else-if="visibleCouriers.length > 1" class="bg-slate-100 font-semibold">
+              <td class="p-3">Total · {{ visibleCouriers.length }} livreurs</td>
+              <td v-if="period.key !== 'all'" class="p-3 text-right tabular-nums">{{ money(visibleTotals.period) }}</td>
+              <td class="p-3 text-right tabular-nums">{{ money(visibleTotals.due) }}</td>
+              <td class="hidden xl:table-cell" /><td class="hidden xl:table-cell" /><td />
             </tr>
           </tbody>
         </table>
-      </div>
-      <div class="card p-3 flex flex-wrap items-end gap-3">
-        <div class="flex-1 min-w-[12rem]">
-          <label class="label" for="cash-search">Chercher un livreur</label>
-          <input id="cash-search" v-model="filters.search" type="search" class="input" placeholder="Nom ou téléphone">
+
+        <!-- Téléphone : une carte par livreur -->
+        <div class="divide-y md:hidden">
+          <div v-for="c in visibleCouriers" :key="c.courier_id" :class="['space-y-2 p-4', c.watch ? 'bg-orange-50/60' : '']">
+            <button type="button" class="flex w-full items-start gap-2 text-left" @click="toggleCourier(c)">
+              <span class="min-w-0 flex-1">
+                <span class="block font-semibold">{{ c.name }}</span>
+                <span class="block text-xs text-gray-500">{{ c.phone }}<template v-if="c.parcels_in_hand"> · 📦 {{ c.parcels_in_hand }} colis</template></span>
+              </span>
+              <span class="text-right">
+                <template v-if="c.cash_in_hand < 0"><span class="block font-semibold text-violet-700">La caisse lui doit {{ money(-c.cash_in_hand) }}</span></template>
+                <template v-else><span class="block text-lg font-bold tabular-nums">{{ money(c.cash_in_hand) }}</span><span class="block text-xs text-gray-500">total, {{ spreadLabel(c) }}</span></template>
+              </span>
+            </button>
+            <p v-if="c.watch" class="inline-block rounded bg-orange-100 px-1.5 py-0.5 text-xs font-medium text-orange-800">⚠️ {{ c.watch }}</p>
+            <div v-if="period.key !== 'all' && periodAmount(c)" class="flex justify-between rounded-lg bg-amber-50 px-3 py-2 text-sm">
+              <span class="first-letter:uppercase">{{ periodLabel }} · {{ countLabel(periodCount(c)) }}</span><span class="font-semibold tabular-nums">{{ money(periodAmount(c)) }}</span>
+            </div>
+            <CourierCashDetail v-if="opened.has(c.courier_id)" :courier="c" :in-period="inPeriod" :period-key="period.key" :period-label="periodLabel" :can-manage="canManage" :short-day="dayLabel" @remit-all="openRemit(c, true)" @advance="openAdvance(c)" />
+            <button v-else type="button" class="text-xs text-gray-600" @click="toggleCourier(c)">▸ Détail par date</button>
+            <div v-if="canManage" class="flex gap-2">
+              <button v-if="c.cash_in_hand < 0" type="button" class="flex-1 rounded-lg border border-violet-400 py-2 text-violet-700" @click="openRemit(c)">Rembourser</button>
+              <button v-else-if="c.pending_collections || c.advances || c.expenses" type="button" class="btn-primary flex-1" @click="openRemit(c)">Recevoir</button>
+              <button v-else-if="c.parcels_in_hand" type="button" class="btn-primary flex-1" @click="openRemit(c)">Recevoir les colis</button>
+            </div>
+          </div>
+          <p v-if="cash && !visibleCouriers.length" class="p-4 text-center text-sm text-gray-500">Aucun livreur à afficher.</p>
         </div>
-        <label class="flex items-center gap-2 text-sm"><input v-model="filters.withMoney" type="checkbox"> Seulement ceux qui ont de l'argent ou des colis</label>
-        <label class="flex items-center gap-2 text-sm"><input v-model="filters.watchOnly" type="checkbox"> Seulement « à surveiller »</label>
-        <button type="button" class="btn-secondary" @click="exportCash">Exporter</button>
-      </div>
-      <div class="card overflow-x-auto">
-        <table class="w-full text-sm stack-table">
-          <thead class="bg-slate-50 text-left text-gray-600">
-            <tr><th class="p-2">Livreur</th><th class="p-2">Par date de livraison</th><th class="p-2 text-right" title="Encaissé + avances − frais payés − paie gardée sur l'encaissé">À remettre à la caisse</th><th class="p-2" title="Colis non livrés encore chez le livreur">Colis</th><th class="p-2">Depuis</th><th class="p-2 text-right">Gains non payés</th><th /></tr>
-          </thead>
-          <tbody class="divide-y">
-            <tr v-for="c in visibleCouriers" :key="c.courier_id" :class="c.watch ? 'bg-orange-50' : ''">
-              <td class="p-2 font-medium">{{ c.name }}<div class="text-xs text-gray-500">{{ c.phone }}</div><div v-if="c.watch" class="text-xs font-semibold text-orange-800">{{ c.watch }}</div></td>
-              <td data-label="Par date" class="p-2">
-                <div v-if="c.days.length || c.advances || c.expenses" class="flex flex-wrap gap-1 text-xs">
-                  <button
-                    v-for="d in c.days" :key="d.day" type="button"
-                    :class="['rounded-full px-2 py-0.5', inPeriod(d.day) ? 'bg-amber-100 text-amber-900' : 'bg-slate-100 text-slate-400']"
-                    :title="`${d.count} course${d.count > 1 ? 's' : ''}`" @click="chooseDay(d.day)"
-                  >
-                    {{ shortDay(d.day) }} : {{ money(d.amount) }}
-                  </button>
-                  <span v-if="c.advances || c.expenses" class="rounded-full bg-slate-100 px-2 py-0.5 text-slate-700">sans date : {{ money(c.advances - c.expenses) }}</span>
-                </div>
-                <span v-else class="text-gray-400">—</span>
-              </td>
-              <td data-label="À remettre" class="p-2 text-right font-semibold">
-                <span v-if="c.cash_in_hand < 0" class="text-blue-700">La caisse lui doit {{ money(-c.cash_in_hand) }}</span>
-                <template v-else>{{ money(c.cash_in_hand) }}</template>
-                <div v-if="c.pending_collections || c.advances || c.expenses" class="text-xs font-normal text-gray-500">
-                  {{ [c.collected ? `${money(c.collected)} encaissés` : '', c.advances ? `avance ${money(c.advances)}` : '', c.expenses ? `frais −${money(c.expenses)}` : ''].filter(Boolean).join(' · ') }}
-                </div>
-                <div v-if="period.key !== 'all' && c.days.length" class="text-xs font-normal text-amber-800">dont courses de la période : {{ money(periodAmount(c)) }}</div>
-              </td>
-              <td data-label="Colis" class="p-2"><span v-if="c.parcels_in_hand" class="rounded-full bg-amber-100 text-amber-900 px-2 py-0.5 text-xs font-medium">📦 {{ c.parcels_in_hand }}</span><span v-else class="text-gray-400">—</span></td>
-              <td data-label="Depuis" class="p-2 text-xs">{{ c.oldest_collected_at ? dateTime(c.oldest_collected_at) : '—' }}</td>
-              <td data-label="Gains non payés" :class="['p-2 text-right', signedClass(c.unpaid)]">{{ money(c.unpaid) }}</td>
-              <td class="p-2 text-right whitespace-nowrap space-x-1">
-                <button v-if="canManage" class="btn-secondary" @click="openAdvance(c)">Donner une avance</button>
-                <button v-if="(c.pending_collections || c.advances || c.expenses) && canManage" class="btn-primary" @click="openRemit(c)">{{ c.cash_in_hand >= 0 ? 'Recevoir l\'argent' : 'Rembourser le livreur' }}</button>
-                <button v-else-if="c.parcels_in_hand && canManage" class="btn-primary" @click="openRemit(c)">Recevoir les colis</button>
-              </td>
-            </tr>
-            <tr v-if="cash && !visibleCouriers.length"><td colspan="7" class="p-4 text-center text-gray-500">Aucun livreur à afficher.</td></tr>
-          </tbody>
-        </table>
-      </div>
+      </section>
 
       <div class="card overflow-x-auto">
         <div class="flex flex-wrap items-end gap-2 p-4 border-b">
@@ -179,7 +259,7 @@
     <template v-if="tab === 'merchants'">
       <p v-if="period.key !== 'all'" class="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-900">📅 Seulement l'argent des courses {{ periodLabel }} : « Préparer le paiement » ne paie que ces courses.</p>
       <p class="text-sm text-gray-600">
-        « Disponible » = argent arrivé en caisse, prêt à être payé à le client. « En attente » = courses livrées dont l'argent est encore chez un livreur.
+        « Disponible » = argent arrivé en caisse, prêt à être payé au client. « En attente » = courses livrées dont l'argent est encore chez un livreur.
       </p>
       <div class="card p-3 flex flex-wrap items-end gap-3">
         <div class="flex-1 min-w-[12rem]">
@@ -594,7 +674,8 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import Modal from '../../components/Modal.vue'
-import StatCard from '../../components/StatCard.vue'
+import DeliveryDatePicker from '../../components/finance/DeliveryDatePicker.vue'
+import CourierCashDetail from '../../components/finance/CourierCashDetail.vue'
 import LedgerTable from '../../components/LedgerTable.vue'
 import PayoutBadge from '../../components/PayoutBadge.vue'
 import PayForm from '../../components/PayForm.vue'
@@ -632,12 +713,19 @@ const PERIODS = [
   { key: 'month', label: 'Ce mois' }, { key: 'all', label: 'Tout' }, { key: 'custom', label: 'Choisir…' },
 ]
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
+// Par défaut : argent chez les livreurs sur aujourd'hui ; soldes des e-commerçants sur toutes les dates (paiement complet)
+const DEFAULT_PERIOD = (route.query.tab || 'cash') === 'cash' ? 'today' : 'all'
 const period = reactive(DATE_RE.test(route.query.du || '')
   ? { key: 'custom', from: route.query.du, to: DATE_RE.test(route.query.au || '') ? route.query.au : route.query.du }
-  : { key: PERIOD_PRESETS[route.query.periode] ? route.query.periode : 'all', from: '', to: '' })
+  : { key: PERIOD_PRESETS[route.query.periode] ? route.query.periode : DEFAULT_PERIOD, from: '', to: '' })
 if (period.key !== 'custom') Object.assign(period, { from: PERIOD_PRESETS[period.key].from(), to: PERIOD_PRESETS[period.key].to() })
 const shortDay = (d) => new Date(`${d}T12:00:00`).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
 const dayLabel = (d) => `${new Date(`${d}T12:00:00`).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}${d === shift(0) ? ' (aujourd\'hui)' : ''}`
+// Date choisie en clair, sous l'en-tête « Date choisie » : « aujourd'hui, jeu. 5 nov. », « du 30 oct. au 5 nov. »
+const chosenDate = computed(() => {
+  if (period.from === period.to) return period.from === shift(0) ? `aujourd'hui, ${dayLabel(period.from).replace(' (aujourd\'hui)', '')}` : dayLabel(period.from)
+  return `du ${shortDay(period.from)} au ${shortDay(period.to)}`
+})
 const periodLabel = computed(() => {
   if (period.key === 'all') return 'toutes les dates'
   if (period.from === period.to) return `du ${dayLabel(period.from)}`
@@ -646,13 +734,29 @@ const periodLabel = computed(() => {
 const payLabel = computed(() => (period.from === period.to ? `le ${shortDay(period.from)}` : 'la période'))
 const periodParams = () => (period.key === 'all' ? {} : { from: period.from, to: period.to })
 const inPeriod = (d) => period.key === 'all' || (d >= period.from && d <= period.to)
-const periodAmount = (c) => c.days.filter((d) => inPeriod(d.day)).reduce((n, d) => n + d.amount, 0)
+const periodAmount = (c) => c.days.filter((d) => d.day && inPeriod(d.day)).reduce((n, d) => n + d.amount, 0)
+const periodCount = (c) => c.days.filter((d) => d.day && inPeriod(d.day)).reduce((n, d) => n + (d.count || 0), 0)
+const countLabel = (n) => `${n} course${n > 1 ? 's' : ''}`
+// « sur 4 dates », « seulement le 5 nov. », « avances et frais »
+function spreadLabel(c) {
+  const dated = c.days.filter((d) => d.day)
+  if (!dated.length) return c.advances || c.expenses ? 'avances et frais' : ''
+  if (dated.length === 1) return `seulement ${dated[0].day === shift(0) ? 'aujourd\'hui' : `le ${shortDay(dated[0].day)}`}`
+  return `sur ${dated.length} dates`
+}
+// Lignes de livreurs dépliées (détail par date)
+const opened = ref(new Set())
+function toggleCourier(c) {
+  const next = new Set(opened.value)
+  next.has(c.courier_id) ? next.delete(c.courier_id) : next.add(c.courier_id)
+  opened.value = next
+}
 
 function syncPeriodQuery() {
   const query = { ...route.query }
   delete query.periode; delete query.du; delete query.au
   if (period.key === 'custom') Object.assign(query, { du: period.from, au: period.to })
-  else if (period.key !== 'all') query.periode = period.key
+  else if (period.key !== DEFAULT_PERIOD) query.periode = period.key
   router.replace({ query })
 }
 function choosePeriod(key) {
@@ -698,6 +802,11 @@ const visibleCouriers = computed(() => (cash.value?.data || []).filter((c) => (!
   && (!filters.search || norm(`${c.name} ${c.phone}`).includes(norm(filters.search)))))
 const visibleMerchants = computed(() => merchantBalances.value.filter((m) => !filters.merchant || norm(m.business_name).includes(norm(filters.merchant))))
 const visiblePayouts = computed(() => payouts.value.filter((p) => !filters.payout || norm(`${p.reference} ${p.merchant.business_name}`).includes(norm(filters.payout))))
+const couriersWithMoney = computed(() => (cash.value?.data || []).filter((c) => c.cash_in_hand > 0).length)
+const visibleTotals = computed(() => ({
+  period: visibleCouriers.value.reduce((n, c) => n + periodAmount(c), 0),
+  due: visibleCouriers.value.reduce((n, c) => n + Math.max(0, c.cash_in_hand), 0),
+}))
 const alertText = computed(() => {
   const a = cash.value?.alert
   if (!a) return ''
@@ -904,7 +1013,7 @@ async function cancelAdvance(a) {
   }
 }
 
-async function openRemit(courier) {
+async function openRemit(courier, all = false) {
   const { data } = await http.get(`/finance/couriers/${courier.courier_id}/collections`)
   Object.assign(remit, {
     open: true,
@@ -916,7 +1025,7 @@ async function openRemit(courier) {
     parcels: data.parcels || [],
     returned: [],
     // Caisse filtrée sur des dates : seules les courses de ces dates sont cochées au départ
-    selected: data.data.filter((c) => !c.delivery_day || inPeriod(c.delivery_day)).map((c) => c.id),
+    selected: data.data.filter((c) => all || !c.delivery_day || inPeriod(c.delivery_day)).map((c) => c.id),
     amount_received: 0,
     notes: '',
     error: '',
