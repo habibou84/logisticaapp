@@ -293,7 +293,7 @@ class FinanceController extends Controller
         $this->authorizeStaff($request, manage: true);
         $data = $request->validate(['reason' => ['required', 'string', 'max:255']], [], ['reason' => 'raison']);
 
-        $this->cashDesk->cancel($request->user(), $remittance, $data['reason']);
+        $remittance = $this->cashDesk->cancel($request->user(), $remittance, $data['reason']);
         $this->journal->record($request->user(), $remittance->company_id, 'remittance_cancelled',
             ($remittance->courier?->user?->name ?? 'Livreur').' · '.$remittance->reference().' · « '.$data['reason'].' »',
             ['courier_id' => $remittance->courier_id, 'amount' => -$remittance->amount_received, 'reference' => $remittance->reference()]);

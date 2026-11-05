@@ -91,20 +91,24 @@ class CashDesk
      */
     public function cancel(User $actor, CourierRemittance $remittance, string $reason): CourierRemittance
     {
-        if ($remittance->cancelled_at !== null) {
-            throw new BusinessRuleException('Ce versement est déjà annulé.', 'remittance');
-        }
-        if (! $remittance->received_at->isToday()) {
-            throw new BusinessRuleException('Un versement ne s\'annule que le jour même. Pour corriger, faites une prime ou une retenue.', 'remittance');
-        }
-        if (self::closedAfter($remittance->company_id, $remittance->received_at)) {
-            throw new BusinessRuleException('La caisse a déjà été clôturée avec ce versement. Pour corriger, faites une prime ou une retenue.', 'remittance');
-        }
-
         return DB::transaction(function () use ($actor, $remittance, $reason) {
+            // Contrôles faits sous verrou : deux annulations (ou une annulation et un paiement) en même temps
+            // ne passent pas toutes les deux
+            $remittance = CourierRemittance::query()->lockForUpdate()->findOrFail($remittance->id);
+            if ($remittance->cancelled_at !== null) {
+                throw new BusinessRuleException('Ce versement est déjà annulé.', 'remittance');
+            }
+            if (! $remittance->received_at->isToday()) {
+                throw new BusinessRuleException('Un versement ne s\'annule que le jour même. Pour corriger, faites une prime ou une retenue.', 'remittance');
+            }
+            if (self::closedAfter($remittance->company_id, $remittance->received_at)) {
+                throw new BusinessRuleException('La caisse a déjà été clôturée avec ce versement. Pour corriger, faites une prime ou une retenue.', 'remittance');
+            }
+
             $collections = CashCollection::where('remittance_id', $remittance->id)->lockForUpdate()->get();
-            $paidOut = MerchantLedgerEntry::whereIn('order_id', $collections->pluck('order_id'))
-                ->where('type', LedgerEntryType::CodCredit)->whereNotNull('payout_id')->exists();
+            $credits = MerchantLedgerEntry::whereIn('order_id', $collections->pluck('order_id'))
+                ->where('type', LedgerEntryType::CodCredit)->lockForUpdate()->get();
+            $paidOut = $credits->contains(fn (MerchantLedgerEntry $e) => $e->payout_id !== null);
             if ($paidOut) {
                 throw new BusinessRuleException('Un e-commerçant a déjà un paiement préparé ou fait avec cet argent : annulez d\'abord ce paiement.', 'remittance');
             }

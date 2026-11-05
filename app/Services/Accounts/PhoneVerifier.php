@@ -12,6 +12,7 @@ use App\Services\Messaging\MessagingException;
 use App\Support\PhoneNumber;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -34,8 +35,11 @@ class PhoneVerifier
 
     public const SMS_COOLDOWN_SECONDS = 60;
 
-    // Par numéro et par heure : demandes de vérification, SMS envoyés
+    // Par numéro et par heure : demandes de vérification (par adresse IP, pour qu'un inconnu ne bloque pas le titulaire,
+    // et toutes adresses confondues, plus large), SMS envoyés
     public const MAX_STARTS_PER_HOUR = 5;
+
+    public const MAX_STARTS_PER_HOUR_ALL_IPS = 20;
 
     public const MAX_SMS_PER_HOUR = 3;
 
@@ -60,8 +64,9 @@ class PhoneVerifier
     {
         $phone = PhoneNumber::normalize($phone) ?? $phone;
 
-        $recent = PhoneVerification::where('phone', $phone)->where('created_at', '>', now()->subHour())->count();
-        if ($recent >= self::MAX_STARTS_PER_HOUR) {
+        $recent = PhoneVerification::where('phone', $phone)->where('created_at', '>', now()->subHour());
+        $fromIp = (clone $recent)->when($ip !== null, fn ($q) => $q->where('ip', $ip), fn ($q) => $q->whereNull('ip'))->count();
+        if ($fromIp >= self::MAX_STARTS_PER_HOUR || $recent->count() >= self::MAX_STARTS_PER_HOUR_ALL_IPS) {
             throw new BusinessRuleException('Trop de demandes pour ce numéro. Réessayez dans une heure.', 'phone');
         }
 
@@ -235,13 +240,23 @@ class PhoneVerifier
         $verification = PhoneVerification::where('company_id', $company->id)->where('whatsapp_code', $m[1])
             ->pending()->latest('id')->first();
 
+        // Codes essayés au hasard depuis un même numéro : 10 par heure au plus (code inconnu ou d'un autre numéro)
+        $misses = 'wa-code-miss:'.hash('sha256', (string) PhoneNumber::normalize($from));
+        if ($verification === null || $verification->phone !== PhoneNumber::normalize($from)) {
+            Cache::add($misses, 0, now()->addHour());
+            if ((int) Cache::increment($misses) > self::MAX_WRONG_PER_HOUR) {
+                return 'Trop de codes non reconnus depuis ce numéro. Réessayez dans une heure.';
+            }
+        }
+
         if ($verification === null) {
             return "Ce code n'est plus valable (il expire au bout de ".self::TTL_MINUTES.' minutes). Recommencez depuis la page du site.';
         }
 
         if ($verification->phone !== PhoneNumber::normalize($from)) {
-            return 'Ce code a été demandé pour le numéro '.PhoneNumber::display($verification->phone)
-                .'. Envoyez-le depuis le WhatsApp de ce numéro, ou choisissez « Recevoir un code par SMS » sur la page.';
+            // Jamais le numéro lié au code : il ne se devine pas en envoyant des codes au hasard
+            return 'Ce code a été demandé pour un autre numéro que celui de ce WhatsApp. '
+                .'Envoyez le message depuis le WhatsApp du numéro saisi sur le site.';
         }
 
         // Mot de passe oublié : le message a pu être envoyé à la demande d'un escroc (« envoyez ce message pour

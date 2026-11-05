@@ -84,8 +84,15 @@ class AuthController extends Controller
         // l'utilisateur de la requête dès maintenant
         request()->setUserResolver(fn () => $user);
 
+        // Équipe de l'entreprise (caisse, dispatch, administrateurs) : 7 jours ; livreurs et clients : la durée par
+        // défaut (30 jours)
+        $expires = match (true) {
+            $user->merchant_id === null && ! $user->isCourier() => now()->addDays(7),
+            default => null,
+        };
+
         return [
-            'token' => $user->createToken($device)->plainTextToken,
+            'token' => $user->createToken($device, ['*'], $expires)->plainTextToken,
             'token_type' => 'Bearer',
             'user' => UserResource::make($user->load(['company', 'merchant', 'courier']))->withPermissions(),
         ];

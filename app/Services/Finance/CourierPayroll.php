@@ -262,7 +262,9 @@ class CourierPayroll
             $compensated = $method === self::COMPENSATION;
 
             if ($compensated) {
-                $due = app(CourierCash::class)->balance($payout->courier)['due'];
+                // Livreur verrouillé : deux fiches gardées en même temps sur le même encaissé ne passent pas toutes les deux
+                $courier = Courier::query()->lockForUpdate()->findOrFail($payout->courier_id);
+                $due = app(CourierCash::class)->balance($courier)['due'];
                 if ($payout->amount <= 0) {
                     throw new BusinessRuleException('Rien à garder sur l\'encaissé : le montant de la fiche n\'est pas positif.', 'method');
                 }

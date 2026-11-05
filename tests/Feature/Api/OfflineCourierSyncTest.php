@@ -50,6 +50,8 @@ class OfflineCourierSyncTest extends TestCase
 
     public function test_an_offline_delivery_is_applied_once_at_its_real_time(): void
     {
+        // Midi : les heures passées restent dans la journée de livraison, quelle que soit l'heure du test
+        $this->travelTo(today()->setTime(12, 0));
         $order = $this->outForDelivery();
         // Parti en livraison il y a 3 heures, livré hors connexion il y a 2 heures
         $order->events()->update(['created_at' => now()->subHours(3)]);
@@ -80,6 +82,7 @@ class OfflineCourierSyncTest extends TestCase
     /** Audit n° 2, point 11 : l'heure déclarée ne remonte pas avant le départ en livraison */
     public function test_an_offline_action_cannot_be_dated_before_the_last_step(): void
     {
+        $this->travelTo(today()->setTime(12, 0));
         $this->freezeSecond();
         $order = $this->outForDelivery();
         $order->events()->update(['created_at' => now()->subHour()->startOfSecond()]);

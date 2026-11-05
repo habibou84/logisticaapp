@@ -122,7 +122,10 @@ class MerchantSignupTest extends TestCase
         $this->getJson("/api/v1/verifications/{$token}")->assertJsonPath('data.status', 'pending')->assertJsonMissingPath('session');
 
         // Le même message envoyé depuis un autre numéro ne vaut rien
-        $this->assertStringContainsString('demandé pour le numéro 07 12 34 56 78', $this->whatsapp('+2250511111111', $text));
+        // Audit n° 2, point 26 : le robot ne donne jamais le numéro lié au code
+        $answer = $this->whatsapp('+2250511111111', $text);
+        $this->assertStringContainsString('demandé pour un autre numéro', $answer);
+        $this->assertStringNotContainsString('07 12 34 56 78', $answer);
         $this->assertFalse(Merchant::where('phone', self::PHONE)->exists());
 
         $reply = $this->whatsapp(self::PHONE, $text);
@@ -238,6 +241,8 @@ class MerchantSignupTest extends TestCase
             PhoneVerification::create([
                 'company_id' => $this->company->id, 'purpose' => 'signup', 'phone' => self::PHONE,
                 'token_hash' => hash('sha256', (string) $i), 'whatsapp_code' => '12345'.$i, 'expires_at' => now()->addMinutes(30),
+                // Audit n° 2, point 22 : la limite compte les demandes de la même adresse IP
+                'ip' => '127.0.0.1',
             ]);
         }
 

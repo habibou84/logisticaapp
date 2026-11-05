@@ -23,6 +23,7 @@ use OpenSpout\Reader\CSV\Options as CsvOptions;
 use OpenSpout\Reader\CSV\Reader as CsvReader;
 use OpenSpout\Reader\XLSX\Reader as XlsxReader;
 use Throwable;
+use ZipArchive;
 
 /**
  * Import de courses depuis un fichier CSV ou Excel (une ligne = une course).
@@ -32,6 +33,13 @@ use Throwable;
 class OrderImporter
 {
     public const MAX_ROWS = 500;
+
+    // Fichier piégé (bombe zip, lignes vides par millions, colonnes sans fin) : lecture bornée
+    public const MAX_LINES = 2000;
+
+    public const MAX_COLUMNS = 100;
+
+    public const MAX_UNZIPPED_BYTES = 50 * 1024 * 1024;
 
     // En-tête normalisé (minuscules, sans accents ni espaces) → champ
     private const COLUMNS = [
@@ -142,6 +150,29 @@ class OrderImporter
         return $result;
     }
 
+    /** Excel est un zip : taille décompressée et nombre de fichiers contrôlés avant la lecture */
+    private static function ensureReasonableXlsx(string $path): void
+    {
+        $zip = new ZipArchive;
+        if ($zip->open($path) !== true) {
+            throw new BusinessRuleException('Fichier illisible : vérifiez qu\'il s\'agit bien d\'un fichier Excel (.xlsx).', 'file');
+        }
+        try {
+            if ($zip->numFiles > 1000) {
+                throw new BusinessRuleException('Fichier Excel refusé : contenu anormal.', 'file');
+            }
+            $size = 0;
+            for ($i = 0; $i < $zip->numFiles; $i++) {
+                $size += (int) ($zip->statIndex($i)['size'] ?? 0);
+                if ($size > self::MAX_UNZIPPED_BYTES) {
+                    throw new BusinessRuleException('Fichier Excel trop volumineux une fois ouvert : enregistrez seulement vos courses.', 'file');
+                }
+            }
+        } finally {
+            $zip->close();
+        }
+    }
+
     /**
      * @return array<int, array<string, mixed>> lignes indexées par numéro de ligne du fichier
      */
@@ -150,6 +181,7 @@ class OrderImporter
         $extension = strtolower($extension);
 
         if ($extension === 'xlsx') {
+            self::ensureReasonableXlsx($path);
             $reader = new XlsxReader;
         } elseif (in_array($extension, ['csv', 'txt'], true)) {
             $reader = new CsvReader(new CsvOptions(FIELD_DELIMITER: $this->delimiter($path)));
@@ -166,6 +198,12 @@ class OrderImporter
                 $line = 0;
                 foreach ($sheet->getRowIterator() as $row) {
                     $line++;
+                    if ($line > self::MAX_LINES) {
+                        throw new BusinessRuleException('Fichier trop long : au plus '.self::MAX_LINES.' lignes (lignes vides comprises).', 'file');
+                    }
+                    if ($row->getNumCells() > self::MAX_COLUMNS) {
+                        throw new BusinessRuleException('Trop de colonnes : au plus '.self::MAX_COLUMNS.'.', 'file');
+                    }
                     $values = $row->toArray();
 
                     if ($header === null) {

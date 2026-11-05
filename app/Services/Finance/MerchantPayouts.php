@@ -135,6 +135,12 @@ class MerchantPayouts
         return DB::transaction(function () use ($actor, $payout, $method, $reference) {
             $payout = MerchantPayout::query()->lockForUpdate()->findOrFail($payout->id);
             $this->ensureDraft($payout);
+            // Comme pour le paiement groupé : jamais vers un moyen de paiement qui attend d'être vérifié
+            $methods = $payout->merchant->paymentMethods()->get();
+            $preferred = $methods->firstWhere('is_preferred', true) ?? $methods->first();
+            if ($preferred !== null && ! $preferred->isVerified()) {
+                throw new BusinessRuleException('Le moyen de paiement de cet e-commerçant n\'est pas encore vérifié : vérifiez-le avant de payer.', 'method');
+            }
 
             $payout->forceFill([
                 'status' => PayoutStatus::Paid,

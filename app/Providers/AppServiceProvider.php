@@ -90,6 +90,9 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('shop-order', fn (Request $request) => [
             Limit::perMinute(5)->by('shop-min:'.$request->ip()),
             Limit::perHour(30)->by('shop-hour:'.$request->ip()),
+            // Par boutique, toutes adresses IP confondues : une boutique ne se noie pas sous de fausses commandes
+            Limit::perMinute(20)->by('shop-all-min:'.mb_strtolower((string) $request->route('slug'))),
+            Limit::perHour(200)->by('shop-all-hour:'.mb_strtolower((string) $request->route('slug'))),
         ]);
 
         RateLimiter::for('verification-sms', fn (Request $request) => Limit::perHour(10)->by('sms:'.$request->ip()));

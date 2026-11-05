@@ -417,6 +417,15 @@ class OrderActionController extends Controller
     {
         Gate::authorize('view', $order);
         abort_unless($attachment->order_id === $order->id, 404);
+
+        // Pièce jointe d'une étape interne : jamais pour le client ni pour un autre livreur
+        $user = request()->user();
+        if ($user->merchant_id !== null || $user->isCourier()) {
+            $event = $attachment->event;
+            abort_if($event !== null && ! $event->visible_to_merchant
+                && ! ($event->actor_type === 'user' && (int) $event->actor_id === $user->id), 404);
+        }
+
         if ($request->boolean('original')) {
             abort_unless($request->user()->merchant_id === null && $attachment->original_path !== null, 404);
 

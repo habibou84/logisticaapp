@@ -82,7 +82,10 @@ return [
                     'scheme' => env('REVERB_SCHEME', 'https'),
                     'useTLS' => env('REVERB_SCHEME', 'https') === 'https',
                 ],
-                'allowed_origins' => ['*'],
+                // Toutes origines par défaut : les canaux privés exigent le jeton de connexion (pas de cookie), et les
+                // applications natives et domaines personnalisés des entreprises s'y connectent. Liste réglable :
+                // REVERB_ALLOWED_ORIGINS=jibiat.com,*.jibiat.com
+                'allowed_origins' => array_values(array_filter(array_map('trim', explode(',', (string) env('REVERB_ALLOWED_ORIGINS', '*'))))),
                 'ping_interval' => env('REVERB_APP_PING_INTERVAL', 60),
                 'activity_timeout' => env('REVERB_APP_ACTIVITY_TIMEOUT', 30),
                 'max_connections' => env('REVERB_APP_MAX_CONNECTIONS'),

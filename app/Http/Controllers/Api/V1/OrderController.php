@@ -292,11 +292,16 @@ class OrderController extends Controller
 
     public static function loadDetailRelations(Request $request): array
     {
-        $isMerchant = $request->user()?->merchant_id !== null;
+        $user = $request->user();
+        $isMerchant = $user?->merchant_id !== null;
+        // Livreur : l'historique partagé avec l'e-commerçant et ses propres notes, pas les notes internes de l'équipe
+        $isCourier = ! $isMerchant && $user?->isCourier() === true;
 
         return [
             ...self::LIST_RELATIONS,
             'events' => fn ($q) => $q->when($isMerchant, fn ($q) => $q->where('visible_to_merchant', true))
+                ->when($isCourier, fn ($q) => $q->where(fn ($q) => $q->where('visible_to_merchant', true)
+                    ->orWhere(fn ($q) => $q->where('actor_type', 'user')->where('actor_id', $user->id))))
                 ->with(['incidentReason', 'attachments'])
                 ->orderBy('id'),
             'assignments' => fn ($q) => $q->with(['courier.user', 'assignedBy'])->orderBy('id'),
