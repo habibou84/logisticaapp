@@ -26,6 +26,8 @@ class RatingSettings
         'recipient_rating' => false,
         // Note basse (≤ ce nombre d'étoiles) : motif demandé et responsable prévenu
         'reason_below' => 2,
+        // Motifs proposés au client dans la liste déroulante (vide : tous)
+        'client_reasons' => [],
         // Course où le livreur a signalé un problème : poids de la note du client
         'incident_weight' => 0.5,
         // Ce que voit le livreur
@@ -55,6 +57,19 @@ class RatingSettings
     }
 
     /**
+     * Motifs proposés au client : ceux choisis par l'administrateur, sinon tous.
+     *
+     * @param  array<string, mixed>  $s
+     * @return array<string, string>
+     */
+    public static function clientReasons(array $s): array
+    {
+        $chosen = array_intersect_key(RatingCriteria::REASONS, array_flip((array) ($s['client_reasons'] ?? [])));
+
+        return $chosen ?: RatingCriteria::REASONS;
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public static function rules(): array
@@ -72,6 +87,8 @@ class RatingSettings
             'rating_settings.whatsapp_invite' => ['nullable', 'boolean'],
             'rating_settings.recipient_rating' => ['nullable', 'boolean'],
             'rating_settings.reason_below' => ['nullable', 'integer', 'between:0,4'],
+            'rating_settings.client_reasons' => ['nullable', 'array'],
+            'rating_settings.client_reasons.*' => ['in:'.implode(',', array_keys(RatingCriteria::REASONS))],
             'rating_settings.incident_weight' => ['nullable', 'numeric', 'between:0,1'],
             'rating_settings.courier_sees_score' => ['nullable', 'boolean'],
             'rating_settings.courier_sees_comments' => ['nullable', 'boolean'],

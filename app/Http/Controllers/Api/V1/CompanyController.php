@@ -15,6 +15,7 @@ use App\Services\Finance\Vat;
 use App\Services\Labels\LabelSettings;
 use App\Services\Orders\ActivityOptions;
 use App\Services\Orders\DeliveryDayRule;
+use App\Services\Orders\ShipmentSettings;
 use App\Services\Photos\PhotoSettings;
 use App\Services\Ratings\RatingSettings;
 use App\Services\Reports\DashboardSettings;
@@ -50,6 +51,9 @@ class CompanyController extends Controller
         }
         if (array_key_exists('destination_settings', $data)) {
             $data['destination_settings'] = DestinationSettings::clean((array) ($data['destination_settings'] ?? []));
+        }
+        if (array_key_exists('shipment_settings', $data)) {
+            $data['shipment_settings'] = ShipmentSettings::clean((array) ($data['shipment_settings'] ?? []));
         }
         if (array_key_exists('department_settings', $data)) {
             $data['department_settings'] = DepartmentSettings::clean((array) ($data['department_settings'] ?? []));

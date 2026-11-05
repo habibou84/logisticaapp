@@ -22,6 +22,8 @@ class CourierActivityTest extends TestCase
     {
         parent::setUp();
         Queue::fake();
+        // Heure fixe en journée : le soir, une course passe au lendemain (fin de journée, fuseau)
+        $this->travelTo(now()->setTime(10, 0));
         $this->buildWorld();
     }
 

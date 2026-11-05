@@ -329,13 +329,39 @@
         </div>
       </section>
 
+      <!-- Envoi (distribution, MAD) : types de pli proposés au client, décompte du forfait -->
+      <section v-if="form.shipment_settings" id="envoi" class="card p-4 space-y-3 scroll-mt-20">
+        <div>
+          <h2 class="font-semibold">L'envoi des clients (distribution et MAD)</h2>
+          <p class="text-sm text-gray-600">Quand le client envoie un pli, il peut dire ce que c'est. Il choisit dans cette liste ; « Autre » lui demande de préciser.</p>
+        </div>
+        <div>
+          <p class="label">Types de pli proposés</p>
+          <div class="flex flex-wrap gap-2">
+            <span v-for="(k, i) in form.shipment_settings.pli_kinds" :key="`${k}-${i}`" class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-sm">
+              {{ k }}
+              <button type="button" class="text-gray-500 hover:text-red-600" :aria-label="`Retirer ${k}`" @click="form.shipment_settings.pli_kinds.splice(i, 1)">✕</button>
+            </span>
+          </div>
+          <form class="mt-2 flex gap-2" @submit.prevent="addPliKind">
+            <input v-model="newPliKind" maxlength="60" class="input flex-1" placeholder="Ex. : Faire-part, Devis, Badge" aria-label="Nouveau type de pli">
+            <button type="submit" class="btn-secondary" :disabled="!newPliKind.trim()">Ajouter</button>
+          </form>
+          <p class="text-xs text-gray-500 mt-1">Liste vide : la liste par défaut revient (Facture, Courrier, Carte d'invitation…).</p>
+        </div>
+        <label class="flex items-start gap-2 text-sm">
+          <input v-model="form.shipment_settings.forfait_usage" type="checkbox" class="mt-1">
+          <span>Montrer au client le décompte de son forfait<span class="block text-gray-500">Courses utilisées sur les courses incluses (ex. « 12 / 50 »), sur son accueil et quand il crée une course, et alertes à 80 % et 100 %. Décoché : il voit seulement le nombre d'envois du mois.</span></span>
+        </label>
+      </section>
+
       <SaveBar :dirty="dirty" :saving="saving" :error="error" @save="save" @reset="reset" />
     </template>
   </SettingsPage>
 </template>
 
 <script setup>
-import { nextTick, watch } from 'vue'
+import { nextTick, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import SettingsPage from '../../../components/settings/SettingsPage.vue'
 import SaveBar from '../../../components/settings/SaveBar.vue'
@@ -349,8 +375,16 @@ const { form, dirty, saving, error, save, reset } = useCompanySettings([
   'mission_acceptance', 'unreachable_minutes', 'late_pickup_alert_minutes', 'courier_available_alert',
   'auto_delivery', 'auto_delivery_max_cod', 'same_courier_delivery', 'cutoff_by_day', 'internal_delays',
   'activity_options', 'label_settings', 'photo_settings', 'delivery_day_rules', 'dashboard_settings',
-  'reschedule_evening', 'reschedule_evening_time', 'reschedule_no_answer',
+  'reschedule_evening', 'reschedule_evening_time', 'reschedule_no_answer', 'shipment_settings',
 ])
+// Types de pli : ajout d'un type (sans doublon)
+const newPliKind = ref('')
+function addPliKind() {
+  const kind = newPliKind.value.trim()
+  const list = form.value.shipment_settings.pli_kinds
+  if (kind && !list.some((k) => k.toLowerCase() === kind.toLowerCase())) list.push(kind)
+  newPliKind.value = ''
+}
 // Lien d'un bandeau (ex. « Activer » le ramassage automatique) : le bon réglage à l'écran
 const route = useRoute()
 watch(form, async (value) => {

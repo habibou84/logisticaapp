@@ -78,6 +78,8 @@ class Order extends Model
         'shipment_type',
         // Plis ou chèques remis ensemble, et envois facturés (le nombre de plis, ou 1 à la course)
         'shipment_quantity',
+        // Pli : ce que c'est (facture, courrier, carte d'invitation…)
+        'pli_kind',
         'billing_units',
         'delivery_delay',
         'weight_kg',
@@ -185,6 +187,10 @@ class Order extends Model
                 $order->status_changed_at = now();
                 $order->unassigned_alerted_at = null;
                 $order->unassigned_escalated_at = null;
+            }
+            // Ce qu'est le pli : seulement pour un pli
+            if ($order->shipment_type !== ShipmentType::Pli) {
+                $order->pli_kind = null;
             }
         });
     }

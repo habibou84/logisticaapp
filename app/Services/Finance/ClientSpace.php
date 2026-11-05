@@ -18,6 +18,7 @@ use App\Models\User;
 use App\Notifications\ClientBillingAlert;
 use App\Services\Assignment\CourierPlanning;
 use App\Services\Messaging\Messenger;
+use App\Services\Orders\ShipmentSettings;
 use App\Support\Money;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Log;
@@ -256,6 +257,10 @@ class ClientSpace
             $plan = BillingPlan::withoutGlobalScopes()->find($order->billing_plan_id);
             $merchant = $order->merchant;
             if ($plan === null || ! $plan->formula->hasForfait() || $plan->included_quantity <= 0) {
+                return;
+            }
+            // Décompte du forfait caché au client (Réglages › Courses) : pas d'alerte de seuil non plus
+            if (! app(ShipmentSettings::class)->for($order->merchant?->company)['forfait_usage']) {
                 return;
             }
 

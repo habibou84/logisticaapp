@@ -87,6 +87,7 @@ class ClientSpaceTest extends TestCase
 
     public function test_the_client_sees_its_forfait_of_the_month(): void
     {
+        $this->company->update(['shipment_settings' => ['forfait_usage' => true]]);
         $plan = $this->plan();
         foreach (range(1, 6) as $i) {
             $this->send()->assertCreated();
@@ -109,6 +110,7 @@ class ClientSpaceTest extends TestCase
     public function test_forfait_alerts_at_80_then_100_percent_once(): void
     {
         Notification::fake();
+        $this->company->update(['shipment_settings' => ['forfait_usage' => true]]);
         $this->plan();
 
         foreach (range(1, 3) as $i) {
@@ -122,6 +124,56 @@ class ClientSpaceTest extends TestCase
         $this->send()->assertCreated(); // au-delà : déjà prévenu
         Notification::assertSentToTimes($this->merchantUser, ClientBillingAlert::class, 2);
         Notification::assertSentTo($this->merchantUser, ClientBillingAlert::class, fn ($n) => $n->title === '📦 Forfait du mois épuisé');
+    }
+
+    public function test_forfait_count_is_hidden_from_the_client_by_default(): void
+    {
+        Notification::fake();
+        $this->plan();
+        foreach (range(1, 5) as $i) {
+            $this->send()->assertCreated();
+        }
+
+        Sanctum::actingAs($this->merchantUser);
+        $usage = $this->getJson('/api/v1/merchant/space')->assertOk()->json('data.plans.0');
+        // Ni décompte ni pourcentage ; le nombre d'envois et l'estimation restent
+        $this->assertSame([null, null, null, null, null], [$usage['included'], $usage['used'], $usage['remaining'], $usage['over'], $usage['percent']]);
+        $this->assertSame(5, $usage['orders']);
+        $this->assertSame(50000, $usage['estimate']);
+        // Pas d'alerte de seuil non plus
+        Notification::assertNotSentTo($this->merchantUser, ClientBillingAlert::class);
+    }
+
+    public function test_mad_course_declares_its_shipment_without_changing_the_billing(): void
+    {
+        $this->plan('mad_contract', ['courier_ids' => [$this->courierA->id]]);
+
+        $colis = $this->send(['activity' => 'mad', 'shipment_type' => null])->assertCreated()->json('data');
+        $plis = $this->send(['activity' => 'mad', 'shipment_type' => 'pli', 'shipment_quantity' => 12, 'pli_kind' => 'Carte d\'invitation'])->assertCreated()->json('data');
+
+        $this->assertSame('pli', $plis['package']['shipment_type']);
+        $this->assertSame(12, $plis['package']['shipment_quantity']);
+        $this->assertSame('Carte d\'invitation', $plis['package']['pli_kind']);
+        // Facturation MAD inchangée : une course, comme sans type d'envoi
+        $a = Order::find($colis['id']);
+        $b = Order::find($plis['id']);
+        $this->assertSame(1, (int) $b->billing_units);
+        $this->assertSame([$a->billing_basis, $a->billing_amount], [$b->billing_basis, $b->billing_amount]);
+
+        // Le type de pli ne reste que sur un pli
+        $cheque = $this->send(['activity' => 'mad', 'shipment_type' => 'cheque', 'pli_kind' => 'Facture'])->assertCreated()->json('data');
+        $this->assertNull($cheque['package']['pli_kind']);
+    }
+
+    public function test_pli_kinds_are_set_by_the_admin(): void
+    {
+        Sanctum::actingAs($this->admin);
+        $this->assertContains('Facture', $this->getJson("/api/v1/companies/{$this->company->id}")->json('data.shipment_settings.pli_kinds'));
+
+        $this->patchJson("/api/v1/companies/{$this->company->id}", ['shipment_settings' => ['pli_kinds' => [' Faire-part ', 'Devis', 'devis', ''], 'forfait_usage' => true]])->assertOk();
+        $settings = $this->company->fresh()->shipment_settings;
+        $this->assertSame(['Faire-part', 'Devis'], $settings['pli_kinds']);
+        $this->assertTrue($settings['forfait_usage']);
     }
 
     public function test_mad_client_sees_its_couriers_without_position(): void

@@ -127,6 +127,7 @@ const quantity = computed(() => {
   const p = props.order.package
   if (!p.shipment_type_label) return ''
   const n = p.shipment_quantity || 1
-  return `${n} ${p.shipment_type_label.toLowerCase()}${n > 1 && !p.shipment_type_label.endsWith('s') ? 's' : ''}`
+  const kind = p.shipment_type === 'pli' && p.pli_kind ? ` (${p.pli_kind.toLowerCase()})` : ''
+  return `${n} ${p.shipment_type_label.toLowerCase()}${n > 1 && !p.shipment_type_label.endsWith('s') ? 's' : ''}${kind}`
 })
 </script>

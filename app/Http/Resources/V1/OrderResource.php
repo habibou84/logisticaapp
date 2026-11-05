@@ -107,6 +107,8 @@ class OrderResource extends JsonResource
                 'shipment_type_label' => $this->shipment_type?->label(),
                 // Plis ou chèques remis ensemble (1 : un seul envoi)
                 'shipment_quantity' => (int) ($this->shipment_quantity ?? 1),
+                // Pli : ce que c'est (facture, courrier, carte d'invitation…)
+                'pli_kind' => $this->pli_kind,
                 'delivery_delay' => $this->delivery_delay?->value,
             ],
             // Distribution, MAD : rien à encaisser, la course passe sur la facture du mois

@@ -224,6 +224,27 @@ class CourierRatingTest extends TestCase
         $this->putJson("/api/v1/merchant/courier-preferences/{$this->courierA->id}", ['kind' => null])->assertOk()->assertJsonCount(0, 'data');
     }
 
+    public function test_the_client_picks_reasons_from_the_list_chosen_by_the_agency(): void
+    {
+        $order = $this->delivered();
+        Sanctum::actingAs($this->merchantUser);
+        // Par défaut : tous les motifs, dont les nouveaux
+        $reasons = array_column($this->getJson('/api/v1/ratings/criteria')->assertOk()->json('data.client_reasons'), 'label', 'value');
+        $this->assertSame('Ne rappelle jamais', $reasons['never_calls_back']);
+        $this->assertSame('Problème d\'hygiène', $reasons['hygiene']);
+
+        // Note correcte : un motif reste possible (facultatif)
+        $this->postJson("/api/v1/orders/{$order->id}/rating", ['stars' => 3, 'reasons' => ['always_late', 'no_answer']])->assertCreated()
+            ->assertJsonPath('data.reasons', ['always_late', 'no_answer']);
+
+        // L'agence choisit les motifs proposés
+        Sanctum::actingAs($this->admin);
+        $this->patchJson("/api/v1/companies/{$this->company->id}", ['rating_settings' => ['client_reasons' => ['indiscreet', 'distracted']]])->assertOk();
+        $this->patchJson("/api/v1/companies/{$this->company->id}", ['rating_settings' => ['client_reasons' => ['nope']]])->assertUnprocessable();
+        Sanctum::actingAs($this->merchantUser->refresh());
+        $this->assertSame(['indiscreet', 'distracted'], array_column($this->getJson('/api/v1/ratings/criteria')->json('data.client_reasons'), 'value'));
+    }
+
     public function test_rating_settings_are_saved(): void
     {
         Sanctum::actingAs($this->admin);

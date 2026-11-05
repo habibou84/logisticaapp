@@ -21,15 +21,23 @@
         </div>
       </div>
 
-      <div v-if="low">
-        <p class="m-label">Qu'est-ce qui n'est pas allé ? *</p>
-        <div class="flex flex-wrap gap-2">
+      <!-- Ce qui n'est pas allé : liste déroulante, chaque choix s'ajoute (obligatoire si la note est basse) -->
+      <div v-if="form.stars">
+        <label class="m-label" for="rating-reason">
+          Qu'est-ce qui n'est pas allé ?
+          <span v-if="low">*</span><span v-else class="font-normal text-slate-500">(facultatif)</span>
+        </label>
+        <select id="rating-reason" class="m-input" :value="''" @change="addReason($event)">
+          <option value="">{{ form.reasons.length ? 'Ajouter un autre motif…' : 'Choisir un motif…' }}</option>
+          <option v-for="c in reasonChoices" :key="c.value" :value="c.value">{{ c.label }}</option>
+        </select>
+        <div v-if="form.reasons.length" class="mt-2 flex flex-wrap gap-2">
           <button
-            v-for="c in reasonList" :key="c.value" type="button"
-            :class="['tap rounded-full px-3 py-1.5 text-sm ring-1', form.reasons.includes(c.value) ? 'bg-red-600 text-white ring-red-600' : 'bg-white ring-slate-300 text-slate-700']"
-            :aria-pressed="form.reasons.includes(c.value)" @click="toggle('reasons', c.value)"
+            v-for="r in form.reasons" :key="r" type="button"
+            class="tap inline-flex items-center gap-1 rounded-full bg-red-50 px-3 py-1.5 text-sm text-red-700 ring-1 ring-red-200"
+            :aria-label="`Retirer : ${reasonLabel(r)}`" @click="toggle('reasons', r)"
           >
-            {{ c.label }}
+            {{ reasonLabel(r) }} <span aria-hidden="true">✕</span>
           </button>
         </div>
       </div>
@@ -81,7 +89,16 @@ const low = computed(() => !!form.stars && form.stars <= (props.criteria.setting
 const choice = computed(() => !!props.criteria.settings?.client_choice)
 // Bons points selon l'activité : remise et décharge (distribution), présence (MAD)
 const goodPoints = computed(() => (props.criteria.client || []).filter((c) => (c.value !== 'handover' || props.activity === 'distribution') && (c.value !== 'presence' || props.activity === 'mad')))
-const reasonList = computed(() => (props.criteria.reasons || []).filter((c) => (c.value !== 'absent' || props.activity === 'mad') && (c.value !== 'wrong_person' || props.activity !== 'ecommerce')))
+// Motifs choisis par l'agence ; « absent » pour la MAD seulement, « autre personne » hors e-commerce
+const reasonList = computed(() => (props.criteria.client_reasons || props.criteria.reasons || []).filter((c) => (c.value !== 'absent' || props.activity === 'mad') && (c.value !== 'wrong_person' || props.activity !== 'ecommerce')))
+const reasonChoices = computed(() => reasonList.value.filter((c) => !form.reasons.includes(c.value)))
+const reasonLabel = (v) => (props.criteria.reasons || []).find((c) => c.value === v)?.label || v
+
+function addReason(event) {
+  const value = event.target.value
+  if (value && !form.reasons.includes(value)) form.reasons = [...form.reasons, value]
+  event.target.value = ''
+}
 
 watch(() => props.open, (open) => {
   if (!open) return
@@ -101,7 +118,7 @@ function submit() {
   emit('save', {
     stars: form.stars,
     criteria: low.value ? [] : form.criteria,
-    reasons: low.value ? form.reasons : [],
+    reasons: form.reasons,
     comment: form.comment || null,
   })
 }

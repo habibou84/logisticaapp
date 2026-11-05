@@ -12,6 +12,7 @@ use App\Services\Finance\Vat;
 use App\Services\Labels\LabelSettings;
 use App\Services\Orders\ActivityOptions;
 use App\Services\Orders\DeliveryDayRule;
+use App\Services\Orders\ShipmentSettings;
 use App\Services\Photos\PhotoSettings;
 use App\Services\Ratings\RatingSettings;
 use App\Services\Reports\DashboardSettings;
@@ -110,6 +111,8 @@ class CompanyResource extends JsonResource
             'vehicle_settings' => app(VehicleSettings::class)->for($this->resource),
             'department_settings' => app(DepartmentSettings::class)->company($this->resource),
             'destination_settings' => app(DestinationSettings::class)->for($this->resource),
+            // Envoi (distribution, MAD) : types de pli, décompte du forfait montré au client
+            'shipment_settings' => app(ShipmentSettings::class)->for($this->resource),
             'merchant_signup' => $this->merchant_signup,
             'weekly_report' => $this->weekly_report,
             'guide_videos' => $this->guide_videos,

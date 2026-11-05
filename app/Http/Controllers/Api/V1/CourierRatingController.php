@@ -39,6 +39,8 @@ class CourierRatingController extends Controller
 
         return response()->json(['data' => [
             ...RatingCriteria::all(),
+            // Liste déroulante du client : motifs choisis par l'administrateur
+            'client_reasons' => collect(RatingSettings::clientReasons($s))->map(fn ($label, $key) => ['value' => $key, 'label' => $label])->values(),
             'settings' => collect($s)->only(['client_course', 'client_edit_hours', 'client_mad_period', 'reason_below', 'client_choice', 'courier_sees_score', 'courier_sees_comments'])->all(),
         ]]);
     }

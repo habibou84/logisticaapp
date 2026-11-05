@@ -9,7 +9,8 @@
       <span v-if="plan.has_forfait" class="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">{{ plan.delivery_delay.replace('h', ' h') }}</span>
     </div>
 
-    <template v-if="plan.has_forfait">
+    <!-- Décompte du forfait : seulement si l'agence le montre (Réglages › Courses) -->
+    <template v-if="plan.has_forfait && plan.included != null">
       <div>
         <div class="flex justify-between text-sm">
           <span><strong class="text-lg">{{ plan.used }}</strong> / {{ plan.included }} {{ plan.unit_label }} inclus</span>
@@ -24,6 +25,7 @@
         </p>
       </div>
     </template>
+    <p v-else-if="plan.has_forfait" class="text-sm text-slate-600">{{ plan.orders }} envoi{{ plan.orders > 1 ? 's' : '' }} ce mois-ci, compris dans votre forfait.</p>
     <p v-else class="text-sm text-slate-600">{{ plan.orders }} envoi(s) ce mois-ci, au prix du délai choisi.</p>
 
     <RouterLink v-if="plan.supplements" to="/marchand/factures" class="flex justify-between text-sm">

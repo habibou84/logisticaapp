@@ -49,6 +49,11 @@ class ClientPricing
             return null;
         }
         $weight = isset($data['weight_kg']) && $data['weight_kg'] !== '' ? (float) $data['weight_kg'] : null;
+        // MAD : le type d'envoi et le nombre sont indiqués pour le livreur, la facturation ne change pas
+        $declared = ShipmentType::tryFrom((string) ($data['shipment_type'] ?? ''));
+        if ($activity === Activity::Mad) {
+            $data = [...$data, 'shipment_type' => null, 'shipment_quantity' => 1];
+        }
         $type = $this->type($data['shipment_type'] ?? null, $weight);
 
         // Lot ponctuel choisi sur la course (ou le seul lot ouvert d'un client sans contrat de distribution)
@@ -91,7 +96,9 @@ class ClientPricing
             $overage ??= ['label' => 'Abidjan', 'price' => (int) $plan->overage_price];
         }
 
-        return $this->result($plan, $deliveryZone, $basis, $amount, $label, $extraKg, $type, $delay, $overage, $units);
+        $result = $this->result($plan, $deliveryZone, $basis, $amount, $label, $extraKg, $type, $delay, $overage, $units);
+
+        return $activity === Activity::Mad ? [...$result, 'shipment_type' => $declared ?? $type] : $result;
     }
 
     /**

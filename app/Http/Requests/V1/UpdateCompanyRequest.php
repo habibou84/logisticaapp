@@ -11,6 +11,7 @@ use App\Services\Finance\Vat;
 use App\Services\Labels\LabelSettings;
 use App\Services\Orders\ActivityOptions;
 use App\Services\Orders\Reschedules;
+use App\Services\Orders\ShipmentSettings;
 use App\Services\Photos\PhotoSettings;
 use App\Services\Ratings\RatingSettings;
 use App\Services\Reports\DashboardSettings;
@@ -96,6 +97,7 @@ class UpdateCompanyRequest extends FormRequest
             ...VehicleSettings::rules(),
             ...DepartmentSettings::rules(),
             ...DestinationSettings::rules(),
+            ...ShipmentSettings::rules(),
             'merchant_signup' => ['sometimes', 'boolean'],
             'weekly_report' => ['sometimes', 'boolean'],
             'guide_videos' => ['sometimes', 'boolean'],

@@ -176,11 +176,11 @@
           />
           <AccountTile
             v-for="p in (space.showsBilled ? space.plans : [])" :key="`plan-${p.id}`"
-            icon="box" color="forfait" :tone="p.has_forfait && p.percent >= 80 ? 'amber' : 'violet'"
+            icon="box" color="forfait" :tone="counted(p) && p.percent >= 80 ? 'amber' : 'violet'"
             :label="p.has_forfait ? `Forfait ${p.activity === 'mad' ? 'MAD' : p.activity_label.toLowerCase()}` : p.formula_label"
-            :value="p.has_forfait ? `${p.used} / ${p.included}` : `${p.orders} envoi${p.orders > 1 ? 's' : ''}`"
-            :sub="p.has_forfait ? (p.over ? `${p.over} en plus du forfait` : `${p.unit_label} ce mois-ci`) : 'ce mois-ci'"
-            :percent="p.has_forfait ? p.percent : null"
+            :value="counted(p) ? `${p.used} / ${p.included}` : `${p.orders} envoi${p.orders > 1 ? 's' : ''}`"
+            :sub="counted(p) ? (p.over ? `${p.over} en plus du forfait` : `${p.unit_label} ce mois-ci`) : 'ce mois-ci'"
+            :percent="counted(p) ? p.percent : null"
             @click="sheet = { type: 'plan', plan: p }"
           />
           <AccountTile
@@ -259,6 +259,8 @@ import { ORDER_FILTERS, filterParams } from '../../utils/orderFilters'
 import { periodFromQuery, periodQuery } from '../../utils/periods'
 
 const auth = useAuthStore()
+// Décompte du forfait (utilisées / incluses) : seulement si l'agence le montre
+const counted = (p) => p.has_forfait && p.included !== null && p.included !== undefined
 const space = useClientSpaceStore()
 // Activité regardée (sélecteur en haut) : toutes les requêtes la suivent
 const scoped = (params = {}) => ({ ...params, activity: space.current || undefined })

@@ -18,12 +18,20 @@ class RatingCriteria
         'presence' => 'Présent aux horaires, disponible',
     ];
 
-    /** Note basse : motif */
+    /** Ce qui n'est pas allé (liste déroulante du client ; obligatoire si la note est basse) */
     public const REASONS = [
         'late' => 'En retard',
-        'rude' => 'Impoli',
-        'damaged' => 'Colis abîmé',
+        'always_late' => 'Toujours en retard',
+        'not_on_time' => 'Ne livre pas à temps',
         'unreachable' => 'Injoignable',
+        'no_answer' => 'Ne décroche pas',
+        'never_calls_back' => 'Ne rappelle jamais',
+        'rude' => 'Impoli',
+        'discourteous' => 'Discourtois',
+        'indiscreet' => 'Indiscret',
+        'distracted' => 'Distrait',
+        'hygiene' => 'Problème d\'hygiène',
+        'damaged' => 'Colis abîmé',
         'instructions' => 'Consignes non respectées',
         'wrong_person' => 'Remis à une autre personne',
         'absent' => 'Absent ou parti avant l\'heure (MAD)',

@@ -133,9 +133,23 @@
         <p class="m-label">Lot</p>
         <ChoiceChips v-model="form.billing_plan_id" :options="lotChoices" :columns="1" label="Lot de la course" />
       </div>
-      <div v-if="form.activity === 'distribution'">
+      <div>
         <p class="m-label">Type d'envoi</p>
         <ChoiceChips v-model="form.shipment_type" :options="SHIPMENT_TYPES" :columns="3" label="Type d'envoi" />
+      </div>
+      <!-- Pli : ce que c'est (liste de l'agence), « Autre » à préciser -->
+      <div v-if="form.shipment_type === 'pli' && pliKinds.length">
+        <p class="m-label">Ce pli est <span class="font-normal text-slate-500">(facultatif)</span></p>
+        <div class="flex flex-wrap gap-2">
+          <button
+            v-for="k in pliKinds" :key="k" type="button"
+            :class="['tap rounded-full px-3 py-1.5 text-sm ring-1', pliChoice === k ? 'ring-2 ring-[var(--app-color)] bg-[color-mix(in_srgb,var(--app-color)_8%,white)] font-medium' : 'bg-white ring-slate-300 text-slate-700']"
+            :aria-pressed="pliChoice === k" @click="pliChoice = pliChoice === k ? '' : k"
+          >
+            {{ k }}
+          </button>
+        </div>
+        <input v-if="isOther(pliChoice)" v-model="pliOther" maxlength="60" class="m-input mt-2" placeholder="Précisez : ex. faire-part, devis, badge…" aria-label="Précisez le type de pli">
       </div>
       <!-- Plusieurs plis ou chèques remis ensemble au même destinataire -->
       <div v-if="hasQuantity">
@@ -344,6 +358,8 @@ const blank = () => ({
   shipment_type: null,
   // Plis ou chèques remis ensemble
   shipment_quantity: 1,
+  // Pli : facture, courrier, carte d'invitation…
+  pli_kind: null,
   // Départements : qui envoie, vers lequel (courrier interne), qui a demandé
   department_id: null,
   to_department_id: null,
@@ -396,7 +412,15 @@ watch(() => departments.senders.value, (list) => {
 }, { immediate: true })
 watch(internal, (v) => { if (!v) form.to_department_id = null })
 // Nombre de plis ou de chèques : seulement pour un pli ou un chèque (un colis compte pour un)
-const hasQuantity = computed(() => form.activity === 'distribution' && ['pli', 'cheque'].includes(form.shipment_type))
+const hasQuantity = computed(() => ['distribution', 'mad'].includes(form.activity) && ['pli', 'cheque'].includes(form.shipment_type))
+// Type de pli (facture, courrier, carte d'invitation…) : liste de l'agence ; « Autre » se précise
+const pliKinds = computed(() => auth.user?.company?.shipment_settings?.pli_kinds || [])
+const pliChoice = ref('')
+const pliOther = ref('')
+const isOther = (k) => !!k && k.toLowerCase() === 'autre'
+watch([pliChoice, pliOther, () => form.shipment_type], () => {
+  form.pli_kind = form.shipment_type !== 'pli' || !pliChoice.value ? null : isOther(pliChoice.value) ? (pliOther.value.trim() || pliChoice.value) : pliChoice.value
+})
 watch(hasQuantity, (v) => { if (!v) form.shipment_quantity = 1 })
 // Formule de l'activité choisie (auth : sans réseau ; space : consommation du mois)
 const contractPlan = computed(() => (auth.user?.merchant?.billing_plans || []).find((p) => p.activity === form.activity) || null)
@@ -426,7 +450,7 @@ watch([() => form.activity, plan], (current, old) => {
   }
   form.fee_payer = 'merchant'
   form.items_amount = 0
-  form.shipment_type = form.activity === 'distribution' ? (form.shipment_type || 'pli') : null
+  form.shipment_type = form.shipment_type || (form.activity === 'distribution' ? 'pli' : 'colis')
   form.delivery_delay = plan.value && !plan.value.has_forfait ? (form.delivery_delay || plan.value.delivery_delay) : null
 }, { immediate: true })
 const showMore = ref(false)
@@ -670,6 +694,8 @@ function reset() {
   // Activité gardée d'une course à l'autre
   Object.assign(form, { ...blank(), activity: form.activity, billing_plan_id: form.billing_plan_id, department_id: form.department_id, requested_by: form.requested_by })
   internal.value = false
+  pliChoice.value = ''
+  pliOther.value = ''
   destination.value = null
   Object.keys(missing).forEach((key) => { missing[key] = false })
   showMore.value = false

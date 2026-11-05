@@ -147,10 +147,11 @@ export function waitDuration(minutes) {
   return rest ? `${hours} h ${String(rest).padStart(2, '0')}` : `${hours} h`
 }
 
-// Envoi d'un client sous formule : « Pli », « 12 plis », « 3 chèques »
+// Envoi d'un client sous formule : « Pli », « 12 plis », « 3 chèques », « Pli (facture) »
 export function shipmentLabel(pkg) {
   const n = pkg?.shipment_quantity || 1
   if (!pkg?.shipment_type) return ''
-  if (n <= 1) return pkg.shipment_type_label
-  return `${n} ${{ pli: 'plis', cheque: 'chèques', colis: 'colis' }[pkg.shipment_type] || pkg.shipment_type_label}`
+  const kind = pkg.shipment_type === 'pli' && pkg.pli_kind ? ` (${pkg.pli_kind.toLowerCase()})` : ''
+  if (n <= 1) return pkg.shipment_type_label + kind
+  return `${n} ${{ pli: 'plis', cheque: 'chèques', colis: 'colis' }[pkg.shipment_type] || pkg.shipment_type_label}${kind}`
 }

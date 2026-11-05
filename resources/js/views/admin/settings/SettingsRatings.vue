@@ -65,6 +65,15 @@
             </select>
           </div>
         </div>
+        <div>
+          <p class="label">Motifs proposés au client (liste déroulante « Qu'est-ce qui n'est pas allé ? »)</p>
+          <div class="grid sm:grid-cols-2 gap-1">
+            <label v-for="m in criteria.reasons" :key="m.value" class="flex items-center gap-2 text-sm">
+              <input v-model="clientReasons" type="checkbox" :value="m.value"> {{ m.label }}
+            </label>
+          </div>
+          <p class="text-xs text-gray-500 mt-1">Aucune case cochée : tous les motifs sont proposés.</p>
+        </div>
       </section>
 
       <section class="card p-4 space-y-3">
@@ -100,7 +109,12 @@ import { useCompanySettings } from '../../../composables/useCompanySettings'
 const { form, dirty, saving, error, save, reset } = useCompanySettings(['rating_settings'])
 const r = computed(() => form.value.rating_settings)
 const weightTotal = computed(() => (r.value.weight_auto || 0) + (r.value.weight_client || 0) + (r.value.weight_team || 0))
-const criteria = ref({ indicators: [] })
+const criteria = ref({ indicators: [], reasons: [] })
+// Liste vide enregistrée = tous les motifs : on les montre alors tous cochés
+const clientReasons = computed({
+  get: () => (r.value.client_reasons?.length ? r.value.client_reasons : criteria.value.reasons.map((m) => m.value)),
+  set: (list) => { r.value.client_reasons = list.length === criteria.value.reasons.length ? [] : list },
+})
 
 onMounted(async () => {
   criteria.value = (await http.get('/ratings/criteria')).data.data

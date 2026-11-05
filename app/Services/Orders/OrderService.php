@@ -45,7 +45,7 @@ class OrderService
     private const PACKAGE_FIELDS = [
         'merchant_reference', 'description', 'package_size', 'weight_kg', 'is_fragile', 'is_express', 'merchant_note',
         // Clients sous formule (distribution, MAD) : type d'envoi et délai
-        'shipment_type', 'shipment_quantity', 'delivery_delay',
+        'shipment_type', 'shipment_quantity', 'pli_kind', 'delivery_delay',
     ];
 
     private const MONEY_FIELDS = ['items_amount', 'fee_payer'];

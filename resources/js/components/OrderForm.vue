@@ -155,6 +155,13 @@
             <input id="quantity" v-model.number="form.shipment_quantity" type="number" min="1" max="10000" class="input w-28">
             <p v-if="errors.shipment_quantity" class="field-error">{{ errors.shipment_quantity[0] }}</p>
           </div>
+          <!-- Pli : ce que c'est (liste de Réglages › Courses, ou texte libre) -->
+          <div v-if="billingPlan && form.shipment_type === 'pli'" class="mt-2">
+            <label class="label" for="pli-kind">Ce pli est (facultatif)</label>
+            <input id="pli-kind" v-model="form.pli_kind" list="pli-kinds" maxlength="60" class="input" placeholder="Facture, courrier…">
+            <datalist id="pli-kinds"><option v-for="k in pliKinds" :key="k" :value="k" /></datalist>
+            <p v-if="errors.pli_kind" class="field-error">{{ errors.pli_kind[0] }}</p>
+          </div>
         </div>
         <div>
           <label class="label" for="weight">Poids (kg, facultatif)</label>
@@ -338,6 +345,7 @@ const form = reactive({
   shipment_type: null,
   // Plis ou chèques remis ensemble
   shipment_quantity: 1,
+  pli_kind: '',
   // Départements du client : qui envoie, vers lequel (courrier interne), qui a demandé
   department_id: null,
   to_department_id: null,
@@ -455,6 +463,7 @@ const billed = computed(() => !!form.activity && form.activity !== 'ecommerce')
 // Nombre de plis ou de chèques : seulement pour un pli ou un chèque (un colis compte pour un)
 const hasQuantity = computed(() => !!billingPlan.value && ['pli', 'cheque'].includes(form.shipment_type))
 watch(hasQuantity, (v) => { if (!v) form.shipment_quantity = 1 })
+const pliKinds = computed(() => (auth.user?.company?.shipment_settings?.pli_kinds || []).filter((k) => k.toLowerCase() !== 'autre'))
 const proofText = computed(() => {
   const p = billingPlan.value?.proof || {}
   return [p.proof_name && 'le nom de la personne qui reçoit', p.proof_signature && 'sa signature', p.receipt_label ? 'l\'accusé de réception signé et tamponné (photo)' : p.proof_photo && 'une photo de la décharge'].filter(Boolean).join(', ')
