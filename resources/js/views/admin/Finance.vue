@@ -17,6 +17,23 @@
       </button>
     </div>
 
+    <!-- Date de livraison des courses : même règle que la page Courses -->
+    <div v-if="tab === 'cash' || tab === 'merchants'" class="card p-3 flex flex-wrap items-center gap-2 text-sm" role="group" aria-label="Date de livraison des courses">
+      <span class="font-semibold">📅 Date de livraison des courses :</span>
+      <button
+        v-for="p in PERIODS" :key="p.key" type="button"
+        :class="['rounded-full px-3 py-1 ring-1', period.key === p.key ? 'bg-slate-900 text-white ring-slate-900' : 'bg-white ring-slate-300']"
+        :aria-pressed="period.key === p.key" @click="choosePeriod(p.key)"
+      >
+        {{ p.label }}
+      </button>
+      <template v-if="period.key === 'custom'">
+        <input v-model="period.from" type="date" class="input w-auto py-1" aria-label="Du" @change="periodChanged">
+        <input v-model="period.to" type="date" class="input w-auto py-1" :min="period.from" aria-label="Au" @change="periodChanged">
+      </template>
+      <span class="ml-auto text-xs text-gray-500">{{ periodLabel }}</span>
+    </div>
+
     <!-- Argent chez les livreurs -->
     <template v-if="tab === 'cash'">
       <p v-if="cash?.whatsapp_templates === 'pending'" class="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-900" role="status">
@@ -35,6 +52,41 @@
           <p class="text-xs text-gray-600">{{ alertText }}</p>
         </button>
       </div>
+      <div v-if="days" class="card overflow-x-auto">
+        <div class="flex flex-wrap items-center gap-2 p-4 border-b">
+          <h2 class="flex-1 font-semibold">📊 Point par date de livraison</h2>
+          <span class="text-xs text-gray-500">{{ period.key === 'all' ? '31 derniers jours · ' : '' }}un toucher sur une date : toute la caisse sur ce jour</span>
+          <button type="button" class="btn-secondary" @click="exportDays">Exporter</button>
+        </div>
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 p-3">
+          <StatCard title="Encaissé chez les clients" :value="money(days.totals.collected)" icon="💵" :subtitle="`${days.totals.delivered} course${days.totals.delivered > 1 ? 's' : ''} livrée${days.totals.delivered > 1 ? 's' : ''}`" />
+          <StatCard title="Déjà à la caisse" :value="money(days.totals.at_desk)" icon="🏦" subtitle="reçu des livreurs" />
+          <StatCard title="Encore chez les livreurs" :value="money(days.totals.with_couriers)" icon="🛵" :subtitle="days.totals.with_couriers ? 'à recevoir' : '✓ tout est arrivé'" />
+          <StatCard title="À reverser aux clients" :value="money(days.totals.net_to_merchants)" icon="🏪" :subtitle="`encaissé moins les frais (${money(days.totals.fees)})`" />
+        </div>
+        <table class="w-full text-sm stack-table">
+          <thead class="bg-slate-50 text-left text-gray-600">
+            <tr><th class="p-2">Date de livraison</th><th class="p-2 text-right">Livrées</th><th class="p-2 text-right">Encaissé</th><th class="p-2 text-right">Déjà à la caisse</th><th class="p-2 text-right">Chez les livreurs</th><th class="p-2 text-right">Frais de livraison</th><th class="p-2 text-right">À reverser</th></tr>
+          </thead>
+          <tbody class="divide-y">
+            <tr v-for="d in days.days" :key="d.day" :class="d.with_couriers ? 'bg-amber-50/60' : ''">
+              <td class="p-2"><button type="button" class="font-medium text-blue-700 hover:underline first-letter:uppercase" @click="chooseDay(d.day)">{{ dayLabel(d.day) }}</button></td>
+              <td data-label="Livrées" class="p-2 text-right">{{ d.delivered }}</td>
+              <td data-label="Encaissé" class="p-2 text-right">{{ money(d.collected) }}</td>
+              <td data-label="Déjà à la caisse" class="p-2 text-right">{{ money(d.at_desk) }}</td>
+              <td data-label="Chez les livreurs" :class="['p-2 text-right', d.with_couriers ? 'font-semibold text-amber-700' : 'text-emerald-700']">{{ d.with_couriers ? money(d.with_couriers) : '✓ 0' }}</td>
+              <td data-label="Frais" class="p-2 text-right">{{ money(d.fees) }}</td>
+              <td data-label="À reverser" class="p-2 text-right">{{ money(d.net_to_merchants) }}</td>
+            </tr>
+            <tr v-if="!days.days.length"><td colspan="7" class="p-4 text-center text-gray-500">Aucune course livrée à ces dates.</td></tr>
+            <tr v-else class="bg-slate-100 font-bold">
+              <td class="p-2">Total</td><td data-label="Livrées" class="p-2 text-right">{{ days.totals.delivered }}</td><td data-label="Encaissé" class="p-2 text-right">{{ money(days.totals.collected) }}</td>
+              <td data-label="Déjà à la caisse" class="p-2 text-right">{{ money(days.totals.at_desk) }}</td><td data-label="Chez les livreurs" class="p-2 text-right text-amber-700">{{ money(days.totals.with_couriers) }}</td>
+              <td data-label="Frais" class="p-2 text-right">{{ money(days.totals.fees) }}</td><td data-label="À reverser" class="p-2 text-right">{{ money(days.totals.net_to_merchants) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
       <div class="card p-3 flex flex-wrap items-end gap-3">
         <div class="flex-1 min-w-[12rem]">
           <label class="label" for="cash-search">Chercher un livreur</label>
@@ -47,17 +99,31 @@
       <div class="card overflow-x-auto">
         <table class="w-full text-sm stack-table">
           <thead class="bg-slate-50 text-left text-gray-600">
-            <tr><th class="p-2">Livreur</th><th class="p-2 text-right" title="Encaissé + avances − frais payés − paie gardée sur l'encaissé">À remettre à la caisse</th><th class="p-2" title="Colis non livrés encore chez le livreur">Colis</th><th class="p-2">Depuis</th><th class="p-2 text-right">Gains non payés</th><th /></tr>
+            <tr><th class="p-2">Livreur</th><th class="p-2">Par date de livraison</th><th class="p-2 text-right" title="Encaissé + avances − frais payés − paie gardée sur l'encaissé">À remettre à la caisse</th><th class="p-2" title="Colis non livrés encore chez le livreur">Colis</th><th class="p-2">Depuis</th><th class="p-2 text-right">Gains non payés</th><th /></tr>
           </thead>
           <tbody class="divide-y">
             <tr v-for="c in visibleCouriers" :key="c.courier_id" :class="c.watch ? 'bg-orange-50' : ''">
               <td class="p-2 font-medium">{{ c.name }}<div class="text-xs text-gray-500">{{ c.phone }}</div><div v-if="c.watch" class="text-xs font-semibold text-orange-800">{{ c.watch }}</div></td>
+              <td data-label="Par date" class="p-2">
+                <div v-if="c.days.length || c.advances || c.expenses" class="flex flex-wrap gap-1 text-xs">
+                  <button
+                    v-for="d in c.days" :key="d.day" type="button"
+                    :class="['rounded-full px-2 py-0.5', inPeriod(d.day) ? 'bg-amber-100 text-amber-900' : 'bg-slate-100 text-slate-400']"
+                    :title="`${d.count} course${d.count > 1 ? 's' : ''}`" @click="chooseDay(d.day)"
+                  >
+                    {{ shortDay(d.day) }} : {{ money(d.amount) }}
+                  </button>
+                  <span v-if="c.advances || c.expenses" class="rounded-full bg-slate-100 px-2 py-0.5 text-slate-700">sans date : {{ money(c.advances - c.expenses) }}</span>
+                </div>
+                <span v-else class="text-gray-400">—</span>
+              </td>
               <td data-label="À remettre" class="p-2 text-right font-semibold">
                 <span v-if="c.cash_in_hand < 0" class="text-blue-700">La caisse lui doit {{ money(-c.cash_in_hand) }}</span>
                 <template v-else>{{ money(c.cash_in_hand) }}</template>
                 <div v-if="c.pending_collections || c.advances || c.expenses" class="text-xs font-normal text-gray-500">
                   {{ [c.collected ? `${money(c.collected)} encaissés` : '', c.advances ? `avance ${money(c.advances)}` : '', c.expenses ? `frais −${money(c.expenses)}` : ''].filter(Boolean).join(' · ') }}
                 </div>
+                <div v-if="period.key !== 'all' && c.days.length" class="text-xs font-normal text-amber-800">dont courses de la période : {{ money(periodAmount(c)) }}</div>
               </td>
               <td data-label="Colis" class="p-2"><span v-if="c.parcels_in_hand" class="rounded-full bg-amber-100 text-amber-900 px-2 py-0.5 text-xs font-medium">📦 {{ c.parcels_in_hand }}</span><span v-else class="text-gray-400">—</span></td>
               <td data-label="Depuis" class="p-2 text-xs">{{ c.oldest_collected_at ? dateTime(c.oldest_collected_at) : '—' }}</td>
@@ -68,7 +134,7 @@
                 <button v-else-if="c.parcels_in_hand && canManage" class="btn-primary" @click="openRemit(c)">Recevoir les colis</button>
               </td>
             </tr>
-            <tr v-if="cash && !visibleCouriers.length"><td colspan="6" class="p-4 text-center text-gray-500">Aucun livreur à afficher.</td></tr>
+            <tr v-if="cash && !visibleCouriers.length"><td colspan="7" class="p-4 text-center text-gray-500">Aucun livreur à afficher.</td></tr>
           </tbody>
         </table>
       </div>
@@ -76,6 +142,10 @@
       <div class="card overflow-x-auto">
         <div class="flex flex-wrap items-end gap-2 p-4 border-b">
           <h2 class="flex-1 font-semibold">Argent reçu des livreurs</h2>
+          <select v-model="remitFilter.basis" class="input w-auto py-1 text-xs" aria-label="Dates selon" @change="loadRemittances">
+            <option value="received">Jour du versement</option>
+            <option value="delivery">Date de livraison des courses</option>
+          </select>
           <label class="text-xs text-gray-600">Du <input v-model="remitFilter.from" type="date" class="input w-auto py-1" @change="loadRemittances"></label>
           <label class="text-xs text-gray-600">au <input v-model="remitFilter.to" type="date" class="input w-auto py-1" @change="loadRemittances"></label>
           <button type="button" class="btn-secondary" @click="exportRemittances">Exporter</button>
@@ -87,7 +157,7 @@
           <tbody class="divide-y">
             <tr v-for="r in remittances" :key="r.id" :class="r.cancelled_at ? 'text-gray-400 line-through' : ''">
               <td class="p-2 text-xs">{{ dateTime(r.received_at) }}<span v-if="r.cancelled_at" class="block no-underline font-semibold text-red-700">Annulé</span></td>
-              <td data-label="Livreur" class="p-2">{{ r.courier_name }}</td>
+              <td data-label="Livreur" class="p-2">{{ r.courier_name }}<span v-if="r.days?.length" class="block text-xs text-gray-500">courses du {{ r.days.map((d) => d.day ? shortDay(d.day) : 'sans date').join(', ') }}</span></td>
               <td data-label="Attendu" class="p-2 text-right">{{ money(r.amount_expected) }}</td>
               <td data-label="Reçu" class="p-2 text-right">{{ money(r.amount_received) }}</td>
               <td data-label="Écart" :class="['p-2 text-right font-medium', signedClass(r.difference)]">{{ r.difference ? money(r.difference) : '—' }}</td>
@@ -107,6 +177,7 @@
 
     <!-- Soldes des clients -->
     <template v-if="tab === 'merchants'">
+      <p v-if="period.key !== 'all'" class="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-900">📅 Seulement l'argent des courses {{ periodLabel }} : « Préparer le paiement » ne paie que ces courses.</p>
       <p class="text-sm text-gray-600">
         « Disponible » = argent arrivé en caisse, prêt à être payé à le client. « En attente » = courses livrées dont l'argent est encore chez un livreur.
       </p>
@@ -149,10 +220,17 @@
               </td>
               <td class="p-2 text-right whitespace-nowrap">
                 <button class="text-blue-600 mr-3" @click="openLedger(m)">Grand livre</button>
-                <button v-if="canManage && m.available !== 0" class="btn-primary" @click="preparePayout(m)">Préparer le paiement</button>
+                <button v-if="canManage && m.available !== 0" class="btn-primary" @click="preparePayout(m)">{{ period.key === 'all' ? 'Préparer le paiement' : `Payer ${payLabel}` }}</button>
               </td>
             </tr>
             <tr v-if="!visibleMerchants.length"><td :colspan="canManage ? 7 : 6" class="p-4 text-center text-gray-500">Aucun montant à payer.</td></tr>
+            <tr v-else class="bg-slate-100 font-bold">
+              <td v-if="canManage" /><td class="p-2">Total{{ period.key === 'all' ? '' : ` ${periodLabel}` }}</td>
+              <td data-label="Disponible" class="p-2 text-right">{{ money(visibleMerchants.reduce((n, m) => n + m.available, 0)) }}</td>
+              <td data-label="En attente" class="p-2 text-right">{{ money(visibleMerchants.reduce((n, m) => n + m.pending_cash, 0)) }}</td>
+              <td data-label="Total à payer" class="p-2 text-right">{{ money(visibleMerchants.reduce((n, m) => n + m.unpaid_total, 0)) }}</td>
+              <td colspan="2" />
+            </tr>
           </tbody>
         </table>
       </div>
@@ -347,18 +425,34 @@
         </div>
 
         <p v-if="remit.collections.length" class="text-sm font-semibold pt-1">💵 Encaissements</p>
-        <p v-if="remit.collections.length" class="text-sm text-gray-600">Décochez les encaissements que le livreur ne verse pas aujourd'hui.</p>
-        <ul v-if="remit.collections.length" class="border rounded divide-y max-h-64 overflow-y-auto text-sm">
-          <li v-for="c in remit.collections" :key="c.id" class="flex items-center gap-2 p-2">
-            <input v-model="remit.selected" type="checkbox" :value="c.id" :aria-label="c.tracking_code">
+        <p v-if="remit.collections.length" class="text-sm text-gray-600">
+          Rangés par date de livraison. Décochez ce que le livreur ne verse pas aujourd'hui.
+          <template v-if="period.key !== 'all'"> Seules les courses {{ periodLabel }} sont cochées au départ.</template>
+        </p>
+        <div v-if="remit.collections.length" class="max-h-80 overflow-y-auto space-y-2 text-sm">
+          <div v-for="g in remitDays" :key="g.day || 'none'" class="border rounded">
+            <label :class="['flex items-center gap-2 p-2 font-semibold border-b', g.selected === g.items.length ? 'bg-emerald-50' : 'bg-slate-50']">
+              <input type="checkbox" :checked="g.selected === g.items.length" :indeterminate.prop="g.selected > 0 && g.selected < g.items.length" @change="toggleRemitDay(g, $event.target.checked)">
+              <span class="first-letter:uppercase">{{ g.day ? dayLabel(g.day) : 'Sans date' }}</span>
+              <span class="text-xs font-normal text-gray-500">· {{ g.items.length }} course{{ g.items.length > 1 ? 's' : '' }}</span>
+              <span class="ml-auto">{{ money(g.total) }}</span>
+            </label>
+            <ul class="divide-y pl-4">
+              <li v-for="c in g.items" :key="c.id" class="flex items-center gap-2 p-2">
+                <input v-model="remit.selected" type="checkbox" :value="c.id" :aria-label="c.tracking_code">
             <span class="font-mono text-xs">{{ c.tracking_code }}</span>
             <span class="flex-1 truncate">{{ c.recipient_name }}</span>
             <span class="text-xs text-gray-500">{{ c.method_label }}</span>
             <span class="font-medium">{{ money(c.amount_collected) }}</span>
             <!-- Annoncé « reçu par l'entreprise » par le livreur : à retrouver sur le relevé avant de compter -->
             <button v-if="c.awaits_confirmation && canManage" type="button" class="rounded bg-blue-600 px-2 py-0.5 text-xs font-semibold text-white" :title="`Réf. ${c.transaction_ref} : vérifiez sur le relevé ${c.method_label}`" @click="confirmCollection(c)">Reçu ? Confirmer</button>
-          </li>
-        </ul>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <p v-if="remit.collections.length && remit.selected.length < remit.collections.length" class="text-xs text-gray-600">
+          Restera chez le livreur : {{ money(remit.collections.filter((c) => !remit.selected.includes(c.id)).reduce((n, c) => n + c.amount_collected, 0)) }}
+        </p>
         <p v-if="remit.collections.some((c) => c.awaits_confirmation)" class="text-xs text-blue-800">
           Paiements annoncés « reçus par l'entreprise » : vérifiez la référence sur le relevé Wave ou Mobile Money, puis confirmez. Tant qu'ils ne sont pas confirmés, le livreur doit cet argent.
         </p>
@@ -437,7 +531,7 @@
 
     <!-- Grand livre d'un client -->
     <Modal :open="ledger.open" :title="`Grand livre · ${ledger.merchant?.business_name}`" @close="ledger.open = false">
-      <LedgerTable :entries="ledger.entries" />
+      <LedgerTable :entries="ledger.entries" by-day />
       <button v-if="ledger.page < ledger.lastPage" type="button" class="btn-secondary mt-2 w-full" @click="moreLedger">Voir les lignes plus anciennes ({{ ledger.total - ledger.entries.length }})</button>
       <form v-if="canManage" class="border-t mt-4 pt-3 space-y-2" @submit.prevent="saveMerchantAdjust">
         <p class="text-sm font-medium">Ajustement (+ en faveur du client, − à sa charge)</p>
@@ -509,6 +603,7 @@ import { useToastStore } from '../../stores/toasts'
 import { date, dateTime, money, signedClass } from '../../utils/format'
 import { myActivities } from '../../utils/activities'
 import { downloadCsv } from '../../components/stats/chart'
+import { PERIOD_PRESETS, shift } from '../../utils/periods'
 
 const auth = useAuthStore()
 const toasts = useToastStore()
@@ -528,7 +623,69 @@ const invoicePayments = reactive({ month: new Date().toISOString().slice(0, 7), 
 const tab = ref(route.query.tab || 'cash')
 
 const cash = ref(null)
+const days = ref(null)
 const remittances = ref([])
+
+// Date de livraison des courses (onglets livreurs et e-commerçants), gardée dans l'adresse
+const PERIODS = [
+  { key: 'today', label: 'Aujourd\'hui' }, { key: 'yesterday', label: 'Hier' }, { key: 'week', label: '7 jours' },
+  { key: 'month', label: 'Ce mois' }, { key: 'all', label: 'Tout' }, { key: 'custom', label: 'Choisir…' },
+]
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
+const period = reactive(DATE_RE.test(route.query.du || '')
+  ? { key: 'custom', from: route.query.du, to: DATE_RE.test(route.query.au || '') ? route.query.au : route.query.du }
+  : { key: PERIOD_PRESETS[route.query.periode] ? route.query.periode : 'all', from: '', to: '' })
+if (period.key !== 'custom') Object.assign(period, { from: PERIOD_PRESETS[period.key].from(), to: PERIOD_PRESETS[period.key].to() })
+const shortDay = (d) => new Date(`${d}T12:00:00`).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
+const dayLabel = (d) => `${new Date(`${d}T12:00:00`).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}${d === shift(0) ? ' (aujourd\'hui)' : ''}`
+const periodLabel = computed(() => {
+  if (period.key === 'all') return 'toutes les dates'
+  if (period.from === period.to) return `du ${dayLabel(period.from)}`
+  return `du ${shortDay(period.from)} au ${shortDay(period.to)}`
+})
+const payLabel = computed(() => (period.from === period.to ? `le ${shortDay(period.from)}` : 'la période'))
+const periodParams = () => (period.key === 'all' ? {} : { from: period.from, to: period.to })
+const inPeriod = (d) => period.key === 'all' || (d >= period.from && d <= period.to)
+const periodAmount = (c) => c.days.filter((d) => inPeriod(d.day)).reduce((n, d) => n + d.amount, 0)
+
+function syncPeriodQuery() {
+  const query = { ...route.query }
+  delete query.periode; delete query.du; delete query.au
+  if (period.key === 'custom') Object.assign(query, { du: period.from, au: period.to })
+  else if (period.key !== 'all') query.periode = period.key
+  router.replace({ query })
+}
+function choosePeriod(key) {
+  period.key = key
+  if (key !== 'custom') Object.assign(period, { from: PERIOD_PRESETS[key].from(), to: PERIOD_PRESETS[key].to() })
+  else if (!period.from) Object.assign(period, { from: shift(0), to: shift(0) })
+  periodChanged()
+}
+function chooseDay(day) {
+  Object.assign(period, { key: 'custom', from: day, to: day })
+  periodChanged()
+}
+function periodChanged() {
+  if (period.to < period.from) period.to = period.from
+  syncPeriodQuery()
+  load()
+}
+
+// Encaissements de la fenêtre « Recevoir l'argent », par date de livraison
+const remitDays = computed(() => {
+  const groups = {}
+  for (const c of remit.collections) {
+    const g = (groups[c.delivery_day || ''] ??= { day: c.delivery_day || null, items: [], total: 0, selected: 0 })
+    g.items.push(c)
+    g.total += c.amount_collected
+    if (remit.selected.includes(c.id)) g.selected++
+  }
+  return Object.values(groups).sort((a, b) => (a.day || '').localeCompare(b.day || ''))
+})
+function toggleRemitDay(group, on) {
+  const ids = group.items.map((c) => c.id)
+  remit.selected = on ? [...new Set([...remit.selected, ...ids])] : remit.selected.filter((id) => !ids.includes(id))
+}
 const merchantBalances = ref([])
 const payouts = ref([])
 const courierPayouts = ref([])
@@ -548,7 +705,7 @@ const alertText = computed(() => {
   return parts.length ? parts.join(' ou ') : 'alerte désactivée (Réglages › Alertes)'
 })
 const today = new Date().toISOString().slice(0, 10)
-const remitFilter = reactive({ from: today, to: today })
+const remitFilter = reactive({ from: today, to: today, basis: 'received' })
 
 const remit = reactive({ open: false, courier: null, collections: [], advances: [], expenses: [], expensesToApprove: [], parcels: [], returned: [], selected: [], amount_received: 0, notes: '', error: '' })
 const remitHasCash = computed(() => remit.collections.length > 0 || remit.advances.length > 0 || remit.expenses.length > 0)
@@ -598,7 +755,7 @@ function reportBatch(done, errors, what) {
 async function prepareSelected() {
   batch.busy = true
   try {
-    const { data } = await http.post('/finance/payouts/batch', { merchant_ids: batch.merchants })
+    const { data } = await http.post('/finance/payouts/batch', { merchant_ids: batch.merchants, ...periodParams() })
     reportBatch(data.data.length, data.errors, data.data.length > 1 ? 'paiements préparés' : 'paiement préparé')
     batch.merchants = []
     await load()
@@ -671,7 +828,7 @@ const remitDifference = computed(() => remitSigned.value - remitExpected.value)
 
 function setTab(value) {
   tab.value = value
-  router.replace({ query: { tab: value } })
+  router.replace({ query: { ...route.query, tab: value } })
   load()
 }
 
@@ -679,21 +836,36 @@ async function load() {
   if (tab.value === 'cash' || tab.value === 'payroll') {
     cash.value = (await http.get('/finance/cash')).data
   }
-  if (tab.value === 'cash') await loadRemittances()
-  if (tab.value === 'merchants') merchantBalances.value = (await http.get('/finance/merchants', { params: filters.allMerchants ? { all: 1 } : {} })).data.data
+  if (tab.value === 'cash') {
+    // « Tout » : le point des 31 derniers jours
+    const range = period.key === 'all' ? { from: shift(-30), to: shift(0) } : { from: period.from, to: period.to }
+    days.value = (await http.get('/finance/cash/days', { params: range }).catch(() => ({ data: { data: null } }))).data.data
+    await loadRemittances()
+  }
+  if (tab.value === 'merchants') merchantBalances.value = (await http.get('/finance/merchants', { params: { ...(filters.allMerchants ? { all: 1 } : {}), ...periodParams() } })).data.data
   if (tab.value === 'payouts') payouts.value = (await http.get('/finance/payouts', { params: filters.payoutStatus ? { status: filters.payoutStatus } : {} })).data.data
   if (tab.value === 'payroll') courierPayouts.value = (await http.get('/finance/courier-payouts')).data.data
   if (tab.value === 'invoices') Object.assign(invoicePayments, (await http.get('/finance/invoice-payments', { params: { month: invoicePayments.month } })).data)
 }
 
 async function loadRemittances() {
-  remittances.value = (await http.get('/finance/remittances', { params: { from: remitFilter.from || undefined, to: remitFilter.to || undefined } })).data.data
+  remittances.value = (await http.get('/finance/remittances', { params: { from: remitFilter.from || undefined, to: remitFilter.to || undefined, date_basis: remitFilter.basis } })).data.data
 }
 
 function exportCash() {
   downloadCsv('argent-chez-les-livreurs.csv', [
     ['Livreur', 'Téléphone', 'À remettre (F)', 'Encaissé (F)', 'Avances (F)', 'Frais (F)', 'Colis', 'Depuis', 'À surveiller'],
     ...visibleCouriers.value.map((c) => [c.name, c.phone, c.cash_in_hand, c.collected, c.advances, c.expenses, c.parcels_in_hand, c.oldest_collected_at ? dateTime(c.oldest_collected_at) : '', c.watch || '']),
+  ])
+}
+
+function exportDays() {
+  if (!days.value) return
+  const t = days.value.totals
+  downloadCsv(`point-caisse-${days.value.from}-${days.value.to}.csv`, [
+    ['Date de livraison', 'Livrées', 'Encaissé (F)', 'Déjà à la caisse (F)', 'Chez les livreurs (F)', 'Frais de livraison (F)', 'À reverser (F)'],
+    ...days.value.days.map((d) => [d.day, d.delivered, d.collected, d.at_desk, d.with_couriers, d.fees, d.net_to_merchants]),
+    ['Total', t.delivered, t.collected, t.at_desk, t.with_couriers, t.fees, t.net_to_merchants],
   ])
 }
 
@@ -743,11 +915,13 @@ async function openRemit(courier) {
     expensesToApprove: data.expenses_to_approve || [],
     parcels: data.parcels || [],
     returned: [],
-    selected: data.data.map((c) => c.id),
-    amount_received: Math.abs(courier.cash_in_hand),
+    // Caisse filtrée sur des dates : seules les courses de ces dates sont cochées au départ
+    selected: data.data.filter((c) => !c.delivery_day || inPeriod(c.delivery_day)).map((c) => c.id),
+    amount_received: 0,
     notes: '',
     error: '',
   })
+  remit.amount_received = Math.abs(remitExpected.value)
 }
 
 // Paiement Wave ou Mobile Money retrouvé sur le relevé : il n'est plus dû par le livreur
@@ -824,12 +998,12 @@ async function openLedger(merchant) {
   ledger.merchant = merchant
   ledger.error = ''
   ledger.adjust = { amount: null, description: '' }
-  const { data } = await http.get(`/finance/merchants/${merchant.merchant_id}/ledger`)
+  const { data } = await http.get(`/finance/merchants/${merchant.merchant_id}/ledger`, { params: periodParams() })
   Object.assign(ledger, { entries: data.data, page: data.meta.current_page, lastPage: data.meta.last_page, total: data.meta.total, open: true })
 }
 
 async function moreLedger() {
-  const { data } = await http.get(`/finance/merchants/${ledger.merchant.merchant_id}/ledger`, { params: { page: ledger.page + 1 } })
+  const { data } = await http.get(`/finance/merchants/${ledger.merchant.merchant_id}/ledger`, { params: { page: ledger.page + 1, ...periodParams() } })
   ledger.entries = [...ledger.entries, ...data.data]
   ledger.page = data.meta.current_page
 }
@@ -847,7 +1021,7 @@ async function saveMerchantAdjust() {
 
 async function preparePayout(merchant) {
   try {
-    const { data } = await http.post('/finance/payouts', { merchant_id: merchant.merchant_id })
+    const { data } = await http.post('/finance/payouts', { merchant_id: merchant.merchant_id, ...periodParams() })
     router.push(`/admin/caisse/reversements/${data.data.id}`)
   } catch (e) {
     toasts.error(apiErrorMessage(e))

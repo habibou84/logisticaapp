@@ -27,6 +27,7 @@ use App\Models\OutboundMessage;
 use App\Models\User;
 use App\Services\Couriers\ParcelCustody;
 use App\Services\Finance\CashAlerts;
+use App\Services\Finance\CashDays;
 use App\Services\Finance\CashDesk;
 use App\Services\Finance\CashJournal;
 use App\Services\Finance\CourierCash;
@@ -77,6 +78,8 @@ class FinanceController extends Controller
             ->selectRaw('held_by_courier_id, COUNT(*) AS n')->pluck('n', 'held_by_courier_id');
 
         $company = $request->user()->company;
+        // Argent encore chez chaque livreur, rangé par date de livraison des courses
+        $byDay = app(CashDays::class)->couriersByDay();
         $couriers = Courier::with('user')->get()->map(fn (Courier $c) => [
             'courier_id' => $c->id,
             'name' => $c->user?->name,
@@ -92,6 +95,7 @@ class FinanceController extends Controller
             'pending_collections' => $cash[$c->id]['items'] ?? 0,
             'oldest_collected_at' => $cash[$c->id]['oldest'] ?? null,
             'parcels_in_hand' => (int) ($parcels[$c->id] ?? 0),
+            'days' => $byDay[$c->id] ?? [],
         ])
             // Montant absolu : un livreur à qui la caisse doit des frais avancés reste en tête de liste
             ->sortByDesc(fn ($c) => abs($c['cash_in_hand']))->values();
@@ -113,13 +117,32 @@ class FinanceController extends Controller
         ]);
     }
 
+    /**
+     * Point de la caisse par date de livraison : un jour par ligne et le total de la période.
+     */
+    public function cashDays(Request $request): JsonResponse
+    {
+        $this->authorizeStaff($request);
+        $data = $request->validate(['from' => ['required', 'date'], 'to' => ['required', 'date', 'after_or_equal:from']]);
+        $from = $request->date('from');
+        $to = $request->date('to');
+        if ($from->diffInDays($to) >= CashDays::MAX_DAYS) {
+            throw ValidationException::withMessages(['to' => 'Choisissez une période de '.CashDays::MAX_DAYS.' jours au plus.']);
+        }
+
+        return response()->json(['data' => [
+            'from' => $from->toDateString(), 'to' => $to->toDateString(),
+            ...app(CashDays::class)->build($from->toDateString(), $to->toDateString()),
+        ]]);
+    }
+
     public function collections(Request $request, Courier $courier): JsonResponse
     {
         $this->authorizeStaff($request);
 
         $collections = $courier->collections()
             ->when($request->boolean('pending', true), fn ($q) => $q->inCourierHands())
-            ->with('order:id,tracking_code,recipient_name,merchant_id')
+            ->with('order:id,tracking_code,recipient_name,merchant_id,delivery_scheduled_date,created_at')
             ->orderBy('collected_at')
             ->get()
             ->map(fn (CashCollection $c) => $this->collectionData($c));
@@ -362,12 +385,17 @@ class FinanceController extends Controller
     {
         $this->authorizeStaff($request);
 
-        $request->validate(['courier_id' => ['nullable', 'integer'], 'from' => ['nullable', 'date'], 'to' => ['nullable', 'date']]);
+        $request->validate(['courier_id' => ['nullable', 'integer'], 'from' => ['nullable', 'date'], 'to' => ['nullable', 'date'],
+            // Période selon le jour du versement (par défaut) ou la date de livraison des courses versées
+            'date_basis' => ['nullable', Rule::in(['received', 'delivery'])]]);
+        $byDelivery = $request->input('date_basis') === 'delivery';
 
-        $remittances = CourierRemittance::with(['courier.user', 'receiver'])
+        $remittances = CourierRemittance::with(['courier.user', 'receiver', 'collections.order:id,delivery_scheduled_date,created_at'])
             ->when($request->filled('courier_id'), fn ($q) => $q->where('courier_id', $request->integer('courier_id')))
-            ->when($request->filled('from'), fn ($q) => $q->whereDate('received_at', '>=', $request->date('from')))
-            ->when($request->filled('to'), fn ($q) => $q->whereDate('received_at', '<=', $request->date('to')))
+            ->when($byDelivery && ($request->filled('from') || $request->filled('to')), fn ($q) => $q->whereHas('collections.order',
+                fn ($o) => $o->forPeriod($request->date('from')?->toDateString(), $request->date('to')?->toDateString(), 'delivery')))
+            ->when(! $byDelivery && $request->filled('from'), fn ($q) => $q->whereDate('received_at', '>=', $request->date('from')))
+            ->when(! $byDelivery && $request->filled('to'), fn ($q) => $q->whereDate('received_at', '<=', $request->date('to')))
             ->latest('received_at')
             ->limit(200)
             ->get();
@@ -381,7 +409,10 @@ class FinanceController extends Controller
     {
         $this->authorizeStaff($request);
 
-        $summaries = $this->payouts->summaries();
+        $request->validate(['from' => ['nullable', 'date'], 'to' => ['nullable', 'date']]);
+        [$from, $to] = [$request->date('from')?->toDateString(), $request->date('to')?->toDateString()];
+        // Avec une période : seulement l'argent des courses dont la date de livraison tombe dedans
+        $summaries = $this->payouts->summaries($from, $to);
         $empty = ['available' => 0, 'pending_cash' => 0, 'unpaid_total' => 0];
 
         $merchants = Merchant::orderBy('business_name')->with('paymentMethods')->get()
@@ -404,17 +435,18 @@ class FinanceController extends Controller
     {
         $this->authorizeMerchantAccess($request, $merchant);
 
-        $request->validate(['unpaid' => ['nullable', 'boolean'], 'per_page' => ['nullable', 'integer', 'max:200']]);
+        $request->validate(['unpaid' => ['nullable', 'boolean'], 'per_page' => ['nullable', 'integer', 'max:200'], 'from' => ['nullable', 'date'], 'to' => ['nullable', 'date']]);
+        $period = $request->filled('from') || $request->filled('to');
 
-        $entries = $merchant->ledgerEntries()
-            ->with(['order:id,tracking_code,recipient_name,status', 'payout:id,reference,status'])
+        $entries = MerchantPayouts::inPeriod($merchant->ledgerEntries()->getQuery(), $request->date('from')?->toDateString(), $request->date('to')?->toDateString())
+            ->with(['order:id,tracking_code,recipient_name,status,delivery_scheduled_date,created_at', 'payout:id,reference,status'])
             ->when($request->boolean('unpaid'), fn ($q) => $q->whereNull('payout_id'))
             ->latest('id')
             ->paginate(min(max($request->integer('per_page', 50), 1), 500));
 
         // Solde après chaque ligne (les plus récentes d'abord) : total jusqu'à la première, puis on remonte
         $items = collect($entries->items());
-        $balance = $items->isEmpty() || $request->boolean('unpaid') ? null
+        $balance = $items->isEmpty() || $request->boolean('unpaid') || $period ? null
             : (int) $merchant->ledgerEntries()->where('id', '<=', $items->first()->id)->sum('amount');
 
         return response()->json([
@@ -504,6 +536,9 @@ class FinanceController extends Controller
         $data = $request->validate([
             'merchant_ids' => ['required', 'array', 'min:1', 'max:200'],
             'merchant_ids.*' => ['integer', Rule::exists('merchants', 'id')->where('company_id', $request->user()->company_id)],
+            // Seulement les courses dont la date de livraison est dans la période
+            'from' => ['nullable', 'date'],
+            'to' => ['nullable', 'date'],
         ]);
 
         $created = [];
@@ -515,7 +550,7 @@ class FinanceController extends Controller
                 continue;
             }
             try {
-                $payout = $this->payouts->create($request->user(), $merchant);
+                $payout = $this->payouts->create($request->user(), $merchant, null, $data['from'] ?? null, $data['to'] ?? null);
             } catch (BusinessRuleException $e) {
                 $errors[$merchant->business_name] = $e->getMessage();
 
@@ -569,9 +604,11 @@ class FinanceController extends Controller
         $data = $request->validate([
             'merchant_id' => ['required', 'integer', Rule::exists('merchants', 'id')->where('company_id', $request->user()->company_id)],
             'notes' => ['nullable', 'string', 'max:1000'],
+            'from' => ['nullable', 'date'],
+            'to' => ['nullable', 'date'],
         ]);
 
-        $payout = $this->payouts->create($request->user(), Merchant::findOrFail($data['merchant_id']), $data['notes'] ?? null);
+        $payout = $this->payouts->create($request->user(), Merchant::findOrFail($data['merchant_id']), $data['notes'] ?? null, $data['from'] ?? null, $data['to'] ?? null);
         $this->journal->record($request->user(), $payout->company_id, 'payout_prepared', $payout->merchant->business_name.' · '.$payout->reference,
             ['merchant_id' => $payout->merchant_id, 'amount' => $payout->net_amount, 'reference' => $payout->reference]);
 
@@ -874,6 +911,8 @@ class FinanceController extends Controller
             // Annoncé reçu par l'entreprise par le livreur : à retrouver sur le relevé et confirmer
             'awaits_confirmation' => $c->awaitsConfirmation(),
             'collected_at' => $c->collected_at,
+            // Date de livraison de la course (même règle que la page Courses)
+            'delivery_day' => ($c->order?->delivery_scheduled_date ?? $c->order?->created_at)?->toDateString(),
             'remittance_id' => $c->remittance_id,
         ];
     }
@@ -949,6 +988,11 @@ class FinanceController extends Controller
             'cancelled_at' => $r->cancelled_at,
             'cancel_reason' => $r->cancel_reason,
             'cancelled_by' => $r->relationLoaded('canceller') ? $r->canceller?->name : null,
+            // Dates de livraison des courses versées, avec le montant de chacune
+            'days' => $r->relationLoaded('collections') ? $r->collections
+                ->groupBy(fn (CashCollection $c) => ($c->order?->delivery_scheduled_date ?? $c->order?->created_at)?->toDateString() ?? '')
+                ->map(fn ($group, $day) => ['day' => $day ?: null, 'amount' => (int) $group->sum('amount_collected'), 'count' => $group->count()])
+                ->sortBy('day')->values()->all() : [],
         ];
     }
 
@@ -961,6 +1005,8 @@ class FinanceController extends Controller
             'amount' => $e->amount,
             'description' => $e->description,
             'order' => $e->order ? ['id' => $e->order->id, 'tracking_code' => $e->order->tracking_code, 'recipient_name' => $e->order->recipient_name] : null,
+            // Date de livraison de la course : le grand livre se range par jour
+            'delivery_day' => $e->order ? ($e->order->delivery_scheduled_date ?? $e->order->created_at)?->toDateString() : null,
             'payout' => $e->payout ? ['id' => $e->payout->id, 'reference' => $e->payout->reference, 'status' => $e->payout->status] : null,
             'created_at' => $e->created_at,
         ];

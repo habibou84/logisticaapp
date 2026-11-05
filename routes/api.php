@@ -616,6 +616,7 @@ Route::prefix('v1')->name('v1.')->group(function () {
         });
         Route::prefix('finance')->name('finance.')->controller(FinanceController::class)->group(function () {
             Route::get('cash', 'cash')->name('cash');
+            Route::get('cash/days', 'cashDays')->name('cash.days');
             Route::get('couriers/{courier}/collections', 'collections')->name('couriers.collections');
             Route::post('collections/{collection}/confirm', 'confirmCollection')->name('collections.confirm');
             Route::post('couriers/{courier}/advances', 'storeAdvance')->name('couriers.advances.store');

@@ -32,11 +32,12 @@ class MerchantPayouts
     ) {}
 
     /**
-     * Écritures prêtes à être reversées.
+     * Écritures prêtes à être reversées ; avec une période, seulement celles des courses dont la date de livraison
+     * tombe dedans (les ajustements sans course restent pour un paiement sans période).
      */
-    public function eligibleEntries(?Merchant $merchant = null): Builder
+    public function eligibleEntries(?Merchant $merchant = null, ?string $from = null, ?string $to = null): Builder
     {
-        return MerchantLedgerEntry::query()
+        return self::inPeriod(MerchantLedgerEntry::query(), $from, $to)
             ->when($merchant, fn ($q) => $q->where('merchant_id', $merchant->id))
             ->whereNull('payout_id')
             ->where('type', '!=', LedgerEntryType::Payout->value)
@@ -44,6 +45,12 @@ class MerchantPayouts
             ->whereDoesntHave('order.cashCollection', fn ($q) => $q->inCourierHands())
             // Livrée hors connexion avec un code client faux : rien n'est reversé avant la vérification du dispatch
             ->whereDoesntHave('order', fn ($q) => $q->whereNotNull('delivery_code_unverified_at'));
+    }
+
+    /** Écritures des courses dont la date de livraison est dans la période (sans période : toutes) */
+    public static function inPeriod(Builder $query, ?string $from, ?string $to): Builder
+    {
+        return $query->when($from || $to, fn ($q) => $q->whereHas('order', fn ($o) => $o->forPeriod($from, $to, 'delivery')));
     }
 
     /**
@@ -72,16 +79,16 @@ class MerchantPayouts
      *
      * @return array<int, array{available: int, pending_cash: int, unpaid_total: int}>
      */
-    public function summaries(): array
+    public function summaries(?string $from = null, ?string $to = null): array
     {
-        $unpaid = MerchantLedgerEntry::query()
+        $unpaid = self::inPeriod(MerchantLedgerEntry::query(), $from, $to)
             ->whereNull('payout_id')
             ->where('type', '!=', LedgerEntryType::Payout->value)
             ->groupBy('merchant_id')
             ->selectRaw('merchant_id, SUM(amount) AS total')
             ->pluck('total', 'merchant_id');
 
-        $available = $this->eligibleEntries()
+        $available = $this->eligibleEntries(null, $from, $to)
             ->groupBy('merchant_id')
             ->selectRaw('merchant_id, SUM(amount) AS total')
             ->pluck('total', 'merchant_id');
@@ -93,10 +100,10 @@ class MerchantPayouts
         ])->all();
     }
 
-    public function create(User $actor, Merchant $merchant, ?string $notes = null): MerchantPayout
+    public function create(User $actor, Merchant $merchant, ?string $notes = null, ?string $from = null, ?string $to = null): MerchantPayout
     {
-        return DB::transaction(function () use ($actor, $merchant, $notes) {
-            $entries = $this->eligibleEntries($merchant)->lockForUpdate()->get();
+        return DB::transaction(function () use ($actor, $merchant, $notes, $from, $to) {
+            $entries = $this->eligibleEntries($merchant, $from, $to)->lockForUpdate()->get();
 
             if ($entries->isEmpty()) {
                 throw new BusinessRuleException('Rien à reverser pour ce client pour le moment.', 'merchant_id');
