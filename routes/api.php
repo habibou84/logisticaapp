@@ -41,6 +41,7 @@ use App\Http\Controllers\Api\V1\LegacyImportController;
 use App\Http\Controllers\Api\V1\MerchantAccountController;
 use App\Http\Controllers\Api\V1\MerchantController;
 use App\Http\Controllers\Api\V1\MerchantLocationController;
+use App\Http\Controllers\Api\V1\MerchantMessagesController;
 use App\Http\Controllers\Api\V1\MerchantNotificationController;
 use App\Http\Controllers\Api\V1\MerchantPaymentMethodController;
 use App\Http\Controllers\Api\V1\MerchantShopController;
@@ -456,6 +457,10 @@ Route::prefix('v1')->name('v1.')->group(function () {
         // Activité des livreurs : suivi du jour de l'équipe, missions du jour d'un livreur
         Route::get('couriers/activity', [CourierActivityController::class, 'index'])->middleware('can:orders.dispatch')->name('couriers.activity');
         Route::get('couriers/{courier}/activity', [CourierActivityController::class, 'show'])->middleware('can:orders.dispatch')->whereNumber('courier')->name('couriers.activity.show');
+        // Messages aux clients : WhatsApp ou non par étape, choix verrouillés ou non
+        Route::get('company/merchant-messages', [MerchantMessagesController::class, 'show'])->middleware('can:settings.manage')->name('company.merchant-messages');
+        Route::put('company/merchant-messages', [MerchantMessagesController::class, 'update'])->middleware('can:settings.manage')->name('company.merchant-messages.update');
+        Route::post('company/merchant-messages/apply-all', [MerchantMessagesController::class, 'applyToAll'])->middleware(['can:settings.manage', 'throttle:10,1'])->name('company.merchant-messages.apply-all');
         Route::get('couriers/directory', [CourierDirectoryController::class, 'index'])->middleware('permission:orders.dispatch|couriers.manage|ratings.manage')->name('couriers.directory');
         Route::get('couriers/{courier}/profile', [CourierDirectoryController::class, 'show'])->middleware('permission:orders.dispatch|couriers.manage|ratings.manage')->whereNumber('courier')->name('couriers.profile');
         Route::get('couriers/map', [CourierController::class, 'map'])->middleware('can:orders.dispatch')->name('couriers.map');

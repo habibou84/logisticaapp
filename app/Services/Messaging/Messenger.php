@@ -94,7 +94,7 @@ class Messenger
         $body = trim(preg_replace('/\s*Merci( de votre confiance)?\.$/u', '', $body));
 
         return [
-            'title' => $template?->notificationTitle() ?? 'Nouveau message',
+            'title' => $message->event === NotificationEvent::OrderReceived->value ? '✅ Course reçue et validée' : ($template?->notificationTitle() ?? 'Nouveau message'),
             'body' => mb_strtoupper(mb_substr($body, 0, 1)).mb_substr($body, 1),
             'url' => match (true) {
                 $message->order_id !== null => '/marchand/courses/'.$message->order_id,

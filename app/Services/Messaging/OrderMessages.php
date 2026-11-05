@@ -56,14 +56,16 @@ class OrderMessages
                     if ($actorIsMerchant) {
                         break;
                     }
+                    // Validée automatiquement à l'enregistrement : « reçue et validée »
+                    $received = (bool) ($event->meta['auto'] ?? false);
                     // Livraison un autre jour (date choisie ou journée fermée) : la date est dans le message
                     $later = $order->delivery_scheduled_date !== null && $order->delivery_scheduled_date->toDateString()
                         > CarbonImmutable::now($order->company->timezone ?: config('app.timezone'))->toDateString();
                     if ($later) {
                         $postponed = $event->meta['postponed'] ?? null;
-                        $this->confirmedForDate($order, $postponed ?? 'date demandée', $postponed !== null);
+                        $this->confirmedForDate($order, $postponed ?? 'date demandée', $postponed !== null, $received);
                     } else {
-                        $this->messenger->toMerchant($merchant, NotificationEvent::OrderConfirmed, WhatsAppTemplate::OrderConfirmed,
+                        $this->messenger->toMerchant($merchant, $received ? NotificationEvent::OrderReceived : NotificationEvent::OrderConfirmed, WhatsAppTemplate::OrderConfirmed,
                             [$merchant->business_name, $code, $recipient, Money::format($order->totalFees())], $order);
                     }
                 } else {
@@ -173,14 +175,14 @@ class OrderMessages
      * Course validée pour une livraison à une date précise ($reason : « date demandée »,
      * « livraisons du jour closes depuis 16:00 »…).
      */
-    public function confirmedForDate(Order $order, string $reason, bool $postponed = false): void
+    public function confirmedForDate(Order $order, string $reason, bool $postponed = false, bool $received = false): void
     {
         $order->loadMissing(['merchant', 'deliveryZone']);
         $merchant = $order->merchant;
 
         // Date décalée par l'agence : le client est prévenu comme pour un report (actif par défaut),
         // la simple validation reste un message de routine (désactivé par défaut)
-        $event = $postponed ? NotificationEvent::OrderIncident : NotificationEvent::OrderConfirmed;
+        $event = $postponed ? NotificationEvent::OrderIncident : ($received ? NotificationEvent::OrderReceived : NotificationEvent::OrderConfirmed);
 
         $this->messenger->toMerchant($merchant, $event, WhatsAppTemplate::OrderConfirmedForDate, [
             $merchant->business_name,

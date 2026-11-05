@@ -147,7 +147,7 @@
               </template>
             </span></span>
         </label>
-        <p class="text-sm text-gray-500">Chaque client choisit les messages qu'il reçoit depuis son application (Profil).</p>
+        <p class="text-sm text-gray-500">Quels messages envoyer aux clients, étape par étape : <RouterLink to="/admin/reglages/messages-clients" class="text-blue-600">Messages aux clients</RouterLink>.</p>
       </div>
 
       <!-- Test -->

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\CompanyStatus;
+use App\Enums\NotificationEvent;
 use App\Services\Connect\Directory;
 use App\Services\Orders\ActivityOptions;
 use Carbon\CarbonImmutable;
@@ -92,6 +93,7 @@ class Company extends Model
         'reschedule_evening_time',
         'reschedule_channel',
         'reschedule_no_answer',
+        'merchant_whatsapp_events', 'merchant_messages_locked',
         // Alerte « livreur libre avec des ramassages près de lui »
         'courier_available_alert',
         // Annuaire des entreprises de livraison (jibiat.com/annuaire, Jibiat Marchand)
@@ -160,6 +162,8 @@ class Company extends Model
             'unreachable_minutes' => 'integer',
             'late_pickup_alert_minutes' => 'integer',
             'reschedule_evening' => 'boolean',
+            'merchant_whatsapp_events' => 'array',
+            'merchant_messages_locked' => 'boolean',
             'reschedule_evening_sent_on' => 'date',
             'courier_available_alert' => 'boolean',
             'directory_listed' => 'boolean',
@@ -313,5 +317,11 @@ class Company extends Model
     public function couriers(): HasMany
     {
         return $this->hasMany(Courier::class);
+    }
+
+    /** Message WhatsApp (ou notification sur le téléphone) au client pour cette étape, choix de l'agence */
+    public function merchantWantsByDefault(NotificationEvent $event): bool
+    {
+        return (bool) ($this->merchant_whatsapp_events[$event->value] ?? $event->enabledByDefault());
     }
 }

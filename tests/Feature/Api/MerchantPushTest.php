@@ -183,14 +183,14 @@ class MerchantPushTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.push_first', true)
             ->assertJsonPath('data.push_devices', 0)
-            ->assertJsonPath('data.events.2.event', 'order.delivered')
-            ->assertJsonPath('data.events.2.enabled', true);
+            ->assertJsonPath('data.events.3.event', 'order.delivered')
+            ->assertJsonPath('data.events.3.enabled', true);
 
         $this->subscribeMerchantPhone();
         $this->as($this->merchantUser)->putJson($url, ['events' => ['order.delivered' => false]])
             ->assertOk()
             ->assertJsonPath('data.push_devices', 1)
-            ->assertJsonPath('data.events.2.enabled', false);
+            ->assertJsonPath('data.events.3.enabled', false);
 
         // Événement coupé : ni notification ni WhatsApp
         Http::fake();

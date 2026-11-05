@@ -3,11 +3,14 @@
 namespace App\Enums;
 
 /**
- * Événements pour lesquels un client peut recevoir un message WhatsApp.
- * Les notifications dans l'application sont toujours envoyées.
+ * Événements pour lesquels un client peut recevoir un message WhatsApp (ou une notification sur son téléphone).
+ * Les notifications dans l'application sont toujours envoyées. L'agence choisit pour chaque étape
+ * (Company::merchantWantsByDefault) et peut empêcher le client de changer.
  */
 enum NotificationEvent: string
 {
+    // Course enregistrée par le client et validée automatiquement
+    case OrderReceived = 'order.received';
     case OrderConfirmed = 'order.confirmed';
     case OrderPickedUp = 'order.picked_up';
     case OrderDelivered = 'order.delivered';
@@ -22,7 +25,8 @@ enum NotificationEvent: string
     public function label(): string
     {
         return match ($this) {
-            self::OrderConfirmed => 'Course validée',
+            self::OrderReceived => 'Course reçue et validée',
+            self::OrderConfirmed => 'Course validée par l\'agence',
             self::OrderPickedUp => 'Colis récupéré',
             self::OrderDelivered => 'Colis livré',
             self::OrderIncident => 'Incident (échec, report)',
@@ -56,7 +60,7 @@ enum NotificationEvent: string
     public function enabledByDefault(): bool
     {
         return match ($this) {
-            self::OrderConfirmed, self::OrderPickedUp => false,
+            self::OrderReceived, self::OrderConfirmed, self::OrderPickedUp => false,
             default => true,
         };
     }

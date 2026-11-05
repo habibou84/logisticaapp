@@ -3,7 +3,8 @@
     type="button"
     role="switch"
     :aria-checked="modelValue"
-    class="tap w-full p-4 flex items-center gap-3 text-left active:bg-slate-50"
+    :disabled="disabled"
+    :class="['tap w-full p-4 flex items-center gap-3 text-left active:bg-slate-50', disabled ? 'opacity-50' : '']"
     @click="$emit('update:modelValue', !modelValue)"
   >
     <span class="flex-1 min-w-0">
@@ -21,6 +22,7 @@ defineProps({
   modelValue: { type: Boolean, default: false },
   label: { type: String, required: true },
   description: { type: String, default: '' },
+  disabled: { type: Boolean, default: false },
 })
 defineEmits(['update:modelValue'])
 </script>

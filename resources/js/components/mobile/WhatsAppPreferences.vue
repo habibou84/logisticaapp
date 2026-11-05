@@ -17,6 +17,10 @@
       </button>
     </div>
 
+    <p class="px-1 text-sm text-slate-500">
+      Les notifications de l'application arrivent toujours. Choisissez les étapes que vous voulez aussi recevoir en message.
+      <template v-if="settings.locked"><br>🔒 Réglé par {{ settings.company_name || 'votre agence' }}.</template>
+    </p>
     <div class="m-card divide-y">
       <ToggleRow
         v-for="e in settings.events"
@@ -24,6 +28,7 @@
         :model-value="e.enabled"
         :label="e.label"
         :description="HINTS[e.event]"
+        :disabled="settings.locked"
         @update:model-value="setEvent(e, $event)"
       />
     </div>
@@ -78,7 +83,8 @@ import { localPhone } from '../../utils/format'
 import { useToastStore } from '../../stores/toasts'
 
 const HINTS = {
-  'order.confirmed': 'Quand une course est validée',
+  'order.received': 'Quand votre course est enregistrée et validée automatiquement',
+  'order.confirmed': 'Quand l\'agence valide votre course',
   'order.picked_up': 'Quand le livreur a votre colis',
   'order.delivered': 'Avec le montant encaissé',
   'order.incident': 'Client injoignable, refus, report…',

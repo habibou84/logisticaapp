@@ -225,9 +225,13 @@ class Merchant extends Model
      */
     public function wantsNotification(NotificationEvent $event): bool
     {
+        $company = Company::find($this->company_id);
+        if ($company?->merchant_messages_locked) {
+            return $company->merchantWantsByDefault($event);
+        }
         $preference = $this->loadMissing('notificationPreferences')->notificationPreferences->firstWhere('event', $event);
 
-        return $preference ? $preference->channels !== [] : $event->enabledByDefault();
+        return $preference ? $preference->channels !== [] : ($company?->merchantWantsByDefault($event) ?? $event->enabledByDefault());
     }
 
     /**

@@ -168,6 +168,7 @@ const routes = [
       // Ancienne page « Qualité des livreurs » : la note est dans la liste et la fiche de chaque livreur
       { path: 'qualite-livreurs', redirect: (to) => (to.query.livreur ? { path: `/admin/livreurs/${to.query.livreur}`, query: { onglet: 'notes' } } : '/admin/livreurs') },
       { path: 'reglages/facturation', component: () => import('../views/admin/settings/SettingsInvoicing.vue'), meta: { permission: ['settings.manage', 'invoices.manage'] } },
+      { path: 'reglages/messages-clients', component: () => import('../views/admin/settings/SettingsMerchantMessages.vue'), meta: { permission: 'settings.manage' } },
       { path: 'reglages/motifs', component: () => import('../views/admin/settings/SettingsReasons.vue'), meta: { permission: 'settings.manage' } },
       { path: 'reglages/alertes', component: () => import('../views/admin/settings/SettingsAlerts.vue'), meta: { permission: 'settings.manage' } },
       { path: 'reglages/e-commercants', component: () => import('../views/admin/settings/SettingsMerchants.vue'), meta: { permission: 'settings.manage' } },
