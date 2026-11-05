@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Enums\LedgerEntryType;
 use App\Enums\PaymentMethod;
 use App\Enums\PayoutStatus;
 use App\Enums\Permission;
@@ -34,6 +35,7 @@ use App\Services\Finance\CourierCash;
 use App\Services\Finance\CourierPay;
 use App\Services\Finance\CourierPayroll;
 use App\Services\Finance\MerchantPayouts;
+use App\Services\Finance\MerchantStatement;
 use App\Services\Finance\PayBonuses;
 use App\Services\Messaging\Messenger;
 use App\Services\Messaging\TemplateAutoSubmit;
@@ -413,22 +415,47 @@ class FinanceController extends Controller
         [$from, $to] = [$request->date('from')?->toDateString(), $request->date('to')?->toDateString()];
         // Avec une période : seulement l'argent des courses dont la date de livraison tombe dedans
         $summaries = $this->payouts->summaries($from, $to);
+        // Toutes dates : « Total à payer » à côté de la date choisie
+        $all = $from || $to ? $this->payouts->summaries() : $summaries;
         $empty = ['available' => 0, 'pending_cash' => 0, 'unpaid_total' => 0];
+        // Courses de la date choisie encore à payer, et dernier paiement de chaque e-commerçant
+        $counts = MerchantPayouts::inPeriod(MerchantLedgerEntry::query(), $from, $to)
+            ->whereNull('payout_id')->where('type', LedgerEntryType::CodCredit->value)
+            ->groupBy('merchant_id')->selectRaw('merchant_id, COUNT(DISTINCT order_id) AS n')->pluck('n', 'merchant_id');
+        $lastPaid = MerchantPayout::query()->where('status', PayoutStatus::Paid->value)
+            ->groupBy('merchant_id')->selectRaw('merchant_id, MAX(paid_at) AS paid_at')->pluck('paid_at', 'merchant_id');
 
         $merchants = Merchant::orderBy('business_name')->with('paymentMethods')->get()
             ->map(fn (Merchant $m) => [
                 'merchant_id' => $m->id,
                 'business_name' => $m->business_name,
                 ...($summaries[$m->id] ?? $empty),
+                'period_count' => (int) ($counts[$m->id] ?? 0),
+                'all' => $all[$m->id] ?? $empty,
+                'last_paid_at' => $lastPaid[$m->id] ?? null,
                 // Payer avec : le moyen préféré, et combien restent à vérifier
                 'payment_method' => ($preferred = $m->paymentMethods->firstWhere('is_preferred', true) ?? $m->paymentMethods->first())
                     ? ['summary' => $preferred->summary(), 'status' => $preferred->status] : null,
                 'payment_methods_pending' => $m->paymentMethods->where('status', MerchantPaymentMethod::PENDING)->count(),
             ])
-            ->filter(fn ($row) => $row['unpaid_total'] !== 0 || $request->boolean('all'))
+            // Avec un solde toutes dates confondues (comme l'argent chez les livreurs), ou tous si demandé
+            ->filter(fn ($row) => $row['all']['unpaid_total'] !== 0 || $request->boolean('all'))
+            ->sortBy(fn ($row) => match ($row['premium']['payout_frequency'] ?? null) {
+                'daily' => 0, 'twice_weekly' => 1, default => 2
+            })
             ->values();
 
         return response()->json(['data' => $merchants]);
+    }
+
+    /**
+     * Détail d'un e-commerçant : courses à payer par date de livraison et courses de ses derniers versements.
+     */
+    public function merchantStatement(Request $request, Merchant $merchant, MerchantStatement $statement): JsonResponse
+    {
+        $this->authorizeStaff($request);
+
+        return response()->json(['data' => $statement->build($merchant)]);
     }
 
     public function ledger(Request $request, Merchant $merchant): JsonResponse

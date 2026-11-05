@@ -17,11 +17,6 @@
       </button>
     </div>
 
-    <!-- E-commerçants : la date de livraison des courses s'applique à tout l'onglet -->
-    <div v-if="tab === 'merchants'" class="card p-3">
-      <DeliveryDatePicker :period="period" :periods="PERIODS" :summary="periodLabel" @choose="choosePeriod" @changed="periodChanged" />
-    </div>
-
     <!-- Argent chez les livreurs -->
     <template v-if="tab === 'cash'">
       <p v-if="cash?.whatsapp_templates === 'pending'" class="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-900" role="status">
@@ -95,7 +90,7 @@
               <p :class="['text-xs', days.totals.with_couriers ? 'text-amber-800' : 'text-emerald-700']">{{ days.totals.with_couriers ? 'à recevoir' : '✓ tout est arrivé' }}</p>
             </div>
             <div class="rounded-xl bg-slate-50 p-3">
-              <p class="text-xs text-gray-500">À reverser aux e-commerçants</p>
+              <p class="text-xs text-gray-500">À reverser aux clients</p>
               <p class="text-xl font-bold tabular-nums">{{ money(days.totals.net_to_merchants) }}</p>
               <p class="text-xs text-gray-500">après {{ money(days.totals.fees) }} de frais</p>
             </div>
@@ -255,40 +250,123 @@
       </div>
     </template>
 
-    <!-- Soldes des clients -->
+    <!-- À payer aux clients : même organisation que l'argent chez les livreurs -->
     <template v-if="tab === 'merchants'">
-      <p v-if="period.key !== 'all'" class="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-900">📅 Seulement l'argent des courses {{ periodLabel }} : « Préparer le paiement » ne paie que ces courses.</p>
-      <p class="text-sm text-gray-600">
-        « Disponible » = argent arrivé en caisse, prêt à être payé au client. « En attente » = courses livrées dont l'argent est encore chez un livreur.
-      </p>
-      <div class="card p-3 flex flex-wrap items-end gap-3">
-        <div class="flex-1 min-w-[12rem]">
-          <label class="label" for="merchant-search">Chercher un client</label>
-          <input id="merchant-search" v-model="filters.merchant" type="search" class="input">
+      <!-- 1. En ce moment : toutes dates confondues -->
+      <section class="space-y-2">
+        <div class="flex flex-wrap items-baseline gap-x-2">
+          <h2 class="font-semibold">💼 En ce moment</h2>
+          <span class="text-xs text-gray-500">toutes dates confondues · ne dépend pas de la date choisie plus bas</span>
         </div>
-        <label class="flex items-center gap-2 text-sm"><input v-model="filters.allMerchants" type="checkbox" @change="load"> Afficher aussi les soldes à zéro</label>
-        <button type="button" class="btn-secondary" @click="exportMerchants">Exporter</button>
-      </div>
-      <div v-if="canManage && payableMerchants.length" class="card p-3 flex flex-wrap items-center gap-3">
-        <p class="flex-1 min-w-[14rem] text-sm text-gray-700">Cochez les clients, puis préparez leurs paiements d'un coup. Ceux dont le moyen de paiement n'est pas vérifié sont grisés.</p>
-        <button type="button" class="btn-primary" :disabled="!batch.merchants.length || batch.busy" @click="prepareSelected">
-          Préparer {{ batch.merchants.length }} paiement{{ batch.merchants.length > 1 ? 's' : '' }} ({{ money(selectedMerchantsTotal) }})
-        </button>
-      </div>
-      <div class="card overflow-x-auto">
-        <table class="w-full text-sm stack-table">
-          <thead class="bg-slate-50 text-left text-gray-600">
-            <tr><th v-if="canManage" class="p-2 w-8"><input type="checkbox" aria-label="Tout cocher" :checked="payableMerchants.length > 0 && batch.merchants.length === payableMerchants.length" @change="toggleAllMerchants($event.target.checked)"></th><th class="p-2">Client</th><th class="p-2 text-right">Disponible</th><th class="p-2 text-right">En attente</th><th class="p-2 text-right">Total à payer</th><th class="p-2">Payer avec</th><th /></tr>
+        <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <div class="card p-4">
+            <p class="text-sm text-gray-600">🏪 Total à payer</p>
+            <p class="text-2xl font-bold tabular-nums">{{ money(merchantTotals.unpaid) }}</p>
+            <p class="text-xs text-gray-500">toutes dates · {{ merchantTotals.count }} client{{ merchantTotals.count > 1 ? 's' : '' }}</p>
+          </div>
+          <div class="card p-4">
+            <p class="text-sm text-gray-600">🏦 Prêt à payer</p>
+            <p class="text-2xl font-bold tabular-nums text-emerald-700">{{ money(merchantTotals.available) }}</p>
+            <p class="text-xs text-gray-500">argent déjà à la caisse</p>
+          </div>
+          <div class="card p-4">
+            <p class="text-sm text-gray-600">🛵 En attente</p>
+            <p class="text-2xl font-bold tabular-nums text-amber-700">{{ money(merchantTotals.pending) }}</p>
+            <p class="text-xs text-gray-500">encore chez les livreurs</p>
+          </div>
+          <div :class="['card p-4', merchantTotals.unverified ? 'border-red-200 bg-red-50' : '']">
+            <p :class="['text-sm', merchantTotals.unverified ? 'text-red-800' : 'text-gray-600']">{{ merchantTotals.unverified ? '⚠️ ' : '' }}Sans moyen vérifié</p>
+            <p :class="['text-2xl font-bold', merchantTotals.unverified ? 'text-red-800' : '']">{{ merchantTotals.unverified }} client{{ merchantTotals.unverified > 1 ? 's' : '' }}</p>
+            <p :class="['text-xs', merchantTotals.unverified ? 'text-red-800' : 'text-gray-500']">à vérifier avant de payer</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. Point par date de livraison -->
+      <section class="card">
+        <div class="space-y-3 border-b p-4">
+          <div class="flex flex-wrap items-center gap-2">
+            <h2 class="flex-1 font-semibold">📊 Point par date de livraison</h2>
+            <button type="button" class="btn-secondary" @click="exportMerchants">Exporter</button>
+          </div>
+          <div class="rounded-xl bg-slate-50 p-2">
+            <DeliveryDatePicker :period="period" :periods="PERIODS" label="Courses livrées" :summary="periodLabel" @choose="choosePeriod" @changed="periodChanged" />
+          </div>
+          <p class="text-sm">
+            <span class="font-semibold text-slate-800">📅 Date choisie : <span class="text-amber-700">{{ period.key === 'all' ? 'toutes les dates' : chosenDate }}</span></span>
+            <span class="block text-xs text-gray-500">{{ period.key === 'all' ? '« Payer » paie tout ce qui est arrivé à la caisse.' : '« Payer » ne paie que les courses de cette date ; « Payer tout » dans le détail.' }}</span>
+          </p>
+        </div>
+        <div class="grid grid-cols-2 gap-3 p-4 lg:grid-cols-4">
+          <div class="rounded-xl bg-slate-50 p-3">
+            <p class="text-xs text-gray-500">Encaissé chez les clients</p>
+            <p class="text-xl font-bold tabular-nums">{{ days ? money(days.totals.collected) : '—' }}</p>
+            <p class="text-xs text-gray-500">{{ days ? `${days.totals.delivered} course${days.totals.delivered > 1 ? 's' : ''} livrée${days.totals.delivered > 1 ? 's' : ''}` : '' }}</p>
+          </div>
+          <div class="rounded-xl bg-slate-50 p-3">
+            <p class="text-xs text-gray-500">Frais de livraison</p>
+            <p class="text-xl font-bold tabular-nums">{{ days ? money(-days.totals.fees) : '—' }}</p>
+            <p class="text-xs text-gray-500">gardés par l'entreprise</p>
+          </div>
+          <div class="rounded-xl bg-emerald-50 p-3">
+            <p class="text-xs text-emerald-800">Prêt à payer</p>
+            <p class="text-xl font-bold tabular-nums text-emerald-700">{{ money(merchantPeriod.available) }}</p>
+            <p class="text-xs text-emerald-800">argent à la caisse</p>
+          </div>
+          <div :class="['rounded-xl p-3', merchantPeriod.pending ? 'bg-amber-50' : 'bg-slate-50']">
+            <p :class="['text-xs', merchantPeriod.pending ? 'text-amber-800' : 'text-gray-500']">En attente</p>
+            <p :class="['text-xl font-bold tabular-nums', merchantPeriod.pending ? 'text-amber-800' : '']">{{ money(merchantPeriod.pending) }}</p>
+            <p :class="['text-xs', merchantPeriod.pending ? 'text-amber-800' : 'text-gray-500']">chez les livreurs</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. À payer par client -->
+      <section class="card">
+        <div class="flex flex-wrap items-center gap-2 border-b p-4">
+          <h2 class="basis-full font-semibold sm:basis-auto sm:flex-1">🏪 À payer par client <span class="text-sm font-normal text-gray-500">· {{ period.key === 'all' ? 'toutes dates' : `courses livrées ${periodLabel}` }}</span></h2>
+          <input id="merchant-search" v-model="filters.merchant" type="search" class="input w-full sm:!w-56" placeholder="🔍 Nom de la boutique" aria-label="Chercher un client">
+          <button type="button" :class="['rounded-full px-3 py-1 text-xs ring-1', !filters.allMerchants ? 'bg-slate-900 text-white ring-slate-900' : 'bg-white ring-slate-300']" :aria-pressed="!filters.allMerchants" @click="filters.allMerchants = !filters.allMerchants; load()">Avec un solde</button>
+        </div>
+        <div v-if="canManage && payableMerchants.length" class="flex flex-wrap items-center gap-3 border-b bg-emerald-50 px-4 py-2 text-sm">
+          <span class="flex-1">☑️ {{ batch.merchants.length }} client{{ batch.merchants.length > 1 ? 's' : '' }} coché{{ batch.merchants.length > 1 ? 's' : '' }} · <b class="tabular-nums">{{ money(selectedMerchantsTotal) }}</b><span class="text-xs text-gray-600"> · grisés : moyen de paiement à vérifier</span></span>
+          <button type="button" class="btn-primary" :disabled="!batch.merchants.length || batch.busy" @click="prepareSelected">Préparer {{ batch.merchants.length > 1 ? `les ${batch.merchants.length} paiements` : 'le paiement' }}</button>
+        </div>
+
+        <!-- Ordinateur : tableau -->
+        <table class="hidden w-full text-sm md:table">
+          <thead class="border-b-2 border-slate-300 bg-slate-100 text-left text-sm font-bold text-slate-800">
+            <tr>
+              <th v-if="canManage" class="w-8 p-3"><input type="checkbox" aria-label="Tout cocher" :checked="payableMerchants.length > 0 && batch.merchants.length === payableMerchants.length" @change="toggleAllMerchants($event.target.checked)"></th>
+              <th class="p-3">Client</th>
+              <th v-if="period.key !== 'all'" class="p-3 text-right">Date choisie<span class="block text-xs font-semibold text-amber-700 first-letter:uppercase">{{ chosenDate }}</span></th>
+              <th class="p-3 text-right">Total à payer<span class="block text-xs font-normal text-slate-500">toutes dates</span></th>
+              <th class="p-3">Payer avec</th>
+              <th class="p-3" />
+            </tr>
           </thead>
           <tbody class="divide-y">
-            <tr v-for="m in visibleMerchants" :key="m.merchant_id" :class="canManage && m.available > 0 && !merchantPayable(m) ? 'bg-slate-50 text-gray-600' : ''">
-              <td v-if="canManage" class="p-2"><input v-model="batch.merchants" type="checkbox" :value="m.merchant_id" :disabled="!merchantPayable(m)" :aria-label="`Choisir ${m.business_name}`"></td>
-              <td class="p-2 font-medium">{{ m.business_name }}</td>
-              <td data-label="Disponible" :class="['p-2 text-right font-semibold', signedClass(m.available)]">{{ money(m.available) }}</td>
-              <td data-label="En attente" class="p-2 text-right text-gray-600">{{ money(m.pending_cash) }}</td>
-              <td data-label="Total à payer" class="p-2 text-right">{{ money(m.unpaid_total) }}</td>
-              <!-- Moyen préféré du client ; rien de donné : à demander ou à saisir -->
-              <td data-label="Payer avec" :class="['p-2 text-xs', m.payment_method ? '' : 'text-red-700']">
+            <tr v-for="m in visibleMerchants" :key="m.merchant_id" :class="['align-top', canManage && m.available > 0 && !merchantPayable(m) ? 'bg-slate-50 text-gray-600' : '']">
+              <td v-if="canManage" class="p-3"><input v-model="batch.merchants" type="checkbox" :value="m.merchant_id" :disabled="!merchantPayable(m)" :aria-label="`Choisir ${m.business_name}`"></td>
+              <td class="p-3">
+                <p class="font-semibold text-slate-900">{{ m.business_name }}
+                  <span v-if="m.premium" class="ml-1 whitespace-nowrap rounded-full bg-amber-100 px-2 text-xs font-bold text-amber-800">⭐ {{ m.premium.name }}<template v-if="m.premium.payout_label"> · payer {{ m.premium.payout_label.toLowerCase() }}</template></span>
+                </p>
+                <p class="text-xs text-gray-500">{{ m.last_paid_at ? `dernier paiement : ${dateTime(m.last_paid_at)}` : 'jamais payé' }}</p>
+              </td>
+              <td v-if="period.key !== 'all'" class="p-3 text-right">
+                <template v-if="m.unpaid_total">
+                  <p class="font-semibold tabular-nums">{{ money(m.unpaid_total) }}</p>
+                  <p v-if="m.pending_cash" class="text-xs text-amber-700">dont {{ money(m.pending_cash) }} chez un livreur</p>
+                  <p v-else class="text-xs text-gray-500">{{ countLabel(m.period_count) }} · ✓ tout à la caisse</p>
+                </template>
+                <template v-else><p class="text-gray-300">—</p><p class="text-xs text-gray-400">rien à cette date</p></template>
+              </td>
+              <td class="p-3 text-right">
+                <p class="text-lg font-bold tabular-nums">{{ money(m.all.unpaid_total) }}</p>
+                <p v-if="m.all.pending_cash" class="text-xs text-amber-700">dont {{ money(m.all.pending_cash) }} chez les livreurs</p>
+              </td>
+              <td :class="['p-3 text-xs', m.payment_method ? '' : 'text-red-700']">
                 <RouterLink :to="{ path: '/admin/marchands', query: { id: m.merchant_id, onglet: 'paiement' } }" class="hover:underline">
                   <template v-if="m.payment_method">
                     {{ m.payment_method.summary }}
@@ -298,331 +376,58 @@
                   <span v-if="m.payment_methods_pending" class="ml-1 whitespace-nowrap rounded-full bg-amber-100 px-2 text-amber-800">{{ m.payment_methods_pending }} à vérifier</span>
                 </RouterLink>
               </td>
-              <td class="p-2 text-right whitespace-nowrap">
-                <button class="text-blue-600 mr-3" @click="openLedger(m)">Grand livre</button>
-                <button v-if="canManage && m.available !== 0" class="btn-primary" @click="preparePayout(m)">{{ period.key === 'all' ? 'Préparer le paiement' : `Payer ${payLabel}` }}</button>
+              <td class="whitespace-nowrap p-3 text-right">
+                <button type="button" class="btn-secondary mr-1" @click="openMerchantDetail(m)">Détail</button>
+                <button v-if="canManage && m.available > 0" type="button" class="btn-primary" :disabled="!merchantPayable(m)" @click="preparePayout(m)">Payer</button>
               </td>
             </tr>
-            <tr v-if="!visibleMerchants.length"><td :colspan="canManage ? 7 : 6" class="p-4 text-center text-gray-500">Aucun montant à payer.</td></tr>
-            <tr v-else class="bg-slate-100 font-bold">
-              <td v-if="canManage" /><td class="p-2">Total{{ period.key === 'all' ? '' : ` ${periodLabel}` }}</td>
-              <td data-label="Disponible" class="p-2 text-right">{{ money(visibleMerchants.reduce((n, m) => n + m.available, 0)) }}</td>
-              <td data-label="En attente" class="p-2 text-right">{{ money(visibleMerchants.reduce((n, m) => n + m.pending_cash, 0)) }}</td>
-              <td data-label="Total à payer" class="p-2 text-right">{{ money(visibleMerchants.reduce((n, m) => n + m.unpaid_total, 0)) }}</td>
+            <tr v-if="!visibleMerchants.length"><td :colspan="canManage ? 6 : 5" class="p-4 text-center text-gray-500">Aucun montant à payer.</td></tr>
+            <tr v-else-if="visibleMerchants.length > 1" class="bg-slate-100 font-semibold">
+              <td v-if="canManage" /><td class="p-3">Total · {{ visibleMerchants.length }} clients</td>
+              <td v-if="period.key !== 'all'" class="p-3 text-right tabular-nums">{{ money(visibleMerchants.reduce((n, m) => n + m.unpaid_total, 0)) }}</td>
+              <td class="p-3 text-right tabular-nums">{{ money(visibleMerchants.reduce((n, m) => n + m.all.unpaid_total, 0)) }}</td>
               <td colspan="2" />
             </tr>
           </tbody>
         </table>
-      </div>
-    </template>
 
-    <!-- Reversements -->
-    <template v-if="tab === 'payouts'">
-      <div class="card p-3 flex flex-wrap items-end gap-3">
-        <div class="flex-1 min-w-[12rem]">
-          <label class="label" for="payout-search">Chercher un client ou une référence</label>
-          <input id="payout-search" v-model="filters.payout" type="search" class="input">
-        </div>
-        <div>
-          <label class="label" for="payout-status">Statut</label>
-          <select id="payout-status" v-model="filters.payoutStatus" class="input w-auto" @change="load">
-            <option value="">Tous</option><option value="draft">À payer</option><option value="paid">Payés</option><option value="cancelled">Annulés</option>
-          </select>
-        </div>
-        <button type="button" class="btn-secondary" @click="exportPayouts">Exporter</button>
-        <button v-if="canManage && draftPayouts.length" type="button" class="btn-primary" @click="openBatchPay">Marquer plusieurs comme payés ({{ draftPayouts.length }})</button>
-      </div>
-      <div class="card overflow-x-auto">
-        <table class="w-full text-sm stack-table">
-          <thead class="bg-slate-50 text-left text-gray-600">
-            <tr><th class="p-2">Référence</th><th class="p-2">Client</th><th class="p-2">Période</th><th class="p-2 text-right">Net</th><th class="p-2">Statut</th><th class="p-2">Payé le</th></tr>
-          </thead>
-          <tbody class="divide-y">
- <tr v-for="p in visiblePayouts" :key="p.id" class="hover:bg-slate-50 cursor-pointer" @click="router.push(`/admin/caisse/reversements/${p.id}`)">
-              <td class="p-2 font-mono text-xs">{{ p.reference }}</td>
-              <td data-label="Client" class="p-2">{{ p.merchant.business_name }}</td>
-              <td data-label="Période" class="p-2 text-xs">{{ date(p.period_start) }} → {{ date(p.period_end) }}</td>
-              <td data-label="Net" :class="['p-2 text-right font-semibold', signedClass(p.net_amount)]">{{ money(p.net_amount) }}</td>
-              <td data-label="Statut" class="p-2"><PayoutBadge :status="p.status" :label="p.status_label" /></td>
-              <td data-label="Payé le" class="p-2 text-xs">{{ p.paid_at ? `${dateTime(p.paid_at)} · ${p.method_label}` : '—' }}</td>
-            </tr>
-            <tr v-if="!visiblePayouts.length"><td colspan="6" class="p-4 text-center text-gray-500">Aucun paiement.</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </template>
-
-    <!-- Paiements des factures (distribution, MAD) : argent reçu en dehors des livreurs -->
-    <template v-if="tab === 'invoices'">
-      <div class="flex flex-wrap items-end gap-3">
-        <div><label class="label" for="ip-month">Mois</label><input id="ip-month" v-model="invoicePayments.month" type="month" class="input w-auto" @change="load"></div>
-        <RouterLink to="/admin/factures" class="text-sm text-blue-600 pb-2">Factures des clients →</RouterLink>
-      </div>
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <StatCard title="Reçu ce mois-ci" :value="money(invoicePayments.total)" icon="💶" />
-        <StatCard v-for="(amount, label) in invoicePayments.by_method" :key="label" :title="label" :value="money(amount)" icon="•" />
-      </div>
-      <div class="card overflow-x-auto">
-        <table class="w-full text-sm stack-table">
-          <thead class="bg-slate-50 text-left text-gray-600">
-            <tr><th class="p-2">Date</th><th class="p-2">Client</th><th class="p-2">Facture</th><th class="p-2">Moyen</th><th class="p-2 text-right">Montant</th><th class="p-2">Saisi par</th></tr>
-          </thead>
-          <tbody class="divide-y">
-            <tr v-for="p in invoicePayments.data" :key="p.id" class="hover:bg-slate-50 cursor-pointer" @click="router.push(`/admin/factures/${p.invoice.id}`)">
-              <td class="p-2 whitespace-nowrap">{{ date(p.paid_on) }}</td>
-              <td data-label="Client" class="p-2">{{ p.invoice.merchant }} <span class="text-xs text-gray-500">· {{ p.invoice.activity_label }}</span></td>
-              <td data-label="Facture" class="p-2 font-mono text-xs">{{ p.invoice.number }}</td>
-              <td data-label="Moyen" class="p-2">{{ p.method_label }}<span v-if="p.reference" class="block text-xs text-gray-500">{{ p.reference }}</span></td>
-              <td data-label="Montant" class="p-2 text-right font-semibold">{{ money(p.amount) }}</td>
-              <td data-label="Saisi par" class="p-2 text-xs">{{ p.recorded_by || '—' }}</td>
-            </tr>
-            <tr v-if="!invoicePayments.data.length"><td colspan="6" class="p-4 text-center text-gray-500">Aucun paiement de facture ce mois-ci.</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </template>
-
-    <!-- Paie des livreurs -->
-    <template v-if="tab === 'payroll'">
-      <div class="card overflow-x-auto">
-        <table class="w-full text-sm stack-table">
-          <thead class="bg-slate-50 text-left text-gray-600">
-            <tr><th class="p-2">Livreur</th><th class="p-2 text-right">Gains non payés</th><th /></tr>
-          </thead>
-          <tbody class="divide-y">
-            <tr v-for="c in (cash?.data || []).filter((c) => c.active || c.unpaid !== 0)" :key="c.courier_id">
-              <td class="p-2 font-medium">{{ c.name }}</td>
-              <td data-label="Gains non payés" :class="['p-2 text-right font-semibold', signedClass(c.unpaid)]">{{ money(c.unpaid) }}</td>
-              <td class="p-2 text-right whitespace-nowrap">
-                <button v-if="canManage" class="text-blue-600 mr-3" @click="openAdjust(c)">Prime / retenue</button>
-                <button v-if="canManage && c.unpaid !== 0" class="btn-primary" @click="prepareCourierPayout(c)">Préparer la paie</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="card overflow-x-auto">
-        <div class="flex flex-wrap items-end gap-3 p-4 border-b">
-          <h2 class="flex-1 font-semibold">Fiches de paie</h2>
-          <template v-if="canManage && draftPayslips.length">
-            <div>
-              <label class="label" for="payslips-method">Payé en</label>
-              <select id="payslips-method" v-model="batch.payslipMethod" class="input w-auto">
-                <option v-for="m in PAY_METHODS" :key="m.value" :value="m.value">{{ m.label }}</option>
-              </select>
+        <!-- Téléphone : une carte par client -->
+        <div class="divide-y md:hidden">
+          <div v-for="m in visibleMerchants" :key="m.merchant_id" class="space-y-2 p-4">
+            <div class="flex items-start gap-2">
+              <input v-if="canManage" v-model="batch.merchants" type="checkbox" class="mt-1" :value="m.merchant_id" :disabled="!merchantPayable(m)" :aria-label="`Choisir ${m.business_name}`">
+              <div class="min-w-0 flex-1">
+                <p class="font-semibold">{{ m.business_name }}</p>
+                <p class="text-xs text-gray-500">{{ m.payment_method ? m.payment_method.summary : '⚠️ Aucun moyen de paiement' }}</p>
+              </div>
+              <div class="text-right"><p class="text-lg font-bold tabular-nums">{{ money(m.all.unpaid_total) }}</p><p class="text-xs text-gray-500">total</p></div>
             </div>
-            <button type="button" class="btn-primary" :disabled="!batch.payslips.length || batch.busy" @click="paySelectedPayslips">
-              Payer {{ batch.payslips.length }} fiche{{ batch.payslips.length > 1 ? 's' : '' }} ({{ money(selectedPayslipsTotal) }})
-            </button>
-          </template>
+            <div v-if="period.key !== 'all' && m.unpaid_total" class="flex justify-between rounded-lg bg-amber-50 px-3 py-2 text-sm">
+              <span class="first-letter:uppercase">{{ chosenDate }} · {{ countLabel(m.period_count) }}</span><span class="font-semibold tabular-nums">{{ money(m.unpaid_total) }}</span>
+            </div>
+            <div class="flex gap-2">
+              <button type="button" class="btn-secondary flex-1" @click="openMerchantDetail(m)">Détail</button>
+              <button v-if="canManage && m.available > 0" type="button" class="btn-primary flex-1" :disabled="!merchantPayable(m)" @click="preparePayout(m)">Payer</button>
+            </div>
+          </div>
+          <p v-if="!visibleMerchants.length" class="p-4 text-center text-sm text-gray-500">Aucun montant à payer.</p>
         </div>
-        <table class="w-full text-sm stack-table">
-          <thead class="bg-slate-50 text-left text-gray-600">
-            <tr><th v-if="canManage" class="p-2 w-8"><input v-if="draftPayslips.length" type="checkbox" aria-label="Tout cocher" :checked="batch.payslips.length === draftPayslips.length" @change="toggleAllPayslips($event.target.checked)"></th><th class="p-2">Référence</th><th class="p-2">Livreur</th><th class="p-2">Période</th><th class="p-2 text-right">Montant</th><th class="p-2">Statut</th><th /></tr>
-          </thead>
-          <tbody class="divide-y">
-            <tr v-for="p in courierPayouts" :key="p.id" :class="p.status === 'draft' && holding(p) ? 'bg-orange-50' : ''">
-              <td v-if="canManage" class="p-2"><input v-if="p.status === 'draft'" v-model="batch.payslips" type="checkbox" :value="p.id" :aria-label="`Choisir ${p.reference}`"></td>
-              <td class="p-2 font-mono text-xs">{{ p.reference }}</td>
-              <td data-label="Livreur" class="p-2">{{ p.courier_name }}<span v-if="p.status === 'draft' && holding(p)" class="block text-xs font-semibold text-orange-800">Garde encore {{ money(holding(p)) }} : vous pouvez aussi garder la paie sur l'encaissé (Détail)</span></td>
-              <td data-label="Période" class="p-2 whitespace-nowrap text-gray-600">{{ date(p.period_start) }} → {{ date(p.period_end) }}<span v-if="p.automatic" title="Préparée automatiquement en fin de période"> ⏱</span></td>
-              <td data-label="Montant" :class="['p-2 text-right font-semibold', signedClass(p.amount)]">{{ money(p.amount) }}</td>
-              <td data-label="Statut" class="p-2"><PayoutBadge :status="p.status" :label="p.status_label" /></td>
-              <td class="p-2 text-right"><button class="text-blue-600" @click="openCourierPayout(p)">Détail</button></td>
-            </tr>
-            <tr v-if="!courierPayouts.length"><td :colspan="canManage ? 7 : 6" class="p-4 text-center text-gray-500">Aucune fiche de paie.</td></tr>
-          </tbody>
-        </table>
-      </div>
+      </section>
     </template>
 
-    <!-- Paiements préparés : marquer payés ensemble -->
-    <Modal :open="batchPay.open" title="Marquer des paiements comme payés" @close="batchPay.open = false">
-      <p class="text-sm text-gray-600 mb-3">Après les transferts, vérifiez le moyen et saisissez la référence de chacun. Seuls les paiements cochés sont validés.</p>
-      <div class="space-y-2 max-h-[60vh] overflow-y-auto">
-        <div v-for="row in batchPay.rows" :key="row.id" class="rounded-lg border p-3 flex flex-wrap items-end gap-3">
-          <label class="flex items-center gap-2 flex-1 min-w-[12rem]">
-            <input v-model="row.selected" type="checkbox">
-            <span><span class="font-medium">{{ row.merchant }}</span> · <span :class="signedClass(row.amount)">{{ money(row.amount) }}</span>
-              <span class="block text-xs text-gray-600">{{ row.reference }}<template v-if="row.summary"> · {{ row.summary }}<span v-if="!row.verified" class="text-amber-700"> (pas vérifié)</span></template></span>
-            </span>
-          </label>
-          <div>
-            <label class="label" :for="`bp-method-${row.id}`">Moyen</label>
-            <select :id="`bp-method-${row.id}`" v-model="row.method" class="input w-auto">
-              <option v-for="m in PAY_METHODS" :key="m.value" :value="m.value">{{ m.label }}</option>
-            </select>
-          </div>
-          <div>
-            <label class="label" :for="`bp-ref-${row.id}`">Référence</label>
-            <input :id="`bp-ref-${row.id}`" v-model="row.transaction_ref" type="text" maxlength="100" class="input w-40" :placeholder="row.method === 'cash' ? 'Facultatif' : 'Réf. du transfert'">
-          </div>
-        </div>
-      </div>
-      <p v-if="batchPay.error" class="text-sm text-red-700 mt-2" role="alert">{{ batchPay.error }}</p>
-      <div class="flex justify-end gap-2 mt-4">
-        <button type="button" class="btn-secondary" @click="batchPay.open = false">Fermer</button>
-        <button type="button" class="btn-primary" :disabled="!batchPaySelected.length || batch.busy" @click="saveBatchPay">
-          Marquer {{ batchPaySelected.length }} paiement{{ batchPaySelected.length > 1 ? 's' : '' }} comme payé{{ batchPaySelected.length > 1 ? 's' : '' }}
-        </button>
-      </div>
-    </Modal>
-
-    <!-- Versement d'un livreur -->
-    <Modal :open="remit.open" :title="`${remitHasCash ? 'Versement' : 'Colis'} de ${remit.courier?.name}`" @close="remit.open = false">
-      <form class="space-y-3" @submit.prevent="saveRemit">
-        <!-- Courses pas encore clôturées : le point attend -->
-        <div v-if="remitOnTheRoad.length" class="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-800 space-y-1">
-          <p class="font-semibold">🛵 {{ remitOnTheRoad.length }} course{{ remitOnTheRoad.length > 1 ? 's' : '' }} encore « En chemin »</p>
-          <p>Le livreur doit indiquer « livré » ou « échec » dans son application avant le point de caisse.</p>
-          <p class="space-x-2">
-            <RouterLink v-for="p in remitOnTheRoad" :key="p.id" :to="`/admin/courses/${p.id}`" class="font-mono text-xs underline">{{ p.tracking_code }}</RouterLink>
-          </p>
-        </div>
-
-        <!-- Colis non livrés à rendre au dépôt -->
-        <div v-if="remitParcels.length" class="space-y-1">
-          <div class="flex items-center justify-between">
-            <p class="text-sm font-semibold">📦 Colis à rendre au dépôt ({{ remitParcels.length }})</p>
-            <button type="button" class="text-xs text-blue-700" @click="remit.returned = remit.returned.length === remitParcels.length ? [] : remitParcels.map((p) => p.id)">
-              {{ remit.returned.length === remitParcels.length ? 'Tout décocher' : 'Tout cocher' }}
-            </button>
-          </div>
-          <p class="text-xs text-gray-600">Cochez chaque colis que le livreur vous remet. Ceux qui restent décochés sont notés comme gardés par le livreur.</p>
-          <ul class="border rounded divide-y max-h-56 overflow-y-auto text-sm">
-            <li v-for="p in remitParcels" :key="p.id" :class="['flex items-center gap-2 p-2', remit.returned.includes(p.id) ? 'bg-emerald-50' : '']">
-              <input v-model="remit.returned" type="checkbox" :value="p.id" :aria-label="`Colis ${p.tracking_code} rendu`">
-              <span class="font-mono text-xs">{{ p.tracking_code }}</span>
-              <span class="flex-1 min-w-0 truncate">{{ p.recipient_name || p.recipient_phone }} <span class="text-xs text-gray-500">· {{ p.merchant }}</span></span>
-              <span v-if="p.kept_for" class="text-xs text-indigo-700 whitespace-nowrap">🌙 Gardé pour la livraison du {{ date(p.kept_for) }}</span>
-              <span v-else class="text-xs text-gray-600 whitespace-nowrap">{{ p.rescheduled_to ? `Reporté au ${date(p.rescheduled_to)}` : (p.incident || p.status_label) }}</span>
-              <span :class="['text-xs whitespace-nowrap', !p.kept_for && isOld(p.held_since) ? 'text-red-600 font-semibold' : 'text-gray-500']">{{ heldFor(p.held_since) }}</span>
-            </li>
-          </ul>
-          <p v-if="remitParcels.length - remit.returned.length > 0" class="text-xs text-amber-700">
-            ⚠ {{ remitParcels.length - remit.returned.length }} colis resteront chez le livreur<template v-if="remitKept.length"> (dont {{ remitKept.length }} gardé{{ remitKept.length > 1 ? 's' : '' }} pour leur livraison)</template>.
-          </p>
-        </div>
-
-        <p v-if="remit.collections.length" class="text-sm font-semibold pt-1">💵 Encaissements</p>
-        <p v-if="remit.collections.length" class="text-sm text-gray-600">
-          Rangés par date de livraison. Décochez ce que le livreur ne verse pas aujourd'hui.
-          <template v-if="period.key !== 'all'"> Seules les courses {{ periodLabel }} sont cochées au départ.</template>
-        </p>
-        <div v-if="remit.collections.length" class="max-h-80 overflow-y-auto space-y-2 text-sm">
-          <div v-for="g in remitDays" :key="g.day || 'none'" class="border rounded">
-            <label :class="['flex items-center gap-2 p-2 font-semibold border-b', g.selected === g.items.length ? 'bg-emerald-50' : 'bg-slate-50']">
-              <input type="checkbox" :checked="g.selected === g.items.length" :indeterminate.prop="g.selected > 0 && g.selected < g.items.length" @change="toggleRemitDay(g, $event.target.checked)">
-              <span class="first-letter:uppercase">{{ g.day ? dayLabel(g.day) : 'Sans date' }}</span>
-              <span class="text-xs font-normal text-gray-500">· {{ g.items.length }} course{{ g.items.length > 1 ? 's' : '' }}</span>
-              <span class="ml-auto">{{ money(g.total) }}</span>
-            </label>
-            <ul class="divide-y pl-4">
-              <li v-for="c in g.items" :key="c.id" class="flex items-center gap-2 p-2">
-                <input v-model="remit.selected" type="checkbox" :value="c.id" :aria-label="c.tracking_code">
-            <span class="font-mono text-xs">{{ c.tracking_code }}</span>
-            <span class="flex-1 truncate">{{ c.recipient_name }}</span>
-            <span class="text-xs text-gray-500">{{ c.method_label }}</span>
-            <span class="font-medium">{{ money(c.amount_collected) }}</span>
-            <!-- Annoncé « reçu par l'entreprise » par le livreur : à retrouver sur le relevé avant de compter -->
-            <button v-if="c.awaits_confirmation && canManage" type="button" class="rounded bg-blue-600 px-2 py-0.5 text-xs font-semibold text-white" :title="`Réf. ${c.transaction_ref} : vérifiez sur le relevé ${c.method_label}`" @click="confirmCollection(c)">Reçu ? Confirmer</button>
-              </li>
-            </ul>
-          </div>
-        </div>
-        <p v-if="remit.collections.length && remit.selected.length < remit.collections.length" class="text-xs text-gray-600">
-          Restera chez le livreur : {{ money(remit.collections.filter((c) => !remit.selected.includes(c.id)).reduce((n, c) => n + c.amount_collected, 0)) }}
-        </p>
-        <p v-if="remit.collections.some((c) => c.awaits_confirmation)" class="text-xs text-blue-800">
-          Paiements annoncés « reçus par l'entreprise » : vérifiez la référence sur le relevé Wave ou Mobile Money, puis confirmez. Tant qu'ils ne sont pas confirmés, le livreur doit cet argent.
-        </p>
-        <!-- Frais déclarés par le livreur : sans effet tant qu'ils ne sont pas validés -->
-        <template v-if="remit.expensesToApprove.length">
-          <p class="text-sm font-semibold pt-1">🧾 Frais à valider</p>
-          <ul class="border rounded divide-y text-sm">
-            <li v-for="e in remit.expensesToApprove" :key="`v${e.id}`" class="flex flex-wrap items-center gap-2 p-2">
-              <span class="font-mono text-xs">{{ e.tracking_code }}</span>
-              <span class="flex-1">{{ e.description }}</span>
-              <span class="font-medium">{{ money(e.amount) }}</span>
-              <template v-if="canManage">
-                <button type="button" class="rounded bg-emerald-700 px-2 py-0.5 text-xs font-semibold text-white" @click="decideExpense(e, true)">Valider</button>
-                <button type="button" class="text-xs text-red-700 underline" @click="decideExpense(e, false)">Refuser</button>
-              </template>
-            </li>
-          </ul>
-        </template>
-        <ul v-if="remit.advances.length || remit.expenses.length" class="border rounded divide-y text-sm">
-          <li v-for="a in remit.advances" :key="`a${a.id}`" class="flex items-center gap-2 p-2">
-            <span class="flex-1">{{ a.pay_kept ? '🧾' : '💵 Avance :' }} {{ a.reason }} <span class="text-xs text-gray-500">{{ dateTime(a.given_at) }}</span></span>
-            <span :class="['font-medium', a.amount < 0 ? 'text-emerald-700' : '']">{{ a.amount < 0 ? '−' : '+' }} {{ money(Math.abs(a.amount)) }}</span>
-            <button v-if="a.can_cancel && canManage" type="button" class="text-xs text-red-700 underline" @click="cancelAdvance(a)">Annuler</button>
-          </li>
-          <li v-for="e in remit.expenses" :key="`e${e.id}`" class="flex items-center gap-2 p-2">
-            <span class="font-mono text-xs">{{ e.tracking_code }}</span>
-            <span class="flex-1">{{ e.description }}</span>
-            <span class="font-medium text-emerald-700">− {{ money(e.amount) }}</span>
-          </li>
-          <li class="p-2 text-xs text-gray-500">Avances, frais payés par le livreur et paie gardée sur l'encaissé : toujours réglés avec ce versement.</li>
-        </ul>
-        <template v-if="remitHasCash">
-        <p class="text-sm">
-          <template v-if="remitExpected >= 0">Montant attendu : <strong>{{ money(remitExpected) }}</strong></template>
-          <template v-else>Frais payés par le livreur : <strong>la caisse lui doit {{ money(-remitExpected) }}</strong></template>
-        </p>
-        <div>
-          <label class="label" for="received">{{ remitExpected >= 0 ? 'Montant reçu (F) *' : 'Montant remis au livreur (F) *' }}</label>
-          <input id="received" v-model.number="remit.amount_received" type="number" min="0" class="input" required>
-          <p v-if="remitDifference" :class="['text-sm mt-1', signedClass(remitDifference)]">
-            Écart : {{ money(remitDifference) }}{{ remitDifference < 0 ? ' (sera retenu sur la paie du livreur)' : '' }}
-          </p>
-        </div>
-        <div><label class="label" for="rnotes">Note</label><input id="rnotes" v-model="remit.notes" class="input"></div>
-        </template>
-        <p v-if="remit.error" class="field-error">{{ remit.error }}</p>
-        <button v-if="remitHasCash" class="btn-primary w-full" :disabled="remitOnTheRoad.length > 0 || (!remit.selected.length && !remit.advances.length && !remit.expenses.length)">
-          Valider le versement{{ remit.returned.length ? ` et ${remit.returned.length} colis` : '' }}
-        </button>
-        <button v-else class="btn-primary w-full" :disabled="!remit.returned.length">Valider la réception de {{ remit.returned.length }} colis</button>
-      </form>
-    </Modal>
-
-    <!-- Avance de caisse à un livreur -->
-    <Modal :open="advance.open" :title="`Avance à ${advance.courier?.name}`" @close="advance.open = false">
-      <form class="space-y-3" @submit.prevent="saveAdvance">
-        <p class="text-sm text-gray-600">
-          Argent remis au livreur avant sa mission (frais de gare, transport…). Il déclare ensuite les frais payés dans son
-          application ; le reste revient à la caisse lors de son versement.
-        </p>
-        <div>
-          <label class="label" for="adv-amount">Montant (F) *</label>
-          <input id="adv-amount" v-model.number="advance.amount" type="number" min="1" class="input" required>
-        </div>
-        <div>
-          <label class="label" for="adv-reason">Motif *</label>
-          <div class="flex flex-wrap gap-2 mb-2">
-            <button v-for="r in ['Frais de gare', 'Transport', 'Emballage']" :key="r" type="button" class="rounded-full px-3 py-1 text-xs ring-1 ring-slate-300" @click="advance.reason = r">{{ r }}</button>
-          </div>
-          <input id="adv-reason" v-model="advance.reason" class="input" required>
-        </div>
-        <p v-if="advance.error" class="field-error">{{ advance.error }}</p>
-        <button class="btn-primary w-full" :disabled="!(advance.amount > 0) || !advance.reason">Remettre l'avance</button>
-      </form>
-    </Modal>
-
-    <!-- Grand livre d'un client -->
-    <Modal :open="ledger.open" :title="`Grand livre · ${ledger.merchant?.business_name}`" @close="ledger.open = false">
-      <LedgerTable :entries="ledger.entries" by-day />
-      <button v-if="ledger.page < ledger.lastPage" type="button" class="btn-secondary mt-2 w-full" @click="moreLedger">Voir les lignes plus anciennes ({{ ledger.total - ledger.entries.length }})</button>
-      <form v-if="canManage" class="border-t mt-4 pt-3 space-y-2" @submit.prevent="saveMerchantAdjust">
-        <p class="text-sm font-medium">Ajustement (+ en faveur du client, − à sa charge)</p>
-        <div class="flex gap-2">
-          <input v-model.number="ledger.adjust.amount" type="number" class="input w-32" placeholder="Montant" required>
-          <input v-model="ledger.adjust.description" class="input" placeholder="Motif" required>
-          <button class="btn-secondary">Ajouter</button>
-        </div>
-        <p v-if="ledger.error" class="field-error">{{ ledger.error }}</p>
-      </form>
-    </Modal>
+    <!-- Détail d'un client : à payer par date, versements, grand livre -->
+    <MerchantDetail
+      v-if="merchantDetail"
+      :merchant="merchantDetail"
+      :can-manage="canManage"
+      :in-period="inPeriod"
+      :period-key="period.key"
+      :chosen-date="chosenDate"
+      :day-label="dayLabel"
+      @close="merchantDetail = null"
+      @pay="(all) => preparePayout(merchantDetail, all)"
+      @changed="load"
+    />
 
     <!-- Prime / retenue livreur -->
     <Modal :open="adjust.open" :title="`Prime ou retenue · ${adjust.courier?.name}`" @close="adjust.open = false">
@@ -676,7 +481,7 @@ import http, { apiErrorMessage } from '../../bootstrap/axios'
 import Modal from '../../components/Modal.vue'
 import DeliveryDatePicker from '../../components/finance/DeliveryDatePicker.vue'
 import CourierCashDetail from '../../components/finance/CourierCashDetail.vue'
-import LedgerTable from '../../components/LedgerTable.vue'
+import MerchantDetail from '../../components/finance/MerchantDetail.vue'
 import PayoutBadge from '../../components/PayoutBadge.vue'
 import PayForm from '../../components/PayForm.vue'
 import { useAuthStore } from '../../stores/auth'
@@ -707,14 +512,14 @@ const cash = ref(null)
 const days = ref(null)
 const remittances = ref([])
 
-// Date de livraison des courses (onglets livreurs et e-commerçants), gardée dans l'adresse
+// Date de livraison des courses (onglets livreurs et clients), gardée dans l'adresse
 const PERIODS = [
   { key: 'today', label: 'Aujourd\'hui' }, { key: 'yesterday', label: 'Hier' }, { key: 'week', label: '7 jours' },
   { key: 'month', label: 'Ce mois' }, { key: 'all', label: 'Tout' }, { key: 'custom', label: 'Choisir…' },
 ]
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
-// Par défaut : argent chez les livreurs sur aujourd'hui ; soldes des e-commerçants sur toutes les dates (paiement complet)
-const DEFAULT_PERIOD = (route.query.tab || 'cash') === 'cash' ? 'today' : 'all'
+// Par défaut : aujourd'hui (« Payer tout » reste dans le détail de chaque client)
+const DEFAULT_PERIOD = 'today'
 const period = reactive(DATE_RE.test(route.query.du || '')
   ? { key: 'custom', from: route.query.du, to: DATE_RE.test(route.query.au || '') ? route.query.au : route.query.du }
   : { key: PERIOD_PRESETS[route.query.periode] ? route.query.periode : DEFAULT_PERIOD, from: '', to: '' })
@@ -829,7 +634,6 @@ function heldFor(since) {
   return hours >= 24 ? `depuis ${Math.floor(hours / 24)} j` : `depuis ${hours} h`
 }
 const advance = reactive({ open: false, courier: null, amount: null, reason: 'Frais de gare', error: '' })
-const ledger = reactive({ open: false, merchant: null, entries: [], page: 1, lastPage: 1, total: 0, adjust: { amount: null, description: '' }, error: '' })
 const adjust = reactive({ open: false, courier: null, amount: null, description: '', error: '' })
 const courierPayout = reactive({ open: false, data: null })
 
@@ -840,6 +644,21 @@ const PAY_METHODS = [
 ]
 const batch = reactive({ merchants: [], payslips: [], payslipMethod: 'cash', busy: false })
 const batchPay = reactive({ open: false, rows: [], error: '' })
+// « En ce moment » (toutes dates) et point de la date choisie pour les clients
+const merchantTotals = computed(() => {
+  const rows = merchantBalances.value
+  return {
+    unpaid: rows.reduce((n, m) => n + (m.all?.unpaid_total || 0), 0),
+    available: rows.reduce((n, m) => n + (m.all?.available || 0), 0),
+    pending: rows.reduce((n, m) => n + (m.all?.pending_cash || 0), 0),
+    count: rows.filter((m) => m.all?.unpaid_total).length,
+    unverified: rows.filter((m) => m.all?.unpaid_total > 0 && m.payment_method?.status !== 'verified').length,
+  }
+})
+const merchantPeriod = computed(() => ({
+  available: merchantBalances.value.reduce((n, m) => n + m.available, 0),
+  pending: merchantBalances.value.reduce((n, m) => n + m.pending_cash, 0),
+}))
 const merchantPayable = (m) => m.available > 0 && (!m.payment_method || m.payment_method.status === 'verified')
 const payableMerchants = computed(() => visibleMerchants.value.filter(merchantPayable))
 const selectedMerchantsTotal = computed(() => merchantBalances.value.filter((m) => batch.merchants.includes(m.merchant_id)).reduce((s, m) => s + m.available, 0))
@@ -945,12 +764,12 @@ async function load() {
   if (tab.value === 'cash' || tab.value === 'payroll') {
     cash.value = (await http.get('/finance/cash')).data
   }
-  if (tab.value === 'cash') {
+  if (tab.value === 'cash' || tab.value === 'merchants') {
     // « Tout » : le point des 31 derniers jours
     const range = period.key === 'all' ? { from: shift(-30), to: shift(0) } : { from: period.from, to: period.to }
     days.value = (await http.get('/finance/cash/days', { params: range }).catch(() => ({ data: { data: null } }))).data.data
-    await loadRemittances()
   }
+  if (tab.value === 'cash') await loadRemittances()
   if (tab.value === 'merchants') merchantBalances.value = (await http.get('/finance/merchants', { params: { ...(filters.allMerchants ? { all: 1 } : {}), ...periodParams() } })).data.data
   if (tab.value === 'payouts') payouts.value = (await http.get('/finance/payouts', { params: filters.payoutStatus ? { status: filters.payoutStatus } : {} })).data.data
   if (tab.value === 'payroll') courierPayouts.value = (await http.get('/finance/courier-payouts')).data.data
@@ -988,8 +807,8 @@ function exportRemittances() {
 
 function exportMerchants() {
   downloadCsv('a-payer-aux-e-commercants.csv', [
-    ['Client', 'Disponible (F)', 'En attente (F)', 'Total à payer (F)', 'Payer avec'],
-    ...visibleMerchants.value.map((m) => [m.business_name, m.available, m.pending_cash, m.unpaid_total, m.payment_method?.summary || '']),
+    ['Client', 'Date choisie', 'Prêt à payer (F)', 'En attente (F)', 'À payer à cette date (F)', 'Total à payer toutes dates (F)', 'Dernier paiement', 'Payer avec'],
+    ...visibleMerchants.value.map((m) => [m.business_name, period.key === 'all' ? 'toutes' : chosenDate.value, m.available, m.pending_cash, m.unpaid_total, m.all?.unpaid_total ?? m.unpaid_total, m.last_paid_at ? dateTime(m.last_paid_at) : '', m.payment_method?.summary || '']),
   ])
 }
 
@@ -1046,7 +865,7 @@ async function confirmCollection(c) {
   }
 }
 
-// Frais déclarés par le livreur : validés (déduits de son versement, facturés au marchand) ou refusés
+// Frais déclarés par le livreur : validés (déduits de son versement, facturés au client) ou refusés
 async function decideExpense(e, approve) {
   if (!approve && !confirm(`Refuser les frais « ${e.description} » (${money(e.amount)}) ?`)) return
   try {
@@ -1103,34 +922,14 @@ async function saveAdvance() {
   }
 }
 
-async function openLedger(merchant) {
-  ledger.merchant = merchant
-  ledger.error = ''
-  ledger.adjust = { amount: null, description: '' }
-  const { data } = await http.get(`/finance/merchants/${merchant.merchant_id}/ledger`, { params: periodParams() })
-  Object.assign(ledger, { entries: data.data, page: data.meta.current_page, lastPage: data.meta.last_page, total: data.meta.total, open: true })
+const merchantDetail = ref(null)
+function openMerchantDetail(m) {
+  merchantDetail.value = m
 }
 
-async function moreLedger() {
-  const { data } = await http.get(`/finance/merchants/${ledger.merchant.merchant_id}/ledger`, { params: { page: ledger.page + 1, ...periodParams() } })
-  ledger.entries = [...ledger.entries, ...data.data]
-  ledger.page = data.meta.current_page
-}
-
-async function saveMerchantAdjust() {
-  ledger.error = ''
+async function preparePayout(merchant, all = false) {
   try {
-    await http.post(`/finance/merchants/${ledger.merchant.merchant_id}/adjustments`, ledger.adjust)
-    await openLedger(ledger.merchant)
-    load()
-  } catch (e) {
-    ledger.error = apiErrorMessage(e)
-  }
-}
-
-async function preparePayout(merchant) {
-  try {
-    const { data } = await http.post('/finance/payouts', { merchant_id: merchant.merchant_id, ...periodParams() })
+    const { data } = await http.post('/finance/payouts', { merchant_id: merchant.merchant_id, ...(all ? {} : periodParams()) })
     router.push(`/admin/caisse/reversements/${data.data.id}`)
   } catch (e) {
     toasts.error(apiErrorMessage(e))
@@ -1185,5 +984,11 @@ async function cancelCourierPayout() {
   load()
 }
 
-onMounted(load)
+onMounted(async () => {
+  await load()
+  // Lien « Faire le point » depuis l'activité des livreurs : versement du livreur ouvert
+  const id = Number(route.query.verser)
+  const courier = id && (cash.value?.data || []).find((c) => c.courier_id === id)
+  if (courier && canManage.value) openRemit(courier)
+})
 </script>

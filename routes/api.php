@@ -634,6 +634,7 @@ Route::prefix('v1')->name('v1.')->group(function () {
             Route::middleware('activity:ecommerce')->group(function () {
                 Route::get('merchants', 'merchants')->name('merchants.index');
                 Route::get('merchants/{merchant}/ledger', 'ledger')->name('merchants.ledger');
+                Route::get('merchants/{merchant}/statement', 'merchantStatement')->name('merchants.statement');
                 Route::post('merchants/{merchant}/adjustments', 'adjustMerchant')->name('merchants.adjustments');
                 Route::get('payouts', 'payouts')->name('payouts.index');
                 Route::post('payouts', 'storePayout')->name('payouts.store');

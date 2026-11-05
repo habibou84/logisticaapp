@@ -131,4 +131,33 @@ class CashByDayTest extends TestCase
         $left = collect($this->getJson('/api/v1/finance/merchants')->json('data'))->firstWhere('merchant_id', $this->merchant->id);
         $this->assertSame(18500, $left['available']);
     }
+
+    public function test_merchant_detail_lists_orders_by_day_and_the_orders_of_each_payout(): void
+    {
+        [$a, $b, $c] = $this->world();
+
+        $row = collect($this->getJson('/api/v1/finance/merchants?from=2026-11-03&to=2026-11-03')->assertOk()->json('data'))->firstWhere('merchant_id', $this->merchant->id);
+        $this->assertSame([2, 12000, 30500], [$row['period_count'], $row['unpaid_total'], $row['all']['unpaid_total']]);
+
+        $detail = $this->getJson("/api/v1/finance/merchants/{$this->merchant->id}/statement")->assertOk()->json('data');
+        $this->assertSame(['2026-11-04', '2026-11-03'], array_column($detail['days'], 'day'));
+        $this->assertSame([1, 18500, 0], [$detail['days'][0]['count'], $detail['days'][0]['net'], $detail['days'][0]['available']]);
+        $this->assertSame(['courier', 'Koffi Ramasseur'], [$detail['days'][0]['orders'][0]['where'], $detail['days'][0]['orders'][0]['courier']]);
+        $day3 = collect($detail['days'][1]['orders'])->keyBy('tracking_code');
+        $this->assertSame(['desk', 10000, -1500, 8500], [$day3[$a->tracking_code]['where'], $day3[$a->tracking_code]['collected'], $day3[$a->tracking_code]['fees'], $day3[$a->tracking_code]['net']]);
+        $this->assertSame('courier', $day3[$b->tracking_code]['where']);
+
+        // Tout arrive, on paie le 3 : le versement liste ses courses par date, le 4 reste à payer
+        $this->postJson('/api/v1/finance/remittances', ['courier_id' => $this->courierA->id, 'amount_received' => 25000])->assertCreated();
+        $this->postJson('/api/v1/finance/payouts', ['merchant_id' => $this->merchant->id, 'from' => '2026-11-03', 'to' => '2026-11-03'])->assertCreated();
+        $detail = $this->getJson("/api/v1/finance/merchants/{$this->merchant->id}/statement")->json('data');
+        $this->assertSame(['2026-11-04'], array_column($detail['days'], 'day'));
+        $this->assertSame('desk', $detail['days'][0]['orders'][0]['where']);
+        $this->assertSame([12000, '2026-11-03'], [$detail['payouts'][0]['net_amount'], $detail['payouts'][0]['days'][0]['day']]);
+        $this->assertEqualsCanonicalizing([$a->tracking_code, $b->tracking_code], $detail['payouts'][0]['days'][0]['codes']);
+
+        // Réservé à l'équipe de la caisse
+        Sanctum::actingAs($this->merchantUser);
+        $this->getJson("/api/v1/finance/merchants/{$this->merchant->id}/statement")->assertForbidden();
+    }
 }
