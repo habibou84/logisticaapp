@@ -13,43 +13,58 @@
     <p v-if="loaded && !enabled" class="card p-4 bg-amber-50 text-sm text-amber-900">Les départements ne sont pas proposés : voir Réglages › Départements.</p>
 
     <!-- Départements -->
-    <section v-if="tab === 'list'" class="space-y-3">
-      <div class="flex flex-wrap items-center justify-between gap-2">
-        <p class="text-sm text-gray-600">Chaque course dit quel département l'envoie ; en courrier interne, vers lequel elle va.</p>
-        <button v-if="canManage" type="button" class="btn-primary" @click="edit(null)">+ Nouveau département</button>
-      </div>
+    <section v-if="tab === 'list'" :class="['space-y-3', !staff && 'pb-24']">
+      <button
+        v-if="canManage" type="button"
+        class="flex w-full items-center gap-3 rounded-2xl border-2 border-dashed border-rose-300 bg-white px-4 py-3 text-left font-semibold text-rose-700 hover:bg-rose-50"
+        @click="edit(null)"
+      >
+        <span class="grid h-8 w-8 place-items-center rounded-xl bg-rose-100 text-lg" aria-hidden="true">＋</span>
+        Ajouter un département
+      </button>
       <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-        <article v-for="d in departments" :key="d.id" :class="['card p-4 space-y-2', !d.active && 'opacity-60']">
-          <div class="flex items-start justify-between gap-2">
-            <div>
-              <p class="font-semibold">
-                <span v-if="d.code" class="mr-1 rounded bg-slate-900 px-1.5 py-0.5 font-mono text-xs text-white">{{ d.code }}</span>{{ d.name }}
-                <span v-if="d.is_main" class="ml-1 rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-800">principal</span>
+        <article v-for="d in departments" :key="d.id" :class="['min-w-0 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200', !d.active && 'opacity-60']">
+          <div class="flex items-center gap-3">
+            <span class="grid h-11 min-w-[2.75rem] place-items-center rounded-xl bg-slate-900 px-1.5 font-mono text-xs font-bold text-white">{{ d.code || initials(d.name) }}</span>
+            <div class="min-w-0 flex-1">
+              <p class="font-bold">
+                {{ d.name }}
+                <span v-if="d.is_main" class="ml-1 whitespace-nowrap rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-800">principal</span>
+                <span v-if="d.own_address" class="ml-1 whitespace-nowrap rounded-full bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-800">autre site</span>
                 <span v-if="!d.active" class="ml-1 rounded-full bg-slate-200 px-2 py-0.5 text-xs">désactivé</span>
               </p>
-              <p v-if="d.manager_name || d.phone" class="text-sm text-gray-600">👤 {{ d.manager_name || '—' }}<template v-if="d.phone"> · {{ localPhone(d.phone) }}</template></p>
+              <p v-if="d.manager_name || d.phone" class="truncate text-sm text-gray-500">{{ [d.manager_name, d.phone && localPhone(d.phone)].filter(Boolean).join(' · ') }}</p>
             </div>
-            <button v-if="canManage" type="button" class="text-sm text-blue-600" @click="edit(d)">Modifier</button>
+            <div v-if="canManage || (settings.slips && d.active)" class="relative">
+              <button type="button" class="grid h-9 w-9 place-items-center rounded-xl border border-slate-200 text-gray-500 hover:bg-slate-50" :aria-label="`Actions pour ${d.name}`" :aria-expanded="menuFor === d.id" @click="menuFor = menuFor === d.id ? null : d.id">⋯</button>
+              <div v-if="menuFor === d.id" class="absolute right-0 top-10 z-20 w-56 overflow-hidden rounded-xl bg-white text-sm shadow-lg ring-1 ring-slate-200">
+                <button v-if="canManage" type="button" class="block w-full px-4 py-2.5 text-left hover:bg-slate-50" @click="menuFor = null; edit(d)">✏️ Modifier</button>
+                <RouterLink v-if="settings.slips && d.active" :to="`/bordereau/${d.id}`" class="block px-4 py-2.5 hover:bg-slate-50">🧾 Bordereau du jour</RouterLink>
+                <button v-if="canManage && d.active && !d.is_main" type="button" class="block w-full border-t px-4 py-2.5 text-left text-red-600 hover:bg-red-50" @click="menuFor = null; removing = d">{{ d.orders_count ? '⏸️ Désactiver' : '🗑️ Supprimer' }}</button>
+              </div>
+            </div>
           </div>
-          <p v-if="d.location" class="text-sm">🏢 {{ d.location }}</p>
-          <p class="text-sm" :class="d.own_address ? 'text-sky-800' : 'text-gray-500'">📍 {{ d.own_address ? `${d.pickup_zone_name || ''}${d.pickup_address ? ' · ' + d.pickup_address : ''} (autre site)` : 'À l\'adresse du client' }}</p>
-          <p v-if="d.cost_center" class="text-sm text-gray-600">Centre de coûts : <b class="font-mono">{{ d.cost_center }}</b></p>
-          <div v-if="d.usage">
-            <div class="flex justify-between text-xs text-gray-600">
-              <span>Ce mois-ci : {{ d.usage.used }} envoi(s)</span>
-              <span v-if="d.usage.quota">quota {{ d.usage.quota }}</span>
-            </div>
-            <div v-if="d.usage.quota" class="mt-1 h-2 overflow-hidden rounded bg-slate-100">
+          <div class="mt-3 flex min-w-0 flex-wrap gap-1.5 text-xs [&>span]:max-w-full [&>span]:break-words">
+            <span v-if="d.own_address" class="rounded-full bg-sky-50 px-2.5 py-1 text-sky-900">📍 {{ [d.pickup_zone_name, d.pickup_address].filter(Boolean).join(' · ') }}</span>
+            <span v-if="d.location" class="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">🏢 {{ d.location }}</span>
+            <span class="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">👥 {{ plural(usersOf(d).length, 'compte', 'aucun compte') }}</span>
+            <span v-if="d.cost_center" class="rounded-full bg-slate-100 px-2.5 py-1 font-mono text-slate-700">💳 {{ d.cost_center }}</span>
+          </div>
+          <template v-if="d.usage">
+            <div v-if="d.usage.quota" class="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
               <div :class="['h-full', d.usage.percent >= 100 ? 'bg-red-500' : d.usage.percent >= 80 ? 'bg-amber-500' : 'bg-emerald-500']" :style="{ width: `${Math.min(100, d.usage.percent)}%` }" />
             </div>
-          </div>
-          <p class="text-xs text-gray-500">{{ usersOf(d).length }} compte(s) rattaché(s)<template v-if="d.orders_count"> · {{ d.orders_count }} course(s)</template></p>
-          <RouterLink v-if="settings.slips && d.active" :to="`/bordereau/${d.id}`" class="mr-3 text-xs text-blue-600">🧾 Bordereau du jour</RouterLink>
-          <button v-if="canManage && d.active && !d.is_main" type="button" class="text-xs text-red-600" @click="remove(d)">{{ d.orders_count ? 'Désactiver' : 'Supprimer' }}</button>
+            <p class="mt-1 flex justify-between text-xs text-gray-500">
+              <span>{{ plural(d.usage.used, 'envoi', 'aucun envoi') }} ce mois-ci</span>
+              <span v-if="d.usage.quota" :class="d.usage.percent >= 80 ? 'font-semibold text-amber-700' : ''">sur {{ d.usage.quota }}{{ d.usage.percent >= 100 ? ' · atteint' : d.usage.percent >= 80 ? ' · bientôt atteint' : '' }}</span>
+            </p>
+          </template>
         </article>
-        <p v-if="loaded && !departments.length" class="card p-6 text-center text-gray-500 md:col-span-2 xl:col-span-3">
-          Aucun département. Ajoutez-en si ce client (une banque, une administration…) envoie ou reçoit pour plusieurs services.
-        </p>
+        <div v-if="loaded && !departments.length" class="rounded-2xl bg-white p-6 text-center text-gray-500 ring-1 ring-slate-200 md:col-span-2 xl:col-span-3">
+          {{ staff
+            ? 'Aucun département. Ajoutez-en si ce client (une banque, une administration…) envoie ou reçoit pour plusieurs services.'
+            : 'Aucun département. Ajoutez vos services (Finance, Ressources humaines…) si vous envoyez ou recevez pour plusieurs services.' }}
+        </div>
       </div>
     </section>
 
@@ -105,13 +120,29 @@
 
     <slot name="extra" :tab="tab" :departments="departments" />
 
-    <DepartmentFormModal :open="formOpen" :merchant-id="merchantId" :department="editing" :zones="zones" :staff="staff" @close="formOpen = false" @saved="formOpen = false; load()" />
+    <DepartmentFormModal
+      :open="formOpen" :merchant-id="merchantId" :department="editing" :zones="zones" :staff="staff"
+      :users="users" :departments="activeDepartments" :settings="settings"
+      @close="formOpen = false; load()" @saved="formOpen = false; load()"
+    />
+
+    <!-- Supprimer ou désactiver : on dit ce qui se passe -->
+    <BottomSheet :open="!!removing" :title="removing ? `${removing.orders_count ? 'Désactiver' : 'Supprimer'} ${removing.name} ?` : ''" @close="removing = null">
+      <p class="text-sm text-gray-600">
+        {{ removing?.orders_count
+          ? `Il a déjà ${plural(removing.orders_count, 'course')} : il reste sur ces courses et sur les factures, mais on ne peut plus le choisir pour de nouveaux envois. Vous pourrez le réactiver.`
+          : 'Il n\'a aucune course : il sera supprimé.' }}
+      </p>
+      <button type="button" class="mt-4 w-full rounded-xl bg-red-600 py-3 font-semibold text-white disabled:opacity-60" :disabled="removeBusy" @click="remove">{{ removing?.orders_count ? 'Désactiver' : 'Supprimer' }}</button>
+      <button type="button" class="mt-2 w-full py-2 text-sm text-gray-600" @click="removing = null">Annuler</button>
+    </BottomSheet>
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
+import BottomSheet from '../mobile/BottomSheet.vue'
 import DepartmentFormModal from './DepartmentFormModal.vue'
 import DepartmentStats from './DepartmentStats.vue'
 import { DEPARTMENT_OPTIONS, optionChoices, optionText } from '../../utils/departments'
@@ -172,15 +203,26 @@ function edit(d) {
   formOpen.value = true
 }
 
-async function remove(d) {
-  if (!confirm(d.orders_count ? `Désactiver ${d.name} ? Ses courses et factures le gardent.` : `Supprimer ${d.name} ?`)) return
+const removing = ref(null)
+const removeBusy = ref(false)
+async function remove() {
+  removeBusy.value = true
   try {
-    await http.delete(`/departments/${d.id}`)
+    const { data } = await http.delete(`/departments/${removing.value.id}`)
+    toasts.success(data.data.archived ? `${removing.value.name} est désactivé.` : `${removing.value.name} est supprimé.`)
+    removing.value = null
     load()
   } catch (e) {
     toasts.error(apiErrorMessage(e))
+  } finally {
+    removeBusy.value = false
   }
 }
+
+const menuFor = ref(null)
+const initials = (name) => (name || '?').split(/\s+/).filter(Boolean).slice(0, 3).map((w) => w[0]).join('').toUpperCase()
+// « 1 compte », « 3 comptes », « aucun compte »
+const plural = (n, word, none = null) => (!n && none ? none : `${n} ${word}${n > 1 ? 's' : ''}`)
 
 async function saveMembership(u, departmentIds, headIds) {
   try {

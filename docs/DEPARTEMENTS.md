@@ -12,6 +12,15 @@ aussi ses départements dans son application (**Profil › Mes départements**),
   les lots à prix global et les suppléments).
 - Un département qui a des courses se désactive au lieu de se supprimer (gardé sur les courses et les factures).
 
+### Ajouter un département (agence et application du client)
+- Panneau en deux étapes. **L'essentiel** : nom (le code est proposé tout seul : « Ressources humaines » → RH),
+  responsable choisi parmi les comptes du client ou saisi, téléphone, « Dans nos locaux » ou « Sur un autre site »
+  (commune, adresse obligatoire, repère, position sur la carte), bâtiment et étage. **Plus d'options** : centre de
+  coûts, envois prévus par mois, e-mail, département principal (et notes internes pour l'agence).
+- Puis **qui y travaille** : on coche les comptes et le chef de service (le responsable choisi est déjà coché).
+- Un nom ou un code déjà pris chez le client est refusé ; les erreurs s'affichent en français sous chaque champ.
+- Liste : menu ⋯ (modifier, bordereau du jour, désactiver ou supprimer avec une confirmation qui dit ce qui se passe).
+
 ## Les comptes
 - Chaque compte « Employé du client » est rattaché à un ou plusieurs départements (onglet **Comptes**).
 - Option : un employé ne voit et ne commande que pour ses départements (courses, alertes, factures) ; le gérant voit

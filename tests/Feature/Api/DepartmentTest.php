@@ -84,6 +84,12 @@ class DepartmentTest extends TestCase
         $this->assertFalse($finance->fresh()->is_main);
         $this->putJson("/api/v1/departments/{$marketing->id}", ['is_main' => false])->assertUnprocessable();
 
+        // Nom et code uniques chez le client ; adresse obligatoire pour un autre site
+        $this->postJson("/api/v1/merchants/{$this->merchant->id}/departments", ['name' => ' finance '])->assertUnprocessable()->assertJsonValidationErrors('name');
+        $this->postJson("/api/v1/merchants/{$this->merchant->id}/departments", ['name' => 'Ressources humaines', 'code' => 'mkt'])->assertUnprocessable()->assertJsonValidationErrors('code');
+        $this->putJson("/api/v1/departments/{$marketing->id}", ['name' => 'Marketing', 'code' => 'MKT'])->assertOk();
+        $this->postJson("/api/v1/merchants/{$this->merchant->id}/departments", ['name' => 'Agence', 'pickup_zone_id' => $this->plateau->id, 'pickup_address' => ''])->assertUnprocessable()->assertJsonValidationErrors('pickup_address');
+
         $list = $this->getJson("/api/v1/merchants/{$this->merchant->id}/departments")->assertOk();
         $this->assertSame(['Marketing', 'Finance'], array_column($list->json('data'), 'name'));
         $this->assertSame(['quota' => 50, 'used' => 0, 'percent' => 0], $list->json('data.1.usage'));

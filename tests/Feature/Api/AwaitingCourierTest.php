@@ -22,6 +22,9 @@ class AwaitingCourierTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        // En matinée : les heures avancées dans les tests ne font pas passer la date de livraison
+        // (une course du jour pas ramassée deviendrait « À reporter » le lendemain)
+        $this->travelTo(CarbonImmutable::parse('2026-12-01 08:00', 'UTC'));
         $this->buildWorld();
         $this->company->update(['pickup_assign_alert_minutes' => 30, 'delivery_assign_alert_minutes' => 60]);
     }
@@ -169,8 +172,6 @@ class AwaitingCourierTest extends TestCase
 
     public function test_alerts_can_be_turned_off_and_counts_are_reserved_to_dispatch(): void
     {
-        // En journée : la livraison du jour n'est pas encore passée (sinon la course serait « À reporter »)
-        $this->travelTo(CarbonImmutable::parse('2026-12-01 08:00', 'UTC'));
         $this->company->update(['pickup_assign_alert_minutes' => 0]);
         $this->confirmedOrder();
         Notification::fake();

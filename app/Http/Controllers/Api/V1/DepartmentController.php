@@ -21,6 +21,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Départements d'un client (fiche du client › Départements, ou application du client) : liste, quotas du
@@ -238,6 +239,21 @@ class DepartmentController extends Controller
         ]);
         if (isset($data['code'])) {
             $data['code'] = mb_strtoupper(trim($data['code'])) ?: null;
+        }
+        // Nom et code : uniques chez ce client (sans tenir compte des majuscules)
+        $current = $request->route('department');
+        $taken = fn (string $column, string $value) => Department::query()->where('merchant_id', $merchant->id)
+            ->when($current instanceof Department, fn ($q) => $q->whereKeyNot($current->id))
+            ->whereRaw("LOWER({$column}) = ?", [mb_strtolower(trim($value))])->exists();
+        if (filled($data['name'] ?? null) && $taken('name', $data['name'])) {
+            throw ValidationException::withMessages(['name' => 'Un département porte déjà ce nom.']);
+        }
+        if (filled($data['code'] ?? null) && $taken('code', $data['code'])) {
+            throw ValidationException::withMessages(['code' => 'Ce code est déjà pris par un autre département.']);
+        }
+        // Autre site : l'adresse est nécessaire au livreur
+        if (filled($data['pickup_zone_id'] ?? null) && array_key_exists('pickup_address', $data) && blank($data['pickup_address'])) {
+            throw ValidationException::withMessages(['pickup_address' => 'Indiquez l\'adresse du site : le livreur en a besoin.']);
         }
         // Sans zone : à l'adresse du client
         if (array_key_exists('pickup_zone_id', $data) && $data['pickup_zone_id'] === null) {
