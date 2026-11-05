@@ -169,6 +169,8 @@ class AwaitingCourierTest extends TestCase
 
     public function test_alerts_can_be_turned_off_and_counts_are_reserved_to_dispatch(): void
     {
+        // En journée : la livraison du jour n'est pas encore passée (sinon la course serait « À reporter »)
+        $this->travelTo(CarbonImmutable::parse('2026-12-01 08:00', 'UTC'));
         $this->company->update(['pickup_assign_alert_minutes' => 0]);
         $this->confirmedOrder();
         Notification::fake();
@@ -218,10 +220,11 @@ class AwaitingCourierTest extends TestCase
         $this->artisan('orders:unassigned')->assertSuccessful();
         $this->assertSame(1, $cutoffAlerts());
 
-        // Le lendemain, la course attend toujours : nouvelle alerte
+        // Le lendemain, la date de livraison est passée : la course attend une nouvelle date (« À reporter »), pas un livreur
         $this->travelTo(CarbonImmutable::parse('2026-12-02 14:30', 'UTC'));
         $this->artisan('orders:unassigned')->assertSuccessful();
-        $this->assertSame(2, $cutoffAlerts());
+        $this->assertSame(1, $cutoffAlerts());
+        $this->assertTrue($order->fresh()->needsReschedule('2026-12-02'));
     }
 
     public function test_no_cutoff_alert_when_every_order_has_a_courier_and_setting_validation(): void

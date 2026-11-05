@@ -35,6 +35,9 @@ enum WhatsAppTemplate: string
     case CashReceipt = 'versement_recu';
     case CashReminder = 'argent_a_remettre';
     case CashClosing = 'cloture_caisse';
+    case RescheduleRequest = 'colis_a_reporter';
+    case RescheduleReminder = 'rappel_colis_a_reporter';
+    case RescheduleDone = 'colis_reportes';
 
     public const LANGUAGE = 'fr';
 
@@ -67,6 +70,9 @@ enum WhatsAppTemplate: string
             self::CashReceipt => 'Bonjour {{1}}, {{2}} a bien reçu votre versement {{3}} du {{4}} : {{5}} (attendu {{6}}). {{7}} Colis rendus : {{8}}. Colis gardés : {{9}}. Merci.',
             self::CashReminder => 'Bonjour {{1}}, vous avez {{2}} encaissés depuis le {{3}} à remettre à la caisse de {{4}}. Passez faire votre versement dès que possible. Merci.',
             self::CashClosing => 'Bonjour {{1}}, la caisse de {{2}} du {{3}} a été clôturée par {{4}}. Entré : {{5}}. Sorti : {{6}}. Espèces comptées : {{7}} (attendu {{8}}). {{9}} Encore chez les livreurs : {{10}}.',
+            self::RescheduleRequest => 'Bonjour {{1}}, {{2}} colis prévu(s) {{3}} n\'ont pas pu être ramassés : {{4}}. Choisissez une nouvelle date ici : {{5}} , ou répondez à ce message, par exemple « tout demain » ou « 1 3 lundi ». Merci.',
+            self::RescheduleReminder => 'Bonjour {{1}}, rappel : {{2}} colis attendent toujours une nouvelle date de livraison. Choisissez-la ici : {{3}} , ou répondez « tout aujourd\'hui », ou les numéros et le jour. Merci.',
+            self::RescheduleDone => 'Bonjour {{1}}, nouvelle date de livraison pour {{2}} colis : {{3}}. Merci de votre confiance.',
         };
     }
 
@@ -101,6 +107,9 @@ enum WhatsAppTemplate: string
             self::CashReceipt => '🧾 Versement reçu',
             self::CashReminder => '💵 Argent à remettre',
             self::CashClosing => '🔒 Caisse clôturée',
+            self::RescheduleRequest => '📅 Colis à reporter',
+            self::RescheduleReminder => '📅 Colis à reporter (rappel)',
+            self::RescheduleDone => '📅 Nouvelle date de livraison',
         };
     }
 
@@ -133,6 +142,9 @@ enum WhatsAppTemplate: string
             self::CashReceipt => 'Au livreur, quand la caisse reçoit son versement (reçu : montant, écart, colis rendus et gardés)',
             self::CashReminder => 'Au livreur, quand il garde l\'argent encaissé trop longtemps ou au-delà du plafond de l\'entreprise',
             self::CashClosing => 'Aux administrateurs de l\'entreprise, résumé de la clôture de la caisse du jour',
+            self::RescheduleRequest => 'Au marchand, quand des colis n\'ont pas pu être ramassés à leur date : choisir une nouvelle date (message du soir ou demande du dispatch)',
+            self::RescheduleReminder => 'Au marchand, rappel le matin quand il n\'a pas encore choisi la nouvelle date de ses colis',
+            self::RescheduleDone => 'Au marchand, quand l\'agence donne elle-même une nouvelle date à ses colis pas ramassés',
         };
     }
 
@@ -160,6 +172,9 @@ enum WhatsAppTemplate: string
             self::CashReceipt => ['Koffi', 'Rapide Express', 'VR-261030-0042', '30/10 à 17:40', '118 000 F', '120 000 F', 'Écart de 2 000 F retenu sur votre paie.', '2', '1'],
             self::CashReminder => ['Koffi', '342 000 F', '28/10 à 16:00', 'Rapide Express'],
             self::CashClosing => ['Awa', 'Rapide Express', '30/10', 'Mariam', '612 000 F', '438 500 F', '153 500 F', '155 500 F', 'Écart : −2 000 F (monnaie rendue à un livreur).', '128 000 F'],
+            self::RescheduleRequest => ['Boutique Chic', '3', 'aujourd\'hui', '1) LV-7K2M-9PQX Awa K. (Yopougon) ; 2) LV-3QX8-K2LM Yao B. (Cocody) ; 3) LV-9TQ4-R2KD Koné A. (Plateau)', 'https://rapide.jibiat.com/reporter/K7PQ2xZ8'],
+            self::RescheduleReminder => ['Boutique Chic', '2', 'https://rapide.jibiat.com/reporter/K7PQ2xZ8'],
+            self::RescheduleDone => ['Boutique Chic', '2', 'LV-7K2M-9PQX le ven. 6 nov. ; LV-3QX8-K2LM le lun. 9 nov.'],
             self::ManagerReport => ['Awa', 'du 05/10 au 11/10', 'Rapide Express', '312', '+12 %', '287', '94 %', '430 500 F', '+8 %', '3', 'https://exemple.ci/admin/statistiques'],
             self::InvoiceIssued => ['Boutique Chic', 'DIS-202610-0001', 'Distribution', 'octobre 2026', '53 800 F', '15/11/2026'],
             self::InvoiceReminder => ['Boutique Chic', 'DIS-202610-0001', '15/11/2026', '53 800 F'],

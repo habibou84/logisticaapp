@@ -154,10 +154,13 @@ class AutoAssigner
         Company::query()->where('status', 'active')->whereIn('auto_pickup', [Company::AUTO_TRIAL, Company::AUTO_ON])
             ->whereNull('automation_paused_at')
             ->each(function (Company $company) use (&$assigned) {
+                $today = CarbonImmutable::now($company->timezone ?: config('app.timezone'))->toDateString();
                 Order::withoutGlobalScopes()
                     ->where('company_id', $company->id)
                     ->where('status', OrderStatus::Confirmed->value)
                     ->whereNull('pickup_hub_id')
+                    // Date de livraison passée : à reporter d'abord (Reschedules)
+                    ->withoutToReschedule($today)
                     ->whereDoesntHave('assignments', fn ($q) => $q->active()->where('type', AssignmentType::Pickup->value))
                     ->orderBy('confirmed_at')
                     ->limit(500)
@@ -298,6 +301,9 @@ class AutoAssigner
         }
 
         $today = CarbonImmutable::now($company->timezone ?: config('app.timezone'))->toDateString();
+        if ($order->needsReschedule($today)) {
+            return null;
+        }
         if ($mode === Company::AUTO_ON && ($preferred = $this->choices->preferred($order, $this->unavailableFor($order, AssignmentType::Pickup)))) {
             return $this->assignPreferred($company, $order, AssignmentType::Pickup, $preferred, $after);
         }

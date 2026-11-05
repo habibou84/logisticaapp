@@ -57,6 +57,7 @@ class Conversation
         private readonly HeuristicOrderParser $rules,
         private readonly ZoneMatcher $zoneMatcher,
         private readonly PhoneVerifier $verifier,
+        private readonly RescheduleConversation $reschedules,
     ) {}
 
     /**
@@ -98,6 +99,13 @@ class Conversation
             return $this->done();
         }
 
+        // Réponse à une demande de nouvelle date (colis pas ramassés), même sans la création de courses par WhatsApp
+        if (in_array($type, ['text', 'button'], true)
+            && ($answer = $this->reschedules->handle($company, $merchant, $this->phone, $text, $buttonId)) !== null) {
+            $this->reply($answer[0], $answer[1]);
+
+            return $this->done();
+        }
         // Activé par l'entreprise
         if (! $company->whatsapp_orders) {
             $this->reply("La création de courses par WhatsApp n'est pas activée. Utilisez votre application {$company->name}.");

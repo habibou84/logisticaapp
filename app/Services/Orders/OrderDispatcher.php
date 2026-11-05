@@ -73,6 +73,11 @@ class OrderDispatcher
                 };
             }
 
+            // Date de livraison passée et colis pas ramassé : nouvelle date d'abord (« À reporter »)
+            if ($type === AssignmentType::Pickup && $order->needsReschedule(Reschedules::today($order->company))) {
+                throw new BusinessRuleException('La date de livraison de cette course est passée : choisissez d\'abord une nouvelle date (onglet « À reporter »).', 'type');
+            }
+
             if ($type === AssignmentType::Delivery && $order->attempts_count >= $order->max_attempts) {
                 throw new BusinessRuleException('Nombre maximal de tentatives atteint : organisez le retour du colis.', 'type');
             }

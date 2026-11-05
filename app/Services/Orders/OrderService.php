@@ -324,7 +324,16 @@ class OrderService
                 ]))->id;
             }
 
+            // Nouvelle date : la demande de report en cours pour ce colis est réglée
+            $rescheduleId = $order->isDirty('delivery_scheduled_date') ? $order->reschedule_request_id : null;
+            if ($rescheduleId !== null) {
+                $order->reschedule_request_id = null;
+            }
+
             $order->save();
+            if ($rescheduleId !== null) {
+                Reschedules::closeIfEmpty($rescheduleId);
+            }
 
             $this->journal->record($order, $actor, OrderEventType::Edited, [
                 'meta' => ['changes' => $changes],

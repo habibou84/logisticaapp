@@ -10,6 +10,7 @@ use App\Services\Finance\Fne;
 use App\Services\Finance\Vat;
 use App\Services\Labels\LabelSettings;
 use App\Services\Orders\ActivityOptions;
+use App\Services\Orders\Reschedules;
 use App\Services\Photos\PhotoSettings;
 use App\Services\Ratings\RatingSettings;
 use App\Services\Reports\DashboardSettings;
@@ -18,6 +19,7 @@ use App\Services\Vehicles\VehicleSettings;
 use App\Support\InvoicePayments;
 use App\Support\PhoneNumber as Phone;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateCompanyRequest extends FormRequest
 {
@@ -111,6 +113,11 @@ class UpdateCompanyRequest extends FormRequest
             'cutoff_by_day.*' => ['nullable', 'date_format:H:i'],
             'unreachable_minutes' => ['sometimes', 'integer', 'min:0', 'max:240'],
             'late_pickup_alert_minutes' => ['sometimes', 'integer', 'min:0', 'max:600'],
+            // Colis pas ramassés à leur date : message du soir aux e-commerçants
+            'reschedule_evening' => ['sometimes', 'boolean'],
+            'reschedule_evening_time' => ['sometimes', 'date_format:H:i'],
+            'reschedule_channel' => ['sometimes', Rule::in(Reschedules::CHANNELS)],
+            'reschedule_no_answer' => ['sometimes', Rule::in(Reschedules::NO_ANSWER)],
             'courier_available_alert' => ['sometimes', 'boolean'],
             'directory_listed' => ['sometimes', 'boolean'],
             'directory_pitch' => ['sometimes', 'nullable', 'string', 'max:240'],

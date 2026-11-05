@@ -40,7 +40,9 @@ class CourierSpaceController extends Controller
             ->when(
                 $request->boolean('history'),
                 fn ($q) => $q->whereNotIn('status', ['assigned', 'accepted', 'in_progress'])->whereDate('updated_at', today()),
-                fn ($q) => $q->active(),
+                fn ($q) => $q->active()
+                    // Ramassages pas commencés d'une course en retard : cachés tant que la date n'est pas actualisée
+                    ->whereHas('order', fn ($o) => $o->withoutToReschedule(today()->toDateString())),
             )
             // Frais déjà déclarés par ce livreur sur la course
             ->with(['order' => fn ($q) => $q->with([

@@ -169,7 +169,11 @@ class MissionWatch
      */
     private function notStarted(Company $company): Builder
     {
+        $today = CarbonImmutable::now($company->timezone ?: config('app.timezone'))->toDateString();
+
+        // Ramassages d'une course à reporter : cachés au livreur, rien à lui reprocher
         return OrderAssignment::query()
+            ->whereHas('order', fn (Builder $q) => $q->withoutGlobalScopes()->withoutToReschedule($today))
             ->whereIn('status', [AssignmentStatus::Assigned->value, AssignmentStatus::Accepted->value])
             ->whereHas('courier', fn (Builder $q) => $q->withoutGlobalScopes()->where('company_id', $company->id))
             ->whereHas('order', fn (Builder $q) => $q->withoutGlobalScopes()->whereNotIn('status', [

@@ -477,6 +477,42 @@ class Order extends Model
             ->whereNot(fn (Builder $q) => self::stillInRule($q, $company, $today));
     }
 
+    /** Statuts d'un colis pas encore parti chez le livreur (ramassage pas commencé) */
+    public const NOT_PICKED_STATUSES = [OrderStatus::Confirmed, OrderStatus::PickupAssigned];
+
+    /**
+     * À reporter : jour de livraison passé et colis pas encore ramassé (ramassage pas commencé). Cachées chez les
+     * livreurs et hors de l'assignation tant que la date n'est pas actualisée (dispatch ou e-commerçant).
+     */
+    public function scopeToReschedule(Builder $query, string $today): Builder
+    {
+        return $query->whereIn('orders.status', OrderStatus::values(self::NOT_PICKED_STATUSES))
+            ->whereNull('orders.pickup_hub_id')
+            ->where('orders.return_requested', false)
+            ->whereRaw(self::DELIVERY_DAY_SQL.' < ?', [$today]);
+    }
+
+    /** Tout sauf les courses à reporter (voir scopeToReschedule) */
+    public function scopeWithoutToReschedule(Builder $query, string $today): Builder
+    {
+        return $query->where(fn ($q) => $q->whereNotIn('orders.status', OrderStatus::values(self::NOT_PICKED_STATUSES))
+            ->orWhereNotNull('orders.pickup_hub_id')
+            ->orWhere('orders.return_requested', true)
+            ->orWhereRaw(self::DELIVERY_DAY_SQL.' >= ?', [$today]));
+    }
+
+    /** Colis à reporter (voir scopeToReschedule) */
+    public function needsReschedule(string $today): bool
+    {
+        return in_array($this->status, self::NOT_PICKED_STATUSES, true) && $this->pickup_hub_id === null && ! $this->return_requested
+            && ($this->delivery_scheduled_date ?? $this->created_at)->toDateString() < $today;
+    }
+
+    public function rescheduleRequest(): BelongsTo
+    {
+        return $this->belongsTo(RescheduleRequest::class);
+    }
+
     /**
      * Encore dans sa règle malgré un jour de livraison passé : lot de distribution pas encore échu, MAD.
      * Ces courses restent dans le travail du jour.

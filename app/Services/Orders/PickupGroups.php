@@ -8,6 +8,7 @@ use App\Enums\OrderEventType;
 use App\Enums\OrderStatus;
 use App\Enums\Role;
 use App\Exceptions\BusinessRuleException;
+use App\Models\Company;
 use App\Models\Order;
 use App\Models\OrderAssignment;
 use App\Models\User;
@@ -40,6 +41,8 @@ class PickupGroups
             ->visibleTo($actor)
             ->where('status', OrderStatus::Confirmed)
             ->whereNull('pickup_hub_id')
+            // Date de livraison passée : dans « À reporter » tant que la date n'est pas actualisée
+            ->withoutToReschedule($actor->company ? Reschedules::today($actor->company) : today()->toDateString())
             ->whereDoesntHave('assignments', fn ($q) => $q->active()->where('type', AssignmentType::Pickup->value))
             ->with(['merchant:id,business_name,phone', 'pickupZone:id,name', 'deliveryZone:id,name'])
             ->orderBy('confirmed_at')
@@ -106,7 +109,8 @@ class PickupGroups
      */
     public function attachToRunningPickup(Order $order): ?OrderAssignment
     {
-        if ($order->status !== OrderStatus::Confirmed || $order->fromWarehouse() || $order->merchant_id === null) {
+        if ($order->status !== OrderStatus::Confirmed || $order->fromWarehouse() || $order->merchant_id === null
+            || $order->needsReschedule(Reschedules::today(Company::find($order->company_id)))) {
             return null;
         }
 

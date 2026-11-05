@@ -59,10 +59,12 @@ use App\Http\Controllers\Api\V1\PlanningController;
 use App\Http\Controllers\Api\V1\PricingGridController;
 use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\ProductPhotoController;
+use App\Http\Controllers\Api\V1\PublicRescheduleController;
 use App\Http\Controllers\Api\V1\PushSubscriptionController;
 use App\Http\Controllers\Api\V1\QuoteController;
 use App\Http\Controllers\Api\V1\ReferenceController;
 use App\Http\Controllers\Api\V1\ReportController;
+use App\Http\Controllers\Api\V1\RescheduleController;
 use App\Http\Controllers\Api\V1\ReturnSlipController;
 use App\Http\Controllers\Api\V1\RevenueController;
 use App\Http\Controllers\Api\V1\RoleController;
@@ -107,6 +109,7 @@ Route::prefix('public/v1')->name('public.')->middleware(['api.key', 'throttle:pu
     Route::post('orders', 'store')->middleware([$write, 'idempotent'])->name('orders.store');
     Route::get('orders/{trackingCode}', 'show')->middleware($read)->name('orders.show');
     Route::post('orders/{trackingCode}/cancel', 'cancel')->middleware($write)->name('orders.cancel');
+    // Contrat 1.10 : nouvelle date d'un colis pas ramassé à sa date
     // Actions du marchand : modifier, décider après un échec, demander le retour, laisser une note
     Route::patch('orders/{trackingCode}', 'update')->middleware($write)->name('orders.update');
     Route::post('orders/{trackingCode}/decision', 'decision')->middleware($write)->name('orders.decision');
@@ -183,6 +186,9 @@ Route::prefix('v1')->name('v1.')->group(function () {
     Route::post('tracking/{code}/rating', [CourierRatingController::class, 'rateByRecipient'])
         ->middleware('throttle:10,1')
         ->name('tracking.rating');
+    // Nouvelle date des colis pas ramassés (lien du message WhatsApp envoyé à l'e-commerçant)
+    Route::get('reschedule/{token}', [PublicRescheduleController::class, 'show'])->middleware('throttle:30,1')->name('reschedule.show');
+    Route::post('reschedule/{token}', [PublicRescheduleController::class, 'store'])->middleware('throttle:10,1')->name('reschedule.store');
 
     Route::middleware(['auth:sanctum', 'active', 'throttle:tenant'])->group(function () {
         // Étiquettes imprimées (date, nombre d'impressions)
@@ -480,6 +486,11 @@ Route::prefix('v1')->name('v1.')->group(function () {
         // Courses non traitées (jour dépassé, plus dans la règle de l'activité) regroupées par date, livreur ou client
         Route::get('orders/untreated-groups', [OrderController::class, 'untreatedGroups'])->name('orders.untreated-groups');
         Route::get('orders/pickup-groups', [OrderController::class, 'pickupGroups'])->name('orders.pickup-groups');
+        // À reporter : colis pas ramassés dont la date de livraison est passée
+        Route::get('orders/to-reschedule', [RescheduleController::class, 'index'])->name('orders.to-reschedule');
+        Route::post('orders/reschedule', [RescheduleController::class, 'setDate'])->middleware('throttle:60,1')->name('orders.reschedule');
+        Route::post('reschedule-requests', [RescheduleController::class, 'ask'])->middleware('throttle:30,1')->name('reschedule-requests.store');
+        Route::post('reschedule-requests/{rescheduleRequest}/remind', [RescheduleController::class, 'remind'])->middleware('throttle:30,1')->name('reschedule-requests.remind');
         // Aide à la saisie : analyse d'un message collé, doublons du jour
         Route::post('orders/parse-message', [OrderDraftController::class, 'parse'])->middleware('throttle:30,1')->name('orders.parse-message');
         Route::get('orders/duplicates', [OrderDraftController::class, 'duplicates'])->name('orders.duplicates');
