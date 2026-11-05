@@ -126,52 +126,77 @@
       </div>
     </div>
 
-    <div class="grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
-      <!-- Livreurs -->
-      <div class="space-y-2">
-        <p v-if="!loaded" class="text-gray-500">Chargement…</p>
-        <p v-else-if="!visible.length" class="card p-4 text-center text-gray-500">Aucun livreur.</p>
-        <div
-          v-for="c in visible"
-          :key="c.id"
-          :class="['card p-3 space-y-1.5 transition', c.flags.length ? 'bg-orange-50 border-orange-200' : '', selected?.id === c.id ? 'ring-2 ring-emerald-700' : '']"
-        >
-          <button type="button" class="w-full text-left space-y-1.5" :aria-pressed="selected?.id === c.id" @click="select(c)">
-            <div class="flex items-center gap-2">
-              <span :class="['h-2.5 w-2.5 rounded-full', STATE[c.state].dot]" aria-hidden="true" />
-              <span class="flex-1 font-semibold">{{ c.name }}</span>
-              <span :class="['rounded-full px-2 py-0.5 text-xs', STATE[c.state].chip]">{{ STATE[c.state].label }}<template v-if="c.last_location_at"> · vu {{ ago(c.last_location_at) }}</template></span>
-            </div>
-            <!-- Mise à disposition : chez quel client, horaire, courses faites pour lui -->
-            <p v-if="c.mad" class="rounded-md bg-violet-50 px-2 py-1 text-sm text-violet-900">En MAD chez <b>{{ c.mad.merchant }}</b><template v-if="c.mad.from"> · {{ c.mad.from }}–{{ c.mad.to }}</template><template v-if="c.mad.total"> · {{ c.mad.done }} / {{ c.mad.total }} courses</template><template v-if="isToday && !c.mad.reserved_now"> · pas en ce moment</template></p>
-            <Progress v-if="c.deliveries.total" label="Livraisons" :done="c.deliveries.done" :total="c.deliveries.total" :warn="c.flags.length > 0" />
-            <Progress v-if="c.deliveries.units_total > c.deliveries.total" label="Plis" :done="c.deliveries.units_done" :total="c.deliveries.units_total" />
-            <Progress v-if="c.pickups.total" label="Ramassages" :done="c.pickups.done" :total="c.pickups.total" />
-            <Progress v-if="c.objective" :label="`Prime ${money(c.objective.amount)}`" :done="Math.min(c.objective.value, c.objective.threshold)" :total="c.objective.threshold" color="bg-violet-600" />
-            <p class="text-sm text-gray-700">
-              <template v-if="c.remaining && c.estimated_end">Fin estimée <b :class="c.late_end ? 'text-orange-800' : ''">{{ time(c.estimated_end) }}</b><template v-if="c.late_end"> (dépôt ferme à {{ closesAt }})</template></template>
-              <template v-else-if="!c.remaining && c.estimated_end">Terminé à {{ time(c.estimated_end) }}</template>
-              <template v-if="paceLine(c)">{{ c.estimated_end ? ' · ' : '' }}{{ paceLine(c) }}</template>
-              <template v-if="!c.deliveries.total && !c.pickups.total">Aucune mission {{ isToday ? 'aujourd\'hui' : 'ce jour-là' }}</template>
-            </p>
-            <p v-if="isToday" class="text-sm text-gray-700">{{ c.parcels_in_hand }} colis en main · {{ c.failed }} échec{{ c.failed > 1 ? 's' : '' }} · {{ money(c.cash_in_hand) }} en main</p>
-            <p v-else-if="!isFuture" class="text-sm text-gray-700">{{ c.failed }} échec{{ c.failed > 1 ? 's' : '' }}</p>
-            <p v-if="c.flags.length" class="text-sm font-semibold text-orange-800">⚠ {{ c.flags.join(' · ') }}</p>
-          </button>
-          <p v-if="isToday && !c.remaining && (c.cash_in_hand > 0 || c.parcels_in_hand > 0) && auth.can('finance.manage')" class="text-sm">
-            <RouterLink :to="{ path: '/admin/caisse', query: { verser: c.id } }" class="font-semibold text-emerald-700 hover:underline">Faire le point</RouterLink>
-            ({{ money(c.cash_in_hand) }}<template v-if="c.parcels_in_hand">, {{ c.parcels_in_hand }} colis à rendre</template>)
-          </p>
-        </div>
+    <div :class="['grid gap-4', selected ? 'xl:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]' : '']">
+      <!-- Vue d'ensemble : un livreur par ligne (la carte est dans l'onglet « Carte ») -->
+      <div class="card self-start overflow-x-auto">
+        <p v-if="!loaded" class="p-4 text-gray-500">Chargement…</p>
+        <p v-else-if="!visible.length" class="p-4 text-center text-gray-500">Aucun livreur.</p>
+        <table v-else class="stack-table w-full text-sm">
+          <thead class="bg-slate-50 text-left text-xs uppercase text-gray-600">
+            <tr>
+              <th class="min-w-[14rem] p-2">Livreur</th>
+              <th class="min-w-[9rem] p-2">Livraisons</th>
+              <th class="p-2">Ramassages</th>
+              <th v-if="!isFuture" class="p-2 text-right">Échecs</th>
+              <th v-if="isToday" class="p-2 text-right">En main</th>
+              <th v-if="!isFuture" class="p-2">Fin</th>
+              <th class="p-2"><span class="sr-only">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y">
+            <tr
+              v-for="c in visible" :key="c.id"
+              :class="['cursor-pointer hover:bg-slate-50', c.flags.length ? 'bg-orange-50/70' : '', selected?.id === c.id ? '!bg-emerald-50 shadow-[inset_4px_0_0_#047857]' : '']"
+              :aria-selected="selected?.id === c.id" @click="select(c)"
+            >
+              <td data-label="Livreur" class="p-2">
+                <div class="flex items-center gap-2">
+                  <span :class="['h-2.5 w-2.5 shrink-0 rounded-full', STATE[c.state].dot]" aria-hidden="true" />
+                  <span class="font-semibold">{{ c.name }}</span>
+                </div>
+                <div class="mt-0.5 text-xs text-gray-500">
+                  <span :class="['rounded-full px-1.5 py-0.5', STATE[c.state].chip]">{{ STATE[c.state].label }}</span>
+                  <template v-if="c.last_location_at"> · vu {{ ago(c.last_location_at) }}</template>
+                  <template v-if="c.zones.length"> · {{ c.zones.slice(0, 2).join(', ') }}</template>
+                </div>
+                <!-- Mise à disposition : chez quel client, horaire, courses faites pour lui -->
+                <p v-if="c.mad" class="mt-0.5 text-xs text-violet-900">MAD chez <b>{{ c.mad.merchant }}</b><template v-if="c.mad.from"> · {{ c.mad.from }}–{{ c.mad.to }}</template><template v-if="c.mad.total"> · {{ c.mad.done }} / {{ c.mad.total }}</template><template v-if="isToday && !c.mad.reserved_now"> · pas en ce moment</template></p>
+                <p v-if="c.objective" class="mt-0.5 text-xs text-violet-800">Prime {{ money(c.objective.amount) }} : {{ Math.min(c.objective.value, c.objective.threshold) }} / {{ c.objective.threshold }}</p>
+                <p v-if="c.flags.length" class="mt-0.5 text-xs font-semibold text-orange-800">⚠ {{ c.flags.join(' · ') }}</p>
+              </td>
+              <td data-label="Livraisons" class="p-2">
+                <template v-if="c.deliveries.total">
+                  <div class="flex items-baseline justify-between gap-2 text-xs"><b class="text-sm">{{ c.deliveries.done }} / {{ c.deliveries.total }}</b><span v-if="c.late_before" class="text-orange-700">+{{ c.late_before }} d'avant</span></div>
+                  <div class="mt-1 h-1.5 rounded-full bg-slate-200"><div :class="['h-1.5 rounded-full', barColor(c)]" :style="{ width: `${share(c.deliveries)}%` }" /></div>
+                  <div v-if="c.deliveries.units_total > c.deliveries.total" class="mt-0.5 text-xs text-gray-500">{{ c.deliveries.units_done }} / {{ c.deliveries.units_total }} plis</div>
+                  <div v-if="paceLine(c)" class="mt-0.5 text-xs text-gray-500">{{ paceLine(c) }}</div>
+                </template>
+                <span v-else class="text-xs text-gray-400">—</span>
+              </td>
+              <td data-label="Ramassages" class="whitespace-nowrap p-2">{{ c.pickups.total ? `${c.pickups.done} / ${c.pickups.total}` : '—' }}</td>
+              <td v-if="!isFuture" data-label="Échecs" :class="['p-2 text-right', c.failed ? 'font-semibold text-red-700' : 'text-gray-400']">{{ c.failed || '—' }}</td>
+              <td v-if="isToday" data-label="En main" class="whitespace-nowrap p-2 text-right">
+                <span v-if="c.parcels_in_hand || c.cash_in_hand">{{ c.parcels_in_hand }} colis<span class="block text-xs text-gray-600">{{ money(c.cash_in_hand) }}</span></span>
+                <span v-else class="text-gray-400">—</span>
+              </td>
+              <td v-if="!isFuture" data-label="Fin" class="whitespace-nowrap p-2 text-xs">
+                <template v-if="c.remaining && c.estimated_end"><b :class="c.late_end ? 'text-orange-800' : ''">{{ time(c.estimated_end) }}</b><span v-if="c.late_end" class="block text-orange-800">après {{ closesAt }}</span></template>
+                <template v-else-if="!c.remaining && c.estimated_end"><span class="text-emerald-700">✓ {{ time(c.estimated_end) }}</span></template>
+                <template v-else>—</template>
+              </td>
+              <td class="whitespace-nowrap p-2 text-right" @click.stop>
+                <a v-if="c.phone" :href="telLink(c.phone)" class="inline-grid h-8 w-8 place-items-center rounded-lg border border-slate-300 hover:bg-slate-100" :title="`Appeler ${c.name}`">📞</a>
+                <RouterLink :to="{ path: '/admin/activite/carte', query: { livreur: c.id, date: day } }" class="ml-1 inline-grid h-8 w-8 place-items-center rounded-lg border border-slate-300 hover:bg-slate-100" :title="`${c.name} sur la carte`">🗺️</RouterLink>
+                <RouterLink v-if="isToday && !c.remaining && (c.cash_in_hand > 0 || c.parcels_in_hand > 0) && auth.can('finance.manage')" :to="{ path: '/admin/caisse', query: { verser: c.id } }" class="ml-1 text-xs font-semibold text-emerald-700 hover:underline">Faire le point</RouterLink>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <p v-if="loaded && visible.length && !selected" class="border-t px-3 py-2 text-xs text-gray-500">Touchez un livreur pour voir ses missions, réassigner une course ou lui envoyer une consigne.</p>
       </div>
 
-      <!-- Carte et détail du livreur choisi, côte à côte avec la liste -->
-      <div class="space-y-3 lg:sticky lg:top-4 self-start">
-        <div class="card overflow-hidden">
-          <p v-if="selected" class="border-b px-3 py-2 text-sm font-semibold">{{ selected.name }} : trajet {{ isToday ? 'du jour' : `du ${dayLabel}` }}<template v-if="nextStops.length"> et prochains arrêts</template></p>
-          <div ref="mapEl" class="h-72 lg:h-[22rem] w-full z-0" role="application" aria-label="Position et trajet des livreurs" />
-        </div>
-
+      <!-- Détail du livreur choisi -->
+      <div v-if="selected" class="space-y-3 self-start xl:sticky xl:top-4">
         <div v-if="selected" ref="detailEl" class="card p-4 space-y-3">
           <div class="flex items-start gap-2">
             <div class="flex-1">
@@ -183,6 +208,7 @@
           <div class="flex flex-wrap gap-2">
             <a v-if="selected.phone" :href="telLink(selected.phone)" class="btn-primary">Appeler</a>
             <a v-if="selected.phone" :href="whatsappLink(selected.phone)" target="_blank" rel="noopener" class="btn-secondary">WhatsApp</a>
+            <RouterLink :to="{ path: '/admin/activite/carte', query: { livreur: selected.id, date: day } }" class="btn-secondary">🗺️ Voir sur la carte</RouterLink>
             <button v-if="isToday && activeMissions.length" type="button" class="btn-secondary" @click="openConsigne">Envoyer une consigne</button>
             <RouterLink v-if="isToday && (selected.cash_in_hand > 0 || selected.parcels_in_hand > 0) && auth.can('finance.manage')" :to="{ path: '/admin/caisse', query: { verser: selected.id } }" class="btn-secondary">Faire le point</RouterLink>
           </div>
@@ -248,7 +274,6 @@
             <RouterLink to="/admin/activite/remontees" class="text-blue-700 hover:underline">Remontées terrain</RouterLink>
           </p>
         </div>
-        <p v-else class="text-sm text-gray-600">Choisissez un livreur pour voir son trajet, ses prochains arrêts et ses missions.</p>
       </div>
     </div>
 
@@ -278,8 +303,6 @@
 <script setup>
 import { computed, defineComponent, h, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
-import L from 'leaflet'
-import 'leaflet/dist/leaflet.css'
 import http, { apiErrorMessage } from '../../../bootstrap/axios'
 import { useEcho } from '../../../bootstrap/echo'
 import { orderChanges } from '../../../composables/useRealtime'
@@ -297,7 +320,6 @@ const toasts = useToastStore()
 const route = useRoute()
 const router = useRouter()
 const echo = useEcho()
-const ABIDJAN = [5.345, -4.024]
 const STATE = {
   mission: { label: 'En mission', dot: 'bg-blue-600', chip: 'bg-blue-100 text-blue-900', color: '#2563eb' },
   available: { label: 'Disponible', dot: 'bg-emerald-600', chip: 'bg-emerald-100 text-emerald-900', color: '#059669' },
@@ -353,12 +375,11 @@ const missionsLoading = ref(false)
 const f = reactive({ search: '', state: '', zone: '', sort: 'watch' })
 const consigne = reactive({ open: false, body: '', order_id: null, busy: false, error: '' })
 const reassign = reactive({ open: false, mission: null, courier_id: null, busy: false, error: '' })
-const mapEl = ref(null)
 const detailEl = ref(null)
-let map = null
-let layer = null
-let routeLayer = null
 let timer = null
+// Barre d'avancement des livraisons
+const share = (p) => (p.total ? Math.round((100 * p.done) / p.total) : 0)
+const barColor = (c) => (share(c.deliveries) === 100 ? 'bg-emerald-700' : c.flags.length ? 'bg-orange-600' : 'bg-emerald-600')
 
 const norm = (v) => (v || '').toString().normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 const pct = (v) => (v === null || v === undefined ? '—' : `${v} %`)
@@ -423,7 +444,6 @@ async function load() {
   closesAt.value = data.depot_closes_at
   loaded.value = true
   if (selected.value) selected.value = couriers.value.find((c) => c.id === selected.value.id) || null
-  drawMarkers()
 }
 
 function query() {
@@ -442,51 +462,6 @@ function setActivity(value) {
   changeDay()
 }
 
-function drawMarkers() {
-  if (!map) return
-  layer.clearLayers()
-  const points = []
-  for (const c of couriers.value) {
-    if (c.lat === null || c.lng === null) continue
-    const isSel = selected.value?.id === c.id
-    const color = c.flags.length ? '#ea580c' : STATE[c.state].color
-    L.circleMarker([c.lat, c.lng], { radius: isSel ? 11 : 8, color: '#fff', weight: 3, fillColor: color, fillOpacity: 1 })
-      .bindTooltip(c.name, { permanent: isSel, direction: 'top', offset: [0, -8] })
-      .on('click', () => select(c))
-      .addTo(layer)
-    points.push([c.lat, c.lng])
-  }
-  if (!selected.value && points.length) map.fitBounds(L.latLngBounds(points), { padding: [30, 30], maxZoom: 14, animate: false })
-}
-
-// Trajet du jour (fait) et prochains arrêts numérotés (à faire)
-async function drawRoute(c) {
-  routeLayer.clearLayers()
-  const bounds = []
-  try {
-    // Trajet : seulement un jour passé ou aujourd'hui
-    if (isFuture.value) throw new Error('jour à venir')
-    const { data } = await http.get(`/couriers/${c.id}/track`, { params: { date: day.value } })
-    const line = (data.data.points || []).map((p) => [p[0], p[1]])
-    if (line.length > 1) {
-      L.polyline(line, { color: '#2563eb', weight: 4, opacity: 0.8 }).addTo(routeLayer)
-      bounds.push(...line)
-    }
-  } catch { /* pas de trajet enregistré */ }
-  const start = c.lat !== null ? [c.lat, c.lng] : null
-  const stops = nextStops.value.map((m) => [m.lat, m.lng])
-  if (start && stops.length) L.polyline([start, ...stops], { color: '#2563eb', weight: 3, dashArray: '8 6' }).addTo(routeLayer)
-  nextStops.value.forEach((m, i) => {
-    L.marker([m.lat, m.lng], {
-      icon: L.divIcon({ className: '', iconSize: [26, 26], iconAnchor: [13, 13], html: `<div style="width:26px;height:26px;border-radius:999px;background:#fff;border:3px solid #2563eb;color:#1e3a8a;font:700 12px/20px sans-serif;text-align:center">${i + 1}</div>` }),
-      title: `${m.tracking_code} · ${m.type_label}`,
-    }).bindTooltip(`${i + 1}. ${m.tracking_code} · ${m.zone || ''}`).addTo(routeLayer)
-    bounds.push([m.lat, m.lng])
-  })
-  if (start) bounds.push(start)
-  if (bounds.length) map.fitBounds(L.latLngBounds(bounds), { padding: [30, 30], maxZoom: 15 })
-}
-
 async function loadMissions(c) {
   missionsLoading.value = true
   try {
@@ -499,19 +474,15 @@ async function loadMissions(c) {
 async function select(c) {
   selected.value = c
   consigne.open = false
-  drawMarkers()
   await loadMissions(c)
-  drawRoute(c)
   // Téléphone : le détail est sous la liste
   await nextTick()
-  if (window.innerWidth < 1024) detailEl.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  if (window.innerWidth < 1280) detailEl.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
 function unselect() {
   selected.value = null
   missions.value = []
-  routeLayer?.clearLayers()
-  drawMarkers()
 }
 
 function openConsigne() {
@@ -547,7 +518,7 @@ async function saveReassign() {
     toasts.success(`${reassign.mission.tracking_code} donnée à ${target?.name}.`)
     reassign.open = false
     await load()
-    if (selected.value) { await loadMissions(selected.value); drawRoute(selected.value) }
+    if (selected.value) await loadMissions(selected.value)
   } catch (e) {
     reassign.error = apiErrorMessage(e)
   } finally {
@@ -578,16 +549,11 @@ function onLocation(payload) {
   const c = couriers.value.find((x) => x.id === payload.id)
   if (!c || !isToday.value) return
   Object.assign(c, { lat: payload.lat, lng: payload.lng, last_location_at: payload.last_location_at, is_available: payload.is_available })
-  drawMarkers()
 }
 watch(orderChanges, refreshSoon)
 const channel = auth.user?.company_id ? `company.${auth.user.company_id}` : null
 
 onMounted(async () => {
-  map = L.map(mapEl.value, { zoomControl: true }).setView(ABIDJAN, 12)
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map)
-  layer = L.layerGroup().addTo(map)
-  routeLayer = L.layerGroup().addTo(map)
   await load()
   if (echo && channel) echo.private(channel).listen('.courier.location', onLocation)
   // Filet de sécurité si le direct est coupé
@@ -597,6 +563,5 @@ onBeforeUnmount(() => {
   clearInterval(timer)
   clearTimeout(pending)
   if (echo && channel) echo.private(channel).stopListening('.courier.location', onLocation)
-  map?.remove()
 })
 </script>

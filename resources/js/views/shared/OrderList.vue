@@ -259,11 +259,7 @@
           </div>
           <div class="text-xs text-gray-600">{{ o.pickup.zone_name }} → {{ o.delivery.zone_name }}<span v-if="isStaff && o.merchant"> · {{ o.merchant.business_name }}</span></div>
           <OrderStatusCell :order="o" :late="isLate(o)" :carried="isCarried(o)" :late-day="deliveryDay(o)" @decide="deciding = $event" />
-          <div v-if="o.pickup_courier || o.delivery_courier || o.held_by" class="flex flex-wrap gap-x-3 text-xs text-gray-700">
-            <span v-if="o.pickup_courier">↑ {{ o.pickup_courier.name }}</span>
-            <span v-if="o.delivery_courier">↓ {{ o.delivery_courier.name }}</span>
-            <span v-if="o.held_by" class="text-amber-700">🎒 {{ o.held_by.name }}</span>
-          </div>
+          <CourierCell v-if="o.pickup_courier || o.delivery_courier || o.held_by || (isDispatch && o.awaiting_courier)" :order="o" :couriers="couriers" :can-dispatch="isDispatch" class="text-gray-700" @updated="replaceOrder" />
           <div v-if="o.internal_late || o.internal_risk" :class="['text-xs font-medium', o.internal_late ? 'text-red-600' : 'text-amber-700']">{{ o.internal_late ? '⏰ Délai interne dépassé' : '⚠️ Risque de retard' }} ({{ dateTime(o.internal_due_at) }})</div>
           <div class="text-xs text-gray-400">Livraison {{ date(o.delivery.scheduled_date || o.created_at) }} · créée {{ dateTime(o.created_at) }}</div>
         </article>
@@ -309,10 +305,8 @@
               <td class="p-2">
                 <OrderStatusCell :order="o" :late="isLate(o)" :carried="isCarried(o)" :late-day="deliveryDay(o)" @decide="deciding = $event" />
               </td>
-              <td class="p-2 text-xs">
-                <div v-if="o.pickup_courier">↑ {{ o.pickup_courier.name }}</div>
-                <div v-if="o.delivery_courier">↓ {{ o.delivery_courier.name }}</div>
-                <div v-if="o.held_by" class="text-amber-700" :title="`Colis chez ${o.held_by.name}`">🎒 {{ o.held_by.name }}</div>
+              <td class="p-2" @click.stop>
+                <CourierCell :order="o" :couriers="couriers" :can-dispatch="isDispatch" @updated="replaceOrder" />
               </td>
               <!-- Distribution, MAD : rien à encaisser, la course passe sur la facture du mois -->
               <td class="p-2 text-right whitespace-nowrap">
@@ -344,6 +338,7 @@ import OrderStatusCell from '../../components/OrderStatusCell.vue'
 import BottomSheet from '../../components/mobile/BottomSheet.vue'
 import Pagination from '../../components/Pagination.vue'
 import OrderDecision from '../../components/OrderDecision.vue'
+import CourierCell from '../../components/CourierCell.vue'
 import PickupGroupsPanel from '../../components/PickupGroupsPanel.vue'
 import DeliveryDayBar from '../../components/DeliveryDayBar.vue'
 import AutoAssignBanner from '../../components/AutoAssignBanner.vue'
@@ -617,6 +612,13 @@ function toggleLater() {
 
 function toggleAll(e) {
   selected.value = e.target.checked ? orders.value.map((o) => o.id) : []
+}
+
+// Livreur changé depuis la liste : la ligne reprend la course à jour
+function replaceOrder(order) {
+  const i = orders.value.findIndex((x) => x.id === order.id)
+  if (i >= 0) orders.value[i] = { ...orders.value[i], ...order }
+  dispatchCounts.fetchCounts().catch(() => {})
 }
 
 // Suite à donner à un colis non livré
