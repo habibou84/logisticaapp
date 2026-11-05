@@ -97,7 +97,7 @@ class PublicApiController extends Controller
             ->when($request->filled('from'), fn ($q) => $q->whereDate('created_at', '>=', $request->date('from')))
             ->when($request->filled('to'), fn ($q) => $q->whereDate('created_at', '<=', $request->date('to')))
             ->latest('id')
-            ->paginate($request->integer('per_page', 30));
+            ->paginate(min(max($request->integer('per_page', 30), 1), 100));
 
         return PublicOrderResource::collection($orders);
     }
@@ -231,7 +231,7 @@ class PublicApiController extends Controller
             ->when($request->filled('search'), fn ($q) => $q->whereRaw('LOWER(name) LIKE ?', ['%'.mb_strtolower($request->string('search')).'%']))
             ->with('levels.location.hub')
             ->orderBy('name')
-            ->paginate($request->integer('per_page', 50));
+            ->paginate(min(max($request->integer('per_page', 50), 1), 100));
 
         return ProductResource::collection($products);
     }

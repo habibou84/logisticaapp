@@ -25,6 +25,11 @@ class UpdateUserRequest extends FormRequest
             return false;
         }
 
+        // Téléphone, e-mail ou mot de passe d'un autre administrateur : refusé (prise de compte)
+        if ($this->hasAny(['phone', 'email', 'password']) && ! $this->user()->can('changeCredentials', $user)) {
+            return false;
+        }
+
         // Changer un rôle ou un statut demande un droit supplémentaire
         // (personne ne peut modifier son propre rôle ou statut)
         if ($this->hasAny(['role', 'status', 'activities', 'extra_permissions', 'denied_permissions', 'zone_ids', 'hub_ids'])) {

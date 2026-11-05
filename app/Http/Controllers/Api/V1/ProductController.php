@@ -42,7 +42,7 @@ class ProductController extends Controller
             })
             ->when($request->boolean('low'), fn ($q) => $q->whereNotNull('low_stock_threshold')->whereRaw("{$available} <= low_stock_threshold"))
             ->orderBy('name')
-            ->paginate($request->integer('per_page', 50));
+            ->paginate(min(max($request->integer('per_page', 50), 1), 500));
 
         return ProductResource::collection($products);
     }

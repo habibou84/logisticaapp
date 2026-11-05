@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\AssignmentStatus;
 use App\Enums\Permission;
 use App\Models\Order;
 use App\Models\User;
@@ -24,11 +25,25 @@ class OrderPolicy
             return $user->merchant_id === $order->merchant_id && $this->inDepartments($user, $order);
         }
 
+        // Livreur : les courses qu'il a eues en main (pas celles qu'il a refusées ou qui lui ont été retirées)
         if ($user->isCourier()) {
-            return $order->assignments()->where('courier_id', $user->courier?->id)->exists();
+            return $order->assignments()->where('courier_id', $user->courier?->id)
+                ->whereNotIn('status', [AssignmentStatus::Refused->value, AssignmentStatus::Cancelled->value])->exists();
         }
 
         return $user->can(Permission::OrdersView->value);
+    }
+
+    /**
+     * Livreur qui a la course en main, ou qui l'a terminée il y a moins de 24 h (frais, photos).
+     */
+    private function handledNow(User $user, Order $order): bool
+    {
+        return $order->assignments()->where('courier_id', $user->courier?->id)
+            ->where(fn ($q) => $q->whereIn('status', AssignmentStatus::activeValues())
+                ->orWhere(fn ($q) => $q->whereIn('status', [AssignmentStatus::Completed->value, AssignmentStatus::Failed->value])
+                    ->where('updated_at', '>=', now()->subDay())))
+            ->exists();
     }
 
     public function create(User $user): bool
@@ -71,7 +86,7 @@ class OrderPolicy
     public function addExpense(User $user, Order $order): bool
     {
         if ($user->isCourier()) {
-            return $this->view($user, $order);
+            return $this->handledNow($user, $order);
         }
 
         return $user->merchant_id === null
@@ -94,6 +109,10 @@ class OrderPolicy
 
     public function addAttachment(User $user, Order $order): bool
     {
+        if ($user->isCourier()) {
+            return $this->handledNow($user, $order);
+        }
+
         return $user->merchant_id === null && $this->view($user, $order);
     }
 }

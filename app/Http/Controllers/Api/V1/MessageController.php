@@ -41,7 +41,7 @@ class MessageController extends Controller
                     ->orWhereHas('order', fn ($o) => $o->where('tracking_code', 'like', mb_strtoupper($term))));
             })
             ->latest('id')
-            ->paginate($request->integer('per_page', 30));
+            ->paginate(min(max($request->integer('per_page', 30), 1), 500));
 
         return OutboundMessageResource::collection($messages);
     }

@@ -48,7 +48,7 @@ class StockMovementController extends Controller
             ->when($request->filled('from'), fn ($q) => $q->whereDate('created_at', '>=', $request->date('from')))
             ->when($request->filled('to'), fn ($q) => $q->whereDate('created_at', '<=', $request->date('to')))
             ->latest('id')
-            ->paginate($request->integer('per_page', 50));
+            ->paginate(min(max($request->integer('per_page', 50), 1), 500));
 
         return StockMovementResource::collection($movements);
     }

@@ -59,7 +59,7 @@ class UserController extends Controller
                     ->orWhere('email', 'like', $term));
             })
             ->orderBy('name')
-            ->paginate($request->integer('per_page', 20));
+            ->paginate(min(max($request->integer('per_page', 20), 1), 500));
 
         return UserResource::collection($users);
     }

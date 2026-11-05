@@ -42,7 +42,9 @@ export function labelIndexes(n, max = 7) {
 // Export CSV lisible par Excel (séparateur « ; », accents conservés)
 export function downloadCsv(filename, rows) {
   const csv = rows.map((r) => r.map((v) => {
-    const text = v === null || v === undefined ? '' : String(v)
+    let text = v === null || v === undefined ? '' : String(v)
+    // Un nom qui commence par = + - @ serait lu comme une formule par Excel : on le neutralise
+    if (typeof v === 'string' && /^[=+\-@\t\r]/.test(text) && Number.isNaN(Number(text))) text = `'${text}`
     return /[";\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text
   }).join(';')).join('\n')
   const url = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }))

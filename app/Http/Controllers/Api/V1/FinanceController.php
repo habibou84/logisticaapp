@@ -225,7 +225,7 @@ class FinanceController extends Controller
             ->with(['order:id,tracking_code,recipient_name,status', 'payout:id,reference,status'])
             ->when($request->boolean('unpaid'), fn ($q) => $q->whereNull('payout_id'))
             ->latest('id')
-            ->paginate($request->integer('per_page', 50));
+            ->paginate(min(max($request->integer('per_page', 50), 1), 500));
 
         return response()->json([
             'data' => collect($entries->items())->map(fn ($e) => $this->entryData($e)),

@@ -7,6 +7,7 @@ use App\Http\Middleware\EnsureIdempotency;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\PreprodGate;
 use App\Http\Middleware\PreventIndexing;
+use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -37,6 +38,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Préproduction : fermée au public par un code d'accès, jamais indexée
         $middleware->prepend(PreprodGate::class);
         $middleware->append(PreventIndexing::class);
+        $middleware->append(SecurityHeaders::class);
         $middleware->encryptCookies(except: [PreprodGate::COOKIE]);
         $middleware->alias([
             'active' => EnsureUserIsActive::class,

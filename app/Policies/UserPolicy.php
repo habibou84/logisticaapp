@@ -3,6 +3,7 @@
 namespace App\Policies;
 
 use App\Enums\Permission;
+use App\Enums\Role;
 use App\Models\User;
 use App\Services\Access\Access;
 
@@ -31,6 +32,16 @@ class UserPolicy
     {
         return $actor->belongsToSameCompanyAs($user)
             && $actor->can(Permission::UsersManage->value);
+    }
+
+    /**
+     * Identifiants de connexion (téléphone, e-mail, mot de passe, lien d'invitation) : pas ceux d'un autre
+     * administrateur, sinon un administrateur pourrait prendre le compte d'un autre.
+     */
+    public function changeCredentials(User $actor, User $user): bool
+    {
+        return $this->update($actor, $user)
+            && ($actor->is($user) || ! $user->hasRole(Role::Admin->value));
     }
 
     public function delete(User $actor, User $user): bool

@@ -115,7 +115,7 @@ class PublicAccountController extends Controller
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
             ->when($request->filled('paid_since'), fn ($q) => $q->where('paid_at', '>=', $request->date('paid_since')))
             ->latest('id')
-            ->paginate($request->integer('per_page', 30));
+            ->paginate(min(max($request->integer('per_page', 30), 1), 100));
 
         return response()->json([
             'data' => collect($payouts->items())->map(fn (MerchantPayout $p) => $this->presentPayout($p)),

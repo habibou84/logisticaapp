@@ -157,6 +157,7 @@ class WhatsAppSettingsController extends Controller
             isset($data['button_id']) ? 'button' : 'text',
             $data['button_title'] ?? $data['text'] ?? null,
             $data['button_id'] ?? null,
+            ['simulated' => true],
         );
 
         $replies = OutboundMessage::where('id', '>', $lastId)->where('to', $inbound->from_phone)->orderBy('id')->get()

@@ -115,7 +115,7 @@ class OrderController extends Controller
                     ->orWhere('recipient_phone', 'like', $phone ? "%{$phone}%" : $term));
             })
             ->latest('id')
-            ->paginate($request->integer('per_page', 30));
+            ->paginate(min(max($request->integer('per_page', 30), 1), 500));
 
         return OrderResource::collection($orders);
     }

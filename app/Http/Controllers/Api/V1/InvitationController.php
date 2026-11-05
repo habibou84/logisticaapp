@@ -22,7 +22,8 @@ class InvitationController extends Controller
 
     public function store(Request $request, User $user): JsonResponse
     {
-        Gate::authorize('update', $user);
+        // Un administrateur n'ouvre pas l'accès d'un autre administrateur
+        Gate::authorize('changeCredentials', $user);
         abort_if($user->merchant_id !== null, 422, 'Les comptes clients se gèrent dans Clients › Comptes.');
         abort_if($request->user()->is($user), 422, 'Vous êtes déjà connecté.');
         abort_unless($user->status->value === 'active', 422, 'Réactivez d\'abord ce compte.');

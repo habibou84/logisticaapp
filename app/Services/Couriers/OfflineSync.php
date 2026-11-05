@@ -55,7 +55,8 @@ class OfflineSync
             return $this->result($existing);
         }
 
-        $order = Order::find($action['order_id']);
+        // Seulement ses propres courses : une autre course est « introuvable », sans note ni statut
+        $order = Order::query()->visibleTo($courier)->find($action['order_id']);
         $occurredAt = $this->occurredAt($action['occurred_at'] ?? null);
         $payload = $action['payload'] ?? [];
 

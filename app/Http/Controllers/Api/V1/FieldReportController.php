@@ -45,7 +45,7 @@ class FieldReportController extends Controller
                 'incidentReason', 'attachments', 'review.handler', 'replies.sender',
             ])
             ->orderByDesc('id')
-            ->paginate($request->integer('per_page', 30));
+            ->paginate(min(max($request->integer('per_page', 30), 1), 500));
 
         $couriers = Courier::with('user')->get()->keyBy('user_id');
 

@@ -27,6 +27,7 @@ use App\Support\SignatureImage;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -367,11 +368,18 @@ class OrderWorkflow
             }
         } elseif ($order->company->require_delivery_code) {
             $code = (string) ($context['delivery_code'] ?? '');
+            // 5 essais par demi-heure et par course : un code à 4 chiffres ne se devine pas en essayant
+            $attempts = 'delivery-code:'.$order->id;
+            if (empty($context['offline']) && RateLimiter::tooManyAttempts($attempts, 5)) {
+                throw new BusinessRuleException('Trop de codes faux : réessayez dans '.(int) ceil(RateLimiter::availableIn($attempts) / 60).' min ou appelez le dispatch.', 'delivery_code');
+            }
 
             if ($code === '' || ! hash_equals((string) $order->delivery_code, $code)) {
                 // Livraison faite hors connexion : le client est déjà parti, la livraison est gardée
                 // mais signalée à l'entreprise (code à vérifier)
                 if (empty($context['offline'])) {
+                    RateLimiter::hit($attempts, 1800);
+
                     throw new BusinessRuleException('Code de livraison incorrect.', 'delivery_code');
                 }
                 $order->delivery_code_unverified_at = now();

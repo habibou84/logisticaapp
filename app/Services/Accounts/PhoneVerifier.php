@@ -109,11 +109,13 @@ class PhoneVerifier
 
     /**
      * SMS simulés (démonstration) : le code SMS est affiché sur la page, sinon personne
-     * ne pourrait le lire.
+     * ne pourrait le lire. Jamais en production : le code renvoyé par l'API ouvrirait
+     * n'importe quel compte avec son seul numéro.
      */
     public function demoMode(): bool
     {
-        return config('messaging.whatsapp.driver') !== 'meta' && config('messaging.sms.driver') === 'log';
+        return ! app()->isProduction()
+            && config('messaging.whatsapp.driver') !== 'meta' && config('messaging.sms.driver') === 'log';
     }
 
     /**

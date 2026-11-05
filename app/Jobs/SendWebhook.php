@@ -50,10 +50,19 @@ class SendWebhook implements ShouldQueue
             return;
         }
 
-        if ($reason = UrlGuard::blockedReason($subscription->url)) {
-            $this->fail($delivery, $reason, final: true);
+        $target = UrlGuard::target($subscription->url);
+        if ($target['reason'] !== null) {
+            $this->fail($delivery, $target['reason'], final: true);
 
             return;
+        }
+        // Envoi vers l'adresse vérifiée : le nom n'est pas résolu une seconde fois (rebinding DNS)
+        $pin = [];
+        if ($target['ip'] !== null) {
+            $parts = parse_url($subscription->url);
+            $port = $parts['port'] ?? (($parts['scheme'] ?? 'https') === 'http' ? 80 : 443);
+            $ip = str_contains($target['ip'], ':') ? '['.$target['ip'].']' : $target['ip'];
+            $pin = ['curl' => [CURLOPT_RESOLVE => [trim((string) $parts['host'], '[]').':'.$port.':'.$ip]]];
         }
 
         $body = json_encode($delivery->payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
@@ -61,6 +70,7 @@ class SendWebhook implements ShouldQueue
 
         try {
             $response = Http::timeout(config('services.webhooks.timeout', 10))
+                ->withOptions($pin)
                 ->withoutRedirecting()
                 ->withHeaders([
                     'User-Agent' => config('app.name').' Webhooks/1.0',

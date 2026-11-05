@@ -50,7 +50,7 @@ class MerchantController extends Controller
                     ->orWhere('phone', 'like', $term));
             })
             ->orderBy('business_name')
-            ->paginate($request->integer('per_page', 50));
+            ->paginate(min(max($request->integer('per_page', 50), 1), 500));
 
         return MerchantResource::collection($merchants);
     }
