@@ -35,23 +35,26 @@ class CourierCash
     }
 
     /**
-     * Soldes de tous les livreurs de l'entreprise, en trois requêtes groupées.
+     * Soldes de tous les livreurs de l'entreprise (celle de l'utilisateur, ou celle donnée), en trois requêtes groupées.
      *
      * @return array<int, array{collected: int, advances: int, expenses: int, due: int, items: int, oldest: ?string}>
      */
-    public function balances(): array
+    public function balances(?int $companyId = null): array
     {
-        $collections = CashCollection::inCourierHands()->groupBy('courier_id')
+        // Entreprise donnée (tâche planifiée, sans utilisateur connecté) : sans le filtre automatique
+        $scoped = fn (string $model) => $companyId === null ? $model::query() : $model::withoutGlobalScopes()->where('company_id', $companyId);
+
+        $collections = $scoped(CashCollection::class)->inCourierHands()->groupBy('courier_id')
             ->selectRaw('courier_id, SUM(amount_collected) AS total, COUNT(*) AS n, MIN(collected_at) AS oldest')
             ->get()->keyBy('courier_id');
-        $advances = CourierAdvance::unsettled()->groupBy('courier_id')
+        $advances = $scoped(CourierAdvance::class)->unsettled()->groupBy('courier_id')
             ->selectRaw('courier_id, SUM(amount) AS total, COUNT(*) AS n')->get()->keyBy('courier_id');
-        $expenses = OrderExpense::owedToCourier()->groupBy('courier_id')
+        $expenses = $scoped(OrderExpense::class)->owedToCourier()->groupBy('courier_id')
             ->selectRaw('courier_id, SUM(amount) AS total, COUNT(*) AS n')->get()->keyBy('courier_id');
 
         $ids = $collections->keys()->merge($advances->keys())->merge($expenses->keys())->unique();
 
-        return $ids->mapWithKeys(function ($id) use ($collections, $advances, $expenses) {
+        return $ids->filter()->mapWithKeys(function ($id) use ($collections, $advances, $expenses) {
             $collected = (int) ($collections[$id]->total ?? 0);
             $advanced = (int) ($advances[$id]->total ?? 0);
             $spent = (int) ($expenses[$id]->total ?? 0);

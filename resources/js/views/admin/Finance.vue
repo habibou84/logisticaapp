@@ -1,6 +1,9 @@
 <template>
   <div class="space-y-4">
-    <h1 class="text-xl font-bold">Caisse</h1>
+    <div class="flex flex-wrap items-center gap-2">
+      <h1 class="flex-1 text-xl font-bold">Caisse</h1>
+      <RouterLink to="/admin/caisse/journal" class="btn-secondary">Journal de la caisse</RouterLink>
+    </div>
 
     <div class="flex gap-2 overflow-x-auto">
       <button
@@ -15,48 +18,68 @@
 
     <!-- Argent chez les livreurs -->
     <template v-if="tab === 'cash'">
-      <div v-if="cash" class="grid sm:grid-cols-3 gap-3">
-        <StatCard title="Argent chez les livreurs" :value="money(cash.totals.cash_in_hands)" icon="🛵" />
+      <div v-if="cash" class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <StatCard title="Argent chez les livreurs" :value="money(cash.totals.cash_in_hands)" icon="🛵" :subtitle="cash.totals.owed_to_couriers ? `La caisse leur doit ${money(cash.totals.owed_to_couriers)} (à part)` : ''" />
         <StatCard title="Encaissé aujourd'hui" :value="money(cash.totals.collected_today)" icon="💵" />
-        <StatCard title="Versé à la caisse aujourd'hui" :value="money(cash.totals.received_today)" icon="🏦" />
+        <StatCard title="Reçu des livreurs aujourd'hui" :value="money(cash.totals.received_today)" icon="🏦" />
+        <button type="button" :class="['card p-4 text-left', cash.totals.watched ? 'border-orange-300 bg-orange-50' : '']" @click="filters.watchOnly = !filters.watchOnly">
+          <p :class="['text-sm', cash.totals.watched ? 'text-orange-800' : 'text-gray-600']">À surveiller</p>
+          <p :class="['text-2xl font-bold', cash.totals.watched ? 'text-orange-800' : '']">{{ cash.totals.watched }} livreur{{ cash.totals.watched > 1 ? 's' : '' }}</p>
+          <p class="text-xs text-gray-600">{{ alertText }}</p>
+        </button>
+      </div>
+      <div class="card p-3 flex flex-wrap items-end gap-3">
+        <div class="flex-1 min-w-[12rem]">
+          <label class="label" for="cash-search">Chercher un livreur</label>
+          <input id="cash-search" v-model="filters.search" type="search" class="input" placeholder="Nom ou téléphone">
+        </div>
+        <label class="flex items-center gap-2 text-sm"><input v-model="filters.withMoney" type="checkbox"> Seulement ceux qui ont de l'argent ou des colis</label>
+        <label class="flex items-center gap-2 text-sm"><input v-model="filters.watchOnly" type="checkbox"> Seulement « à surveiller »</label>
+        <button type="button" class="btn-secondary" @click="exportCash">Exporter</button>
       </div>
       <div class="card overflow-x-auto">
         <table class="w-full text-sm stack-table">
           <thead class="bg-slate-50 text-left text-gray-600">
-            <tr><th class="p-2">Livreur</th><th class="p-2 text-right" title="Encaissé + avances − frais payés">À verser</th><th class="p-2">Lignes</th><th class="p-2" title="Colis non livrés encore chez le livreur">Colis</th><th class="p-2">Plus ancien</th><th class="p-2 text-right">Gains non payés</th><th /></tr>
+            <tr><th class="p-2">Livreur</th><th class="p-2 text-right" title="Encaissé + avances − frais payés − paie gardée sur l'encaissé">À remettre à la caisse</th><th class="p-2" title="Colis non livrés encore chez le livreur">Colis</th><th class="p-2">Depuis</th><th class="p-2 text-right">Gains non payés</th><th /></tr>
           </thead>
           <tbody class="divide-y">
-            <tr v-for="c in cash?.data || []" :key="c.courier_id">
-              <td class="p-2 font-medium">{{ c.name }}<div class="text-xs text-gray-500">{{ c.phone }}</div></td>
-              <td data-label="À verser" class="p-2 text-right font-semibold">
-                {{ money(c.cash_in_hand) }}
-                <div v-if="c.advances || c.expenses" class="text-xs font-normal text-gray-500">
-                  <span v-if="c.advances">+{{ money(c.advances) }} avance</span><span v-if="c.advances && c.expenses"> · </span><span v-if="c.expenses">−{{ money(c.expenses) }} frais</span>
+            <tr v-for="c in visibleCouriers" :key="c.courier_id" :class="c.watch ? 'bg-orange-50' : ''">
+              <td class="p-2 font-medium">{{ c.name }}<div class="text-xs text-gray-500">{{ c.phone }}</div><div v-if="c.watch" class="text-xs font-semibold text-orange-800">{{ c.watch }}</div></td>
+              <td data-label="À remettre" class="p-2 text-right font-semibold">
+                <span v-if="c.cash_in_hand < 0" class="text-blue-700">La caisse lui doit {{ money(-c.cash_in_hand) }}</span>
+                <template v-else>{{ money(c.cash_in_hand) }}</template>
+                <div v-if="c.pending_collections || c.advances || c.expenses" class="text-xs font-normal text-gray-500">
+                  {{ [c.collected ? `${money(c.collected)} encaissés` : '', c.advances ? `avance ${money(c.advances)}` : '', c.expenses ? `frais −${money(c.expenses)}` : ''].filter(Boolean).join(' · ') }}
                 </div>
               </td>
-              <td data-label="Lignes" class="p-2">{{ c.pending_collections }}</td>
               <td data-label="Colis" class="p-2"><span v-if="c.parcels_in_hand" class="rounded-full bg-amber-100 text-amber-900 px-2 py-0.5 text-xs font-medium">📦 {{ c.parcels_in_hand }}</span><span v-else class="text-gray-400">—</span></td>
-              <td data-label="Plus ancien" class="p-2 text-xs">{{ c.oldest_collected_at ? dateTime(c.oldest_collected_at) : '—' }}</td>
+              <td data-label="Depuis" class="p-2 text-xs">{{ c.oldest_collected_at ? dateTime(c.oldest_collected_at) : '—' }}</td>
               <td data-label="Gains non payés" :class="['p-2 text-right', signedClass(c.unpaid)]">{{ money(c.unpaid) }}</td>
               <td class="p-2 text-right whitespace-nowrap space-x-1">
                 <button v-if="canManage" class="btn-secondary" @click="openAdvance(c)">Donner une avance</button>
-                <button v-if="c.pending_collections && canManage" class="btn-primary" @click="openRemit(c)">{{ c.cash_in_hand >= 0 ? 'Recevoir le versement' : 'Rembourser le livreur' }}</button>
+                <button v-if="(c.pending_collections || c.advances || c.expenses) && canManage" class="btn-primary" @click="openRemit(c)">{{ c.cash_in_hand >= 0 ? 'Recevoir l\'argent' : 'Rembourser le livreur' }}</button>
                 <button v-else-if="c.parcels_in_hand && canManage" class="btn-primary" @click="openRemit(c)">Recevoir les colis</button>
               </td>
             </tr>
+            <tr v-if="cash && !visibleCouriers.length"><td colspan="6" class="p-4 text-center text-gray-500">Aucun livreur à afficher.</td></tr>
           </tbody>
         </table>
       </div>
 
       <div class="card overflow-x-auto">
-        <h2 class="font-semibold p-4 border-b">Derniers versements</h2>
+        <div class="flex flex-wrap items-end gap-2 p-4 border-b">
+          <h2 class="flex-1 font-semibold">Argent reçu des livreurs</h2>
+          <label class="text-xs text-gray-600">Du <input v-model="remitFilter.from" type="date" class="input w-auto py-1" @change="loadRemittances"></label>
+          <label class="text-xs text-gray-600">au <input v-model="remitFilter.to" type="date" class="input w-auto py-1" @change="loadRemittances"></label>
+          <button type="button" class="btn-secondary" @click="exportRemittances">Exporter</button>
+        </div>
         <table class="w-full text-sm stack-table">
           <thead class="bg-slate-50 text-left text-gray-600">
-            <tr><th class="p-2">Date</th><th class="p-2">Livreur</th><th class="p-2 text-right">Attendu</th><th class="p-2 text-right">Reçu</th><th class="p-2 text-right">Écart</th><th class="p-2">Colis</th><th class="p-2">Reçu par</th></tr>
+            <tr><th class="p-2">Date</th><th class="p-2">Livreur</th><th class="p-2 text-right">Attendu</th><th class="p-2 text-right">Reçu</th><th class="p-2 text-right">Écart</th><th class="p-2">Colis</th><th class="p-2">Reçu par</th><th /></tr>
           </thead>
           <tbody class="divide-y">
-            <tr v-for="r in remittances" :key="r.id">
-              <td class="p-2 text-xs">{{ dateTime(r.received_at) }}</td>
+            <tr v-for="r in remittances" :key="r.id" :class="r.cancelled_at ? 'text-gray-400 line-through' : ''">
+              <td class="p-2 text-xs">{{ dateTime(r.received_at) }}<span v-if="r.cancelled_at" class="block no-underline font-semibold text-red-700">Annulé</span></td>
               <td data-label="Livreur" class="p-2">{{ r.courier_name }}</td>
               <td data-label="Attendu" class="p-2 text-right">{{ money(r.amount_expected) }}</td>
               <td data-label="Reçu" class="p-2 text-right">{{ money(r.amount_received) }}</td>
@@ -67,8 +90,9 @@
                 <span v-if="!r.parcels_returned.length && !r.parcels_kept.length" class="text-gray-400">—</span>
               </td>
               <td data-label="Reçu par" class="p-2 text-xs">{{ r.received_by }}<span v-if="r.notes" class="block text-gray-500">{{ r.notes }}</span></td>
+              <td class="p-2 text-right"><RouterLink :to="`/admin/caisse/versements/${r.id}`" class="text-blue-600 no-underline">Reçu ›</RouterLink></td>
             </tr>
-            <tr v-if="!remittances.length"><td colspan="7" class="p-4 text-center text-gray-500">Aucun versement.</td></tr>
+            <tr v-if="!remittances.length"><td colspan="8" class="p-4 text-center text-gray-500">Aucun versement sur cette période.</td></tr>
           </tbody>
         </table>
       </div>
@@ -77,20 +101,28 @@
     <!-- Soldes des clients -->
     <template v-if="tab === 'merchants'">
       <p class="text-sm text-gray-600">
-        « Disponible » = argent arrivé en caisse, prêt à être reversé. « En attente » = courses livrées dont l'argent est encore chez un livreur.
+        « Disponible » = argent arrivé en caisse, prêt à être payé à le client. « En attente » = courses livrées dont l'argent est encore chez un livreur.
       </p>
+      <div class="card p-3 flex flex-wrap items-end gap-3">
+        <div class="flex-1 min-w-[12rem]">
+          <label class="label" for="merchant-search">Chercher un client</label>
+          <input id="merchant-search" v-model="filters.merchant" type="search" class="input">
+        </div>
+        <label class="flex items-center gap-2 text-sm"><input v-model="filters.allMerchants" type="checkbox" @change="load"> Afficher aussi les soldes à zéro</label>
+        <button type="button" class="btn-secondary" @click="exportMerchants">Exporter</button>
+      </div>
       <div class="card overflow-x-auto">
         <table class="w-full text-sm stack-table">
           <thead class="bg-slate-50 text-left text-gray-600">
-            <tr><th class="p-2">Client</th><th class="p-2 text-right">Disponible</th><th class="p-2 text-right">En attente</th><th class="p-2 text-right">Total non reversé</th><th class="p-2">Payer avec</th><th /></tr>
+            <tr><th class="p-2">Client</th><th class="p-2 text-right">Disponible</th><th class="p-2 text-right">En attente</th><th class="p-2 text-right">Total à payer</th><th class="p-2">Payer avec</th><th /></tr>
           </thead>
           <tbody class="divide-y">
-            <tr v-for="m in merchantBalances" :key="m.merchant_id">
+            <tr v-for="m in visibleMerchants" :key="m.merchant_id">
               <td class="p-2 font-medium">{{ m.business_name }}</td>
               <td data-label="Disponible" :class="['p-2 text-right font-semibold', signedClass(m.available)]">{{ money(m.available) }}</td>
               <td data-label="En attente" class="p-2 text-right text-gray-600">{{ money(m.pending_cash) }}</td>
-              <td data-label="Total non reversé" class="p-2 text-right">{{ money(m.unpaid_total) }}</td>
-              <!-- Moyen préféré du marchand ; rien de donné : à demander ou à saisir -->
+              <td data-label="Total à payer" class="p-2 text-right">{{ money(m.unpaid_total) }}</td>
+              <!-- Moyen préféré du client ; rien de donné : à demander ou à saisir -->
               <td data-label="Payer avec" :class="['p-2 text-xs', m.payment_method ? '' : 'text-red-700']">
                 <RouterLink :to="{ path: '/admin/marchands', query: { id: m.merchant_id, onglet: 'paiement' } }" class="hover:underline">
                   <template v-if="m.payment_method">
@@ -103,10 +135,10 @@
               </td>
               <td class="p-2 text-right whitespace-nowrap">
                 <button class="text-blue-600 mr-3" @click="openLedger(m)">Grand livre</button>
-                <button v-if="canManage && m.available !== 0" class="btn-primary" @click="preparePayout(m)">Préparer le reversement</button>
+                <button v-if="canManage && m.available !== 0" class="btn-primary" @click="preparePayout(m)">Préparer le paiement</button>
               </td>
             </tr>
-            <tr v-if="!merchantBalances.length"><td colspan="6" class="p-4 text-center text-gray-500">Aucun montant en attente.</td></tr>
+            <tr v-if="!visibleMerchants.length"><td colspan="6" class="p-4 text-center text-gray-500">Aucun montant à payer.</td></tr>
           </tbody>
         </table>
       </div>
@@ -114,13 +146,26 @@
 
     <!-- Reversements -->
     <template v-if="tab === 'payouts'">
+      <div class="card p-3 flex flex-wrap items-end gap-3">
+        <div class="flex-1 min-w-[12rem]">
+          <label class="label" for="payout-search">Chercher un client ou une référence</label>
+          <input id="payout-search" v-model="filters.payout" type="search" class="input">
+        </div>
+        <div>
+          <label class="label" for="payout-status">Statut</label>
+          <select id="payout-status" v-model="filters.payoutStatus" class="input w-auto" @change="load">
+            <option value="">Tous</option><option value="draft">À payer</option><option value="paid">Payés</option><option value="cancelled">Annulés</option>
+          </select>
+        </div>
+        <button type="button" class="btn-secondary" @click="exportPayouts">Exporter</button>
+      </div>
       <div class="card overflow-x-auto">
         <table class="w-full text-sm stack-table">
           <thead class="bg-slate-50 text-left text-gray-600">
             <tr><th class="p-2">Référence</th><th class="p-2">Client</th><th class="p-2">Période</th><th class="p-2 text-right">Net</th><th class="p-2">Statut</th><th class="p-2">Payé le</th></tr>
           </thead>
           <tbody class="divide-y">
-            <tr v-for="p in payouts" :key="p.id" class="hover:bg-slate-50 cursor-pointer" @click="router.push(`/admin/caisse/reversements/${p.id}`)">
+ <tr v-for="p in visiblePayouts" :key="p.id" class="hover:bg-slate-50 cursor-pointer" @click="router.push(`/admin/caisse/reversements/${p.id}`)">
               <td class="p-2 font-mono text-xs">{{ p.reference }}</td>
               <td data-label="Client" class="p-2">{{ p.merchant.business_name }}</td>
               <td data-label="Période" class="p-2 text-xs">{{ date(p.period_start) }} → {{ date(p.period_end) }}</td>
@@ -128,7 +173,7 @@
               <td data-label="Statut" class="p-2"><PayoutBadge :status="p.status" :label="p.status_label" /></td>
               <td data-label="Payé le" class="p-2 text-xs">{{ p.paid_at ? `${dateTime(p.paid_at)} · ${p.method_label}` : '—' }}</td>
             </tr>
-            <tr v-if="!payouts.length"><td colspan="6" class="p-4 text-center text-gray-500">Aucun reversement.</td></tr>
+            <tr v-if="!visiblePayouts.length"><td colspan="6" class="p-4 text-center text-gray-500">Aucun paiement.</td></tr>
           </tbody>
         </table>
       </div>
@@ -172,7 +217,7 @@
             <tr><th class="p-2">Livreur</th><th class="p-2 text-right">Gains non payés</th><th /></tr>
           </thead>
           <tbody class="divide-y">
-            <tr v-for="c in cash?.data || []" :key="c.courier_id">
+            <tr v-for="c in (cash?.data || []).filter((c) => c.active || c.unpaid !== 0)" :key="c.courier_id">
               <td class="p-2 font-medium">{{ c.name }}</td>
               <td data-label="Gains non payés" :class="['p-2 text-right font-semibold', signedClass(c.unpaid)]">{{ money(c.unpaid) }}</td>
               <td class="p-2 text-right whitespace-nowrap">
@@ -255,6 +300,7 @@
           <li v-for="a in remit.advances" :key="`a${a.id}`" class="flex items-center gap-2 p-2">
             <span class="flex-1">{{ a.pay_kept ? '🧾' : '💵 Avance :' }} {{ a.reason }} <span class="text-xs text-gray-500">{{ dateTime(a.given_at) }}</span></span>
             <span :class="['font-medium', a.amount < 0 ? 'text-emerald-700' : '']">{{ a.amount < 0 ? '−' : '+' }} {{ money(Math.abs(a.amount)) }}</span>
+            <button v-if="a.can_cancel && canManage" type="button" class="text-xs text-red-700 underline" @click="cancelAdvance(a)">Annuler</button>
           </li>
           <li v-for="e in remit.expenses" :key="`e${e.id}`" class="flex items-center gap-2 p-2">
             <span class="font-mono text-xs">{{ e.tracking_code }}</span>
@@ -311,6 +357,7 @@
     <!-- Grand livre d'un client -->
     <Modal :open="ledger.open" :title="`Grand livre · ${ledger.merchant?.business_name}`" @close="ledger.open = false">
       <LedgerTable :entries="ledger.entries" />
+      <button v-if="ledger.page < ledger.lastPage" type="button" class="btn-secondary mt-2 w-full" @click="moreLedger">Voir les lignes plus anciennes ({{ ledger.total - ledger.entries.length }})</button>
       <form v-if="canManage" class="border-t mt-4 pt-3 space-y-2" @submit.prevent="saveMerchantAdjust">
         <p class="text-sm font-medium">Ajustement (+ en faveur du client, − à sa charge)</p>
         <div class="flex gap-2">
@@ -356,6 +403,8 @@
         <PayForm
           v-if="courierPayout.data.status === 'draft' && canManage"
           compensation
+          method="cash"
+          cancel-label="Annuler la fiche"
           @pay="(p) => payCourierPayout(p)"
           @cancel="cancelCourierPayout"
         />
@@ -378,6 +427,7 @@ import { useAuthStore } from '../../stores/auth'
 import { useToastStore } from '../../stores/toasts'
 import { date, dateTime, money, signedClass } from '../../utils/format'
 import { myActivities } from '../../utils/activities'
+import { downloadCsv } from '../../components/stats/chart'
 
 const auth = useAuthStore()
 const toasts = useToastStore()
@@ -389,7 +439,7 @@ const canManage = computed(() => auth.can('finance.manage'))
 const seen = computed(() => myActivities(auth.user).map((a) => a.value))
 const tabs = computed(() => [
   { value: 'cash', label: 'Argent chez les livreurs' },
-  ...(seen.value.includes('ecommerce') ? [{ value: 'merchants', label: 'Soldes clients' }, { value: 'payouts', label: 'Reversements' }] : []),
+  ...(seen.value.includes('ecommerce') ? [{ value: 'merchants', label: 'À payer aux clients' }, { value: 'payouts', label: 'Paiements aux clients' }] : []),
   ...(seen.value.some((a) => a !== 'ecommerce') ? [{ value: 'invoices', label: 'Paiements de factures' }] : []),
   { value: 'payroll', label: 'Paie des livreurs' },
 ])
@@ -401,6 +451,23 @@ const remittances = ref([])
 const merchantBalances = ref([])
 const payouts = ref([])
 const courierPayouts = ref([])
+
+// Recherche et filtres (dans la page) ; « à surveiller » ouvert depuis l'alerte
+const filters = reactive({ search: '', withMoney: true, watchOnly: route.query.surveiller === '1', merchant: '', allMerchants: false, payout: '', payoutStatus: '' })
+const norm = (v) => (v || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+const visibleCouriers = computed(() => (cash.value?.data || []).filter((c) => (!filters.withMoney || c.cash_in_hand !== 0 || c.parcels_in_hand > 0 || c.pending_collections > 0)
+  && (!filters.watchOnly || c.watch)
+  && (!filters.search || norm(`${c.name} ${c.phone}`).includes(norm(filters.search)))))
+const visibleMerchants = computed(() => merchantBalances.value.filter((m) => !filters.merchant || norm(m.business_name).includes(norm(filters.merchant))))
+const visiblePayouts = computed(() => payouts.value.filter((p) => !filters.payout || norm(`${p.reference} ${p.merchant.business_name}`).includes(norm(filters.payout))))
+const alertText = computed(() => {
+  const a = cash.value?.alert
+  if (!a) return ''
+  const parts = [a.hours ? `argent gardé plus de ${a.hours} h` : '', a.amount ? `au-dessus de ${money(a.amount)}` : ''].filter(Boolean)
+  return parts.length ? parts.join(' ou ') : 'alerte désactivée (Réglages › Alertes)'
+})
+const today = new Date().toISOString().slice(0, 10)
+const remitFilter = reactive({ from: today, to: today })
 
 const remit = reactive({ open: false, courier: null, collections: [], advances: [], expenses: [], parcels: [], returned: [], selected: [], amount_received: 0, notes: '', error: '' })
 const remitHasCash = computed(() => remit.collections.length > 0 || remit.advances.length > 0 || remit.expenses.length > 0)
@@ -415,7 +482,7 @@ function heldFor(since) {
   return hours >= 24 ? `depuis ${Math.floor(hours / 24)} j` : `depuis ${hours} h`
 }
 const advance = reactive({ open: false, courier: null, amount: null, reason: 'Frais de gare', error: '' })
-const ledger = reactive({ open: false, merchant: null, entries: [], adjust: { amount: null, description: '' }, error: '' })
+const ledger = reactive({ open: false, merchant: null, entries: [], page: 1, lastPage: 1, total: 0, adjust: { amount: null, description: '' }, error: '' })
 const adjust = reactive({ open: false, courier: null, amount: null, description: '', error: '' })
 const courierPayout = reactive({ open: false, data: null })
 // Gains et retenues de la fiche ; un report de retenue réduit les retenues
@@ -448,11 +515,57 @@ async function load() {
   if (tab.value === 'cash' || tab.value === 'payroll') {
     cash.value = (await http.get('/finance/cash')).data
   }
-  if (tab.value === 'cash') remittances.value = (await http.get('/finance/remittances')).data.data
-  if (tab.value === 'merchants') merchantBalances.value = (await http.get('/finance/merchants')).data.data
-  if (tab.value === 'payouts') payouts.value = (await http.get('/finance/payouts')).data.data
+  if (tab.value === 'cash') await loadRemittances()
+  if (tab.value === 'merchants') merchantBalances.value = (await http.get('/finance/merchants', { params: filters.allMerchants ? { all: 1 } : {} })).data.data
+  if (tab.value === 'payouts') payouts.value = (await http.get('/finance/payouts', { params: filters.payoutStatus ? { status: filters.payoutStatus } : {} })).data.data
   if (tab.value === 'payroll') courierPayouts.value = (await http.get('/finance/courier-payouts')).data.data
   if (tab.value === 'invoices') Object.assign(invoicePayments, (await http.get('/finance/invoice-payments', { params: { month: invoicePayments.month } })).data)
+}
+
+async function loadRemittances() {
+  remittances.value = (await http.get('/finance/remittances', { params: { from: remitFilter.from || undefined, to: remitFilter.to || undefined } })).data.data
+}
+
+function exportCash() {
+  downloadCsv('argent-chez-les-livreurs.csv', [
+    ['Livreur', 'Téléphone', 'À remettre (F)', 'Encaissé (F)', 'Avances (F)', 'Frais (F)', 'Colis', 'Depuis', 'À surveiller'],
+    ...visibleCouriers.value.map((c) => [c.name, c.phone, c.cash_in_hand, c.collected, c.advances, c.expenses, c.parcels_in_hand, c.oldest_collected_at ? dateTime(c.oldest_collected_at) : '', c.watch || '']),
+  ])
+}
+
+function exportRemittances() {
+  downloadCsv(`argent-recu-${remitFilter.from}-${remitFilter.to}.csv`, [
+    ['Date', 'Reçu', 'Livreur', 'Attendu (F)', 'Reçu (F)', 'Écart (F)', 'Colis rendus', 'Colis gardés', 'Reçu par', 'Note', 'Annulé'],
+    ...remittances.value.map((r) => [dateTime(r.received_at), r.reference, r.courier_name, r.amount_expected, r.amount_received, r.difference,
+      r.parcels_returned.length, r.parcels_kept.length, r.received_by, r.notes || '', r.cancelled_at ? `oui : ${r.cancel_reason}` : '']),
+  ])
+}
+
+function exportMerchants() {
+  downloadCsv('a-payer-aux-e-commercants.csv', [
+    ['Client', 'Disponible (F)', 'En attente (F)', 'Total à payer (F)', 'Payer avec'],
+    ...visibleMerchants.value.map((m) => [m.business_name, m.available, m.pending_cash, m.unpaid_total, m.payment_method?.summary || '']),
+  ])
+}
+
+function exportPayouts() {
+  downloadCsv('paiements-aux-e-commercants.csv', [
+    ['Référence', 'Client', 'Du', 'Au', 'Net (F)', 'Statut', 'Payé le', 'Moyen'],
+    ...visiblePayouts.value.map((p) => [p.reference, p.merchant.business_name, date(p.period_start), date(p.period_end), p.net_amount, p.status_label, p.paid_at ? dateTime(p.paid_at) : '', p.method_label || '']),
+  ])
+}
+
+async function cancelAdvance(a) {
+  const reason = window.prompt(`Annuler l'avance « ${a.reason} » de ${money(a.amount)} ? Raison :`)?.trim()
+  if (!reason) return
+  try {
+    await http.post(`/finance/advances/${a.id}/cancel`, { reason })
+    toasts.success('Avance annulée.')
+    await openRemit(remit.courier)
+    load()
+  } catch (e) {
+    toasts.error(apiErrorMessage(e))
+  }
 }
 
 async function openRemit(courier) {
@@ -520,8 +633,14 @@ async function openLedger(merchant) {
   ledger.merchant = merchant
   ledger.error = ''
   ledger.adjust = { amount: null, description: '' }
-  ledger.entries = (await http.get(`/finance/merchants/${merchant.merchant_id}/ledger`)).data.data
-  ledger.open = true
+  const { data } = await http.get(`/finance/merchants/${merchant.merchant_id}/ledger`)
+  Object.assign(ledger, { entries: data.data, page: data.meta.current_page, lastPage: data.meta.last_page, total: data.meta.total, open: true })
+}
+
+async function moreLedger() {
+  const { data } = await http.get(`/finance/merchants/${ledger.merchant.merchant_id}/ledger`, { params: { page: ledger.page + 1 } })
+  ledger.entries = [...ledger.entries, ...data.data]
+  ledger.page = data.meta.current_page
 }
 
 async function saveMerchantAdjust() {
@@ -586,6 +705,7 @@ async function payCourierPayout(payment) {
 }
 
 async function cancelCourierPayout() {
+  if (!window.confirm(`Annuler la fiche de paie ${courierPayout.data.reference} ? Les gains reviennent dans « Gains non payés ».`)) return
   await http.post(`/finance/courier-payouts/${courierPayout.data.id}/cancel`)
   courierPayout.open = false
   load()

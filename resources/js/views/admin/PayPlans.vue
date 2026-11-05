@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-4">
     <div class="flex flex-wrap items-center justify-between gap-2">
-      <h1 class="text-xl font-bold">Paie des livreurs</h1>
+      <h1 class="text-xl font-bold">Règles de paie des livreurs</h1>
       <div class="flex flex-wrap gap-2 min-w-0">
         <select v-model="planId" class="input w-auto" aria-label="Plan" @change="select(planId)">
           <optgroup label="Plans">

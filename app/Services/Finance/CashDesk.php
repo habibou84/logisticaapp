@@ -3,12 +3,14 @@
 namespace App\Services\Finance;
 
 use App\Enums\EarningType;
+use App\Enums\LedgerEntryType;
 use App\Exceptions\BusinessRuleException;
 use App\Models\CashCollection;
 use App\Models\Courier;
 use App\Models\CourierAdvance;
 use App\Models\CourierEarning;
 use App\Models\CourierRemittance;
+use App\Models\MerchantLedgerEntry;
 use App\Models\OrderExpense;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -79,5 +81,56 @@ class CashDesk
 
             return $remittance;
         });
+    }
+
+    /**
+     * Annule un versement reçu par erreur, le jour même : l'argent, les avances et les frais reviennent chez le
+     * livreur, le manque retenu sur sa paie est retiré. Les colis rendus restent au dépôt. Refusé si la paie du
+     * manque est déjà préparée, ou si un e-commerçant a déjà été payé avec cet argent.
+     */
+    public function cancel(User $actor, CourierRemittance $remittance, string $reason): CourierRemittance
+    {
+        if ($remittance->cancelled_at !== null) {
+            throw new BusinessRuleException('Ce versement est déjà annulé.', 'remittance');
+        }
+        if (! $remittance->received_at->isToday()) {
+            throw new BusinessRuleException('Un versement ne s\'annule que le jour même. Pour corriger, faites une prime ou une retenue.', 'remittance');
+        }
+
+        return DB::transaction(function () use ($actor, $remittance, $reason) {
+            $collections = CashCollection::where('remittance_id', $remittance->id)->lockForUpdate()->get();
+            $paidOut = MerchantLedgerEntry::whereIn('order_id', $collections->pluck('order_id'))
+                ->where('type', LedgerEntryType::CodCredit)->whereNotNull('payout_id')->exists();
+            if ($paidOut) {
+                throw new BusinessRuleException('Un e-commerçant a déjà un paiement préparé ou fait avec cet argent : annulez d\'abord ce paiement.', 'remittance');
+            }
+            $shortfall = CourierEarning::where('remittance_id', $remittance->id)->lockForUpdate()->get();
+            if ($shortfall->contains(fn (CourierEarning $e) => $e->payout_id !== null)) {
+                throw new BusinessRuleException('Le manque de caisse est déjà sur une fiche de paie : annulez d\'abord la fiche.', 'remittance');
+            }
+
+            CashCollection::whereIn('id', $collections->modelKeys())->update(['remittance_id' => null]);
+            CourierAdvance::where('remittance_id', $remittance->id)->update(['remittance_id' => null]);
+            OrderExpense::where('remittance_id', $remittance->id)->update(['remittance_id' => null]);
+            CourierEarning::whereIn('id', $shortfall->modelKeys())->delete();
+
+            $remittance->forceFill(['cancelled_at' => now(), 'cancelled_by' => $actor->id, 'cancel_reason' => $reason])->save();
+
+            return $remittance;
+        });
+    }
+
+    /** Annule une avance donnée par erreur, le jour même et tant qu'elle n'est pas réglée au versement */
+    public function cancelAdvance(User $actor, CourierAdvance $advance, string $reason): CourierAdvance
+    {
+        if ($advance->cancelled_at !== null || $advance->remittance_id !== null || $advance->courier_payout_id !== null) {
+            throw new BusinessRuleException('Cette avance ne peut plus être annulée.', 'advance');
+        }
+        if (! $advance->given_at->isToday()) {
+            throw new BusinessRuleException('Une avance ne s\'annule que le jour même.', 'advance');
+        }
+        $advance->forceFill(['cancelled_at' => now(), 'cancelled_by' => $actor->id, 'cancel_reason' => $reason])->save();
+
+        return $advance;
     }
 }

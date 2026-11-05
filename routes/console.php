@@ -40,6 +40,8 @@ Schedule::command('model:prune', ['--model' => [IdempotencyKey::class, WebhookDe
 Schedule::command('notifications:prune')->dailyAt('03:40')->withoutOverlapping();
 Schedule::command('field-reports:remind')->everyMinute()->withoutOverlapping();
 Schedule::command('parcels:overdue')->everyFifteenMinutes()->withoutOverlapping();
+// Argent gardé trop longtemps par un livreur : caisse prévenue, rappel au livreur (une fois par jour)
+Schedule::command('cash:held')->hourlyAt(5)->between('7:00', '21:00')->withoutOverlapping();
 // Courses sans livreur de ramassage ou de livraison au-delà du délai de l'entreprise
 Schedule::command('orders:unassigned')->everyMinute()->withoutOverlapping();
 // Livreurs libres ou bientôt libres avec des ramassages près d'eux : mission ramassage possible

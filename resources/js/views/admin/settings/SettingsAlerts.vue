@@ -41,6 +41,24 @@
           <span>Envoyer le point de la semaine aux administrateurs<span class="block text-gray-500">Chaque lundi vers 7 h 30, par WhatsApp et dans la cloche : courses, taux de livraison, chiffre d'affaires, clients à relancer.</span></span>
         </label>
       </section>
+      <section class="card p-4 space-y-3">
+        <h2 class="font-semibold">Argent gardé par un livreur</h2>
+        <div class="flex flex-wrap gap-4">
+          <div>
+            <label class="label" for="cash-hours">Argent gardé depuis plus de (heures)</label>
+            <input id="cash-hours" v-model.number="form.cash_alert_hours" type="number" min="0" max="336" class="input w-24">
+          </div>
+          <div>
+            <label class="label" for="cash-amount">ou au-dessus de (F)</label>
+            <input id="cash-amount" v-model.number="form.cash_alert_amount" type="number" min="0" class="input w-36" placeholder="Pas de plafond">
+          </div>
+        </div>
+        <label class="flex items-center gap-2 text-sm"><input v-model="form.cash_alert_courier" type="checkbox"> Rappel au livreur par WhatsApp</label>
+        <p class="text-xs text-gray-500">
+          Alerte aux administrateurs et caissiers dans l'application, une fois par livreur et par jour ; le livreur apparaît
+          « à surveiller » dans la caisse. 0 heure et plafond vide = pas d'alerte.
+        </p>
+      </section>
 
       <SaveBar :dirty="dirty" :saving="saving" :error="error" @save="save" @reset="reset" />
     </template>
@@ -54,6 +72,6 @@ import MoreHelp from '../../../components/settings/MoreHelp.vue'
 import { useCompanySettings } from '../../../composables/useCompanySettings'
 
 const { form, dirty, saving, error, save, reset } = useCompanySettings([
-  'pickup_assign_alert_minutes', 'delivery_assign_alert_minutes', 'parcel_hold_alert_hours', 'field_alert_reminder_minutes', 'weekly_report',
+  'pickup_assign_alert_minutes', 'delivery_assign_alert_minutes', 'parcel_hold_alert_hours', 'field_alert_reminder_minutes', 'weekly_report', 'cash_alert_hours', 'cash_alert_amount', 'cash_alert_courier',
 ])
 </script>

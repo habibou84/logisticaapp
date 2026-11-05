@@ -4,10 +4,13 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Enums\PaymentMethod;
 use App\Enums\Permission;
+use App\Enums\WhatsAppTemplate;
 use App\Exceptions\BusinessRuleException;
 use App\Http\Controllers\Controller;
 use App\Models\CashCollection;
+use App\Models\CashLog;
 use App\Models\ClientInvoicePayment;
+use App\Models\Company;
 use App\Models\Courier;
 use App\Models\CourierAdvance;
 use App\Models\CourierEarning;
@@ -18,17 +21,23 @@ use App\Models\MerchantLedgerEntry;
 use App\Models\MerchantPaymentMethod;
 use App\Models\MerchantPayout;
 use App\Models\OrderExpense;
+use App\Models\OutboundMessage;
 use App\Models\User;
 use App\Services\Couriers\ParcelCustody;
+use App\Services\Finance\CashAlerts;
 use App\Services\Finance\CashDesk;
+use App\Services\Finance\CashJournal;
 use App\Services\Finance\CourierCash;
 use App\Services\Finance\CourierPay;
 use App\Services\Finance\CourierPayroll;
 use App\Services\Finance\MerchantPayouts;
 use App\Services\Finance\PayBonuses;
+use App\Services\Messaging\Messenger;
+use App\Support\Money;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
@@ -45,6 +54,8 @@ class FinanceController extends Controller
         private readonly CourierPayroll $payroll,
         private readonly CourierCash $courierCash,
         private readonly ParcelCustody $custody,
+        private readonly CashJournal $journal,
+        private readonly CashAlerts $alerts,
     ) {}
 
     // ───────────── Argent chez les livreurs et versements ─────────────
@@ -61,10 +72,14 @@ class FinanceController extends Controller
         $parcels = ParcelCustody::heldQuery()->groupBy('held_by_courier_id')
             ->selectRaw('held_by_courier_id, COUNT(*) AS n')->pluck('n', 'held_by_courier_id');
 
+        $company = $request->user()->company;
         $couriers = Courier::with('user')->get()->map(fn (Courier $c) => [
             'courier_id' => $c->id,
             'name' => $c->user?->name,
             'phone' => $c->user?->phone,
+            'active' => $c->user?->status === 'active',
+            // À surveiller : argent gardé trop longtemps ou au-delà du plafond de l'entreprise
+            'watch' => isset($cash[$c->id]) ? $this->alerts->reason($company, $cash[$c->id]) : null,
             'cash_in_hand' => $cash[$c->id]['due'] ?? 0,
             'collected' => $cash[$c->id]['collected'] ?? 0,
             'advances' => $cash[$c->id]['advances'] ?? 0,
@@ -80,10 +95,15 @@ class FinanceController extends Controller
         return response()->json([
             'data' => $couriers,
             'totals' => [
-                'cash_in_hands' => $couriers->sum('cash_in_hand'),
+                // Argent que les livreurs doivent remettre ; ce que la caisse leur doit est compté à part
+                'cash_in_hands' => $couriers->where('cash_in_hand', '>', 0)->sum('cash_in_hand'),
+                'owed_to_couriers' => -$couriers->where('cash_in_hand', '<', 0)->sum('cash_in_hand'),
                 'collected_today' => (int) CashCollection::whereDate('collected_at', today())->sum('amount_collected'),
-                'received_today' => (int) CourierRemittance::whereDate('received_at', today())->sum('amount_received'),
+                // Reçu des livreurs aujourd'hui (remboursements de frais et versements annulés à part)
+                'received_today' => (int) CourierRemittance::whereDate('received_at', today())->whereNull('cancelled_at')->where('amount_received', '>', 0)->sum('amount_received'),
+                'watched' => $couriers->whereNotNull('watch')->count(),
             ],
+            'alert' => ['hours' => $company->cash_alert_hours, 'amount' => $company->cash_alert_amount],
         ]);
     }
 
@@ -125,7 +145,24 @@ class FinanceController extends Controller
             'given_at' => now(),
         ]);
 
+        $this->journal->record($request->user(), $courier->company_id, 'advance', ($courier->user?->name ?? 'Livreur').' · '.$data['reason'],
+            ['courier_id' => $courier->id, 'amount' => $advance->amount]);
+
         return response()->json(['data' => $this->advanceData($advance->load('order:id,tracking_code'))], 201);
+    }
+
+    /** Annule une avance donnée par erreur (le jour même, avant le versement) */
+    public function cancelAdvance(Request $request, CourierAdvance $advance): JsonResponse
+    {
+        $this->authorizeStaff($request, manage: true);
+        $data = $request->validate(['reason' => ['required', 'string', 'max:255']], [], ['reason' => 'raison']);
+
+        $this->cashDesk->cancelAdvance($request->user(), $advance, $data['reason']);
+        $this->journal->record($request->user(), $advance->company_id, 'advance_cancelled',
+            ($advance->courier?->user?->name ?? 'Livreur').' · '.$advance->reason.' · « '.$data['reason'].' »',
+            ['courier_id' => $advance->courier_id, 'amount' => -$advance->amount]);
+
+        return response()->json(['data' => $this->advanceData($advance)]);
     }
 
     public function storeRemittance(Request $request): JsonResponse
@@ -176,10 +213,118 @@ class FinanceController extends Controller
                 ]]);
             }
 
+            $this->journal->record($request->user(), $courier->company_id, 'remittance',
+                ($courier->user?->name ?? 'Livreur').' · attendu '.Money::format($remittance->amount_expected)
+                .($remittance->difference !== 0 ? ' · écart '.($remittance->difference > 0 ? '+' : '').Money::format($remittance->difference) : ''),
+                ['courier_id' => $courier->id, 'amount' => $remittance->amount_received, 'reference' => $remittance->reference()]);
+
             return $remittance;
         });
 
-        return response()->json(['data' => $this->remittanceData($remittance->load(['courier.user', 'receiver']))], 201);
+        // Reçu envoyé au livreur par WhatsApp
+        $this->sendReceipt($remittance->load(['courier.user', 'receiver']));
+
+        return response()->json(['data' => $this->remittanceData($remittance)], 201);
+    }
+
+    /** Reçu d'un versement : détail de ce qui a été réglé, colis rendus et gardés */
+    public function showRemittance(Request $request, CourierRemittance $remittance): JsonResponse
+    {
+        $this->authorizeStaff($request);
+        $remittance->load(['courier.user', 'receiver', 'canceller']);
+
+        return response()->json(['data' => [
+            ...$this->remittanceData($remittance),
+            'company' => $request->user()->company?->name,
+            'courier_phone' => $remittance->courier?->user?->phone,
+            'collections' => CashCollection::where('remittance_id', $remittance->id)->with('order:id,tracking_code,recipient_name,merchant_id')
+                ->orderBy('collected_at')->get()->map(fn ($c) => $this->collectionData($c)),
+            'advances' => CourierAdvance::where('remittance_id', $remittance->id)->with('order:id,tracking_code')->orderBy('given_at')->get()
+                ->map(fn (CourierAdvance $a) => $this->advanceData($a)),
+            'expenses' => OrderExpense::where('remittance_id', $remittance->id)->with('order:id,tracking_code')->get()
+                ->map(fn (OrderExpense $e) => ['id' => $e->id, 'tracking_code' => $e->order?->tracking_code, 'description' => $e->description(), 'amount' => $e->amount]),
+            'can_cancel' => $remittance->cancelled_at === null && $remittance->received_at->isToday() && $request->user()->can(Permission::FinanceManage->value),
+        ]]);
+    }
+
+    public function resendReceipt(Request $request, CourierRemittance $remittance): JsonResponse
+    {
+        $this->authorizeStaff($request, manage: true);
+        $sent = $this->sendReceipt($remittance->load(['courier.user', 'receiver']));
+        abort_if($sent === null, 422, 'Ce livreur n\'a pas de numéro de téléphone.');
+
+        return response()->json(['data' => ['sent' => true]]);
+    }
+
+    /** Annule un versement reçu par erreur, le jour même */
+    public function cancelRemittance(Request $request, CourierRemittance $remittance): JsonResponse
+    {
+        $this->authorizeStaff($request, manage: true);
+        $data = $request->validate(['reason' => ['required', 'string', 'max:255']], [], ['reason' => 'raison']);
+
+        $this->cashDesk->cancel($request->user(), $remittance, $data['reason']);
+        $this->journal->record($request->user(), $remittance->company_id, 'remittance_cancelled',
+            ($remittance->courier?->user?->name ?? 'Livreur').' · '.$remittance->reference().' · « '.$data['reason'].' »',
+            ['courier_id' => $remittance->courier_id, 'amount' => -$remittance->amount_received, 'reference' => $remittance->reference()]);
+
+        return response()->json(['data' => $this->remittanceData($remittance->load(['courier.user', 'receiver', 'canceller']))]);
+    }
+
+    /** Journal de la caisse : qui a fait quoi sur l'argent, et quand */
+    public function journal(Request $request): JsonResponse
+    {
+        $this->authorizeStaff($request);
+        $data = $request->validate([
+            'action' => ['nullable', 'string', 'max:30'],
+            'user_id' => ['nullable', 'integer'],
+            'from' => ['nullable', 'date'],
+            'to' => ['nullable', 'date'],
+        ]);
+
+        $logs = CashLog::query()->with('user:id,name')
+            ->when($data['action'] ?? null, fn ($q, $a) => $q->where('action', $a))
+            ->when($data['user_id'] ?? null, fn ($q, $u) => $q->where('user_id', $u))
+            ->when($data['from'] ?? null, fn ($q, $d) => $q->where('created_at', '>=', Carbon::parse($d)->startOfDay()))
+            ->when($data['to'] ?? null, fn ($q, $d) => $q->where('created_at', '<=', Carbon::parse($d)->endOfDay()))
+            ->latest('id')->limit(500)->get();
+
+        return response()->json([
+            'data' => $logs->map(fn (CashLog $l) => [
+                'id' => $l->id,
+                'action' => $l->action,
+                'action_label' => CashLog::ACTIONS[$l->action] ?? $l->action,
+                'description' => $l->description,
+                'amount' => $l->amount,
+                'reference' => $l->reference,
+                'by' => $l->user?->name,
+                'created_at' => $l->created_at,
+            ]),
+            'actions' => CashLog::ACTIONS,
+            'users' => CashLog::query()->whereNotNull('user_id')->distinct()->pluck('user_id')
+                ->pipe(fn ($ids) => User::whereIn('id', $ids)->orderBy('name')->get(['id', 'name'])),
+        ]);
+    }
+
+    private function sendReceipt(CourierRemittance $r): ?OutboundMessage
+    {
+        $phone = $r->courier?->user?->phone;
+        if ($phone === null) {
+            return null;
+        }
+        $gap = $r->difference === 0 ? 'Aucun écart.'
+            : ($r->difference < 0 ? 'Écart de '.Money::format(-$r->difference).' retenu sur votre paie.' : 'Vous avez versé '.Money::format($r->difference).' de plus.');
+
+        return app(Messenger::class)->whatsapp($r->company_id, $phone, 'courier', WhatsAppTemplate::CashReceipt, [
+            $r->courier->user->name,
+            Company::find($r->company_id)?->name ?? 'La caisse',
+            $r->reference(),
+            $r->received_at->format('d/m à H:i'),
+            Money::format($r->amount_received),
+            Money::format($r->amount_expected),
+            $gap,
+            count($r->parcels['returned'] ?? []),
+            count($r->parcels['kept'] ?? []),
+        ], ['event' => 'cash.receipt']);
     }
 
     public function remittances(Request $request): JsonResponse
@@ -236,8 +381,20 @@ class FinanceController extends Controller
             ->latest('id')
             ->paginate(min(max($request->integer('per_page', 50), 1), 500));
 
+        // Solde après chaque ligne (les plus récentes d'abord) : total jusqu'à la première, puis on remonte
+        $items = collect($entries->items());
+        $balance = $items->isEmpty() || $request->boolean('unpaid') ? null
+            : (int) $merchant->ledgerEntries()->where('id', '<=', $items->first()->id)->sum('amount');
+
         return response()->json([
-            'data' => collect($entries->items())->map(fn ($e) => $this->entryData($e)),
+            'data' => $items->map(function ($e) use (&$balance) {
+                $row = $this->entryData($e) + ['balance' => $balance];
+                if ($balance !== null) {
+                    $balance -= $e->amount;
+                }
+
+                return $row;
+            }),
             'meta' => ['current_page' => $entries->currentPage(), 'last_page' => $entries->lastPage(), 'total' => $entries->total()],
             'summary' => $this->payouts->summary($merchant),
         ]);
@@ -253,6 +410,8 @@ class FinanceController extends Controller
         ], [], ['amount' => 'montant', 'description' => 'motif']);
 
         $entry = $this->payouts->adjust($request->user(), $merchant, $data['amount'], $data['description']);
+        $this->journal->record($request->user(), $merchant->company_id, 'merchant_adjustment', $merchant->business_name.' · « '.$data['description'].' »',
+            ['merchant_id' => $merchant->id, 'amount' => $data['amount']]);
 
         return response()->json(['data' => $this->entryData($entry)], 201);
     }
@@ -285,6 +444,8 @@ class FinanceController extends Controller
         ]);
 
         $payout = $this->payouts->create($request->user(), Merchant::findOrFail($data['merchant_id']), $data['notes'] ?? null);
+        $this->journal->record($request->user(), $payout->company_id, 'payout_prepared', $payout->merchant->business_name.' · '.$payout->reference,
+            ['merchant_id' => $payout->merchant_id, 'amount' => $payout->net_amount, 'reference' => $payout->reference]);
 
         return response()->json(['data' => $this->payoutData($payout->load('merchant'), withEntries: true)], 201);
     }
@@ -307,6 +468,9 @@ class FinanceController extends Controller
         $data = $this->validatePayment($request);
 
         $payout = $this->payouts->markPaid($request->user(), $payout, PaymentMethod::from($data['method']), $data['transaction_ref'] ?? null);
+        $this->journal->record($request->user(), $payout->company_id, 'payout_paid',
+            $payout->merchant->business_name.' · '.$payout->reference.' · '.$payout->method?->label().($payout->transaction_ref ? ', réf. '.$payout->transaction_ref : ''),
+            ['merchant_id' => $payout->merchant_id, 'amount' => $payout->net_amount, 'reference' => $payout->reference]);
 
         return response()->json(['data' => $this->payoutData($payout->load('merchant'), withEntries: true)]);
     }
@@ -315,7 +479,11 @@ class FinanceController extends Controller
     {
         $this->authorizeStaff($request, manage: true);
 
-        return response()->json(['data' => $this->payoutData($this->payouts->cancel($payout)->load('merchant'))]);
+        $payout = $this->payouts->cancel($payout)->load('merchant');
+        $this->journal->record($request->user(), $payout->company_id, 'payout_cancelled', $payout->merchant->business_name.' · '.$payout->reference,
+            ['merchant_id' => $payout->merchant_id, 'amount' => $payout->net_amount, 'reference' => $payout->reference]);
+
+        return response()->json(['data' => $this->payoutData($payout)]);
     }
 
     // ───────────── Paie des livreurs ─────────────
@@ -340,9 +508,11 @@ class FinanceController extends Controller
             'description' => ['required', 'string', 'max:255'],
         ], [], ['amount' => 'montant', 'description' => 'motif']);
 
-        return response()->json([
-            'data' => $this->earningData($this->payroll->adjust($request->user(), $courier, $data['amount'], $data['description'])),
-        ], 201);
+        $earning = $this->payroll->adjust($request->user(), $courier, $data['amount'], $data['description']);
+        $this->journal->record($request->user(), $courier->company_id, 'courier_adjustment', ($courier->user?->name ?? 'Livreur').' · « '.$data['description'].' »',
+            ['courier_id' => $courier->id, 'amount' => $data['amount']]);
+
+        return response()->json(['data' => $this->earningData($earning)], 201);
     }
 
     /**
@@ -427,6 +597,10 @@ class FinanceController extends Controller
 
         $method = $data['method'] === CourierPayroll::COMPENSATION ? CourierPayroll::COMPENSATION : PaymentMethod::from($data['method']);
         $payout = $this->payroll->markPaid($request->user(), $courierPayout, $method, $data['transaction_ref'] ?? null);
+        $payout->loadMissing('courier.user');
+        $this->journal->record($request->user(), $payout->company_id, 'payslip_paid',
+            ($payout->courier?->user?->name ?? 'Livreur').' · '.$payout->reference.' · '.($payout->compensated ? 'gardé sur l\'encaissé' : $payout->method?->label()),
+            ['courier_id' => $payout->courier_id, 'amount' => $payout->amount, 'reference' => $payout->reference]);
 
         return response()->json(['data' => $this->courierPayoutData($payout->load('courier.user'), withEarnings: true)]);
     }
@@ -435,7 +609,11 @@ class FinanceController extends Controller
     {
         $this->authorizeStaff($request, manage: true);
 
-        return response()->json(['data' => $this->courierPayoutData($this->payroll->cancel($courierPayout)->load('courier.user'))]);
+        $payout = $this->payroll->cancel($courierPayout)->load('courier.user');
+        $this->journal->record($request->user(), $payout->company_id, 'payslip_cancelled', ($payout->courier?->user?->name ?? 'Livreur').' · '.$payout->reference,
+            ['courier_id' => $payout->courier_id, 'amount' => $payout->amount, 'reference' => $payout->reference]);
+
+        return response()->json(['data' => $this->courierPayoutData($payout)]);
     }
 
     // ───────────── Livreur connecté ─────────────
@@ -573,6 +751,9 @@ class FinanceController extends Controller
             'order_id' => $a->order_id,
             'tracking_code' => $a->order?->tracking_code,
             'given_at' => $a->given_at,
+            'cancelled_at' => $a->cancelled_at,
+            // Avance de la caisse donnée aujourd'hui, pas encore réglée : annulable
+            'can_cancel' => $a->cancelled_at === null && $a->remittance_id === null && $a->courier_payout_id === null && $a->given_at?->isToday(),
         ];
     }
 
@@ -590,6 +771,10 @@ class FinanceController extends Controller
             'notes' => $r->notes,
             'parcels_returned' => $r->parcels['returned'] ?? [],
             'parcels_kept' => $r->parcels['kept'] ?? [],
+            'reference' => $r->reference(),
+            'cancelled_at' => $r->cancelled_at,
+            'cancel_reason' => $r->cancel_reason,
+            'cancelled_by' => $r->relationLoaded('canceller') ? $r->canceller?->name : null,
         ];
     }
 

@@ -52,6 +52,10 @@ class UpdateCompanyRequest extends FormRequest
             'return_fee_percent' => ['sometimes', 'integer', 'min:0', 'max:100'],
             'field_alert_reminder_minutes' => ['sometimes', 'integer', 'min:0', 'max:240'],
             'parcel_hold_alert_hours' => ['sometimes', 'integer', 'min:0', 'max:168'],
+            // Argent gardé par un livreur : délai (0 = pas d'alerte), plafond (vide = aucun), rappel au livreur
+            'cash_alert_hours' => ['sometimes', 'integer', 'min:0', 'max:336'],
+            'cash_alert_amount' => ['sometimes', 'nullable', 'integer', 'min:0', 'max:100000000'],
+            'cash_alert_courier' => ['sometimes', 'boolean'],
             'pickup_mission_custody' => ['sometimes', 'in:keep,depot,choose'],
             'depot_closes_at' => ['sometimes', 'nullable', 'date_format:H:i'],
             'tagline' => ['sometimes', 'nullable', 'string', 'max:160'],

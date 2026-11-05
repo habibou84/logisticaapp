@@ -3,6 +3,7 @@
     <div>
       <p class="text-sm text-gray-500">{{ title }}</p>
       <p class="text-xl font-bold">{{ value }}</p>
+      <p v-if="subtitle" class="text-xs text-gray-500">{{ subtitle }}</p>
     </div>
     <div class="text-3xl">{{ icon }}</div>
   </div>
@@ -13,5 +14,6 @@ defineProps({
   title: { type: String, required: true },
   value: { type: [String, Number], default: '—' },
   icon: { type: String, default: '' },
+  subtitle: { type: String, default: '' },
 })
 </script>

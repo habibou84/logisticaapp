@@ -44,6 +44,7 @@ class Courier extends Model
     protected function casts(): array
     {
         return [
+            'cash_alerted_at' => 'datetime',
             'vehicle_type' => VehicleType::class,
             'is_available' => 'boolean',
             'current_lat' => 'float',

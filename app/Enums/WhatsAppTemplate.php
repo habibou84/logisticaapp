@@ -32,6 +32,8 @@ enum WhatsAppTemplate: string
     case CourseDelayed = 'course_retardee';
     case StatsAlert = 'alerte_statistique';
     case PaymentMethodChanged = 'moyen_paiement_modifie';
+    case CashReceipt = 'versement_recu';
+    case CashReminder = 'argent_a_remettre';
 
     public const LANGUAGE = 'fr';
 
@@ -61,6 +63,8 @@ enum WhatsAppTemplate: string
             self::CourseDelayed => 'Bonjour {{1}}, votre course {{2}} pour {{3}} aura du retard à la suite d\'un imprévu sur le terrain. Nous faisons le nécessaire et vous tenons informé. Merci de votre compréhension.',
             self::StatsAlert => 'Bonjour {{1}}, alerte de {{2}} : {{3}}. Voir les statistiques : {{4}}',
             self::PaymentMethodChanged => 'Bonjour {{1}}, un moyen de paiement a été {{2}} sur votre compte : {{3}}. Si ce n\'est pas vous, prévenez votre agence tout de suite. Merci.',
+            self::CashReceipt => 'Bonjour {{1}}, {{2}} a bien reçu votre versement {{3}} du {{4}} : {{5}} (attendu {{6}}). {{7}} Colis rendus : {{8}}. Colis gardés : {{9}}. Merci.',
+            self::CashReminder => 'Bonjour {{1}}, vous avez {{2}} encaissés depuis le {{3}} à remettre à la caisse de {{4}}. Passez faire votre versement dès que possible. Merci.',
         };
     }
 
@@ -92,6 +96,8 @@ enum WhatsAppTemplate: string
             self::CourseDelayed => '⏳ Course retardée',
             self::StatsAlert => '📉 Alerte statistique',
             self::PaymentMethodChanged => '🔒 Moyen de paiement modifié',
+            self::CashReceipt => '🧾 Versement reçu',
+            self::CashReminder => '💵 Argent à remettre',
         };
     }
 
@@ -121,6 +127,8 @@ enum WhatsAppTemplate: string
             self::CourseDelayed => 'Au client, quand un imprévu sur le terrain (panne, accident…) retarde sa course (Réglages › Événements terrain)',
             self::StatsAlert => 'Aux administrateurs, quand un indicateur passe un seuil (Statistiques › Analyse et partage › Partage et alertes)',
             self::PaymentMethodChanged => 'Au marchand, quand un moyen de paiement est ajouté, modifié ou retiré sur son compte (sécurité)',
+            self::CashReceipt => 'Au livreur, quand la caisse reçoit son versement (reçu : montant, écart, colis rendus et gardés)',
+            self::CashReminder => 'Au livreur, quand il garde l\'argent encaissé trop longtemps ou au-delà du plafond de l\'entreprise',
         };
     }
 
@@ -145,6 +153,8 @@ enum WhatsAppTemplate: string
             self::ReturnSlip => ['Boutique Chic', 'Koffi', '4', 'BR-261009-00012', 'https://exemple.ci/bon-de-retour/12'],
             self::ReturnHanded => ['Boutique Chic', '4', 'BR-261009-00012', 'Mariam Koné', 'https://exemple.ci/bon-de-retour/12'],
             self::PaymentMethodChanged => ['Boutique Chic', 'ajouté', 'Wave 07 09 98 08 85'],
+            self::CashReceipt => ['Koffi', 'Rapide Express', 'VR-261030-0042', '30/10 à 17:40', '118 000 F', '120 000 F', 'Écart de 2 000 F retenu sur votre paie.', '2', '1'],
+            self::CashReminder => ['Koffi', '342 000 F', '28/10 à 16:00', 'Rapide Express'],
             self::ManagerReport => ['Awa', 'du 05/10 au 11/10', 'Rapide Express', '312', '+12 %', '287', '94 %', '430 500 F', '+8 %', '3', 'https://exemple.ci/admin/statistiques'],
             self::InvoiceIssued => ['Boutique Chic', 'DIS-202610-0001', 'Distribution', 'octobre 2026', '53 800 F', '15/11/2026'],
             self::InvoiceReminder => ['Boutique Chic', 'DIS-202610-0001', '15/11/2026', '53 800 F'],

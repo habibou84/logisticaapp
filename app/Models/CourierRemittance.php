@@ -16,8 +16,14 @@ class CourierRemittance extends Model
 
     protected $fillable = [
         'company_id', 'courier_id', 'amount_expected', 'amount_received', 'difference',
-        'received_by', 'received_at', 'notes', 'parcels',
+        'received_by', 'received_at', 'notes', 'parcels', 'cancelled_at', 'cancelled_by', 'cancel_reason',
     ];
+
+    /** Numéro du reçu : « VR-261030-0042 » */
+    public function reference(): string
+    {
+        return 'VR-'.$this->received_at?->format('ymd').'-'.str_pad((string) $this->id, 4, '0', STR_PAD_LEFT);
+    }
 
     protected function casts(): array
     {
@@ -26,6 +32,7 @@ class CourierRemittance extends Model
             'amount_received' => 'integer',
             'difference' => 'integer',
             'received_at' => 'datetime',
+            'cancelled_at' => 'datetime',
             'parcels' => 'array',
         ];
     }
@@ -38,6 +45,11 @@ class CourierRemittance extends Model
     public function receiver(): BelongsTo
     {
         return $this->belongsTo(User::class, 'received_by');
+    }
+
+    public function canceller(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'cancelled_by');
     }
 
     public function collections(): HasMany

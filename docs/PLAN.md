@@ -383,6 +383,13 @@ Règles retenues en phase 2 :
 - **Retour** : frais facturés au marchand selon un pourcentage paramétrable (`return_fee_percent`, 100 % par défaut).
 - Un reversement peut être **négatif** (frais supérieurs aux encaissements, ex. colis prépayés) : le relevé indique alors le montant dû par le marchand.
 
+Caisse : clarté et sécurité (ajoutée après la reprise) :
+- **Reçu de versement** numéroté (`VR-AAMMJJ-0001`), imprimable, envoyé tout seul au livreur sur WhatsApp (modèle `versement_recu`) et renvoyable depuis la page du reçu (`/admin/caisse/versements/{id}`).
+- **Annulation le jour même** d'un versement ou d'une avance, raison obligatoire (`cancelled_at`, `cancelled_by`, `cancel_reason`) : l'argent revient chez le livreur, l'écart retenu sur sa paie disparaît. Refusée si un client a déjà un paiement préparé ou fait avec cet argent, ou si l'écart est sur une fiche de paie. Les colis rendus restent à l'agence.
+- **Journal de la caisse** (`cash_logs`, `/admin/caisse/journal`) : versements, avances, ajustements, paiements aux client, paie et annulations, avec qui et quand. Rien ne s'efface.
+- **Livreurs à surveiller** : argent gardé plus de `companies.cash_alert_hours` (24 h par défaut) ou au-dessus de `cash_alert_amount`. Alerte une fois par jour et par livreur aux administrateurs et caissiers (cloche de l'application) et rappel WhatsApp au livreur si `cash_alert_courier` (modèle `argent_a_remettre`) ; tâche `cash:held` chaque heure de 7 h à 21 h.
+- Caisse plus lisible : noms clairs (« À payer aux client », « Règles de paie »), recherche, filtres, export Excel de chaque tableau, solde après chaque ligne du grand livre.
+
 ### Applications mobiles PWA marchand et livreur ✅ *réalisée (avant la phase 4)*
 - [x] Deux applications installables (`/marchand` vert, `/livreur` bleu) : manifeste, icônes et couleur propres à chacune, distinctes du back-office.
 - [x] Interface mobile : barre d'onglets en bas, gros boutons, choix par pastilles plutôt que listes déroulantes, panneaux du bas pour les actions.

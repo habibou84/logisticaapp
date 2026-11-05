@@ -18,7 +18,7 @@
     </p>
     <div class="flex gap-2">
       <button type="submit" class="btn-success flex-1">Marquer comme payé</button>
-      <button type="button" class="btn-secondary" @click="$emit('cancel')">Annuler</button>
+      <button type="button" class="btn-secondary text-red-700" @click="$emit('cancel')">{{ cancelLabel }}</button>
     </div>
   </form>
 </template>
@@ -29,7 +29,8 @@ import { PAYMENT_METHODS } from '../utils/format'
 
 // compensation : paie d'un livreur, qui peut la garder sur l'argent encaissé
 // method : moyen proposé (celui du marchand, au relevé d'un reversement)
-const props = defineProps({ compensation: { type: Boolean, default: false }, method: { type: String, default: null } })
+// cancelLabel : le bouton annule le paiement (ou la fiche) lui-même, pas le formulaire
+const props = defineProps({ compensation: { type: Boolean, default: false }, method: { type: String, default: null }, cancelLabel: { type: String, default: 'Annuler ce paiement' } })
 defineEmits(['pay', 'cancel'])
 const method = ref(props.method || 'wave')
 watch(() => props.method, (m) => { if (m) method.value = m })

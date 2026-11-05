@@ -17,11 +17,12 @@ class CourierAdvance extends Model
 {
     use BelongsToCompany;
 
-    protected $fillable = ['company_id', 'courier_id', 'amount', 'reason', 'order_id', 'courier_payout_id', 'given_by', 'given_at', 'remittance_id'];
+    protected $fillable = ['company_id', 'courier_id', 'amount', 'reason', 'order_id', 'courier_payout_id', 'given_by', 'given_at', 'remittance_id', 'cancelled_at', 'cancelled_by', 'cancel_reason'];
 
     protected function casts(): array
     {
         return [
+            'cancelled_at' => 'datetime',
             'amount' => 'integer',
             'given_at' => 'datetime',
         ];
@@ -55,8 +56,9 @@ class CourierAdvance extends Model
         return $query->whereNull('courier_payout_id');
     }
 
+    /** Pas encore réglée au versement, ni annulée */
     public function scopeUnsettled(Builder $query): Builder
     {
-        return $query->whereNull('remittance_id');
+        return $query->whereNull('remittance_id')->whereNull('cancelled_at');
     }
 }

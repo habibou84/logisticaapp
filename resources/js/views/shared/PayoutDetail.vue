@@ -10,7 +10,7 @@
       <div class="flex flex-wrap justify-between gap-4">
         <div>
           <p class="text-sm text-gray-500">{{ auth.user?.company?.name }}</p>
-          <h1 class="text-xl font-bold">Relevé de reversement</h1>
+          <h1 class="text-xl font-bold">Relevé de paiement</h1>
           <p class="font-mono">{{ payout.reference }}</p>
         </div>
         <div class="text-right">
@@ -77,14 +77,14 @@ async function load() {
 async function pay(payment) {
   try {
     payout.value = (await http.post(`/finance/payouts/${payout.value.id}/pay`, payment)).data.data
-    toasts.success('Reversement enregistré comme payé.')
+    toasts.success('Paiement enregistré.')
   } catch (e) {
     toasts.error(apiErrorMessage(e))
   }
 }
 
 async function cancel() {
-  if (!window.confirm('Annuler ce reversement ? Les opérations redeviendront disponibles.')) return
+  if (!window.confirm('Annuler ce paiement ? Les opérations redeviendront disponibles.')) return
   payout.value = (await http.post(`/finance/payouts/${payout.value.id}/cancel`)).data.data
 }
 
