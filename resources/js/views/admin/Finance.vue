@@ -82,7 +82,7 @@
       <div class="card overflow-x-auto">
         <table class="w-full text-sm stack-table">
           <thead class="bg-slate-50 text-left text-gray-600">
-            <tr><th class="p-2">Client</th><th class="p-2 text-right">Disponible</th><th class="p-2 text-right">En attente</th><th class="p-2 text-right">Total non reversé</th><th /></tr>
+            <tr><th class="p-2">Client</th><th class="p-2 text-right">Disponible</th><th class="p-2 text-right">En attente</th><th class="p-2 text-right">Total non reversé</th><th class="p-2">Payer avec</th><th /></tr>
           </thead>
           <tbody class="divide-y">
             <tr v-for="m in merchantBalances" :key="m.merchant_id">
@@ -90,12 +90,23 @@
               <td data-label="Disponible" :class="['p-2 text-right font-semibold', signedClass(m.available)]">{{ money(m.available) }}</td>
               <td data-label="En attente" class="p-2 text-right text-gray-600">{{ money(m.pending_cash) }}</td>
               <td data-label="Total non reversé" class="p-2 text-right">{{ money(m.unpaid_total) }}</td>
+              <!-- Moyen préféré du marchand ; rien de donné : à demander ou à saisir -->
+              <td data-label="Payer avec" :class="['p-2 text-xs', m.payment_method ? '' : 'text-red-700']">
+                <RouterLink :to="{ path: '/admin/marchands', query: { id: m.merchant_id, onglet: 'paiement' } }" class="hover:underline">
+                  <template v-if="m.payment_method">
+                    {{ m.payment_method.summary }}
+                    <span :class="m.payment_method.status === 'verified' ? 'text-emerald-700' : 'text-amber-700'">{{ m.payment_method.status === 'verified' ? '✔' : '⏳' }}</span>
+                  </template>
+                  <template v-else>⚠️ Aucun moyen de paiement</template>
+                  <span v-if="m.payment_methods_pending" class="ml-1 whitespace-nowrap rounded-full bg-amber-100 px-2 text-amber-800">{{ m.payment_methods_pending }} à vérifier</span>
+                </RouterLink>
+              </td>
               <td class="p-2 text-right whitespace-nowrap">
                 <button class="text-blue-600 mr-3" @click="openLedger(m)">Grand livre</button>
                 <button v-if="canManage && m.available !== 0" class="btn-primary" @click="preparePayout(m)">Préparer le reversement</button>
               </td>
             </tr>
-            <tr v-if="!merchantBalances.length"><td colspan="5" class="p-4 text-center text-gray-500">Aucun montant en attente.</td></tr>
+            <tr v-if="!merchantBalances.length"><td colspan="6" class="p-4 text-center text-gray-500">Aucun montant en attente.</td></tr>
           </tbody>
         </table>
       </div>

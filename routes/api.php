@@ -41,6 +41,7 @@ use App\Http\Controllers\Api\V1\MerchantAccountController;
 use App\Http\Controllers\Api\V1\MerchantController;
 use App\Http\Controllers\Api\V1\MerchantLocationController;
 use App\Http\Controllers\Api\V1\MerchantNotificationController;
+use App\Http\Controllers\Api\V1\MerchantPaymentMethodController;
 use App\Http\Controllers\Api\V1\MerchantShopController;
 use App\Http\Controllers\Api\V1\MessageController;
 use App\Http\Controllers\Api\V1\NotificationController;
@@ -421,6 +422,17 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::post('geo/link', [MerchantLocationController::class, 'resolveLink'])->middleware('throttle:20,1')->name('geo.link');
         Route::get('merchants/{merchant}/notifications', [MerchantNotificationController::class, 'show'])->name('merchants.notifications');
         Route::put('merchants/{merchant}/notifications', [MerchantNotificationController::class, 'update'])->name('merchants.notifications.update');
+        // Moyens de paiement du marchand : lui (propriétaire du compte) et la caisse, qui les vérifie
+        Route::controller(MerchantPaymentMethodController::class)->group(function () {
+            Route::get('merchants/{merchant}/payment-methods', 'index')->name('merchants.payment-methods.index');
+            Route::post('merchants/{merchant}/payment-methods', 'store')->name('merchants.payment-methods.store');
+            Route::post('merchant-payment-methods/{method}', 'update')->name('merchant-payment-methods.update');
+            Route::delete('merchant-payment-methods/{method}', 'destroy')->name('merchant-payment-methods.destroy');
+            Route::post('merchant-payment-methods/{method}/preferred', 'prefer')->name('merchant-payment-methods.prefer');
+            Route::post('merchant-payment-methods/{method}/verify', 'verify')->name('merchant-payment-methods.verify');
+            Route::post('merchant-payment-methods/{method}/reject', 'reject')->name('merchant-payment-methods.reject');
+            Route::get('merchant-payment-methods/{method}/qr', 'qr')->name('merchant-payment-methods.qr');
+        });
 
         // Planning des livreurs : qui ramasse ou livre où et quand, absences
         Route::middleware('can:planning.manage')->controller(PlanningController::class)->group(function () {

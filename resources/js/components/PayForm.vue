@@ -24,12 +24,14 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { PAYMENT_METHODS } from '../utils/format'
 
 // compensation : paie d'un livreur, qui peut la garder sur l'argent encaissé
-defineProps({ compensation: { type: Boolean, default: false } })
+// method : moyen proposé (celui du marchand, au relevé d'un reversement)
+const props = defineProps({ compensation: { type: Boolean, default: false }, method: { type: String, default: null } })
 defineEmits(['pay', 'cancel'])
-const method = ref('wave')
+const method = ref(props.method || 'wave')
+watch(() => props.method, (m) => { if (m) method.value = m })
 const reference = ref('')
 </script>

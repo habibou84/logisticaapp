@@ -225,6 +225,7 @@ const routes = [
       { path: 'a-noter', component: () => import('../views/merchant/RateCourses.vue'), meta: { title: 'Noter les livreurs', back: true } },
       { path: 'mes-livreurs', component: () => import('../views/merchant/MyCouriers.vue'), meta: { title: 'Mes livreurs', back: true } },
       { path: 'mes-notifications', component: () => import('../views/merchant/NotificationSettings.vue'), meta: { title: 'Mes notifications', back: true } },
+      { path: 'moyens-de-paiement', component: () => import('../views/merchant/PaymentMethods.vue'), meta: { title: 'Comment être payé', back: true, permission: 'finance.view' } },
       { path: 'profil', component: mobile.profile, meta: { title: 'Mon profil' } },
     ],
   },

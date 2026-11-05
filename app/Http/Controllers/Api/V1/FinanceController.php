@@ -15,6 +15,7 @@ use App\Models\CourierPayout;
 use App\Models\CourierRemittance;
 use App\Models\Merchant;
 use App\Models\MerchantLedgerEntry;
+use App\Models\MerchantPaymentMethod;
 use App\Models\MerchantPayout;
 use App\Models\OrderExpense;
 use App\Models\User;
@@ -207,8 +208,16 @@ class FinanceController extends Controller
         $summaries = $this->payouts->summaries();
         $empty = ['available' => 0, 'pending_cash' => 0, 'unpaid_total' => 0];
 
-        $merchants = Merchant::orderBy('business_name')->get()
-            ->map(fn (Merchant $m) => ['merchant_id' => $m->id, 'business_name' => $m->business_name, ...($summaries[$m->id] ?? $empty)])
+        $merchants = Merchant::orderBy('business_name')->with('paymentMethods')->get()
+            ->map(fn (Merchant $m) => [
+                'merchant_id' => $m->id,
+                'business_name' => $m->business_name,
+                ...($summaries[$m->id] ?? $empty),
+                // Payer avec : le moyen préféré, et combien restent à vérifier
+                'payment_method' => ($preferred = $m->paymentMethods->firstWhere('is_preferred', true) ?? $m->paymentMethods->first())
+                    ? ['summary' => $preferred->summary(), 'status' => $preferred->status] : null,
+                'payment_methods_pending' => $m->paymentMethods->where('status', MerchantPaymentMethod::PENDING)->count(),
+            ])
             ->filter(fn ($row) => $row['unpaid_total'] !== 0 || $request->boolean('all'))
             ->values();
 
@@ -284,7 +293,12 @@ class FinanceController extends Controller
     {
         $this->authorizeMerchantAccess($request, $payout->merchant);
 
-        return response()->json(['data' => $this->payoutData($payout->load('merchant'), withEntries: true)]);
+        $data = $this->payoutData($payout->load('merchant'), withEntries: true);
+        // Payer ce marchand : ses moyens de paiement, le préféré en premier
+        $data['payment_methods'] = $payout->merchant->paymentMethods()->with('verifier:id,name')->get()
+            ->map(fn ($m) => MerchantPaymentMethodController::data($m));
+
+        return response()->json(['data' => $data]);
     }
 
     public function payPayout(Request $request, MerchantPayout $payout): JsonResponse

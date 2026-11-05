@@ -31,6 +31,7 @@ enum WhatsAppTemplate: string
     case RateCourse = 'course_a_noter';
     case CourseDelayed = 'course_retardee';
     case StatsAlert = 'alerte_statistique';
+    case PaymentMethodChanged = 'moyen_paiement_modifie';
 
     public const LANGUAGE = 'fr';
 
@@ -59,6 +60,7 @@ enum WhatsAppTemplate: string
             self::RateCourse => 'Bonjour {{1}}, votre course {{2}} a été faite par {{3}}. Donnez votre avis en un clic : {{4}} . Merci, il nous aide à nous améliorer.',
             self::CourseDelayed => 'Bonjour {{1}}, votre course {{2}} pour {{3}} aura du retard à la suite d\'un imprévu sur le terrain. Nous faisons le nécessaire et vous tenons informé. Merci de votre compréhension.',
             self::StatsAlert => 'Bonjour {{1}}, alerte de {{2}} : {{3}}. Voir les statistiques : {{4}}',
+            self::PaymentMethodChanged => 'Bonjour {{1}}, un moyen de paiement a été {{2}} sur votre compte : {{3}}. Si ce n\'est pas vous, prévenez votre agence tout de suite. Merci.',
         };
     }
 
@@ -89,6 +91,7 @@ enum WhatsAppTemplate: string
             self::RateCourse => '⭐ Notez votre livreur',
             self::CourseDelayed => '⏳ Course retardée',
             self::StatsAlert => '📉 Alerte statistique',
+            self::PaymentMethodChanged => '🔒 Moyen de paiement modifié',
         };
     }
 
@@ -117,6 +120,7 @@ enum WhatsAppTemplate: string
             self::RateCourse => 'Au client, après la livraison, pour noter le livreur (si l\'entreprise le veut : Réglages › Notation)',
             self::CourseDelayed => 'Au client, quand un imprévu sur le terrain (panne, accident…) retarde sa course (Réglages › Événements terrain)',
             self::StatsAlert => 'Aux administrateurs, quand un indicateur passe un seuil (Statistiques › Analyse et partage › Partage et alertes)',
+            self::PaymentMethodChanged => 'Au marchand, quand un moyen de paiement est ajouté, modifié ou retiré sur son compte (sécurité)',
         };
     }
 
@@ -140,6 +144,7 @@ enum WhatsAppTemplate: string
             self::ShippedRecipient => ['Awa', 'Boutique Chic', 'UTB Adjamé', 'A-15234'],
             self::ReturnSlip => ['Boutique Chic', 'Koffi', '4', 'BR-261009-00012', 'https://exemple.ci/bon-de-retour/12'],
             self::ReturnHanded => ['Boutique Chic', '4', 'BR-261009-00012', 'Mariam Koné', 'https://exemple.ci/bon-de-retour/12'],
+            self::PaymentMethodChanged => ['Boutique Chic', 'ajouté', 'Wave 07 09 98 08 85'],
             self::ManagerReport => ['Awa', 'du 05/10 au 11/10', 'Rapide Express', '312', '+12 %', '287', '94 %', '430 500 F', '+8 %', '3', 'https://exemple.ci/admin/statistiques'],
             self::InvoiceIssued => ['Boutique Chic', 'DIS-202610-0001', 'Distribution', 'octobre 2026', '53 800 F', '15/11/2026'],
             self::InvoiceReminder => ['Boutique Chic', 'DIS-202610-0001', '15/11/2026', '53 800 F'],

@@ -190,6 +190,16 @@ class Merchant extends Model
         return $this->hasMany(MerchantLedgerEntry::class);
     }
 
+    public function paymentMethods(): HasMany
+    {
+        return $this->hasMany(MerchantPaymentMethod::class)->orderByDesc('is_preferred')->orderBy('id');
+    }
+
+    public function paymentMethodEvents(): HasMany
+    {
+        return $this->hasMany(MerchantPaymentMethodEvent::class)->latest('id');
+    }
+
     public function payouts(): HasMany
     {
         return $this->hasMany(MerchantPayout::class);

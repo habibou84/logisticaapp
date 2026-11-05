@@ -27,6 +27,7 @@
         <MenuRow to="/marchand/stock" color="stock" icon="box" label="Mon stock" />
         <MenuRow v-if="merchant.billing_plans?.length && auth.can('finance.view')" to="/marchand/factures" color="facture" icon="file" tone="red" label="Mes factures" :sub="merchant.billing_plans.map((p) => p.formula_label).join(', ')" />
         <MenuRow v-if="merchant.activities?.some((a) => a !== 'ecommerce') && ['merchant_owner', 'merchant_manager'].includes(auth.role)" to="/marchand/rapports" color="stats" icon="file" tone="blue" label="Mes rapports" sub="Rapport d'activité de chaque mois : délais, accusés, départements" />
+        <MenuRow v-if="auth.can('finance.view')" to="/marchand/moyens-de-paiement" color="facture" icon="wallet" tone="green" label="Comment être payé" sub="Wave, Orange Money, MTN, Moov ou banque" />
       </div>
 
       <div class="m-card divide-y divide-slate-100 overflow-hidden">

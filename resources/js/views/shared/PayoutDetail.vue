@@ -42,8 +42,9 @@
       <p v-if="payout.notes" class="text-sm text-gray-600">{{ payout.notes }}</p>
     </div>
 
-    <div v-if="payout.status === 'draft' && auth.can('finance.manage') && !auth.user?.merchant_id" class="card p-4 no-print">
-      <PayForm @pay="pay" @cancel="cancel" />
+    <div v-if="payout.status === 'draft' && auth.can('finance.manage') && !auth.user?.merchant_id" class="card p-4 no-print space-y-3">
+      <PayMerchantPanel v-if="payout.net_amount > 0" :methods="payout.payment_methods || []" :amount="payout.net_amount" @select="payMethod = $event" />
+      <PayForm :method="payMethod" @pay="pay" @cancel="cancel" />
     </div>
   </div>
   <p v-else class="text-gray-500">Chargement…</p>
@@ -56,6 +57,7 @@ import http, { apiErrorMessage } from '../../bootstrap/axios'
 import LedgerTable from '../../components/LedgerTable.vue'
 import PayoutBadge from '../../components/PayoutBadge.vue'
 import PayForm from '../../components/PayForm.vue'
+import PayMerchantPanel from '../../components/payment/PayMerchantPanel.vue'
 import { useAuthStore } from '../../stores/auth'
 import { useToastStore } from '../../stores/toasts'
 import { date, dateTime, money, signedClass } from '../../utils/format'
@@ -65,6 +67,8 @@ const router = useRouter()
 const auth = useAuthStore()
 const toasts = useToastStore()
 const payout = ref(null)
+// Moyen du marchand choisi dans « Payer ce marchand »
+const payMethod = ref(null)
 
 async function load() {
   payout.value = (await http.get(`/finance/payouts/${route.params.id}`)).data.data

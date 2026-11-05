@@ -63,6 +63,7 @@
               <button class="text-blue-600 mr-3" @click="billing = m">Contrat</button>
               <RouterLink :to="`/admin/marchands/${m.id}/comptes`" class="text-blue-600 mr-3">Comptes</RouterLink>
               <RouterLink v-if="m.activities?.some((a) => a !== 'ecommerce')" :to="`/admin/marchands/${m.id}/departements`" class="text-blue-600 mr-3">Départements</RouterLink>
+              <button v-if="auth.can('finance.view')" class="text-blue-600 mr-3" @click="openPayment(m)">Paiement</button>
               <button v-if="auth.can('merchants.manage')" class="text-blue-600" @click="openForm(m)">Modifier</button>
             </td>
           </tr>
@@ -202,6 +203,10 @@
         <button class="btn-primary w-full" :disabled="form.saving">Enregistrer</button>
       </form>
     </Modal>
+    <!-- Moyens de paiement du marchand : vérifier, refuser, saisir, historique -->
+    <Modal :open="!!payment" :title="`Paiement · ${payment?.business_name || ''}`" @close="payment = null">
+      <PaymentMethodsManager v-if="payment" :merchant-id="payment.id" :can-edit="auth.can('finance.manage')" />
+    </Modal>
   </div>
 </template>
 
@@ -213,6 +218,7 @@ import BillingPlanModal from '../../components/BillingPlanModal.vue'
 import ConnectRequests from '../../components/ConnectRequests.vue'
 import LocationPicker from '../../components/LocationPicker.vue'
 import Modal from '../../components/Modal.vue'
+import PaymentMethodsManager from '../../components/payment/PaymentMethodsManager.vue'
 import { useAuthStore } from '../../stores/auth'
 import { useToastStore } from '../../stores/toasts'
 import { activityBadge, activityShort, myActivities } from '../../utils/activities'
@@ -231,6 +237,11 @@ const billing = ref(null)
 const route = useRoute()
 // Lien de la notification « Nouveau client » : ?nouveaux=1
 const onlySignups = ref(!!route.query.nouveaux)
+// Fenêtre « Paiement » ouverte (lien de la caisse ou de l'alerte : ?id=…&onglet=paiement)
+const payment = ref(null)
+function openPayment(m) {
+  payment.value = { id: m.id, business_name: m.business_name }
+}
 const form = reactive({ open: false, id: null, data: {}, activities: [], owner: {}, error: '', saving: false, location: null, initialLocation: null, source: null, labelPrint: '', labelFormat: '' })
 const SOURCES = { merchant: 'par le client', staff: 'par l\'agence', courier: 'estimée (livreurs)' }
 const locationChanged = computed(() => form.location?.lat !== form.initialLocation?.lat || form.location?.lng !== form.initialLocation?.lng)
@@ -304,10 +315,11 @@ async function save() {
 }
 
 onMounted(async () => {
-  // Depuis la page Utilisateurs : ouvre la fiche du client demandé
+  // Depuis la page Utilisateurs : ouvre la fiche du client demandé ; depuis la caisse : sa fenêtre Paiement
   load().then(() => {
     const m = route.query.id && merchants.value.find((x) => x.id === Number(route.query.id))
-    if (m) openForm(m)
+    if (route.query.onglet === 'paiement' && route.query.id) payment.value = { id: Number(route.query.id), business_name: m?.business_name || '' }
+    else if (m) openForm(m)
   })
   zones.value = (await http.get('/zones')).data.data
   if (auth.can(['pricing.manage', 'merchants.manage'])) grids.value = (await http.get('/pricing-grids')).data.data
