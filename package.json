@@ -7,7 +7,8 @@
         "dev": "vite",
         "mobile:livreur": "vite build -c vite.mobile.config.js --mode livreur && cd mobile/livreur && cap sync",
         "mobile:ecommercant": "vite build -c vite.mobile.config.js --mode ecommercant && cd mobile/ecommercant && cap sync",
-        "test:mobile": "node tests/browser/mobile-width.mjs"
+        "test:mobile": "node tests/browser/mobile-width.mjs",
+        "test:scanner": "node tests/browser/scanner.mjs"
     },
     "devDependencies": {
         "@capacitor/android": "8.5.2",

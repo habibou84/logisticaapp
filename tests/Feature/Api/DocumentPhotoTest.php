@@ -39,6 +39,7 @@ class DocumentPhotoTest extends TestCase
                 'scanned' => true, 'mode' => 'color', 'width' => 1400, 'height' => 2000, 'overridden' => false,
                 'quality' => ['blur' => 0.12, 'brightness' => 231, 'glare' => 0, 'warnings' => ['glare', 'inconnu']],
                 'taken_at' => '2026-10-27T10:42:00+00:00', 'pirate' => 'x',
+                'lat' => 5.3599517, 'lng' => -3.9871234, 'accuracy' => 12.6, 'coverage' => 0.42,
             ]),
             'type' => 'photo_delivery',
             ...$extra,
@@ -58,17 +59,21 @@ class DocumentPhotoTest extends TestCase
         $this->assertSame(['glare'], $attachment->meta['quality']['warnings']);
         $this->assertArrayNotHasKey('pirate', $attachment->meta);
         $this->assertSame('color', $attachment->meta['mode']);
+        $this->assertSame([5.359952, -3.987123, 12, 0.42], [$attachment->meta['lat'], $attachment->meta['lng'], $attachment->meta['accuracy'], $attachment->meta['coverage']]);
 
         $proof = collect($this->getJson("/api/v1/orders/{$order->id}")->json('data.events'))->firstWhere('type', 'proof_added');
         $original = $proof['attachments'][0]['original_url'];
         $this->assertStringContainsString('original=1', $original);
         $this->assertTrue($proof['attachments'][0]['scan']['scanned']);
         $this->get($original)->assertOk();
+        // Lieu de la prise pour l'équipe
+        $this->assertSame(['lat' => 5.359952, 'lng' => -3.987123, 'accuracy' => 12], $proof['attachments'][0]['taken_where']);
 
         // Le client voit le document net, jamais l'original
         Sanctum::actingAs($this->merchantUser);
         $proof = collect($this->getJson("/api/v1/orders/{$order->id}")->json('data.events'))->firstWhere('type', 'proof_added');
         $this->assertNull($proof['attachments'][0]['original_url']);
+        $this->assertNull($proof['attachments'][0]['taken_where']);
         $this->get($proof['attachments'][0]['url'])->assertOk();
         $this->get($original)->assertNotFound();
     }

@@ -25,6 +25,9 @@
           <button class="text-sm text-blue-600 underline" @click="openAttachment(a.url)">{{ a.type?.startsWith('signature') ? '✍️ Voir la signature' : a.scan?.scanned ? '📄 Voir le document' : '📷 Voir la photo' }}</button>
           <!-- Photo d'origine, avant le scanner (équipe) -->
           <button v-if="a.original_url" class="text-sm text-gray-600 underline" @click="openAttachment(a.original_url)">Voir l'original</button>
+          <a v-if="a.taken_where" :href="`https://www.google.com/maps?q=${a.taken_where.lat},${a.taken_where.lng}`" target="_blank" rel="noopener" class="text-sm text-gray-600 underline">
+            📍 Lieu de la photo<template v-if="a.taken_where.accuracy"> (à {{ a.taken_where.accuracy }} m près)</template>
+          </a>
           <span v-if="a.scan?.overridden" class="text-xs text-amber-700">⚠️ envoyée malgré le contrôle de qualité</span>
         </template>
       </div>

@@ -34,6 +34,7 @@
           </div>
         </div>
         <p v-if="noDocument" class="px-4 text-center text-sm text-amber-300">{{ WARNING_LABELS.no_document }}</p>
+        <p v-else-if="checkCorners" class="px-4 text-center text-sm text-amber-300">{{ WARNING_LABELS.check_corners }}</p>
         <footer class="grid grid-cols-2 gap-2 p-4">
           <button type="button" class="m-btn-secondary" @click="wholePhoto">Toute la photo</button>
           <button type="button" class="m-btn-primary" :disabled="busy" @click="process">Valider le cadrage</button>
@@ -72,8 +73,8 @@
 
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { loadBitmap, pixels, shrinkPhoto, toJpeg } from '../../utils/photos'
-import { BLOCKING, WARNING_LABELS, detectCorners, renderDocument } from '../../utils/scanner'
+import { loadBitmap, originalPhoto, pixels, shrinkPhoto, toJpeg, toPng } from '../../utils/photos'
+import { BLOCKING, FAR_COVERAGE, WARNING_LABELS, detectDocument, renderDocument } from '../../utils/scanner'
 
 /**
  * Scanner de document : la feuille est trouvée sur la photo, redressée, débarrassée des ombres, rendue en
@@ -101,6 +102,15 @@ const mode = ref(MODES[props.mode] ? props.mode : 'color')
 const corners = ref(FULL.map((c) => [...c]))
 const detected = ref(null)
 const noDocument = ref(false)
+// Feuille trouvée mais cadrage incertain (bords peu nets, bandeau foncé au bord) : le livreur vérifie les coins
+const checkCorners = ref(false)
+// Part de la photo occupée par la feuille cadrée (petite : prise de trop loin)
+const coverage = computed(() => {
+  const p = corners.value
+  let s = 0
+  for (let i = 0; i < 4; i++) s += p[i][0] * p[(i + 1) % 4][1] - p[(i + 1) % 4][0] * p[i][1]
+  return Math.round((Math.abs(s) / 2) * 1000) / 1000
+})
 const quality = ref(null)
 const result = ref(null)
 const resultUrl = ref('')
@@ -115,7 +125,12 @@ const handle = computed(() => Math.max(viewW.value, viewH.value) * 0.035)
 const polygon = computed(() => corners.value.map(([x, y]) => `${x * viewW.value},${y * viewH.value}`).join(' '))
 // Cadre de la photo : garde ses proportions dans l'écran
 const frameStyle = computed(() => ({ aspectRatio: `${viewW.value} / ${viewH.value}`, maxWidth: '100%', maxHeight: '100%', height: viewH.value > viewW.value ? '100%' : 'auto', width: viewH.value > viewW.value ? 'auto' : '100%' }))
-const warnings = computed(() => [...(quality.value?.warnings || []), ...(noDocument.value && !detected.value ? ['no_document'] : [])].filter((w, i, a) => a.indexOf(w) === i))
+const far = computed(() => !!detected.value && coverage.value < FAR_COVERAGE)
+const warnings = computed(() => [
+  ...(quality.value?.warnings || []),
+  ...(noDocument.value && !detected.value ? ['no_document'] : []),
+  ...(far.value ? ['far'] : []),
+].filter((w, i, a) => a.indexOf(w) === i))
 const isBlocking = (w) => props.qualityCheck === 'block' && BLOCKING.includes(w)
 const blocked = computed(() => props.qualityCheck === 'block' && warnings.value.some(isBlocking))
 
@@ -126,11 +141,16 @@ onMounted(async () => {
     viewH.value = bitmap.height
     // Premier usage : le scanner se télécharge une fois (3,5 Mo), puis reste sur le téléphone
     const slow = setTimeout(() => { message.value = 'Préparation du scanner (première fois seulement)…' }, 1500)
-    const found = await detectCorners(pixels(bitmap, 1000)).finally(() => clearTimeout(slow))
-    detected.value = found
+    const found = await detectDocument(pixels(bitmap, 1000)).finally(() => clearTimeout(slow))
+    detected.value = found?.corners || null
     if (found) {
-      corners.value = found.map(([x, y]) => [x, y])
-      await process()
+      corners.value = found.corners.map(([x, y]) => [x, y])
+      if (found.confident) {
+        await process()
+      } else {
+        checkCorners.value = true
+        stage.value = 'crop'
+      }
     } else {
       noDocument.value = true
       corners.value = [[0.05, 0.05], [0.95, 0.05], [0.95, 0.95], [0.05, 0.95]]
@@ -180,15 +200,32 @@ function wholePhoto() {
   corners.value = FULL.map((c) => [...c])
 }
 
+const isWhole = () => corners.value.every((c, i) => c[0] === FULL[i][0] && c[1] === FULL[i][1])
+
+/**
+ * Grand côté de la photo envoyée au scanner : la feuille découpée dans la photo à sa pleine résolution,
+ * réduite seulement si elle dépasse la taille voulue (maxSide), pour ne rien perdre de l'appareil photo.
+ */
+function sourceSide() {
+  const w = bitmap.width
+  const h = bitmap.height
+  const p = corners.value.map(([x, y]) => [x * w, y * h])
+  const d = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1])
+  const page = Math.max(d(p[0], p[1]), d(p[3], p[2]), d(p[0], p[3]), d(p[1], p[2]))
+  const scale = Math.min(1, (props.maxSide * 1.05) / Math.max(1, page))
+  return Math.round(Math.max(w, h) * scale)
+}
+
 async function process() {
   busy.value = true
   try {
-    const whole = corners.value.every((c, i) => c[0] === FULL[i][0] && c[1] === FULL[i][1])
-    const { image, quality: q } = await renderDocument(pixels(bitmap, Math.round(props.maxSide * 1.5)), whole ? null : corners.value.map(([x, y]) => [x, y]), mode.value, props.maxSide)
+    const whole = isWhole()
+    const { image, quality: q } = await renderDocument(pixels(bitmap, sourceSide()), whole ? null : corners.value.map(([x, y]) => [x, y]), mode.value, props.maxSide)
     result.value = image
     quality.value = q
     if (resultUrl.value) URL.revokeObjectURL(resultUrl.value)
     resultUrl.value = URL.createObjectURL(await toJpeg(image, 'apercu.jpg', 0.8))
+    checkCorners.value = false
     stage.value = 'preview'
   } catch (e) {
     console.warn('Scanner :', e?.message || e)
@@ -207,14 +244,17 @@ function changeMode(key) {
 async function finish(overridden) {
   busy.value = true
   try {
-    const file = await toJpeg(result.value, 'document.jpg', mode.value === 'bw' ? 0.8 : 0.85)
-    const original = props.keepOriginal ? await shrinkPhoto(props.file, { maxSide: 3000, quality: 0.88, name: 'original.jpg' }) : null
+    // Noir et blanc : PNG, sans perte (traits nets, fichier léger) ; couleur et gris : JPEG
+    const file = mode.value === 'bw' ? await toPng(result.value, 'document.png') : await toJpeg(result.value, 'document.jpg', 0.85)
+    // Photo d'origine : le fichier de l'appareil photo tel quel (valeur de preuve)
+    const original = props.keepOriginal ? await originalPhoto(props.file) : null
     emit('done', {
       file,
       original,
       meta: {
         scanned: true,
-        cropped: !corners.value.every((c, i) => c[0] === FULL[i][0] && c[1] === FULL[i][1]),
+        cropped: !isWhole(),
+        coverage: coverage.value,
         mode: mode.value,
         width: result.value.width,
         height: result.value.height,

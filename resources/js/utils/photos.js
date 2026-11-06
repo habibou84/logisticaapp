@@ -37,6 +37,15 @@ export function pixels(bitmap, maxSide) {
 
 /** Fichier JPEG à partir de pixels { data, width, height } ou d'une image */
 export function toJpeg(source, name, quality = 0.88) {
+  return toImage(source, name, 'image/jpeg', quality)
+}
+
+/** Fichier PNG (sans perte : document en noir et blanc, traits nets et fichier léger) */
+export function toPng(source, name) {
+  return toImage(source, name, 'image/png')
+}
+
+function toImage(source, name, type, quality) {
   const canvas = document.createElement('canvas')
   canvas.width = source.width
   canvas.height = source.height
@@ -44,8 +53,8 @@ export function toJpeg(source, name, quality = 0.88) {
   if (source.data) ctx.putImageData(new ImageData(source.data, source.width, source.height), 0, 0)
   else ctx.drawImage(source, 0, 0)
   return new Promise((resolve, reject) => canvas.toBlob(
-    (blob) => (blob ? resolve(new File([blob], name, { type: 'image/jpeg', lastModified: Date.now() })) : reject(new Error('Photo illisible.'))),
-    'image/jpeg',
+    (blob) => (blob ? resolve(new File([blob], name, { type, lastModified: Date.now() })) : reject(new Error('Photo illisible.'))),
+    type,
     quality,
   ))
 }
@@ -64,4 +73,17 @@ export async function shrinkPhoto(file, { maxSide = 2000, quality = 0.85, name =
   } catch {
     return file
   }
+}
+
+/** Taille au-delà de laquelle la photo d'origine est réduite avant l'envoi (le serveur accepte 15 Mo) */
+const ORIGINAL_MAX_BYTES = 14 * 1024 * 1024
+
+/**
+ * Photo d'origine gardée comme preuve : le fichier de l'appareil photo tel quel (date de prise, réglages et
+ * orientation de l'appareil conservés), sauf s'il est trop lourd ou dans un autre format que JPEG.
+ * @returns {Promise<File>}
+ */
+export async function originalPhoto(file) {
+  if (file.type === 'image/jpeg' && file.size <= ORIGINAL_MAX_BYTES) return file
+  return shrinkPhoto(file, { maxSide: 3000, quality: 0.9, name: 'original.jpg' })
 }

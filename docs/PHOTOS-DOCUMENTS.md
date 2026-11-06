@@ -5,15 +5,22 @@ le traite comme un scanner avant l'envoi. Côté équipe, la photo d'un papier d
 fiche › Papiers, Échéances › permis) passe aussi par le scanner ; un PDF est gardé tel quel.
 
 ## Ce que fait le scanner (application livreur, sur le téléphone)
-1. **Feuille trouvée** sur la photo (ses quatre bords). Si elle n'est pas trouvée, ou pour corriger, le livreur place
-   les quatre coins au doigt (**✂️ Recadrer**, **Toute la photo**).
+1. **Feuille trouvée** sur la photo (ses quatre bords), d'après la lumière et la couleur : un bandeau bleu en haut
+   d'une facture, posée sur une table sombre, reste dans le document. Quand le cadrage est incertain (bords peu nets,
+   bandeau foncé au bord, photo sombre), l'application montre les coins au livreur pour qu'il les vérifie. Si la
+   feuille n'est pas trouvée, ou pour corriger, il place les quatre coins au doigt (**✂️ Recadrer**, **Toute la photo**).
 2. **Redressée** : remise à plat et à angle droit, même photographiée de biais ; le décor autour est retiré.
-3. **Nettoyée** : ombres et éclairage inégal effacés, fond blanc, écriture et tampon nets. Trois rendus :
-   **Couleur** (garde le tampon bleu ou rouge), **Gris**, **Noir et blanc**.
-4. **Contrôlée** : photo floue, trop sombre, reflet, document pris de trop loin. Selon le réglage, une photo floue ou
-   trop sombre est à reprendre (après trois essais, le livreur peut l'envoyer quand même : c'est noté sur la course).
-5. **Allégée** : 2 000 pixels sur le grand côté (scan A4 à 200 points par pouce), quelques centaines de Ko au lieu de
-   4 à 12 Mo.
+3. **Nettoyée** : ombres et éclairage inégal effacés, fond blanc, écriture et tampon nets. Les aplats foncés du
+   document (bandeau d'en-tête, logo plein, tampon rempli) ne sont pas pris pour des ombres et restent foncés. Trois
+   rendus : **Couleur** (garde le tampon bleu ou rouge), **Gris**, **Noir et blanc** (enregistré sans perte, en PNG).
+4. **Contrôlée** : photo floue, un peu floue, trop sombre, reflet, document pris de trop loin (il occupe moins d'un
+   cinquième de la photo). Le flou se mesure à la largeur des bords des lettres : une photo où les petits caractères
+   ne se lisent plus est refusée ; un peu floue, elle est signalée (« vérifiez que tout se lit »). Selon le réglage,
+   une photo floue ou trop sombre est à reprendre (après trois essais, le livreur peut l'envoyer quand même : c'est
+   noté sur la course).
+5. **À pleine résolution, puis allégée** : la feuille est découpée dans la photo de l'appareil à sa taille réelle,
+   puis ramenée à 2 000 pixels sur le grand côté (scan A4 à 200 points par pouce) ; quelques centaines de Ko au lieu
+   de 4 à 12 Mo.
 
 Le traitement se fait sur le téléphone (OpenCV.js dans un worker) : environ 3,5 Mo téléchargés au premier scan, puis
 gardés par l'application. Premier scan sans réseau : le livreur peut envoyer la photo telle quelle.
@@ -23,8 +30,11 @@ dans le bon sens, réduites et recompressées. Le serveur accepte jusqu'à 15 Mo
 
 ## Photo d'origine (valeur de preuve)
 Le scanner modifie la photo : l'original est gardé à côté (réglage **Garder aussi la photo d'origine**, actif par
-défaut), avec l'heure de la prise et les informations du scanner (rendu, qualité, avertissements).
-- Équipe : fiche de la course › historique › **📄 Voir le document** et **Voir l'original** ; bon de retour ›
+défaut). C'est le fichier de l'appareil photo tel quel (date de prise et informations de l'appareil comprises) ;
+seul un fichier de plus de 14 Mo ou dans un autre format que JPEG est réduit. Avec lui : l'heure de la prise, les
+informations du scanner (rendu, qualité, avertissements) et **le lieu de la prise** (position du téléphone, avec sa
+précision, si le livreur a autorisé la localisation).
+- Équipe : fiche de la course › historique › **📄 Voir le document**, **Voir l'original** et **📍 Lieu de la photo** ; bon de retour ›
   **Voir l'original de la photo** ; fiche du véhicule › Papiers › **Voir** et **Original**.
 - Client et Jibiat Marchand (API publique, `proof.photos`) : le document net seulement. Contrat inchangé.
 
@@ -44,7 +54,12 @@ d'abord.
 
 ## API (application)
 `POST /api/v1/orders/{id}/attachments` : `file` (document traité), `file_original` (photo d'origine), `file_meta`
-(JSON : `scanned`, `mode`, `quality`, `taken_at`…), `client_ref` (identifiant donné par le téléphone).
+(JSON : `scanned`, `mode`, `quality`, `taken_at`, `coverage`, `lat`, `lng`, `accuracy`…), `client_ref` (identifiant donné par le téléphone).
 Original : `GET …/attachments/{id}?original=1` (équipe seulement). Remise des retours : `photo`, `photo_original`,
 `photo_meta`. Papiers : `POST /api/v1/vehicles/documents` avec `file`, `file_original`, `file_meta` ; original :
 `GET /api/v1/vehicles/documents/{id}/file?original=1`.
+
+## Essais du scanner
+`npm run test:scanner` (lancé par la CI) fabrique des photos d'un accusé de réception à bandeau foncé posé sur une
+table, en perspective, et vérifie : feuille entière trouvée et cadrage sûr, photo floue refusée, photo à peine floue
+acceptée, bandeau gardé foncé (couleur et noir et blanc), photo sombre avec feuille entière, document pris de loin.

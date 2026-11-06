@@ -12,7 +12,7 @@ use Illuminate\Http\UploadedFile;
 class DocumentPhoto
 {
     /** Avertissements du contrôle de qualité de l'application */
-    public const WARNINGS = ['blur', 'dark', 'glare', 'small', 'no_document'];
+    public const WARNINGS = ['blur', 'soft', 'dark', 'glare', 'small', 'far', 'no_document'];
 
     public function __construct(private readonly PhotoSettings $settings) {}
 
@@ -83,6 +83,13 @@ class DocumentPhoto
             && abs((float) $input['lat']) <= 90 && abs((float) $input['lng']) <= 180) {
             $out['lat'] = round((float) $input['lat'], 6);
             $out['lng'] = round((float) $input['lng'], 6);
+            if (isset($input['accuracy']) && is_numeric($input['accuracy'])) {
+                $out['accuracy'] = max(0, min(100000, (int) $input['accuracy']));
+            }
+        }
+        // Part de la photo occupée par le document (0 à 1)
+        if (isset($input['coverage']) && is_numeric($input['coverage'])) {
+            $out['coverage'] = round(max(0, min(1, (float) $input['coverage'])), 3);
         }
 
         return $out ?: null;

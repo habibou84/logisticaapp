@@ -33,7 +33,7 @@ self.onmessage = async ({ data: { id, type, image, corners, mode, maxSide } }) =
     if (type === 'load') {
       self.postMessage({ id, ok: true })
     } else if (type === 'detect') {
-      self.postMessage({ id, ok: true, corners: detect(cv, image) })
+      self.postMessage({ id, ok: true, found: detect(cv, image) })
     } else if (type === 'render') {
       const result = render(cv, image, corners, mode, maxSide)
       self.postMessage({ id, ok: true, ...result }, [result.image.data.buffer])

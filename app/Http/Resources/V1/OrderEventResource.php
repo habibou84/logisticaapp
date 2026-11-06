@@ -47,6 +47,9 @@ class OrderEventResource extends JsonResource
                 'original_url' => $a->original_path !== null && $request->user()?->merchant_id === null
                     ? route('v1.orders.attachments.show', [$this->order_id, $a->id, 'original' => 1], false) : null,
                 'scan' => $a->meta ? collect($a->meta)->only(['scanned', 'mode', 'quality', 'taken_at', 'overridden'])->all() : null,
+                // Lieu de la prise (position du téléphone) : pour l'équipe seulement
+                'taken_where' => isset($a->meta['lat'], $a->meta['lng']) && $request->user()?->merchant_id === null
+                    ? ['lat' => $a->meta['lat'], 'lng' => $a->meta['lng'], 'accuracy' => $a->meta['accuracy'] ?? null] : null,
             ])),
             'visible_to_merchant' => $this->visible_to_merchant,
             'created_at' => $this->created_at,

@@ -11,6 +11,7 @@
 import { computed, onMounted, ref } from 'vue'
 import DocumentScanner from './DocumentScanner.vue'
 import { photoSettings } from '../../composables/usePhotoSettings'
+import { currentPosition } from '../../composables/useGeolocation'
 import { shrinkPhoto } from '../../utils/photos'
 import { warmUpScanner } from '../../utils/scanner'
 
@@ -34,6 +35,12 @@ const attempt = ref(0)
 const busy = ref(false)
 const settings = computed(() => photoSettings())
 const maxSide = computed(() => (settings.value.resolution === 'high' ? 3000 : 2000))
+// Position du téléphone au moment de la prise (preuve du lieu), cherchée pendant que le livreur cadre
+let position = Promise.resolve(null)
+async function withPosition(photo) {
+  const where = await position
+  return where ? { ...photo, meta: { ...photo.meta, ...where } } : photo
+}
 
 // Bouton de document à l'écran : le scanner se prépare pendant que le livreur remplit la feuille
 onMounted(() => {
@@ -44,6 +51,7 @@ async function pick(e) {
   const picked = e.target.files[0]
   e.target.value = ''
   if (!picked) return
+  position = currentPosition(8000, true)
   if (props.scan && settings.value.scan[props.scan]) {
     attempt.value++
     file.value = picked
@@ -52,16 +60,21 @@ async function pick(e) {
   busy.value = true
   try {
     const shrunk = await shrinkPhoto(picked, { maxSide: maxSide.value })
-    emit('captured', { file: shrunk, original: null, meta: { scanned: false, taken_at: new Date(picked.lastModified || Date.now()).toISOString() } })
+    emit('captured', await withPosition({ file: shrunk, original: null, meta: { scanned: false, taken_at: new Date(picked.lastModified || Date.now()).toISOString() } }))
   } finally {
     busy.value = false
   }
 }
 
-function done(photo) {
+async function done(photo) {
   file.value = null
   attempt.value = 0
-  emit('captured', photo)
+  busy.value = true
+  try {
+    emit('captured', await withPosition(photo))
+  } finally {
+    busy.value = false
+  }
 }
 
 // Le bouton « Reprendre » est un geste de l'utilisateur : l'appareil photo peut s'ouvrir directement

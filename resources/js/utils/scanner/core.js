@@ -10,8 +10,10 @@
 const DETECT_SIDE = 800
 
 /**
- * Coins de la feuille, en proportions de l'image (0 à 1), dans l'ordre haut-gauche, haut-droite,
- * bas-droite, bas-gauche ; null si aucune feuille n'est trouvée.
+ * Feuille trouvée sur la photo, ou null :
+ * - corners : coins en proportions de l'image (0 à 1), dans l'ordre haut-gauche, haut-droite, bas-droite, bas-gauche ;
+ * - confident : bords nets et forme de feuille bien fermée ; sinon le livreur vérifie le cadrage ;
+ * - coverage : part de la photo occupée par la feuille (petite : prise de trop loin).
  */
 export function detect(cv, image) {
   const keep = []
@@ -26,32 +28,145 @@ export function detect(cv, image) {
     cv.GaussianBlur(gray, gray, new cv.Size(5, 5), 0)
     const area = gray.rows * gray.cols
     const candidates = []
-
-    // 1. Bords nets (Canny) : la feuille sur un fond qui contraste peu
-    const edges = track(new cv.Mat())
-    cv.Canny(gray, edges, 30, 90)
     const k3 = track(cv.getStructuringElement(cv.MORPH_RECT, new cv.Size(3, 3)))
-    cv.dilate(edges, edges, k3, new cv.Point(-1, -1), 2)
-    candidates.push(...quads(cv, edges, area, track))
 
-    // 2. Feuille plus claire que le fond (seuil d'Otsu) : bords flous ou abîmés
+    // 1. Bords nets (Canny) : sur la photo telle quelle, contraste égalisé (photo sombre ou terne), et bords de
+    //    couleur réunis à ceux de la lumière (bandeau bleu sur une table brune : même gris, couleurs opposées)
+    const equalized = track(new cv.Mat())
+    cv.equalizeHist(gray, equalized)
+    const all = track(cv.Mat.zeros(gray.rows, gray.cols, cv.CV_8U))
+    const rgb = track(new cv.Mat())
+    cv.cvtColor(small, rgb, cv.COLOR_RGBA2RGB)
+    const lab = track(new cv.Mat())
+    cv.cvtColor(rgb, lab, cv.COLOR_RGB2Lab)
+    const planes = track(new cv.MatVector())
+    cv.split(lab, planes)
+    const sources = [[gray, 30, 90], [equalized, 40, 120]]
+    for (const i of [1, 2]) {
+      const c = track(planes.get(i))
+      cv.GaussianBlur(c, c, new cv.Size(5, 5), 0)
+      cv.normalize(c, c, 0, 255, cv.NORM_MINMAX)
+      sources.push([c, 20, 60, true])
+    }
+    for (const [img, low, high, colorOnly] of sources) {
+      const edges = track(new cv.Mat())
+      cv.Canny(img, edges, low, high)
+      cv.bitwise_or(all, edges, all)
+      if (colorOnly) continue
+      cv.dilate(edges, edges, k3, new cv.Point(-1, -1), 2)
+      candidates.push(...quads(cv, edges, area, track).map((q) => ({ ...q, edges: true })))
+    }
+    cv.dilate(all, all, k3, new cv.Point(-1, -1), 2)
+    candidates.push(...quads(cv, all, area, track).map((q) => ({ ...q, edges: true })))
+
+    // 2. Feuille plus claire que le fond (seuil d'Otsu) : bords flous ou abîmés ; moins sûr (un bandeau
+    //    foncé au bord de la feuille peut être pris pour le fond)
     const mask = track(new cv.Mat())
     cv.threshold(gray, mask, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
     const k15 = track(cv.getStructuringElement(cv.MORPH_RECT, new cv.Size(15, 15)))
     cv.morphologyEx(mask, mask, cv.MORPH_CLOSE, k15)
     cv.morphologyEx(mask, mask, cv.MORPH_OPEN, k15)
-    candidates.push(...quads(cv, mask, area, track))
+    candidates.push(...quads(cv, mask, area, track).map((q) => ({ ...q, edges: false })))
 
     if (!candidates.length) return null
-    candidates.sort((a, b) => b.area - a.area)
+    // La plus grande forme de feuille ; à défaut, le plus grand quadrilatère (à vérifier par le livreur)
+    // Cadre collé aux bords de la photo (bord de l'image, rayures de la table) : seulement s'il n'y a rien d'autre
+    const edge = (x, y) => x < gray.cols * 0.02 || x > gray.cols * 0.98 || y < gray.rows * 0.02 || y > gray.rows * 0.98
+    candidates.forEach((c) => {
+      c.points = order(c.points)
+      c.shape = plausible(c.points) && c.points.filter(([x, y]) => edge(x, y)).length < 3
+    })
+    // Forme de feuille d'abord, puis contour bien fermé (pas une forme qui déborde sur la table), puis la plus grande
+    const closed = (c) => c.fill > 0.92
+    candidates.sort((a, b) => (b.shape - a.shape) || (closed(b) - closed(a)) || (b.area - a.area))
     const best = candidates[0]
-    return order(best.points).map(([x, y]) => [x / gray.cols, y / gray.rows])
+    // Bord de feuille qui n'a pas la couleur de la table juste au-delà (bandeau foncé au bord du document) :
+    // la feuille est agrandie de ce côté, et le livreur vérifie le cadrage
+    const grown = grow(cv, lab, best.points)
+    return {
+      corners: grown.points.map(([x, y]) => [x / gray.cols, y / gray.rows]),
+      confident: best.shape && best.edges && best.fill > 0.92 && !grown.changed,
+      coverage: round(polygonArea(grown.points) / area),
+    }
   } finally {
     keep.forEach((m) => m.delete())
   }
 }
 
-// Quadrilatères assez grands (15 % à 98 % de l'image) parmi les contours
+/**
+ * Agrandit la feuille côté par côté tant que la bande juste au-delà du bord ne ressemble pas au fond (couleur
+ * des bords de la photo, presque toujours la table) : un bandeau foncé en haut d'une facture, invisible en gris
+ * sur une table sombre, reste dans le document.
+ */
+function grow(cv, lab, points) {
+  const w = lab.cols
+  const h = lab.rows
+  const px = (x, y) => {
+    const i = (Math.min(h - 1, Math.max(0, Math.round(y))) * w + Math.min(w - 1, Math.max(0, Math.round(x)))) * 3
+    return [lab.data[i], lab.data[i + 1], lab.data[i + 2]]
+  }
+  // Fond : pixels du pourtour de la photo
+  const ring = []
+  const m = Math.max(2, Math.round(Math.min(w, h) * 0.02))
+  for (let x = 0; x < w; x += 4) ring.push(px(x, m), px(x, h - 1 - m))
+  for (let y = 0; y < h; y += 4) ring.push(px(m, y), px(w - 1 - m, y))
+  const median = [0, 1, 2].map((k) => ring.map((p) => p[k]).sort((a, b) => a - b)[Math.floor(ring.length / 2)])
+  const spread = ring.map((p) => Math.hypot(p[0] - median[0], p[1] - median[1], p[2] - median[2])).sort((a, b) => a - b)[Math.floor(ring.length * 0.8)]
+  const limit = Math.max(14, spread * 1.5)
+
+  const pts = points.map((p) => [...p])
+  const cx = pts.reduce((s, p) => s + p[0], 0) / 4
+  const cy = pts.reduce((s, p) => s + p[1], 0) / 4
+  let changed = false
+  for (let i = 0; i < 4; i++) {
+    const a = pts[i]
+    const b = pts[(i + 1) % 4]
+    const len = Math.hypot(b[0] - a[0], b[1] - a[1])
+    let nx = -(b[1] - a[1]) / len
+    let ny = (b[0] - a[0]) / len
+    // Normale tournée vers l'extérieur de la feuille
+    if (nx * ((a[0] + b[0]) / 2 - cx) + ny * ((a[1] + b[1]) / 2 - cy) < 0) [nx, ny] = [-nx, -ny]
+    let step = 0
+    const maxStep = Math.round(len * 0.25)
+    for (let t = 2; t <= maxStep; t++) {
+      let unlike = 0
+      const n = 30
+      for (let k = 0; k < n; k++) {
+        const f = 0.15 + 0.7 * (k / (n - 1))
+        const p = px(a[0] + (b[0] - a[0]) * f + nx * t, a[1] + (b[1] - a[1]) * f + ny * t)
+        if (Math.hypot(p[0] - median[0], p[1] - median[1], p[2] - median[2]) > limit) unlike++
+      }
+      // La bande ressemble au fond : le bord est atteint
+      if (unlike < n * 0.7) break
+      step = t
+    }
+    if (step >= Math.max(4, len * 0.02)) {
+      changed = true
+      for (const j of [i, (i + 1) % 4]) {
+        pts[j][0] = Math.min(w - 1, Math.max(0, pts[j][0] + nx * step))
+        pts[j][1] = Math.min(h - 1, Math.max(0, pts[j][1] + ny * step))
+      }
+    }
+  }
+  return { points: pts, changed }
+}
+
+/** Forme d'une feuille vue en photo : côtés opposés de longueurs proches, angles pas trop fermés */
+function plausible(p) {
+  const d = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1])
+  const ratio = (a, b) => Math.min(a, b) / Math.max(a, b)
+  if (ratio(d(p[0], p[1]), d(p[3], p[2])) < 0.7 || ratio(d(p[0], p[3]), d(p[1], p[2])) < 0.7) return false
+  for (let i = 0; i < 4; i++) {
+    const a = p[(i + 3) % 4]
+    const b = p[i]
+    const c = p[(i + 1) % 4]
+    const cos = ((a[0] - b[0]) * (c[0] - b[0]) + (a[1] - b[1]) * (c[1] - b[1])) / (d(a, b) * d(c, b))
+    if (Math.abs(cos) > 0.45) return false
+  }
+  return true
+}
+
+// Quadrilatères assez grands (5 % à 98 % de l'image) parmi les contours
 function quads(cv, binary, area, track) {
   const contours = track(new cv.MatVector())
   const hierarchy = track(new cv.Mat())
@@ -60,7 +175,7 @@ function quads(cv, binary, area, track) {
   for (let i = 0; i < contours.size(); i++) {
     const c = contours.get(i)
     const a = cv.contourArea(c)
-    if (a < area * 0.15 || a > area * 0.98) {
+    if (a < area * 0.05 || a > area * 0.98) {
       c.delete()
       continue
     }
@@ -79,7 +194,7 @@ function quads(cv, binary, area, track) {
     if (!points) points = extremes(hull)
     const qa = polygonArea(points)
     // Le quadrilatère doit couvrir l'essentiel du contour (pas une forme en L)
-    if (qa >= area * 0.15 && qa <= area * 0.98 && a / qa > 0.85) found.push({ points, area: qa })
+    if (qa >= area * 0.05 && qa <= area * 0.98 && a / qa > 0.85) found.push({ points, area: qa, fill: a / qa })
     hull.delete()
     c.delete()
   }
@@ -150,7 +265,7 @@ export function render(cv, image, corners, mode = 'color', maxSide = 2000) {
 
     const gray = track(new cv.Mat())
     cv.cvtColor(flat, gray, cv.COLOR_RGB2GRAY)
-    const quality = measure(cv, gray, track)
+    const quality = measure(cv, gray, track, maxSide)
     // Document pris de trop loin : trop peu de pixels pour lire les petits caractères
     if (Math.max(w, h) < Math.min(1200, maxSide * 0.6)) quality.warnings.push('small')
 
@@ -174,7 +289,12 @@ export function render(cv, image, corners, mode = 'color', maxSide = 2000) {
       const norm = whiten(cv, gray, track)
       if (mode === 'bw') {
         const block = Math.max(15, (Math.round(Math.max(w, h) / 60) | 1))
-        cv.adaptiveThreshold(norm, norm, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, block, 15)
+        // Seuil local (encre fine, ombres) ; un aplat foncé, uniforme, resterait blanc avec lui seul
+        const local = track(new cv.Mat())
+        cv.adaptiveThreshold(norm, local, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, block, 15)
+        const solid = track(new cv.Mat())
+        cv.threshold(norm, solid, 110, 255, cv.THRESH_BINARY)
+        cv.bitwise_and(local, solid, norm)
       } else {
         levels(cv, norm, track)
         sharpen(cv, norm, track)
@@ -191,21 +311,36 @@ export function render(cv, image, corners, mode = 'color', maxSide = 2000) {
 /**
  * Fond de la feuille estimé (l'encre retirée par dilatation, puis lissé) et image divisée par ce fond :
  * le papier devient blanc uniforme, les ombres et l'éclairage inégal disparaissent.
+ * Les aplats foncés plus larges que l'encre (bandeau d'en-tête, logo plein, tampon rempli) ne sont pas pris
+ * pour de l'ombre : là où le fond estimé est bien plus sombre que le papier autour, le papier autour sert de fond.
  */
 function whiten(cv, channel, track) {
   const small = track(new cv.Mat())
   const f = 4
   cv.resize(channel, small, new cv.Size(Math.max(8, Math.round(channel.cols / f)), Math.max(8, Math.round(channel.rows / f))), 0, 0, cv.INTER_AREA)
-  const k = Math.max(5, Math.round(Math.max(small.cols, small.rows) / 40))
-  const kernel = track(cv.getStructuringElement(cv.MORPH_ELLIPSE, new cv.Size(k, k)))
-  cv.dilate(small, small, kernel)
-  cv.medianBlur(small, small, 21)
+  const side = Math.max(small.cols, small.rows)
+  const near = track(new cv.Mat())
+  cv.dilate(small, near, track(cv.getStructuringElement(cv.MORPH_ELLIPSE, new cv.Size(Math.max(5, Math.round(side / 40)), Math.max(5, Math.round(side / 40))))))
+  cv.medianBlur(near, near, 21)
+  const far = track(new cv.Mat())
+  const big = Math.max(15, Math.round(side / 5))
+  cv.dilate(small, far, track(cv.getStructuringElement(cv.MORPH_ELLIPSE, new cv.Size(big, big))))
+  cv.medianBlur(far, far, 21)
+  const n = near.data
+  const fa = far.data
+  for (let i = 0; i < n.length; i++) {
+    if (n[i] < fa[i] * DARK_AREA) n[i] = fa[i]
+  }
+  cv.GaussianBlur(near, near, new cv.Size(5, 5), 0)
   const bg = track(new cv.Mat())
-  cv.resize(small, bg, new cv.Size(channel.cols, channel.rows), 0, 0, cv.INTER_LINEAR)
+  cv.resize(near, bg, new cv.Size(channel.cols, channel.rows), 0, 0, cv.INTER_LINEAR)
   const out = track(new cv.Mat())
   cv.divide(channel, bg, out, 255)
   return out
 }
+
+/** Fond estimé sous cette part du papier autour : aplat foncé du document, pas une ombre */
+const DARK_AREA = 0.6
 
 /** Niveaux : le presque blanc devient blanc, l'encre la plus sombre devient noire */
 function levels(cv, img, track) {
@@ -239,52 +374,64 @@ function sharpen(cv, img, track) {
 
 /**
  * Qualité de la photo :
- * - flou : rapport entre la netteté de l'image et celle de l'image légèrement floutée (une photo déjà floue
- *   change peu quand on la floute encore) ;
+ * - flou : largeur des bords des lettres (en pixels d'une page de 2 000 points), déduite de la pente la plus
+ *   forte des bords rapportée au contraste de l'encre ; au-delà de 1,9, les petits caractères ne se lisent plus ;
  * - luminosité du papier (0 à 255) ;
  * - reflet : part de la feuille brûlée par le flash ou une lampe.
  */
-export function measure(cv, gray, track) {
+export function measure(cv, gray, track, refSide = 2000) {
+  const warnings = []
+
+  // Flou, sur la feuille blanchie (contraste égal partout) et débarrassée du grain (photo sombre)
+  const flat = whiten(cv, gray, track)
+  cv.medianBlur(flat, flat, 3)
+  const gx = track(new cv.Mat())
+  const gy = track(new cv.Mat())
+  cv.Sobel(flat, gx, cv.CV_32F, 1, 0, 3)
+  cv.Sobel(flat, gy, cv.CV_32F, 0, 1, 3)
+  const mag = track(new cv.Mat())
+  cv.magnitude(gx, gy, mag)
+  const m = mag.data32F
+  const step = Math.max(1, Math.floor(m.length / 400000))
+  const sample = []
+  for (let i = 0; i < m.length; i += step) sample.push(m[i])
+  sample.sort((a, b) => b - a)
+  const slope = sample[Math.floor(sample.length * 0.002)] / 8
+  const f = flat.data
+  const hist = new Uint32Array(256)
+  for (let i = 0; i < f.length; i += step) hist[f[i]]++
+  let acc = 0
+  let ink = 0
+  const total = Math.ceil(f.length / step)
+  while (ink < 255 && acc + hist[ink] < total * 0.01) acc += hist[ink++]
+  const contrast = 255 - ink
+  // Page presque vide (rien d'écrit) : le flou ne se juge pas
+  const blur = contrast < 60 || slope <= 0 ? 0 : (contrast / (slope * Math.sqrt(2 * Math.PI))) * (Math.min(2000, refSide) / Math.max(gray.cols, gray.rows))
+  if (blur >= BLUR_BLOCK) warnings.push('blur')
+  else if (blur >= BLUR_SOFT) warnings.push('soft')
+
+  // Lumière et reflet, sur la photo d'origine réduite
   const g = track(new cv.Mat())
   const width = 1000
   cv.resize(gray, g, new cv.Size(width, Math.max(16, Math.round(gray.rows * width / gray.cols))), 0, 0, cv.INTER_AREA)
-  const lapVar = (m) => {
-    const lap = new cv.Mat()
-    cv.Laplacian(m, lap, cv.CV_32F)
-    const mean = new cv.Mat()
-    const std = new cv.Mat()
-    cv.meanStdDev(lap, mean, std)
-    const v = std.doubleAt(0, 0) ** 2
-    lap.delete(); mean.delete(); std.delete()
-    return v
-  }
-  const sharp = lapVar(g)
-  const soft = track(new cv.Mat())
-  cv.GaussianBlur(g, soft, new cv.Size(0, 0), 1.5)
-  const reblur = lapVar(soft)
-  // Contraste de la page : presque vide (rien d'écrit), le flou ne se juge pas
-  const mean = track(new cv.Mat())
-  const std = track(new cv.Mat())
-  cv.meanStdDev(g, mean, std)
-  const contrast = std.doubleAt(0, 0)
-  const blur = contrast < 6 ? 0 : 1 - Math.min(1, (sharp / Math.max(reblur, 0.01) - 1) / 9)
-
   const d = g.data
-  const hist = new Uint32Array(256)
-  for (let i = 0; i < d.length; i++) hist[d[i]]++
+  const h = new Uint32Array(256)
+  for (let i = 0; i < d.length; i++) h[d[i]]++
   // Papier : valeur sous laquelle se trouvent 80 % des pixels (le fond domine une feuille)
-  let acc = 0
+  acc = 0
   let paper = 0
-  while (paper < 255 && acc < d.length * 0.8) acc += hist[paper++]
+  while (paper < 255 && acc < d.length * 0.8) acc += h[paper++]
   let burnt = 0
-  for (let v = 252; v < 256; v++) burnt += hist[v]
+  for (let v = 252; v < 256; v++) burnt += h[v]
   const glare = burnt / d.length
 
-  const warnings = []
-  if (blur > 0.72) warnings.push('blur')
   if (paper < 60) warnings.push('dark')
   if (glare > 0.04 && glare < 0.6) warnings.push('glare')
   return { blur: round(blur), brightness: paper, glare: round(glare), warnings }
 }
+
+/** Largeur des bords au-delà de laquelle la photo est refusée (floue), ou signalée (un peu floue) */
+export const BLUR_BLOCK = 1.9
+export const BLUR_SOFT = 1.5
 
 const round = (v) => Math.round(v * 1000) / 1000

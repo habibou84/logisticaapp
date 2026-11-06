@@ -44,10 +44,16 @@ export function warmUpScanner() {
   return call({ type: 'load' }).then(() => true, () => false)
 }
 
-/** Coins de la feuille en proportions (haut-gauche, haut-droite, bas-droite, bas-gauche), ou null */
-export async function detectCorners(image) {
-  return (await call({ type: 'detect', image })).corners
+/**
+ * Feuille trouvée sur la photo, ou null : { corners (proportions, haut-gauche, haut-droite, bas-droite,
+ * bas-gauche), confident (sinon le livreur vérifie le cadrage), coverage (part de la photo occupée) }
+ */
+export async function detectDocument(image) {
+  return (await call({ type: 'detect', image })).found
 }
+
+/** Feuille qui occupe moins de cette part de la photo : prise de trop loin */
+export const FAR_COVERAGE = 0.2
 
 /**
  * Feuille redressée et nettoyée.
@@ -62,9 +68,12 @@ export async function renderDocument(image, corners, mode, maxSide) {
 export const BLOCKING = ['blur', 'dark']
 
 export const WARNING_LABELS = {
-  blur: 'La photo est floue : tenez le téléphone immobile et reprenez-la.',
+  blur: 'La photo est floue : les petits caractères ne se lisent pas. Tenez le téléphone immobile et reprenez-la.',
+  soft: 'La photo est un peu floue : vérifiez que tout se lit, sinon reprenez-la.',
+  far: 'Le document est pris de loin : rapprochez-vous pour qu\'il remplisse l\'écran.',
   dark: 'La photo est trop sombre : rapprochez-vous de la lumière.',
   glare: 'Un reflet cache une partie du document : inclinez un peu le téléphone.',
   small: 'Le document est pris de trop loin : rapprochez-vous pour qu\'il remplisse l\'écran.',
-  no_document: 'Document non trouvé : placez les quatre coins sur ceux de la feuille.',
+  no_document: 'Document non trouvé : placez les quatre coins sur ceux de la feuille, ou reprenez la photo plus près.',
+  check_corners: 'Vérifiez le cadrage : les coins bleus doivent être sur ceux de la feuille.',
 }
