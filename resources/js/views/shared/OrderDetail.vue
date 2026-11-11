@@ -48,11 +48,11 @@
             </p>
           </div>
           <div v-else class="card p-4 text-sm space-y-1">
-            <h2 class="font-semibold mb-2">Ramassage · {{ order.pickup.zone_name }}</h2>
+            <h2 class="font-semibold mb-2">{{ isCollect(order.activity) ? 'Collecte' : 'Ramassage' }} · {{ order.pickup.zone_name }}</h2>
             <p>{{ order.pickup.contact_name }} · <a :href="telLink(order.pickup.phone)" class="text-blue-600">{{ order.pickup.phone }}</a></p>
             <p>{{ order.pickup.address || '—' }}</p>
             <p v-if="order.pickup.landmark" class="text-gray-600">Repère : {{ order.pickup.landmark }}</p>
-            <p v-if="order.pickup_courier" class="pt-1">Ramasseur : <strong>{{ order.pickup_courier.name }}</strong></p>
+            <p v-if="order.pickup_courier" class="pt-1">{{ isCollect(order.activity) ? 'Livreur de la collecte' : 'Ramasseur' }} : <strong>{{ order.pickup_courier.name }}</strong></p>
           </div>
           <div class="card p-4 text-sm space-y-1">
             <h2 class="font-semibold mb-2">Livraison · {{ order.delivery.zone_name }}</h2>
@@ -280,7 +280,7 @@ import { useAuthStore } from '../../stores/auth'
 import { useToastStore } from '../../stores/toasts'
 import { orderChanges, lastOrderChange } from '../../composables/useRealtime'
 import DepartmentTrace from '../../components/departments/DepartmentTrace.vue'
-import { date, dateTime, money, shipmentLabel, telLink } from '../../utils/format'
+import { date, dateTime, isCollect, money, shipmentLabel, telLink } from '../../utils/format'
 import { activityBadge } from '../../utils/activities'
 import SupplementsModal from '../../components/SupplementsModal.vue'
 import OrderRatings from '../../components/OrderRatings.vue'

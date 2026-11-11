@@ -61,7 +61,7 @@
             <b class="block text-sm">🏢 Dans nos locaux</b><span class="text-xs text-gray-500">même adresse que {{ staff ? 'le client' : 'vous' }}</span>
           </button>
           <button type="button" :class="choiceClass(ownAddress)" :aria-pressed="ownAddress" @click="ownAddress = true">
-            <b class="block text-sm">📍 Sur un autre site</b><span class="text-xs text-gray-500">ramassage et remise sur place</span>
+            <b class="block text-sm">📍 Sur un autre site</b><span class="text-xs text-gray-500">collecte et remise sur place</span>
           </button>
         </div>
       </div>

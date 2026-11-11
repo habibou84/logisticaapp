@@ -115,6 +115,8 @@ import { useNotificationStore } from '../../stores/notifications'
 import { useRealtime } from '../../composables/useRealtime'
 import { pwa } from '../../composables/usePwa'
 import { keyboardOpen } from '../../composables/useKeyboard'
+import { useAuthStore } from '../../stores/auth'
+import { collectsOnly } from '../../utils/format'
 
 /**
  * Cadre de l'espace client (style « dégradé doux », charte Logistica) : en-tête clair avec la date sur
@@ -141,7 +143,8 @@ const notifications = useNotificationStore()
 useRealtime()
 if (!notifications.loaded) notifications.fetch().catch(() => {})
 
-const title = computed(() => route.meta.title || props.appName)
+// Client de distribution ou de MAD seulement : « collecte » au lieu de « ramassage »
+const title = computed(() => (route.meta.collectTitle && collectsOnly(useAuthStore().user?.merchant?.activities) ? route.meta.collectTitle : route.meta.title) || props.appName)
 // Accueil : la date du jour sous le nom du client
 const subtitle = computed(() => (route.path === props.base ? new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }) : ''))
 const bellLabel = computed(() => (props.actionCount ? `Notifications : ${props.actionCount} colis à régler` : 'Notifications'))

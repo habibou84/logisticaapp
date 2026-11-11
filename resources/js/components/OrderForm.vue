@@ -259,14 +259,14 @@
         <div v-if="!form.pickup_hub_id" class="grid sm:grid-cols-2 gap-3 border-t pt-3">
           <p class="sm:col-span-2 text-sm text-gray-600">Lieu de ramassage, s'il diffère de l'adresse habituelle du client :</p>
           <div>
-            <label class="label" for="pzone">Zone de ramassage</label>
+            <label class="label" for="pzone">Zone de {{ pickupWord(form.activity) }}</label>
             <select id="pzone" v-model="form.pickup_zone_id" class="input">
               <option :value="null">Adresse habituelle</option>
               <option v-for="z in zones" :key="z.id" :value="z.id">{{ z.full_name }}</option>
             </select>
           </div>
           <div>
-            <label class="label" for="paddress">Adresse de ramassage</label>
+            <label class="label" for="paddress">Adresse de {{ pickupWord(form.activity) }}</label>
             <input id="paddress" v-model="form.pickup_address" class="input">
           </div>
         </div>
@@ -298,7 +298,7 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import http, { apiErrorMessage } from '../bootstrap/axios'
 import { useAuthStore } from '../stores/auth'
-import { money } from '../utils/format'
+import { money, pickupWord } from '../utils/format'
 import { myActivities } from '../utils/activities'
 import PasteMessage from './PasteMessage.vue'
 import ZoneSelect from './ZoneSelect.vue'

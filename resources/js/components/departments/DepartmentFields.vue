@@ -10,7 +10,7 @@
           <option v-else :value="null" disabled>Choisir…</option>
           <option v-for="d in senders" :key="d.id" :value="d.id">{{ d.label }}{{ quotaText(d) }}</option>
         </select>
-        <p v-if="sender?.location" class="mt-1 text-xs text-gray-500">🏢 {{ sender.location }}<template v-if="sender.own_address"> · ramassage à son adresse ({{ sender.pickup_zone_name }})</template></p>
+        <p v-if="sender?.location" class="mt-1 text-xs text-gray-500">🏢 {{ sender.location }}<template v-if="sender.own_address"> · collecte à son adresse ({{ sender.pickup_zone_name }})</template></p>
         <p v-if="errors.department_id" class="field-error">{{ errors.department_id[0] }}</p>
       </div>
       <div v-if="settings.requested_by !== 'off'">

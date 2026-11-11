@@ -17,7 +17,7 @@
         </div>
 
         <p v-if="current.pickup_location_source === 'courier' && !changed" class="rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-900">
-          Position estimée d'après les ramassages de nos livreurs : vérifiez-la et corrigez-la si besoin.
+          Position estimée d'après les {{ collect ? 'collectes' : 'ramassages' }} de nos livreurs : vérifiez-la et corrigez-la si besoin.
         </p>
         <p v-else-if="current.pickup_location_source && !changed" class="rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
           ✓ Position enregistrée{{ current.pickup_located_at ? ` le ${date(current.pickup_located_at)}` : '' }}{{ current.pickup_location_source === 'staff' ? ' par l\'agence' : '' }}.
@@ -48,11 +48,13 @@ import http, { apiErrorMessage } from '../../bootstrap/axios'
 import LocationPicker from '../../components/LocationPicker.vue'
 import { useAuthStore } from '../../stores/auth'
 import { useToastStore } from '../../stores/toasts'
-import { date } from '../../utils/format'
+import { collectsOnly, date } from '../../utils/format'
 
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
+// Client de distribution ou de MAD seulement : on parle de collecte
+const collect = computed(() => collectsOnly(auth.user?.merchant?.activities))
 const toasts = useToastStore()
 
 // Après l'inscription : étape facultative, avec « Plus tard »
@@ -80,7 +82,7 @@ async function save() {
     })
     current.value = data.data
     await auth.fetchUser()
-    toasts.success('Lieu de ramassage enregistré. Merci !')
+    toasts.success(`Lieu de ${collect.value ? 'collecte' : 'ramassage'} enregistré. Merci !`)
     if (welcome.value) router.replace('/marchand')
   } catch (e) {
     error.value = apiErrorMessage(e)

@@ -155,3 +155,9 @@ export function shipmentLabel(pkg) {
   if (n <= 1) return pkg.shipment_type_label + kind
   return `${n} ${{ pli: 'plis', cheque: 'chèques', colis: 'colis' }[pkg.shipment_type] || pkg.shipment_type_label}${kind}`
 }
+
+// Distribution et MAD : on parle de collecte chez le client (adresse de collecte) ; e-commerce : de ramassage
+export const isCollect = (activity) => ['distribution', 'mad'].includes(activity)
+export const pickupWord = (activity) => (isCollect(activity) ? 'collecte' : 'ramassage')
+// Client qui ne fait que de la distribution ou de la MAD : « collecte » partout dans son espace
+export const collectsOnly = (activities) => !!activities?.length && activities.every(isCollect)

@@ -102,10 +102,10 @@
             <option v-for="z in zones" :key="z.id" :value="z.id">{{ z.full_name }}</option>
           </select>
         </div>
-        <div><label class="label">Adresse de ramassage</label><input v-model="form.data.pickup_address" class="input"></div>
+        <div><label class="label">Adresse de {{ collectsOnly(form.activities) ? 'collecte' : 'ramassage' }}</label><input v-model="form.data.pickup_address" class="input"></div>
         <div><label class="label">Repère</label><input v-model="form.data.pickup_landmark" class="input"></div>
         <fieldset class="border rounded p-3 space-y-2">
-          <legend class="text-sm font-medium px-1">Position de ramassage (carte des livreurs)</legend>
+          <legend class="text-sm font-medium px-1">Position de {{ collectsOnly(form.activities) ? 'collecte' : 'ramassage' }} (carte des livreurs)</legend>
           <p v-if="form.source && !locationChanged" class="text-xs text-gray-600">
             {{ form.source === 'courier' ? 'Estimée d\'après les ramassages des livreurs' : form.source === 'merchant' ? 'Indiquée par le client depuis sa boutique' : 'Saisie par l\'agence' }}
           </p>
@@ -222,6 +222,7 @@ import PaymentMethodsManager from '../../components/payment/PaymentMethodsManage
 import { useAuthStore } from '../../stores/auth'
 import { useToastStore } from '../../stores/toasts'
 import { activityBadge, activityShort, myActivities } from '../../utils/activities'
+import { collectsOnly } from '../../utils/format'
 
 const auth = useAuthStore()
 const toasts = useToastStore()
