@@ -165,6 +165,15 @@ class ClientSpaceTest extends TestCase
         $this->assertNull($cheque['package']['pli_kind']);
     }
 
+    public function test_a_parcel_keeps_its_content_and_declared_value(): void
+    {
+        $this->plan();
+        $order = $this->send(['shipment_type' => 'colis', 'description' => 'Dossiers, 2 classeurs', 'declared_value' => 150000])->assertCreated()->json('data');
+        $this->assertSame(150000, $order['package']['declared_value']);
+        $this->assertSame('Dossiers, 2 classeurs', $order['package']['description']);
+        $this->send(['shipment_type' => 'colis', 'declared_value' => -5])->assertUnprocessable()->assertJsonValidationErrors('declared_value');
+    }
+
     public function test_pli_kinds_are_set_by_the_admin(): void
     {
         Sanctum::actingAs($this->admin);

@@ -109,6 +109,8 @@ class OrderResource extends JsonResource
                 'shipment_quantity' => (int) ($this->shipment_quantity ?? 1),
                 // Pli : ce que c'est (facture, courrier, carte d'invitation…)
                 'pli_kind' => $this->pli_kind,
+                // Valeur déclarée du colis (F CFA)
+                'declared_value' => $this->declared_value,
                 'delivery_delay' => $this->delivery_delay?->value,
             ],
             // Distribution, MAD : rien à encaisser, la course passe sur la facture du mois

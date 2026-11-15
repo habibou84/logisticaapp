@@ -49,6 +49,7 @@ class UpdateOrderRequest extends FormRequest
             // Nombre de plis ou de chèques remis ensemble
             'shipment_quantity' => ['sometimes', 'integer', 'min:1', 'max:10000'],
             'pli_kind' => ['sometimes', 'nullable', 'string', 'max:60'],
+            'declared_value' => ['sometimes', 'nullable', 'integer', 'min:0', 'max:1000000000'],
             'delivery_delay' => ['sometimes', 'nullable', Rule::enum(DeliveryDelay::class)],
             'is_fragile' => ['sometimes', 'boolean'],
             'is_express' => ['sometimes', 'boolean'],

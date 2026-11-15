@@ -8,7 +8,11 @@ Tout se règle dans **Réglages › Notation des livreurs** ; le suivi est dans 
   est basse (seuil réglable), commentaire. Note modifiable pendant un délai réglable (48 h par défaut).
 - **Les clients en MAD** : une note de leur livreur attitré, chaque semaine ou chaque mois.
 - **L'équipe** : sur la fiche d'une course, ou une évaluation du mois depuis Qualité des livreurs
-  (procédures, caisse, réactivité, tenue et matériel, comportement).
+  (procédures, caisse, réactivité, tenue et matériel, comportement). Sur une course, chaque étoile est expliquée
+  (1 inacceptable, 2 insuffisant, 3 correct, 4 bien, 5 excellent) et, à partir du seuil réglé, un motif est demandé
+  dans une liste déroulante : courrier en mauvais état ou abîmé, décharge très sale, erreur de livraison, cachet du
+  destinataire illisible, décharge non signée ou non rapportée, preuve de remise incomplète, retard, autre. Les motifs
+  proposés se choisissent dans Réglages › Notation des livreurs (« L'équipe note une course »).
 - **Le destinataire** (option) : sur la page de suivi, avec le code de livraison, une fois, dans les 7 jours.
 - **Invitation WhatsApp** (option) : modèle `course_a_noter` à faire approuver dans le compte WhatsApp.
 

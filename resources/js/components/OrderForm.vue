@@ -121,7 +121,6 @@
     <section v-if="billingPlan" class="card p-4 space-y-3">
       <div>
         <h3 class="font-semibold">Envoi</h3>
-        <p class="text-sm text-gray-600">{{ billingPlan.lot_name || billingPlan.formula_label }} : rien à encaisser, la course passe sur la facture du mois du client.</p>
         <!-- Ce qui attend le livreur : preuve de remise (réglages), livreurs attitrés (MAD) -->
         <p v-if="proofText" class="text-sm text-gray-600">À la remise, le livreur relèvera : {{ proofText }}.</p>
         <p v-if="billingPlan.couriers?.length" class="text-sm text-violet-800">
@@ -179,6 +178,33 @@
           <p v-if="errors.delivery_delay" class="field-error">{{ errors.delivery_delay[0] }}</p>
         </div>
       </div>
+      <!-- Colis : ce qu'il contient et sa valeur (en cas de perte ou de dommage) -->
+      <div v-if="form.shipment_type === 'colis'" class="grid sm:grid-cols-2 gap-3 rounded-lg bg-slate-50 p-3">
+        <div>
+          <label class="label" for="desc-colis">Contenu du colis</label>
+          <input id="desc-colis" v-model="form.description" class="input" maxlength="1000" placeholder="Ex. : dossiers, 2 classeurs">
+        </div>
+        <div>
+          <label class="label" for="declared">Valeur du colis (F CFA)</label>
+          <input id="declared" v-model.number="form.declared_value" type="number" min="0" step="1000" inputmode="numeric" class="input" placeholder="Facultatif">
+          <p class="text-xs text-gray-500 mt-1">Sert en cas de perte ou de dommage.</p>
+          <p v-if="errors.declared_value" class="field-error">{{ errors.declared_value[0] }}</p>
+        </div>
+      </div>
+      <!-- Options de l'envoi -->
+      <div>
+        <p class="label">Options</p>
+        <div class="grid sm:grid-cols-2 gap-2">
+          <label :class="['flex items-start gap-2 rounded-lg p-2.5 text-sm ring-1 cursor-pointer', form.is_express ? 'ring-2 ring-red-500 bg-red-50' : 'ring-slate-300']">
+            <input v-model="form.is_express" type="checkbox" class="mt-1">
+            <span><b class="block">⚡ Express</b><span class="text-xs text-gray-600">Livré en priorité, supplément selon le contrat</span></span>
+          </label>
+          <label :class="['flex items-start gap-2 rounded-lg p-2.5 text-sm ring-1 cursor-pointer', form.is_fragile ? 'ring-2 ring-red-500 bg-red-50' : 'ring-slate-300']">
+            <input v-model="form.is_fragile" type="checkbox" class="mt-1">
+            <span><b class="block">🥚 Fragile</b><span class="text-xs text-gray-600">À manipuler avec soin, signalé au livreur et sur l'étiquette</span></span>
+          </label>
+        </div>
+      </div>
     </section>
 
     <section class="card p-4 space-y-3">
@@ -205,7 +231,7 @@
     </section>
 
     <details class="card p-4" :open="moreOpen" @toggle="moreOpen = $event.target.open">
-      <summary class="font-semibold cursor-pointer">Plus d'options <span class="text-sm font-normal text-gray-500">(second numéro, express, fragile, contenu, référence{{ products.length || hubs.length ? ', articles du stock' : '' }}, ramassage)</span></summary>
+      <summary class="font-semibold cursor-pointer">Plus d'options <span class="text-sm font-normal text-gray-500">(second numéro{{ billingPlan ? '' : ', express, fragile, contenu' }}, référence{{ products.length || hubs.length ? ', articles du stock' : '' }}, {{ pickupWord(form.activity) }})</span></summary>
       <div class="space-y-4 mt-3">
         <div class="grid sm:grid-cols-2 gap-3">
           <div>
@@ -217,12 +243,15 @@
             <label class="label" for="ref">Référence commande</label>
             <input id="ref" v-model="form.merchant_reference" class="input">
           </div>
-          <div class="sm:col-span-2">
+          <!-- Client sous contrat : contenu, express et fragile sont dans « Envoi » -->
+          <div v-if="!billingPlan" class="sm:col-span-2">
             <label class="label" for="desc">Contenu du colis <span v-if="parsed.description" class="check">à vérifier</span></label>
             <input id="desc" v-model="form.description" :class="['input', mark('description')]" placeholder="Ex. : 2 robes, 1 sac" @input="touched('description')">
           </div>
-          <label class="flex items-center gap-2 text-sm"><input v-model="form.is_express" type="checkbox"> ⚡ Express</label>
-          <label class="flex items-center gap-2 text-sm"><input v-model="form.is_fragile" type="checkbox"> 🥚 Fragile</label>
+          <template v-if="!billingPlan">
+            <label class="flex items-center gap-2 text-sm"><input v-model="form.is_express" type="checkbox"> ⚡ Express</label>
+            <label class="flex items-center gap-2 text-sm"><input v-model="form.is_fragile" type="checkbox"> 🥚 Fragile</label>
+          </template>
         </div>
 
         <div v-if="products.length || hubs.length" class="space-y-3 border-t pt-3">
@@ -346,6 +375,8 @@ const form = reactive({
   // Plis ou chèques remis ensemble
   shipment_quantity: 1,
   pli_kind: '',
+  // Colis : valeur déclarée (F CFA)
+  declared_value: null,
   // Départements du client : qui envoie, vers lequel (courrier interne), qui a demandé
   department_id: null,
   to_department_id: null,
@@ -463,6 +494,8 @@ const billed = computed(() => !!form.activity && form.activity !== 'ecommerce')
 // Nombre de plis ou de chèques : seulement pour un pli ou un chèque (un colis compte pour un)
 const hasQuantity = computed(() => !!billingPlan.value && ['pli', 'cheque'].includes(form.shipment_type))
 watch(hasQuantity, (v) => { if (!v) form.shipment_quantity = 1 })
+// Valeur déclarée : seulement pour un colis
+watch(() => form.shipment_type, (t) => { if (t !== 'colis') form.declared_value = null })
 const pliKinds = computed(() => (auth.user?.company?.shipment_settings?.pli_kinds || []).filter((k) => k.toLowerCase() !== 'autre'))
 const proofText = computed(() => {
   const p = billingPlan.value?.proof || {}

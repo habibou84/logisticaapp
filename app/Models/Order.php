@@ -80,6 +80,8 @@ class Order extends Model
         'shipment_quantity',
         // Pli : ce que c'est (facture, courrier, carte d'invitation…)
         'pli_kind',
+        // Valeur déclarée du colis (F CFA) : en cas de perte ou de dommage
+        'declared_value',
         'billing_units',
         'delivery_delay',
         'weight_kg',
@@ -129,6 +131,7 @@ class Order extends Model
             'delivery_delay' => DeliveryDelay::class,
             'billing_amount' => 'integer',
             'shipment_quantity' => 'integer',
+            'declared_value' => 'integer',
             'billing_units' => 'integer',
             'internal_due_at' => 'datetime',
             'internal_alert' => 'integer',

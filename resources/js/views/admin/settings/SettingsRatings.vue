@@ -77,6 +77,20 @@
       </section>
 
       <section class="card p-4 space-y-3">
+        <h2 class="font-semibold">L'équipe note une course</h2>
+        <p class="text-sm text-gray-600">Sur la fiche d'une course (« Notes du livreur »), chaque étoile est expliquée, et un motif est demandé à partir du seuil choisi plus haut.</p>
+        <div>
+          <p class="label">Motifs proposés à l'équipe (liste déroulante « Ce qui n'est pas allé »)</p>
+          <div class="grid sm:grid-cols-2 gap-1">
+            <label v-for="m in criteria.team_reasons" :key="m.value" class="flex items-center gap-2 text-sm">
+              <input v-model="teamReasons" type="checkbox" :value="m.value"> {{ m.label }}
+            </label>
+          </div>
+          <p class="text-xs text-gray-500 mt-1">Aucune case cochée : tous les motifs sont proposés.</p>
+        </div>
+      </section>
+
+      <section class="card p-4 space-y-3">
         <h2 class="font-semibold">Ce que voit le livreur</h2>
         <label class="flex items-center gap-2 text-sm"><input v-model="r.courier_sees_score" type="checkbox"> Sa note et le détail (dans son application)</label>
         <label class="flex items-center gap-2 text-sm"><input v-model="r.courier_sees_comments" type="checkbox" :disabled="!r.courier_sees_score"> Les commentaires des clients</label>
@@ -109,7 +123,11 @@ import { useCompanySettings } from '../../../composables/useCompanySettings'
 const { form, dirty, saving, error, save, reset } = useCompanySettings(['rating_settings'])
 const r = computed(() => form.value.rating_settings)
 const weightTotal = computed(() => (r.value.weight_auto || 0) + (r.value.weight_client || 0) + (r.value.weight_team || 0))
-const criteria = ref({ indicators: [], reasons: [] })
+const criteria = ref({ indicators: [], reasons: [], team_reasons: [] })
+const teamReasons = computed({
+  get: () => (r.value.team_reasons?.length ? r.value.team_reasons : criteria.value.team_reasons.map((m) => m.value)),
+  set: (list) => { r.value.team_reasons = list.length === criteria.value.team_reasons.length ? [] : list },
+})
 // Liste vide enregistrée = tous les motifs : on les montre alors tous cochés
 const clientReasons = computed({
   get: () => (r.value.client_reasons?.length ? r.value.client_reasons : criteria.value.reasons.map((m) => m.value)),

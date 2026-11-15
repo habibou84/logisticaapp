@@ -38,6 +38,28 @@ class RatingCriteria
         'other' => 'Autre',
     ];
 
+    /** Équipe, note d'une course : ce qui n'est pas allé (liste déroulante ; obligatoire si la note est basse) */
+    public const TEAM_REASONS = [
+        'damaged_mail' => 'Courrier en mauvais état ou abîmé',
+        'dirty_proof' => 'Décharge très sale',
+        'wrong_delivery' => 'Erreur de livraison (mauvais destinataire)',
+        'unreadable_stamp' => 'Cachet du destinataire illisible',
+        'unsigned_proof' => 'Décharge non signée',
+        'proof_not_returned' => 'Décharge non rapportée',
+        'incomplete_proof' => 'Preuve de remise incomplète',
+        'late' => 'Retard',
+        'other' => 'Autre',
+    ];
+
+    /** Équipe : ce que veut dire chaque étoile sur une course */
+    public const TEAM_STARS = [
+        1 => ['Inacceptable', 'Faute grave : envoi perdu, abîmé ou remis à la mauvaise personne'],
+        2 => ['Insuffisant', 'Plusieurs erreurs, preuve de remise mal faite'],
+        3 => ['Correct', 'Livré, mais avec un petit souci (retard, décharge peu soignée)'],
+        4 => ['Bien', 'Livré à temps, preuve complète'],
+        5 => ['Excellent', 'Parfait : rapide, soigné, preuve impeccable'],
+    ];
+
     /** Équipe : critères notés de 1 à 5 */
     public const TEAM = [
         'procedures' => 'Respect des procédures (preuves, codes)',
@@ -69,6 +91,8 @@ class RatingCriteria
             'client' => $list(self::CLIENT),
             'reasons' => $list(self::REASONS),
             'team' => $list(self::TEAM),
+            'team_reasons' => $list(self::TEAM_REASONS),
+            'team_stars' => collect(self::TEAM_STARS)->map(fn ($m, $n) => ['value' => $n, 'label' => $m[0], 'description' => $m[1]])->values(),
             'indicators' => $list(self::INDICATORS),
         ];
     }

@@ -245,6 +245,29 @@ class CourierRatingTest extends TestCase
         $this->assertSame(['indiscreet', 'distracted'], array_column($this->getJson('/api/v1/ratings/criteria')->json('data.client_reasons'), 'value'));
     }
 
+    public function test_the_team_explains_a_low_course_rating_with_reasons(): void
+    {
+        $order = $this->delivered();
+        Sanctum::actingAs($this->admin);
+        $criteria = $this->getJson('/api/v1/ratings/criteria')->assertOk()->json('data');
+        $this->assertSame('Insuffisant', $criteria['team_stars'][1]['label']);
+        $this->assertContains('unreadable_stamp', array_column($criteria['team_reason_choices'], 'value'));
+
+        $url = "/api/v1/couriers/{$this->courierA->id}/ratings";
+        // Note basse sur une course : un motif de l'équipe est demandé
+        $this->postJson($url, ['order_id' => $order->id, 'stars' => 2])->assertUnprocessable()->assertJsonValidationErrors('reasons');
+        $this->postJson($url, ['order_id' => $order->id, 'stars' => 2, 'reasons' => ['pirate']])->assertUnprocessable();
+        $this->postJson($url, ['order_id' => $order->id, 'stars' => 2, 'reasons' => ['dirty_proof', 'unreadable_stamp']])->assertCreated()
+            ->assertJsonPath('data.reasons', ['dirty_proof', 'unreadable_stamp']);
+        // Bonne note : sans motif
+        $this->postJson($url, ['order_id' => $order->id, 'stars' => 5])->assertCreated();
+
+        // L'agence choisit les motifs proposés
+        $this->patchJson("/api/v1/companies/{$this->company->id}", ['rating_settings' => ['team_reasons' => ['dirty_proof', 'late']]])->assertOk();
+        Sanctum::actingAs($this->admin->refresh());
+        $this->assertSame(['dirty_proof', 'late'], array_column($this->getJson('/api/v1/ratings/criteria')->json('data.team_reason_choices'), 'value'));
+    }
+
     public function test_rating_settings_are_saved(): void
     {
         Sanctum::actingAs($this->admin);

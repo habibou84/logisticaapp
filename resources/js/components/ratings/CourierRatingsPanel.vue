@@ -112,7 +112,9 @@ const evaluation = reactive({ stars: null, criteria: {}, comment: '', saving: fa
 const SOURCES = { client: 'Client', team: 'Équipe', recipient: 'Destinataire' }
 
 const scoreClass = (s) => (s === null || s === undefined ? 'text-gray-400' : s >= 4 ? 'text-emerald-700' : s >= 3 ? 'text-amber-700' : 'text-red-700')
-const label = (group, key) => criteria.value[group]?.find((c) => c.value === key)?.label || key
+// Motifs : ceux des clients, puis ceux de l'équipe (décharge sale, cachet illisible…)
+const label = (group, key) => criteria.value[group]?.find((c) => c.value === key)?.label
+  || (group === 'reasons' ? criteria.value.team_reasons?.find((c) => c.value === key)?.label : null) || key
 const monthLabel = (m) => new Date(`${m}-15`).toLocaleDateString('fr-FR', { month: 'short' })
 const sources = computed(() => (detail.value ? [
   { key: 'auto', label: 'Automatique', value: detail.value.auto.score, hint: 'faits enregistrés' },

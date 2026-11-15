@@ -28,6 +28,8 @@ class RatingSettings
         'reason_below' => 2,
         // Motifs proposés au client dans la liste déroulante (vide : tous)
         'client_reasons' => [],
+        // Motifs proposés à l'équipe sur la fiche d'une course (vide : tous)
+        'team_reasons' => [],
         // Course où le livreur a signalé un problème : poids de la note du client
         'incident_weight' => 0.5,
         // Ce que voit le livreur
@@ -70,6 +72,19 @@ class RatingSettings
     }
 
     /**
+     * Motifs proposés à l'équipe sur une course : ceux choisis par l'administrateur, sinon tous.
+     *
+     * @param  array<string, mixed>  $s
+     * @return array<string, string>
+     */
+    public static function teamReasons(array $s): array
+    {
+        $chosen = array_intersect_key(RatingCriteria::TEAM_REASONS, array_flip((array) ($s['team_reasons'] ?? [])));
+
+        return $chosen ?: RatingCriteria::TEAM_REASONS;
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public static function rules(): array
@@ -89,6 +104,8 @@ class RatingSettings
             'rating_settings.reason_below' => ['nullable', 'integer', 'between:0,4'],
             'rating_settings.client_reasons' => ['nullable', 'array'],
             'rating_settings.client_reasons.*' => ['in:'.implode(',', array_keys(RatingCriteria::REASONS))],
+            'rating_settings.team_reasons' => ['nullable', 'array'],
+            'rating_settings.team_reasons.*' => ['in:'.implode(',', array_keys(RatingCriteria::TEAM_REASONS))],
             'rating_settings.incident_weight' => ['nullable', 'numeric', 'between:0,1'],
             'rating_settings.courier_sees_score' => ['nullable', 'boolean'],
             'rating_settings.courier_sees_comments' => ['nullable', 'boolean'],

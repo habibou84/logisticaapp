@@ -108,6 +108,7 @@
           <div v-if="order.billing" class="sm:col-span-4 rounded bg-indigo-50 text-indigo-900 p-2">
             📄 {{ shipmentLabel(order.package) }}<template v-if="order.package.delivery_delay"> en {{ order.package.delivery_delay.replace('h', ' h') }}</template> ·
             {{ order.billing.label }} : sur la facture du mois du client.
+            <span v-if="order.package.declared_value" class="block">💰 Valeur déclarée : <strong>{{ money(order.package.declared_value) }}</strong></span>
           </div>
           <div v-if="order.is_shipping" class="sm:col-span-4 rounded bg-indigo-50 text-indigo-900 p-2">
             🚌 <strong>Expédition</strong> ·

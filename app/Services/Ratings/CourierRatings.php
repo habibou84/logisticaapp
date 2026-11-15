@@ -85,7 +85,7 @@ class CourierRatings
     /**
      * L'équipe note un livreur : sur une course, ou évaluation de la période (critères de 1 à 5).
      *
-     * @param  array{stars: int, criteria?: array<string, int>, comment?: ?string}  $data
+     * @param  array{stars: int, criteria?: array<string, int>, reasons?: list<string>, comment?: ?string}  $data
      */
     public function byTeam(User $actor, Courier $courier, ?Order $order, array $data): CourierRating
     {
@@ -95,6 +95,11 @@ class CourierRatings
         }
         $criteria = collect($data['criteria'] ?? [])->only(array_keys(RatingCriteria::TEAM))
             ->map(fn ($v) => max(1, min(5, (int) $v)))->filter()->all();
+        // Course mal notée : ce qui n'est pas allé (décharge sale, cachet illisible…)
+        $reasons = array_values(array_intersect(array_unique((array) ($data['reasons'] ?? [])), array_keys(RatingCriteria::TEAM_REASONS)));
+        if ($order !== null && (int) $data['stars'] <= (int) $s['reason_below'] && $reasons === []) {
+            throw new BusinessRuleException('Dites ce qui n\'est pas allé : choisissez au moins un motif.', 'reasons');
+        }
 
         $key = $order
             ? ['order_id' => $order->id, 'courier_id' => $courier->id, 'source' => CourierRating::TEAM, 'author_id' => $actor->id]
@@ -107,7 +112,7 @@ class CourierRatings
             'period_end' => $order ? null : now()->endOfMonth()->toDateString(),
             'stars' => max(1, min(5, (int) $data['stars'])),
             'criteria' => $criteria ?: null,
-            'reasons' => null,
+            'reasons' => $reasons ?: null,
             'comment' => filled($data['comment'] ?? null) ? trim($data['comment']) : null,
         ], $s);
     }

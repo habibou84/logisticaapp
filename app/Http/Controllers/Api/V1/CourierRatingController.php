@@ -41,6 +41,8 @@ class CourierRatingController extends Controller
             ...RatingCriteria::all(),
             // Liste déroulante du client : motifs choisis par l'administrateur
             'client_reasons' => collect(RatingSettings::clientReasons($s))->map(fn ($label, $key) => ['value' => $key, 'label' => $label])->values(),
+            // Fiche d'une course (équipe) : motifs choisis par l'administrateur
+            'team_reason_choices' => collect(RatingSettings::teamReasons($s))->map(fn ($label, $key) => ['value' => $key, 'label' => $label])->values(),
             'settings' => collect($s)->only(['client_course', 'client_edit_hours', 'client_mad_period', 'reason_below', 'client_choice', 'courier_sees_score', 'courier_sees_comments'])->all(),
         ]]);
     }
@@ -206,8 +208,10 @@ class CourierRatingController extends Controller
             'stars' => ['required', 'integer', 'between:1,5'],
             'criteria' => ['nullable', 'array'],
             'criteria.*' => ['integer', 'between:1,5'],
+            'reasons' => ['nullable', 'array'],
+            'reasons.*' => ['string', Rule::in(array_keys(RatingCriteria::TEAM_REASONS))],
             'comment' => ['nullable', 'string', 'max:1000'],
-        ], [], ['stars' => 'note', 'comment' => 'commentaire']);
+        ], [], ['stars' => 'note', 'reasons' => 'motif', 'comment' => 'commentaire']);
         $order = isset($data['order_id']) ? Order::query()->findOrFail($data['order_id']) : null;
 
         return response()->json(['data' => $this->ratingData($this->ratings->byTeam($request->user(), $courier, $order, $data), true)], 201);

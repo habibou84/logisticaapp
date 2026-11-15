@@ -105,6 +105,8 @@ class StoreOrderRequest extends FormRequest
             'shipment_quantity' => ['nullable', 'integer', 'min:1', 'max:10000'],
             // Pli : ce que c'est (facture, courrier, carte d'invitation…)
             'pli_kind' => ['nullable', 'string', 'max:60'],
+            // Valeur déclarée du colis (F CFA)
+            'declared_value' => ['nullable', 'integer', 'min:0', 'max:1000000000'],
             'delivery_delay' => ['nullable', Rule::enum(DeliveryDelay::class)],
             'is_fragile' => ['boolean'],
             'is_express' => ['boolean'],
@@ -148,6 +150,7 @@ class StoreOrderRequest extends FormRequest
             'shipment_type' => 'type d\'envoi',
             'shipment_quantity' => 'nombre de plis',
             'pli_kind' => 'type de pli',
+            'declared_value' => 'valeur du colis',
             'department_id' => 'département',
             'to_department_id' => 'département destinataire',
             'requested_by' => 'demandé par',
