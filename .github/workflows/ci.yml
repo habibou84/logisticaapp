@@ -91,7 +91,8 @@ jobs:
 
   mobile:
     name: Téléphone (largeur des pages)
-    runs-on: ubuntu-latest
+    # Playwright ne s'installe pas encore sur Ubuntu 26.04 (ubuntu-latest) : version fixée
+    runs-on: ubuntu-24.04
     services:
       postgres:
         image: postgres:16
