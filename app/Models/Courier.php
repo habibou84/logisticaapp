@@ -23,6 +23,8 @@ class Courier extends Model
         'user_id',
         'vehicle_type',
         'vehicle_plate',
+        // Numéro de la pièce d'identité (photo et pièce : photo_path, id_document_path, envoyées à part)
+        'id_number',
         'pay_plan_id',
         'is_available',
         'current_lat',

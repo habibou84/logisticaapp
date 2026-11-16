@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\V1\CourierAvailabilityController;
 use App\Http\Controllers\Api\V1\CourierController;
 use App\Http\Controllers\Api\V1\CourierDirectoryController;
 use App\Http\Controllers\Api\V1\CourierFieldEventController;
+use App\Http\Controllers\Api\V1\CourierFileController;
 use App\Http\Controllers\Api\V1\CourierMessageController;
 use App\Http\Controllers\Api\V1\CourierRatingController;
 use App\Http\Controllers\Api\V1\CourierSpaceController;
@@ -471,6 +472,12 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::get('couriers', [CourierController::class, 'index'])->middleware('permission:orders.dispatch|couriers.manage|fleet.manage|planning.manage|pay.manage')->name('couriers.index');
         Route::get('couriers/{courier}', [CourierController::class, 'show'])->middleware('permission:orders.dispatch|couriers.manage|fleet.manage|planning.manage|pay.manage')->name('couriers.show');
         Route::patch('couriers/{courier}', [CourierController::class, 'update'])->middleware('can:couriers.manage')->name('couriers.update');
+        // Photo du livreur et photo de sa pièce d'identité
+        Route::prefix('couriers/{courier}/files/{kind}')->name('couriers.files.')->whereIn('kind', array_keys(CourierFileController::KINDS))->controller(CourierFileController::class)->group(function () {
+            Route::get('/', 'show')->middleware('permission:orders.dispatch|couriers.manage|fleet.manage|planning.manage|pay.manage')->name('show');
+            Route::post('/', 'store')->middleware(['can:couriers.manage', 'throttle:30,1'])->name('store');
+            Route::delete('/', 'destroy')->middleware('can:couriers.manage')->name('destroy');
+        });
 
         // Journée de livraison : état (dispatch, marchands), fermeture et réouverture (dispatch)
         Route::get('delivery-day', [DeliveryDayController::class, 'show'])->name('delivery-day.show');

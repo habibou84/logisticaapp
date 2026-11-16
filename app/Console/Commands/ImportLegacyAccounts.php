@@ -12,6 +12,7 @@ class ImportLegacyAccounts extends Command
 {
     protected $signature = 'legacy:import
         {file : Export SQL de l\'ancienne application (mysqldump ou phpMyAdmin : tables clients, livreurs et users, .sql ou .sql.gz)}
+        {--files= : Dossier « storage/app/public » de l\'ancienne application, pour reprendre les photos des livreurs et de leur pièce d\'identité}
         {--dry-run : Simule l\'import et affiche le rapport, sans rien enregistrer}';
 
     protected $description = 'Reprend les clients et les livreurs de l\'ancienne application (mêmes numéros, mêmes mots de passe)';
@@ -25,6 +26,13 @@ class ImportLegacyAccounts extends Command
             return self::FAILURE;
         }
 
+        $files = $this->option('files');
+        if ($files !== null && ! is_dir($files)) {
+            $this->error("Dossier des fichiers introuvable : {$files}");
+
+            return self::FAILURE;
+        }
+
         try {
             $dump = SqlDumpReader::fromFile($this->argument('file'));
             if (! $dump->hasTable('clients') && ! $dump->hasTable('livreurs')) {
@@ -33,7 +41,7 @@ class ImportLegacyAccounts extends Command
                 return self::FAILURE;
             }
 
-            $report = $importer->import($company, $dump, (bool) $this->option('dry-run'));
+            $report = $importer->import($company, $dump, (bool) $this->option('dry-run'), $files);
         } catch (RuntimeException $e) {
             $this->error($e->getMessage());
 
@@ -50,6 +58,11 @@ class ImportLegacyAccounts extends Command
             ['Clients importés', $c['merchants']],
             ['Autres comptes des clients', $c['merchant_users']],
             ['Livreurs importés', $c['couriers'].($c['couriers_suspended'] ? " (dont {$c['couriers_suspended']} suspendu(s))" : '')],
+            // Photos : seulement avec le dossier des fichiers de l'ancienne application
+            ...($files !== null ? [
+                ['Photos de livreurs reprises', $c['courier_photos']],
+                ['Pièces d\'identité reprises', $c['courier_id_documents']],
+            ] : []),
             ['Lignes non importées', count($report['skipped'])],
             ['Points à vérifier', count($report['warnings'])],
             ['Comptes de l\'équipe non repris (à recréer)', $c['staff_not_imported']],

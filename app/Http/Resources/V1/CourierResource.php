@@ -23,6 +23,10 @@ class CourierResource extends JsonResource
             'status' => $this->user?->status,
             'vehicle_type' => $this->vehicle_type,
             'vehicle_plate' => $this->vehicle_plate,
+            // Identité : fichiers lus par GET /couriers/{id}/files/{photo|id-document}
+            'has_photo' => $this->photo_path !== null,
+            'has_id_document' => $this->id_document_path !== null,
+            'id_number' => $this->id_number,
             'pay_plan_id' => $this->pay_plan_id,
             'pay_plan' => $this->whenLoaded('payPlan', fn () => $this->payPlan ? [
                 'id' => $this->payPlan->id,
