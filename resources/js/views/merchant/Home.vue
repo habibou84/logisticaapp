@@ -268,14 +268,15 @@ const route = useRoute()
 const router = useRouter()
 // Carte du jour : en cours, livrées, à régler (un appui filtre la liste en dessous)
 const dayBoxes = [{ value: 'active', label: 'en cours' }, { value: 'delivered', label: 'livrées' }, { value: 'problems', label: 'à régler' }, { value: 'other', label: 'retours' }]
-// Actions rapides : envoyer selon les activités du client, puis importer, coller un message, étiquettes
+// Actions rapides : nouvelle course, puis importer, coller un message, étiquettes.
+// « Nouvelle course » suit l'activité regardée en haut (e-commerce, distribution, MAD) ;
+// sur « Tout », le formulaire demande l'activité au client qui en a plusieurs.
 const has = (activity) => space.activities.some((a) => a.value === activity)
 const quick = computed(() => {
   if (!auth.can('orders.create')) return []
   return [
-    ...(has('ecommerce') ? [{ to: '/marchand/courses/nouvelle?activite=ecommerce', color: 'colis', label: 'Nouvelle course' }] : []),
+    { to: '/marchand/courses/nouvelle', color: 'colis', label: 'Nouvelle course' },
     ...(has('distribution') ? [{ to: '/marchand/courses/nouvelle?activite=distribution', color: 'pli', label: 'Envoyer des plis' }] : []),
-    ...(has('mad') ? [{ to: '/marchand/courses/nouvelle?activite=mad', color: 'mad', label: 'Demander un livreur' }] : []),
     { to: '/marchand/courses/import', color: 'excel', label: 'Plusieurs courses' },
     { to: '/marchand/courses/nouvelle?coller=1', color: 'coller', label: 'Coller WhatsApp' },
     ...(auth.user?.merchant?.label_settings?.client_print !== 'no' ? [{ to: '/marchand/courses?etiquettes=1', color: 'etiquette', label: 'Étiquettes' }] : []),
