@@ -15,6 +15,7 @@
       <p v-if="event.rescheduled_to" class="text-sm text-orange-700">Reporté au {{ date(event.rescheduled_to) }}</p>
       <p v-if="event.meta?.courier_name" class="text-sm text-gray-700">{{ event.meta.type_label }} → {{ event.meta.courier_name }}</p>
       <p v-if="event.meta?.collected_amount !== undefined" class="text-sm text-gray-700">Encaissé : {{ money(event.meta.collected_amount) }}</p>
+      <p v-if="event.meta?.pickup_check" class="text-xs text-gray-600">{{ event.meta.pickup_check === 'scan' ? '📷 Étiquette scannée à la collecte' : '⌨️ Code du colis tapé à la main à la collecte' }}</p>
       <p v-if="event.meta?.offline" class="text-xs text-sky-700">📵 Fait hors connexion, envoyé au retour du réseau</p>
       <ul v-if="event.meta?.changes" class="text-xs text-gray-600 list-disc ml-4">
         <li v-for="(change, field) in event.meta.changes" :key="field">{{ field }} : {{ change.from ?? '—' }} → {{ change.to ?? '—' }}</li>

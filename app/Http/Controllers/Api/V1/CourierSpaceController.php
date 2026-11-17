@@ -51,6 +51,9 @@ class CourierSpaceController extends Controller
                 'expenses' => fn ($e) => $e->active()->where('courier_id', $courier->id)->orderBy('id'),
             ])])
             ->orderByRaw("CASE type WHEN 'pickup' THEN 0 WHEN 'delivery' THEN 1 ELSE 2 END")
+            // Tournée organisée : livraisons dans l'ordre choisi, les nouvelles ensuite
+            ->orderByRaw('CASE WHEN route_position IS NULL THEN 1 ELSE 0 END')
+            ->orderBy('route_position')
             ->orderBy('assigned_at')
             ->get();
 
