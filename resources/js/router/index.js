@@ -118,6 +118,7 @@ const routes = [
           },
           { path: 'carte', component: () => import('../views/admin/CourierMap.vue'), meta: { permission: 'orders.dispatch' } },
           { path: 'disponibles', component: () => import('../views/admin/CourierAvailability.vue'), meta: { permission: 'orders.dispatch' } },
+          { path: 'pointages', component: () => import('../views/admin/Shifts.vue'), meta: { permission: 'orders.dispatch' } },
           { path: 'colis', component: () => import('../views/admin/HeldParcels.vue'), meta: { permission: 'orders.dispatch' } },
           { path: 'remontees', component: () => import('../views/admin/FieldReports.vue'), meta: { permission: 'field_events.manage' } },
           { path: 'planning', component: () => import('../views/admin/Planning.vue'), meta: { permission: 'planning.manage' } },
@@ -126,6 +127,7 @@ const routes = [
       { path: 'activite/mural', component: () => import('../views/admin/activity/WallScreen.vue'), meta: { permission: 'orders.dispatch' } },
       // Anciennes adresses (liens des notifications, favoris) : vers l'onglet, en gardant les paramètres
       { path: 'carte', redirect: (to) => ({ path: '/admin/activite/carte', query: to.query }) },
+      { path: 'pointages', redirect: (to) => ({ path: '/admin/activite/pointages', query: to.query }) },
       { path: 'disponibilites', redirect: (to) => ({ path: '/admin/activite/disponibles', query: to.query }) },
       { path: 'colis-livreurs', redirect: (to) => ({ path: '/admin/activite/colis', query: to.query }) },
       { path: 'terrain', redirect: (to) => ({ path: '/admin/activite/remontees', query: to.query }) },
@@ -164,6 +166,7 @@ const routes = [
       { path: 'vehicules/:id(\\d+)', component: () => import('../views/admin/VehicleDetail.vue'), meta: { permission: 'fleet.manage' } },
       { path: 'reglages/annuaire', component: () => import('../views/admin/settings/SettingsDestinations.vue'), meta: { permission: 'destinations.manage' } },
       { path: 'reglages/departements', component: () => import('../views/admin/settings/SettingsDepartments.vue'), meta: { permission: 'departments.manage' } },
+      { path: 'reglages/pointage', component: () => import('../views/admin/settings/SettingsShifts.vue'), meta: { permission: 'settings.manage' } },
       { path: 'reglages/vehicules', component: () => import('../views/admin/settings/SettingsVehicles.vue'), meta: { permission: 'fleet.manage' } },
       // Ancienne page « Qualité des livreurs » : la note est dans la liste et la fiche de chaque livreur
       { path: 'qualite-livreurs', redirect: (to) => (to.query.livreur ? { path: `/admin/livreurs/${to.query.livreur}`, query: { onglet: 'notes' } } : '/admin/livreurs') },
@@ -229,6 +232,7 @@ const routes = [
       { path: 'rapports/:id(\\d+)', component: () => import('../views/merchant/ReportView.vue'), meta: { title: 'Rapport du mois', back: true, roles: ['merchant_owner', 'merchant_manager'] } },
       { path: 'notifications', component: mobile.notifications, meta: { title: 'Notifications', back: true } },
       { path: 'a-noter', component: () => import('../views/merchant/RateCourses.vue'), meta: { title: 'Noter les livreurs', back: true } },
+      { path: 'mes-parcours', component: () => import('../views/merchant/MyRoutines.vue'), meta: { title: 'Parcours de mes livreurs', back: true } },
       { path: 'mes-livreurs', component: () => import('../views/merchant/MyCouriers.vue'), meta: { title: 'Mes livreurs', back: true } },
       { path: 'mes-notifications', component: () => import('../views/merchant/NotificationSettings.vue'), meta: { title: 'Mes notifications', back: true } },
       { path: 'moyens-de-paiement', component: () => import('../views/merchant/PaymentMethods.vue'), meta: { title: 'Comment être payé', back: true, permission: 'finance.view' } },

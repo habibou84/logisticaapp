@@ -55,6 +55,8 @@ class Company extends Model
         'department_settings',
         'destination_settings',
         'shipment_settings',
+        // Pointage des livreurs : agence, distance autorisée, précision, heure de début
+        'shift_settings',
         'currency',
         'timezone',
         'auto_confirm_orders',
@@ -145,6 +147,7 @@ class Company extends Model
             'department_settings' => 'array',
             'destination_settings' => 'array',
             'shipment_settings' => 'array',
+            'shift_settings' => 'array',
             'weekly_report' => 'boolean',
             'guide_videos' => 'boolean',
             'weekly_report_sent_at' => 'datetime',
