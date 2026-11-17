@@ -288,6 +288,8 @@ class LegacyAccountsImporter
         ], Role::Courier, 'livreur', $courier['id'], $name);
 
         $account->syncCourierProfile();
+
+        $account->syncMechanicProfile();
         $certified = $this->date($courier['certified_at']);
         $notes = collect([
             $this->clean($courier['city']) ? 'Commune : '.$this->clean($courier['city']) : null,

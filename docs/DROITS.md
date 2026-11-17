@@ -10,6 +10,7 @@ Rangées par domaine, chacune avec ce qu'elle ouvre (écran Rôles) :
 |---|---|
 | Courses | voir, créer, dispatch (assigner, carte, journée, retours, messages), changer l'état, **annuler une course** |
 | Livreurs | gérer les livreurs (fiche, zones, véhicule), planning et automatismes, véhicules, remontées et événements terrain, notation (neutraliser une note, réglages), paie |
+| Atelier | pannes et mécaniciens (suivi, attribution à la main, interventions), **accorder les achats de pièces sur place** (administrateur seulement par défaut) |
 | Clients | voir, gérer (clients, leurs comptes, demandes d'ouverture), contrats et tarifs (distribution, intérieur), départements, annuaire, stock, clés d'API |
 | Argent | caisse (voir, encaisser et reverser), factures (voir ; calculer, émettre, encaisser ; **annuler une facture émise**), chiffre d'affaires |
 | Réglages et équipe | réglages généraux, zones et dépôts, grille des tarifs, WhatsApp, voir l'équipe, gérer l'équipe et les rôles |
@@ -22,8 +23,9 @@ Rangées par domaine, chacune avec ce qu'elle ouvre (écran Rôles) :
   large en plus (ou en moins) reçoit (ou perd) aussi celles qui en sont nées.
 
 ## Rôles
-- **Intégrés** (administrateur, responsable d'activité, dispatcher, caissier, agent de dépôt, livreur) : fixes, ils
-  servent de modèles.
+- **Intégrés** (administrateur, responsable d'activité, dispatcher, caissier, agent de dépôt, responsable du parc,
+  livreur, mécanicien) : fixes, ils servent de modèles. Le responsable du parc a les véhicules, les événements terrain
+  et l'atelier ; le mécanicien n'a que son application (`/mecanicien`).
 - **Sur mesure** : « + Nouveau rôle », en partant de rien, d'un modèle prêt à l'emploi (comptable, responsable
   flotte, service client, commercial, chef d'équipe d'un dépôt) ou d'une copie d'un rôle intégré. Nom, description,
   droits, périmètre par défaut. Modifier un rôle change tous ses comptes ; un rôle n'est supprimé que si personne ne

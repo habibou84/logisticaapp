@@ -11,6 +11,7 @@ use App\Models\FieldEventMessage;
 use App\Models\Order;
 use App\Models\User;
 use App\Services\Orders\OrderJournal;
+use App\Services\Workshop\RepairDispatcher;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -125,6 +126,12 @@ class FieldEvents
         DB::afterCommit(function () use ($event) {
             $this->effects->onReported($event);
             $this->alerts->reported($event->fresh());
+            // Panne, accident : un mécanicien est cherché (Atelier)
+            try {
+                app(RepairDispatcher::class)->fromFieldEvent($event->fresh());
+            } catch (\Throwable $e) {
+                report($e);
+            }
         });
 
         return $event;

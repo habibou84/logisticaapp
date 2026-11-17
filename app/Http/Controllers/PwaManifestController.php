@@ -21,6 +21,10 @@ class PwaManifestController extends Controller
             'suffix' => 'Livreur',
             'description' => 'Vos ramassages et livraisons du jour.',
         ],
+        'mecanicien' => [
+            'suffix' => 'Mécanicien',
+            'description' => 'Les pannes des livreurs : intervenir, diagnostiquer, réparer.',
+        ],
     ];
 
     public function __invoke(string $app): JsonResponse

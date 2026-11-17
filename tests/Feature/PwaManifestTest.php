@@ -30,11 +30,18 @@ class PwaManifestTest extends TestCase
             ->assertJsonPath('start_url', '/marchand?source=pwa&app=marchand')
             // Portées séparées : sinon Chrome dit l'autre application « déjà installée »
             ->assertJsonPath('scope', '/marchand');
+
+        $this->get('/manifest/mecanicien.webmanifest')
+            ->assertOk()
+            ->assertJsonPath('id', '/mecanicien')
+            ->assertJsonPath('start_url', '/mecanicien?source=pwa&app=mecanicien')
+            ->assertJsonPath('scope', '/mecanicien')
+            ->assertJsonPath('short_name', 'Mécanicien');
     }
 
     public function test_manifest_icons_exist_outside_the_apache_icons_alias(): void
     {
-        foreach (['livreur', 'marchand'] as $app) {
+        foreach (['livreur', 'marchand', 'mecanicien'] as $app) {
             foreach ($this->get("/manifest/{$app}.webmanifest")->json('icons') as $icon) {
                 // Sous Debian, Apache sert /icons/ depuis /usr/share/apache2/icons : l'icône serait introuvable
                 $this->assertStringStartsNotWith('/icons/', $icon['src']);
@@ -54,6 +61,7 @@ class PwaManifestTest extends TestCase
     {
         $this->get('/livreur')->assertOk()->assertSee('/manifest/livreur.webmanifest', false);
         $this->get('/marchand')->assertOk()->assertSee('/manifest/marchand.webmanifest', false);
+        $this->get('/mecanicien')->assertOk()->assertSee('/manifest/mecanicien.webmanifest', false);
         $this->get('/admin')->assertOk()->assertDontSee('webmanifest', false);
     }
 }

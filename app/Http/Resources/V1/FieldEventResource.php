@@ -6,6 +6,7 @@ use App\Models\FieldEvent;
 use App\Models\FieldEventFile;
 use App\Models\FieldEventMessage;
 use App\Models\Order;
+use App\Models\Repair;
 use App\Services\FieldEvents\FieldEventAlerts;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -70,9 +71,23 @@ class FieldEventResource extends JsonResource
                 'url' => "{$base}/{$this->id}/files/{$f->id}",
             ])->values()),
             'messages' => $this->whenLoaded('messages', fn () => $this->messages->map(fn (FieldEventMessage $m) => $m->present())->values()),
+            // Mécanicien envoyé sur la panne (Atelier)
+            'repair' => $this->whenLoaded('repair', fn () => $this->repair ? [
+                'id' => $this->repair->id,
+                'status' => $this->repair->status,
+                'status_label' => Repair::STATUS_LABELS[$this->repair->status] ?? $this->repair->status,
+                // Mécanicien connu une fois qu'il a accepté (une proposition peut encore passer à un autre)
+                'mechanic' => $this->repair->mechanic?->user && ! in_array($this->repair->status, Repair::WAITING, true)
+                    ? ['name' => $this->repair->mechanic->user->name, 'phone' => $this->repair->mechanic->user->phone] : null,
+                'accepted_at' => $this->repair->accepted_at,
+                'departed_at' => $this->repair->departed_at,
+                'arrived_at' => $this->repair->arrived_at,
+                'finished_at' => $this->repair->finished_at,
+                'decision_label' => $this->repair->decision ? Repair::DECISIONS[$this->repair->decision] : null,
+            ] : null),
         ];
     }
 
     /** Relations chargées pour l'affichage complet */
-    public const RELATIONS = ['courier.user', 'orders.merchant', 'orders.deliveryZone', 'files', 'messages.sender', 'taker', 'resolver'];
+    public const RELATIONS = ['courier.user', 'orders.merchant', 'orders.deliveryZone', 'files', 'messages.sender', 'taker', 'resolver', 'repair.mechanic.user'];
 }

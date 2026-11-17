@@ -2,7 +2,7 @@
   <section v-if="look" class="card p-4 space-y-4">
     <div>
       <h2 class="font-semibold">Apparence des espaces</h2>
-      <p class="text-sm text-gray-600">Couleurs de l'espace client, de l'espace livreur et de l'espace équipe, nom et icône des applications installées sur les téléphones. Le logo ci-dessus s'affiche dans chaque espace.</p>
+      <p class="text-sm text-gray-600">Couleurs de l'espace client, de l'espace livreur, de l'espace mécanicien et de l'espace équipe, nom et icône des applications installées sur les téléphones. Le logo ci-dessus s'affiche dans chaque espace.</p>
     </div>
 
     <label class="flex items-center gap-2 text-sm font-medium">
@@ -87,6 +87,7 @@ import { useToastStore } from '../stores/toasts'
 const SPACES = [
   { key: 'marchand', label: 'Espace client', preview: 'Mes livraisons', app: true, defaultName: 'Nom de l\'entreprise', emoji: '📦' },
   { key: 'livreur', label: 'Espace livreur', preview: 'Mes missions', app: true, defaultName: 'Livreur', emoji: '🛵' },
+  { key: 'mecanicien', label: 'Espace mécanicien', preview: 'Mes pannes', app: true, defaultName: 'Mécanicien', emoji: '🛠️' },
   { key: 'admin', label: 'Espace équipe', preview: 'Administration', app: false },
 ]
 const PRESETS = ['#ec1d27', '#c02125', '#f26a20', '#1f2937', '#047857', '#1d4ed8', '#7c3aed', '#be123c', '#c2410c', '#0e7490', '#4d7c0f']

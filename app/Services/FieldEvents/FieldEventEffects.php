@@ -19,6 +19,7 @@ use App\Services\Orders\OrderDispatcher;
 use App\Services\Vehicles\Fleet;
 use App\Services\Vehicles\VehicleLogs;
 use App\Services\Vehicles\VehicleSettings;
+use App\Services\Workshop\RepairDispatcher;
 use Throwable;
 
 /**
@@ -89,6 +90,13 @@ class FieldEventEffects
      */
     public function onResolved(FieldEvent $event, bool $resumed = false): void
     {
+        // Mécanicien pas encore sur place : plus besoin de lui
+        try {
+            app(RepairDispatcher::class)->eventResolved($event);
+        } catch (Throwable $e) {
+            report($e);
+        }
+
         // Véhicule mis « en panne » par cet événement : de nouveau en service
         Vehicle::withoutGlobalScopes()->where('field_event_id', $event->id)->where('status', 'broken')
             ->update(['status' => 'active', 'field_event_id' => null]);

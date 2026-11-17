@@ -6,21 +6,23 @@ use App\Models\Company;
 use Illuminate\Support\Facades\Storage;
 
 /**
- * Apparence des espaces de l'entreprise : couleur de l'espace client, de l'espace livreur et de
- * l'espace équipe, nom et icône des deux applications installables. « Même apparence » : l'espace
+ * Apparence des espaces de l'entreprise : couleur de l'espace client, de l'espace livreur, de l'espace
+ * mécanicien et de l'espace équipe, nom et icône des trois applications installables. « Même apparence » : l'espace
  * livreur et l'espace équipe reprennent la couleur (et l'icône) de l'espace client.
  */
 class Appearance
 {
-    public const SPACES = ['marchand', 'livreur', 'admin'];
+    public const SPACES = ['marchand', 'livreur', 'mecanicien', 'admin'];
 
     /** Espaces qui s'installent comme une application (icône, nom sous l'icône) */
-    public const APPS = ['marchand', 'livreur'];
+    public const APPS = ['marchand', 'livreur', 'mecanicien'];
 
     public const DEFAULTS = [
         // Charte Logistica : rouge (client), rouge foncé (livreur, plus lisible en plein soleil), graphite (équipe)
         'marchand' => ['color' => '#ec1d27', 'app_name' => 'Mes livraisons'],
         'livreur' => ['color' => '#c02125', 'app_name' => 'Livreur'],
+        // Orange atelier : se distingue des deux rouges sur l'écran d'accueil du téléphone
+        'mecanicien' => ['color' => '#d9480f', 'app_name' => 'Mécanicien'],
         'admin' => ['color' => '#1f2937'],
     ];
 

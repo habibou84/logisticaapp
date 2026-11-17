@@ -22,6 +22,9 @@ enum Permission: string
     case FieldEventsManage = 'field_events.manage';
     case RatingsManage = 'ratings.manage';
     case PayManage = 'pay.manage';
+    // Atelier : pannes et mécaniciens ; achats de pièces sur place (accord de l'administrateur)
+    case RepairsManage = 'repairs.manage';
+    case RepairsPurchases = 'repairs.purchases';
 
     // Clients
     case MerchantsView = 'merchants.view';
@@ -66,6 +69,8 @@ enum Permission: string
             self::FieldEventsManage => 'Remontées et événements terrain',
             self::RatingsManage => 'Notation des livreurs',
             self::PayManage => 'Paie des livreurs',
+            self::RepairsManage => 'Atelier (pannes et mécaniciens)',
+            self::RepairsPurchases => 'Accorder les achats de pièces sur place',
             self::MerchantsView => 'Voir les clients',
             self::MerchantsManage => 'Gérer les clients',
             self::RatesManage => 'Contrats, formules et tarifs (distribution, intérieur)',
@@ -103,6 +108,8 @@ enum Permission: string
             self::FieldEventsManage => 'Pannes, accidents, notes des livreurs : suivi et réglages.',
             self::RatingsManage => 'Neutraliser ou rétablir une note, réglages de la notation.',
             self::PayManage => 'Plans de paie, simulateur, plan de chaque livreur.',
+            self::RepairsManage => 'Pannes confiées aux mécaniciens : suivi, attribution à la main, interventions.',
+            self::RepairsPurchases => 'Accepter ou refuser qu\'un mécanicien achète une pièce sur place (magasin fermé, pièce manquante).',
             self::MerchantsView => 'Liste et fiche des clients.',
             self::MerchantsManage => 'Créer et modifier les clients, leurs comptes et leurs demandes d\'ouverture.',
             self::RatesManage => 'Contrats, forfaits, lots, suppléments, tarifs de la distribution et de l\'intérieur.',
@@ -130,6 +137,7 @@ enum Permission: string
         return match ($this) {
             self::OrdersView, self::OrdersCreate, self::OrdersDispatch, self::OrdersUpdateStatus, self::OrdersCancel => 'orders',
             self::CouriersManage, self::PlanningManage, self::FleetManage, self::FieldEventsManage, self::RatingsManage, self::PayManage => 'couriers',
+            self::RepairsManage, self::RepairsPurchases => 'workshop',
             self::MerchantsView, self::MerchantsManage, self::RatesManage, self::DepartmentsManage, self::DestinationsManage,
             self::StockManage, self::IntegrationsManage => 'merchants',
             self::FinanceView, self::FinanceManage, self::InvoicesView, self::InvoicesManage, self::InvoicesVoid, self::RevenueView => 'money',
@@ -143,6 +151,7 @@ enum Permission: string
         return [
             'orders' => 'Courses',
             'couriers' => 'Livreurs',
+            'workshop' => 'Atelier',
             'merchants' => 'Clients',
             'money' => 'Argent',
             'settings' => 'Réglages et équipe',

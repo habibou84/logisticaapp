@@ -14,6 +14,14 @@ const APPS = {
     paths: ['/livreur', '/mot-de-passe-oublie', '/invitation', '/bon-de-retour'],
     other: 'Cette application est réservée aux livreurs. Les clients utilisent l\'application « Jibiat Client ».',
   },
+  // Application mécanicien : installée depuis le navigateur seulement (PWA)
+  mecanicien: {
+    roles: ['mechanic'],
+    login: '/mecanicien/connexion',
+    home: '/mecanicien',
+    paths: ['/mecanicien', '/mot-de-passe-oublie', '/invitation'],
+    other: 'Cette application est réservée aux mécaniciens.',
+  },
   ecommercant: {
     roles: ['merchant_owner', 'merchant_manager', 'merchant_staff', 'merchant_viewer'],
     login: '/marchand/connexion',
@@ -40,7 +48,8 @@ function detectInstalledApp() {
     if (!standalone && !fromManifest) return null
     const path = window.location.pathname
     const app = fromManifest === 'livreur' || path.startsWith('/livreur') ? 'livreur'
-      : (fromManifest === 'marchand' || path === '/' || path.startsWith('/marchand') ? 'ecommercant' : null)
+      : fromManifest === 'mecanicien' || path.startsWith('/mecanicien') ? 'mecanicien'
+        : (fromManifest === 'marchand' || path === '/' || path.startsWith('/marchand') ? 'ecommercant' : null)
     if (app) sessionStorage.setItem(LOCK_KEY, app)
     return app
   } catch {

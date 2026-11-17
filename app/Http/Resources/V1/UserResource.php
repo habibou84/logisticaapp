@@ -72,6 +72,10 @@ class UserResource extends JsonResource
                 // Ce que l'application livreur permet : hors connexion, gain prévu
                 'can' => app(CourierCapabilities::class)->for($this->courier),
             ] : null),
+            'mechanic' => $this->whenLoaded('mechanic', fn () => $this->mechanic ? [
+                'id' => $this->mechanic->id,
+                'is_available' => $this->mechanic->is_available,
+            ] : null),
             // Équipe : périmètre (activités visibles, vide : toutes) et réglage fin des permissions
             'activities' => $this->activities ?? [],
             'zone_ids' => $this->zone_ids ?? [],

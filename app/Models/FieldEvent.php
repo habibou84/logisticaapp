@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * Événement terrain signalé par un livreur (panne, accident, contrôle…), avec les courses qu'il touche.
@@ -109,6 +110,12 @@ class FieldEvent extends Model
     public function messages(): HasMany
     {
         return $this->hasMany(FieldEventMessage::class)->orderBy('id');
+    }
+
+    /** Intervention du mécanicien (la plus récente) */
+    public function repair(): HasOne
+    {
+        return $this->hasOne(Repair::class)->latestOfMany();
     }
 
     public function taker(): BelongsTo

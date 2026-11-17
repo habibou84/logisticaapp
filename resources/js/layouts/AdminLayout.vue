@@ -174,6 +174,13 @@ async function loadVehicleCounts() {
   if (!auth.can('fleet.manage')) return
   vehicleUrgent.value = (await http.get('/vehicles/counts').catch(() => null))?.data.data.urgent || 0
 }
+// Atelier : pannes sans mécanicien, achats sur place à accorder (badge du menu)
+const workshopWaiting = ref(0)
+async function loadWorkshopCounts() {
+  if (!auth.can(['repairs.manage', 'repairs.purchases'])) return
+  const counts = (await http.get('/repairs/counts').catch(() => null))?.data.data
+  workshopWaiting.value = counts ? counts.searching + counts.purchases : 0
+}
 const heldParcels = useHeldParcelStore()
 // Courses qui attendent un livreur au-delà du délai : badge du menu « Courses »
 const dispatchCounts = useDispatchCountStore()
@@ -183,6 +190,7 @@ let countsTimer
 function fetchCounts() {
   if (auth.can('field_events.manage')) fieldReports.fetchCounts().catch(() => {})
   loadVehicleCounts()
+  loadWorkshopCounts()
   if (!isDispatch.value) return
   heldParcels.fetchCounts().catch(() => {})
   dispatchCounts.fetchCounts().catch(() => {})
@@ -244,6 +252,7 @@ const menu = computed(() => filterMenu((p) => auth.can(p), myActivities(auth.use
   fieldReports: fieldReports.badge,
   heldParcels: heldParcels.counts.overdue,
   vehicles: vehicleUrgent.value,
+  workshop: workshopWaiting.value,
   health: (setup.value?.health || []).filter((h) => h.level === 'alert').length,
 }))
 

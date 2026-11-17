@@ -18,6 +18,17 @@
         </li>
       </ol>
 
+      <!-- Mécanicien envoyé par l'agence : qui vient, où il en est -->
+      <div v-if="event.repair && event.repair.status !== 'cancelled'" class="rounded-xl bg-orange-50 p-3 text-sm ring-1 ring-orange-200">
+        <div class="flex items-center gap-3">
+          <span class="text-2xl" aria-hidden="true">🛠️</span>
+          <div class="min-w-0 flex-1">
+            <p class="font-semibold">{{ event.repair.mechanic ? `Mécanicien : ${event.repair.mechanic.name}` : 'Un mécanicien va être envoyé' }}</p>
+            <p class="text-slate-700">{{ repairText }}</p>
+          </div>
+          <a v-if="event.repair.mechanic?.phone && event.status !== 'resolved'" :href="`tel:${event.repair.mechanic.phone}`" class="shrink-0 rounded-full bg-[var(--app-color)] px-3 py-1.5 font-semibold text-white">📞</a>
+        </div>
+      </div>
       <p v-if="event.note" class="rounded-xl bg-slate-50 px-3 py-2 text-sm">« {{ event.note }} »</p>
       <p v-if="event.resolution" class="text-sm text-emerald-700">✓ {{ event.resolution }}</p>
       <div v-if="media.length" class="flex flex-wrap items-center gap-2">
@@ -79,6 +90,16 @@ const capacityText = computed(() => {
   const e = event.value
   if (e.capacity === 'blocked' && e.blocked_until) return `bloqué jusqu'à ${time(e.blocked_until)} environ`
   return e.capacity_label
+})
+const repairText = computed(() => {
+  const r = event.value.repair
+  if (!r) return ''
+  if (r.status === 'done') return `Intervention terminée à ${time(r.finished_at)}${r.decision_label ? ` · ${r.decision_label}` : ''}`
+  if (r.status === 'repairing') return 'Réparation en cours'
+  if (r.status === 'on_site') return `Arrivé à ${time(r.arrived_at)}`
+  if (r.status === 'en_route') return `En route depuis ${time(r.departed_at)}`
+  if (r.status === 'accepted') return `A accepté à ${time(r.accepted_at)}, il va partir`
+  return 'Recherche d\'un mécanicien disponible…'
 })
 const steps = computed(() => [
   { label: 'Envoyé à l\'agence', done: true },

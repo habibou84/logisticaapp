@@ -39,6 +39,8 @@ use App\Http\Controllers\Api\V1\IncidentReasonController;
 use App\Http\Controllers\Api\V1\InvitationController;
 use App\Http\Controllers\Api\V1\LabelController;
 use App\Http\Controllers\Api\V1\LegacyImportController;
+use App\Http\Controllers\Api\V1\MechanicController;
+use App\Http\Controllers\Api\V1\MechanicRepairController;
 use App\Http\Controllers\Api\V1\MerchantAccountController;
 use App\Http\Controllers\Api\V1\MerchantController;
 use App\Http\Controllers\Api\V1\MerchantLocationController;
@@ -65,6 +67,7 @@ use App\Http\Controllers\Api\V1\PublicRescheduleController;
 use App\Http\Controllers\Api\V1\PushSubscriptionController;
 use App\Http\Controllers\Api\V1\QuoteController;
 use App\Http\Controllers\Api\V1\ReferenceController;
+use App\Http\Controllers\Api\V1\RepairController;
 use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\RescheduleController;
 use App\Http\Controllers\Api\V1\ReturnSlipController;
@@ -341,6 +344,24 @@ Route::prefix('v1')->name('v1.')->group(function () {
             Route::post('{event}/release', 'release')->name('release');
             Route::post('{event}/notify-clients', 'notifyClients')->name('notify-clients');
             Route::get('{event}/files/{file}', 'file')->name('files');
+        });
+
+        // Atelier : pannes confiées aux mécaniciens
+        Route::middleware('can:repairs.manage')->prefix('repairs')->name('repairs.')->controller(RepairController::class)->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::post('/', 'store')->name('store');
+            Route::get('mechanics', 'mechanics')->name('mechanics');
+            Route::get('{repair}', 'show')->whereNumber('repair')->name('show');
+            Route::post('{repair}/assign', 'assign')->name('assign');
+            Route::post('{repair}/cancel', 'cancel')->name('cancel');
+            Route::get('{repair}/files/{file}', 'file')->name('files');
+            Route::get('{repair}/receipts/{purchase}', 'receipt')->name('receipts');
+        });
+        Route::get('repairs/counts', [RepairController::class, 'counts'])->middleware('permission:repairs.manage|repairs.purchases')->name('repairs.counts');
+        // Achats de pièces sur place : accord de l'administrateur
+        Route::middleware('can:repairs.purchases')->prefix('repair-purchases')->name('repair-purchases.')->controller(RepairController::class)->group(function () {
+            Route::get('/', 'purchases')->name('index');
+            Route::post('{purchase}/decide', 'decidePurchase')->name('decide');
         });
 
         // Bons de retour groupés par marchand (droits vérifiés dans le contrôleur)
@@ -678,6 +699,31 @@ Route::prefix('v1')->name('v1.')->group(function () {
             Route::get('courier-payouts/{courierPayout}', 'showCourierPayout')->name('courier-payouts.show');
             Route::post('courier-payouts/{courierPayout}/pay', 'payCourierPayout')->name('courier-payouts.pay');
             Route::post('courier-payouts/{courierPayout}/cancel', 'cancelCourierPayout')->name('courier-payouts.cancel');
+        });
+
+        // Espace mécanicien
+        Route::prefix('mechanic')->name('mechanic.')->middleware('role:mechanic')->group(function () {
+            Route::get('repairs', [MechanicController::class, 'repairs'])->name('repairs');
+            Route::get('setup', [MechanicController::class, 'setup'])->name('setup');
+            Route::patch('status', [MechanicController::class, 'status'])->name('status');
+            Route::get('vehicles', [MechanicController::class, 'vehicles'])->name('vehicles');
+            Route::get('vehicles/{vehicle}', [MechanicController::class, 'vehicle'])->name('vehicles.show');
+            Route::controller(MechanicRepairController::class)->prefix('repairs/{repair}')->name('repairs.')->group(function () {
+                Route::get('/', 'show')->name('show');
+                Route::post('accept', 'accept')->name('accept');
+                Route::post('decline', 'decline')->name('decline');
+                Route::post('depart', 'depart')->name('depart');
+                Route::post('arrive', 'arrive')->name('arrive');
+                Route::post('start', 'start')->name('start');
+                Route::post('photos', 'photos')->middleware('throttle:60,1')->name('photos');
+                Route::delete('photos/{file}', 'deletePhoto')->name('photos.destroy');
+                Route::post('purchases', 'purchase')->middleware('throttle:30,1')->name('purchases');
+                Route::post('close', 'close')->name('close');
+                Route::post('messages', 'message')->name('messages');
+                Route::get('files/{file}', 'file')->name('files');
+                Route::get('event-files/{file}', 'eventFile')->name('event-files');
+                Route::get('receipts/{purchase}', 'receipt')->name('receipts');
+            });
         });
 
         // Espace livreur

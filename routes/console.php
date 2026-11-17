@@ -41,6 +41,8 @@ Schedule::command('model:prune', ['--model' => [IdempotencyKey::class, WebhookDe
 // Cloche : anciennes notifications supprimées chaque nuit
 Schedule::command('notifications:prune')->dailyAt('03:40')->withoutOverlapping();
 Schedule::command('field-reports:remind')->everyMinute()->withoutOverlapping();
+// Atelier : propositions de panne sans réponse passées au mécanicien suivant, pannes sans mécanicien reproposées
+Schedule::command('repairs:dispatch')->everyMinute()->withoutOverlapping();
 Schedule::command('parcels:overdue')->everyFifteenMinutes()->withoutOverlapping();
 // Argent gardé trop longtemps par un livreur : caisse prévenue, rappel au livreur (une fois par jour)
 Schedule::command('cash:held')->hourlyAt(5)->between('7:00', '21:00')->withoutOverlapping();
