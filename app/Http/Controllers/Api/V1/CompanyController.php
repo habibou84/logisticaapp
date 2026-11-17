@@ -20,6 +20,7 @@ use App\Services\Photos\PhotoSettings;
 use App\Services\Ratings\RatingSettings;
 use App\Services\Reports\DashboardSettings;
 use App\Services\Reports\StatsSettings;
+use App\Services\Shifts\ShiftSettings;
 use App\Services\Vehicles\VehicleSettings;
 use App\Support\InvoicePayments;
 use Illuminate\Support\Facades\Gate;
@@ -51,6 +52,9 @@ class CompanyController extends Controller
         }
         if (array_key_exists('destination_settings', $data)) {
             $data['destination_settings'] = DestinationSettings::clean((array) ($data['destination_settings'] ?? []));
+        }
+        if (array_key_exists('shift_settings', $data)) {
+            $data['shift_settings'] = ShiftSettings::clean((array) ($data['shift_settings'] ?? []));
         }
         if (array_key_exists('shipment_settings', $data)) {
             $data['shipment_settings'] = ShipmentSettings::clean((array) ($data['shipment_settings'] ?? []));

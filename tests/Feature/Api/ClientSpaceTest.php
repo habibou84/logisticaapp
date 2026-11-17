@@ -198,7 +198,8 @@ class ClientSpaceTest extends TestCase
         $this->assertSame('available', $couriers['Koffi Ramasseur']['status']);
         $this->assertSame('absent', $couriers['Awa Livreuse']['status']);
         $this->assertNotNull($couriers['Koffi Ramasseur']['phone']);
-        $this->assertSame(['id', 'name', 'phone', 'status', 'status_label'], array_keys($couriers['Koffi Ramasseur']));
+        // Pas de position GPS : heure et lieu de pointage seulement
+        $this->assertSame(['id', 'name', 'phone', 'status', 'status_label', 'clocked_in_at', 'clocked_in_place', 'late_minutes'], array_keys($couriers['Koffi Ramasseur']));
     }
 
     public function test_invoices_are_notified_then_reminded(): void

@@ -24,6 +24,7 @@ use App\Http\Controllers\Api\V1\CourierFieldEventController;
 use App\Http\Controllers\Api\V1\CourierFileController;
 use App\Http\Controllers\Api\V1\CourierMessageController;
 use App\Http\Controllers\Api\V1\CourierRatingController;
+use App\Http\Controllers\Api\V1\CourierShiftController;
 use App\Http\Controllers\Api\V1\CourierSpaceController;
 use App\Http\Controllers\Api\V1\CourierVehicleController;
 use App\Http\Controllers\Api\V1\DeliveryDayController;
@@ -70,7 +71,9 @@ use App\Http\Controllers\Api\V1\RescheduleController;
 use App\Http\Controllers\Api\V1\ReturnSlipController;
 use App\Http\Controllers\Api\V1\RevenueController;
 use App\Http\Controllers\Api\V1\RoleController;
+use App\Http\Controllers\Api\V1\RoutineController;
 use App\Http\Controllers\Api\V1\SetupGuideController;
+use App\Http\Controllers\Api\V1\ShiftController;
 use App\Http\Controllers\Api\V1\ShopController;
 use App\Http\Controllers\Api\V1\SignupController;
 use App\Http\Controllers\Api\V1\StatisticsController;
@@ -465,6 +468,12 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::get('couriers/directory', [CourierDirectoryController::class, 'index'])->middleware('permission:orders.dispatch|couriers.manage|ratings.manage')->name('couriers.directory');
         Route::get('couriers/{courier}/profile', [CourierDirectoryController::class, 'show'])->middleware('permission:orders.dispatch|couriers.manage|ratings.manage')->whereNumber('courier')->name('couriers.profile');
         Route::get('couriers/map', [CourierController::class, 'map'])->middleware('can:orders.dispatch')->name('couriers.map');
+        // Pointages des livreurs : écran du jour, pointage manuel avec motif, annulation
+        Route::middleware('can:orders.dispatch')->controller(ShiftController::class)->group(function () {
+            Route::get('shifts', 'index')->name('shifts.index');
+            Route::post('couriers/{courier}/shift', 'manual')->whereNumber('courier')->name('couriers.shift');
+            Route::delete('courier-shifts/{shift}', 'destroy')->name('courier-shifts.destroy');
+        });
         Route::get('couriers/availability', [CourierAvailabilityController::class, 'index'])->middleware('can:orders.dispatch')->name('couriers.availability');
         Route::get('couriers/{courier}/availability', [CourierAvailabilityController::class, 'show'])->middleware('can:orders.dispatch')->name('couriers.availability.show');
         Route::post('couriers/{courier}/pickup-mission', [CourierAvailabilityController::class, 'pickupMission'])->middleware('can:orders.dispatch')->name('couriers.pickup-mission');
@@ -558,6 +567,18 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::post('merchants/{merchant}/billing-plans', [BillingPlanController::class, 'store'])->name('merchants.billing-plans.store');
         Route::patch('billing-plans/{billingPlan}', [BillingPlanController::class, 'update'])->name('billing-plans.update');
         Route::delete('billing-plans/{billingPlan}', [BillingPlanController::class, 'destroy'])->name('billing-plans.destroy');
+        // Parcours des livreurs en MAD (routine du matin avant d'arriver chez le client) : équipe et client
+        Route::controller(RoutineController::class)->group(function () {
+            Route::get('billing-plans/{billingPlan}/routines', 'index')->name('billing-plans.routines.index');
+            Route::post('billing-plans/{billingPlan}/routines', 'store')->name('billing-plans.routines.store');
+            Route::put('routines/{routine}', 'update')->name('routines.update');
+            Route::delete('routines/{routine}', 'destroy')->name('routines.destroy');
+            Route::get('routine-places', 'places')->middleware('throttle:120,1')->name('routine-places');
+            Route::get('merchant/routines', 'mine')->name('merchant.routines');
+            Route::post('merchant/routines', 'storeMine')->name('merchant.routines.store');
+            Route::put('merchant/routines/{routine}', 'updateMine')->name('merchant.routines.update');
+            Route::delete('merchant/routines/{routine}', 'destroyMine')->name('merchant.routines.destroy');
+        });
         Route::controller(ClientRateController::class)->group(function () {
             Route::get('client-rates/clients', 'clients')->name('client-rates.clients');
             Route::get('distribution-rates', 'distribution')->name('distribution-rates.index');
@@ -686,6 +707,9 @@ Route::prefix('v1')->name('v1.')->group(function () {
             Route::post('assignments/{assignment}/accept', [CourierSpaceController::class, 'accept'])->name('assignments.accept');
             Route::post('assignments/{assignment}/refuse', [CourierSpaceController::class, 'refuse'])->name('assignments.refuse');
             Route::patch('status', [CourierSpaceController::class, 'updateStatus'])->name('status');
+            // Pointage à son lieu de début (agence, client MAD ou première étape de son parcours)
+            Route::get('shift', [CourierShiftController::class, 'show'])->name('shift');
+            Route::post('shift', [CourierShiftController::class, 'store'])->middleware('throttle:30,1')->name('shift.store');
             // Actions faites hors connexion, envoyées au retour du réseau
             Route::post('sync', OfflineSyncController::class)->middleware('throttle:120,1')->name('sync');
             Route::get('wallet', [FinanceController::class, 'wallet'])->name('wallet');

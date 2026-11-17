@@ -54,6 +54,7 @@
               <div class="text-xs text-gray-500">{{ p.summary }}</div>
               <div v-if="p.has_forfait" class="text-xs text-gray-500">Zones : {{ p.zones?.length ? (p.zones.length > 5 ? `${p.zones.slice(0, 5).map((z) => z.name).join(', ')}… (${p.zones.length})` : p.zones.map((z) => z.name).join(', ')) : 'communes « Forfait »' }}</div>
               <div v-if="p.couriers?.length" class="text-xs text-gray-500">Livreurs : {{ p.couriers.map((c) => c.name).join(', ') }}</div>
+              <button v-if="p.formula === 'mad_contract'" type="button" class="mt-1 text-xs font-semibold text-blue-700" @click="routinesOf = p">🧭 Parcours et lieu de pointage</button>
             </td>
             <td data-label="Période" class="p-2 whitespace-nowrap">
               du {{ date(p.starts_on) }}<template v-if="p.ends_on"><br>au {{ date(p.ends_on) }}</template>
@@ -117,6 +118,9 @@
       </div>
     </Modal>
 
+    <Modal :open="!!routinesOf" :title="routinesOf ? `Parcours · ${routinesOf.merchant?.business_name}` : ''" wide @close="routinesOf = null">
+      <RoutineList v-if="routinesOf" :list-url="`/billing-plans/${routinesOf.id}/routines`" :create-url="`/billing-plans/${routinesOf.id}/routines`" update-url="/routines" :editable="canEditRoutines" />
+    </Modal>
     <BillingPlanModal :open="!!open" :merchant="open" :initial-formula="pickFormula" @close="open = null; pickFormula = null" @saved="load" />
     <SupplementsModal :open="!!supplementFor" :merchant="supplementFor?.merchant" :activity="supplementFor?.activity" @close="supplementFor = null" @saved="load" />
   </div>
@@ -129,6 +133,7 @@ import http from '../../bootstrap/axios'
 import BillingPlanModal from '../../components/BillingPlanModal.vue'
 import SupplementsModal from '../../components/SupplementsModal.vue'
 import Modal from '../../components/Modal.vue'
+import RoutineList from '../../components/routines/RoutineList.vue'
 import StatCard from '../../components/StatCard.vue'
 import { useAuthStore } from '../../stores/auth'
 import { activityBadge, activityShort, myActivities } from '../../utils/activities'
@@ -137,6 +142,9 @@ import { date, money } from '../../utils/format'
 const auth = useAuthStore()
 const route = useRoute()
 const canManage = computed(() => auth.can('rates.manage'))
+// Parcours des livreurs en MAD : contrats ou dispatch
+const routinesOf = ref(null)
+const canEditRoutines = computed(() => auth.can('rates.manage') || auth.can('orders.dispatch'))
 const STATES = [
   { value: 'current', label: 'En cours' },
   { value: 'upcoming', label: 'À venir' },

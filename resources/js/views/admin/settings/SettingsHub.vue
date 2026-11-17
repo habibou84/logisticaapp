@@ -139,6 +139,12 @@ const ALL = computed(() => {
       keywords: 'annuaire destination suggestion adresse gps position livreur base clients numéro vérifier',
     },
     {
+      key: 'shifts', icon: '✋', title: 'Pointage des livreurs', to: '/admin/reglages/pointage', permission: 'settings.manage',
+      description: 'Arrivée pointée sur place : agence, client MAD ou première étape du parcours ; distance autorisée, heure, alerte.',
+      summary: c?.shift_settings && (c.shift_settings.enabled ? `${c.shift_settings.agency_lat != null ? 'Agence placée' : 'Agence à placer'} · ${c.shift_settings.radius} m · début ${c.shift_settings.agency_start}` : 'Désactivé'),
+      keywords: 'pointage pointer arrivée heure début présence retard agence gps distance parcours mad service',
+    },
+    {
       key: 'departments', icon: '🏢', title: 'Départements des clients', to: '/admin/reglages/departements', permission: 'departments.manage',
       description: 'Banques, administrations : départements sur les courses, courrier interne, qui remet et qui reçoit, bordereaux, facture ventilée, quotas.',
       summary: c?.department_settings && (c.department_settings.enabled ? `Département ${c.department_settings.required ? 'obligatoire' : 'facultatif'} · facture ${{ detailed: 'ventilée', split: 'par département', none: 'sans détail' }[c.department_settings.invoice_mode]}` : 'Désactivé'),

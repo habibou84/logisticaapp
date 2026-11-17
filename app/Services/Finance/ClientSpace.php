@@ -12,6 +12,7 @@ use App\Models\BillingPlan;
 use App\Models\ClientCreditNote;
 use App\Models\ClientInvoice;
 use App\Models\Courier;
+use App\Models\CourierShift;
 use App\Models\Merchant;
 use App\Models\Order;
 use App\Models\User;
@@ -151,7 +152,7 @@ class ClientSpace
     /**
      * Livreurs mis à disposition : nom, téléphone et état du moment (pas de position).
      *
-     * @return list<array{id: int, name: string, phone: string|null, status: string, status_label: string}>
+     * @return list<array{id: int, name: string, phone: string|null, status: string, status_label: string, clocked_in_at: string|null, clocked_in_place: string|null, late_minutes: int|null}>
      */
     public function couriers(Merchant $merchant): array
     {
@@ -164,7 +165,11 @@ class ClientSpace
         $today = CarbonImmutable::now($merchant->company->timezone ?: config('app.timezone'))->toDateString();
         $absent = $this->planning->absentOn($merchant->company_id, $today);
 
-        return $plan->couriers->map(function (Courier $c) use ($absent) {
+        // Pointage du jour : heure d'arrivée sur le lieu de début
+        $shifts = CourierShift::withoutGlobalScopes()->whereIn('courier_id', $plan->couriers->pluck('id'))
+            ->whereDate('work_date', $today)->get()->keyBy('courier_id');
+
+        return $plan->couriers->map(function (Courier $c) use ($absent, $shifts) {
             $status = match (true) {
                 in_array($c->id, $absent, true) => 'absent',
                 ! $this->planning->available($c, $absent) => 'unavailable',
@@ -178,6 +183,9 @@ class ClientSpace
                 'phone' => $c->user?->phone,
                 'status' => $status,
                 'status_label' => ['absent' => 'Absent aujourd\'hui', 'unavailable' => 'Indisponible', 'busy' => 'En course', 'available' => 'Disponible'][$status],
+                'clocked_in_at' => $shifts->get($c->id)?->clocked_in_at?->toIso8601String(),
+                'clocked_in_place' => $shifts->get($c->id)?->place_label,
+                'late_minutes' => $shifts->get($c->id)?->late_minutes,
             ];
         })->sortBy('name')->values()->all();
     }

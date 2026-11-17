@@ -16,6 +16,7 @@ use App\Services\Photos\PhotoSettings;
 use App\Services\Ratings\RatingSettings;
 use App\Services\Reports\DashboardSettings;
 use App\Services\Reports\StatsSettings;
+use App\Services\Shifts\ShiftSettings;
 use App\Services\Vehicles\VehicleSettings;
 use App\Support\InvoicePayments;
 use App\Support\PhoneNumber as Phone;
@@ -98,6 +99,7 @@ class UpdateCompanyRequest extends FormRequest
             ...DepartmentSettings::rules(),
             ...DestinationSettings::rules(),
             ...ShipmentSettings::rules(),
+            ...ShiftSettings::rules(),
             'merchant_signup' => ['sometimes', 'boolean'],
             'weekly_report' => ['sometimes', 'boolean'],
             'guide_videos' => ['sometimes', 'boolean'],

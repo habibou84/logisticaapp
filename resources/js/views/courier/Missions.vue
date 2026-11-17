@@ -1,5 +1,8 @@
 <template>
   <div class="space-y-4">
+    <!-- Pointage d'arrivée sur le lieu de début : met en service -->
+    <ShiftCard @clocked="clocked" />
+
     <!-- Disponibilité -->
     <button
       :class="['tap w-full rounded-2xl p-4 flex items-center gap-4 text-left transition', available ? 'bg-emerald-600 text-white' : 'bg-white ring-1 ring-slate-200']"
@@ -189,6 +192,7 @@ import StatusBadge from '../../components/StatusBadge.vue'
 import EmptyState from '../../components/mobile/EmptyState.vue'
 import InstallBanner from '../../components/mobile/InstallBanner.vue'
 import FieldEventSheet from '../../components/courier/FieldEventSheet.vue'
+import ShiftCard from '../../components/courier/ShiftCard.vue'
 import { fieldEventQueue } from '../../composables/useFieldEvents'
 import { VEHICLE_TYPES, km, remainingText } from '../../utils/vehicles'
 import { useAuthStore } from '../../stores/auth'
@@ -292,6 +296,13 @@ async function load() {
     loading.value = false
   }
   if (!count(tab.value)) tab.value = ['pickup', 'delivery', 'return'].find((t) => count(t)) || tab.value
+}
+
+// Pointage fait : le livreur est en service (sauf état des lieux du véhicule à faire)
+function clocked(isAvailable) {
+  available.value = isAvailable
+  if (auth.user.courier) auth.user.courier.is_available = isAvailable
+  load()
 }
 
 async function toggleAvailability() {
