@@ -97,6 +97,10 @@
           </div>
         </template>
         <template v-else-if="active">
+          <!-- Collecte : scan de l'étiquette (facultatif), pour être sûr de prendre le bon colis -->
+          <button v-if="canScanLabel" type="button" :class="['m-btn-secondary', pickupCheck ? 'text-emerald-700' : '']" @click="openLabelScan">
+            {{ pickupCheck ? (pickupCheck === 'scan' ? '✓ Étiquette scannée' : '✓ Code du colis vérifié') : '📷 Scanner l\'étiquette' }}
+          </button>
           <button v-if="primary" :class="[primary.class, 'text-lg py-5']" :disabled="busy" @click="primary.action()">{{ primary.label }}</button>
           <div class="grid grid-cols-4 gap-2">
             <button v-if="canReportIncident" class="m-btn-secondary py-3 px-1 text-sm text-red-600" @click="openIncident">⚠️ Problème</button>
@@ -260,6 +264,14 @@
         <button class="m-btn-primary" :disabled="busy || !noteText.trim()" @click="sendNote">Envoyer</button>
       </div>
     </BottomSheet>
+
+    <!-- Scan de l'étiquette à la collecte -->
+    <QrScanner :open="labelScan" title="Scanner l'étiquette du colis" :message="labelMessage" @code="onLabel($event, 'scan')" @close="labelScan = false">
+      <form class="flex gap-2" @submit.prevent="typeLabel">
+        <input v-model="labelCode" type="text" autocapitalize="characters" class="m-input flex-1 text-slate-900 uppercase" placeholder="Étiquette abîmée : code du colis" aria-label="Code du colis">
+        <button class="rounded-xl bg-white/15 px-4 font-semibold" :disabled="!labelCode.trim()">OK</button>
+      </form>
+    </QrScanner>
   </div>
   <p v-else class="text-center text-slate-400 py-10">Chargement…</p>
 </template>
@@ -284,6 +296,7 @@ import { currentPosition } from '../../composables/useGeolocation'
 import { enqueue, isNetworkError, sendStatus, withPending } from '../../composables/useOfflineQueue'
 import { photoQueue, sendOrderPhoto, syncPhotoQueue } from '../../composables/usePhotoQueue'
 import PhotoCapture from '../../components/mobile/PhotoCapture.vue'
+import QrScanner from '../../components/mobile/QrScanner.vue'
 import { pwa } from '../../composables/usePwa'
 import { date, DELIVERY_PAYMENT_METHODS, mapsLink, money, PAYMENT_METHODS, shipmentLabel, telLink, today, whatsappLink } from '../../utils/format'
 
@@ -450,11 +463,37 @@ async function load() {
   if (!mission.value) router.replace('/livreur')
 }
 
+// Scan de l'étiquette à la collecte (facultatif)
+const canScanLabel = computed(() => mission.value?.type === 'pickup' && order.value?.status === 'pickup_in_progress')
+const pickupCheck = ref(null)
+const labelScan = ref(false)
+const labelMessage = ref(null)
+const labelCode = ref('')
+function openLabelScan() {
+  labelMessage.value = null
+  labelScan.value = true
+}
+function onLabel(code, method) {
+  if (code === order.value.tracking_code?.toUpperCase()) {
+    pickupCheck.value = method
+    labelScan.value = false
+    toasts.success('C\'est bien ce colis.')
+    return
+  }
+  labelMessage.value = { ok: false, text: `Ce n'est pas le bon colis (${code}) : celui-ci est ${order.value.tracking_code}.`, at: Date.now() }
+}
+function typeLabel() {
+  onLabel(labelCode.value.trim().toUpperCase(), 'code')
+  labelCode.value = ''
+}
+
 async function post(status, extra = {}) {
   // Photos gardées après une coupure : envoyées d'abord, le serveur vérifie la preuve demandée
   if (photoQueue.count && navigator.onLine) await syncPhotoQueue()
   const position = await currentPosition()
-  const result = await sendStatus(order.value, { status, ...extra, ...(position || {}) }, offlineEnabled.value)
+  // Colis reconnu par le scan de son étiquette ou par son code : noté dans le journal
+  const check = status === 'picked_up' && pickupCheck.value ? { pickup_check: pickupCheck.value } : {}
+  const result = await sendStatus(order.value, { status, ...extra, ...check, ...(position || {}) }, offlineEnabled.value)
   if (result.offline) mission.value = withPending([mission.value])[0]
   return result
 }

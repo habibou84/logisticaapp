@@ -116,6 +116,7 @@ class OrderWorkflow
                     'offline' => ! empty($context['offline']) ? true : null,
                     'delivery_code_unverified' => $to === OrderStatus::Delivered && $order->delivery_code_unverified_at ? true : null,
                     'received_by_name' => $to === OrderStatus::Delivered ? $order->received_by_name : null,
+                    'pickup_check' => $to === OrderStatus::PickedUp ? ($context['pickup_check'] ?? null) : null,
                 ], fn ($v) => $v !== null),
             ]);
 

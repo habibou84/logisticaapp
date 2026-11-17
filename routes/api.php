@@ -24,6 +24,7 @@ use App\Http\Controllers\Api\V1\CourierFieldEventController;
 use App\Http\Controllers\Api\V1\CourierFileController;
 use App\Http\Controllers\Api\V1\CourierMessageController;
 use App\Http\Controllers\Api\V1\CourierRatingController;
+use App\Http\Controllers\Api\V1\CourierRouteController;
 use App\Http\Controllers\Api\V1\CourierShiftController;
 use App\Http\Controllers\Api\V1\CourierSpaceController;
 use App\Http\Controllers\Api\V1\CourierVehicleController;
@@ -710,6 +711,10 @@ Route::prefix('v1')->name('v1.')->group(function () {
             // Pointage à son lieu de début (agence, client MAD ou première étape de son parcours)
             Route::get('shift', [CourierShiftController::class, 'show'])->name('shift');
             Route::post('shift', [CourierShiftController::class, 'store'])->middleware('throttle:30,1')->name('shift.store');
+            // Tournée : livraisons dans l'ordre (calculé à vol d'oiseau depuis sa position, ou à la main)
+            Route::get('route', [CourierRouteController::class, 'show'])->name('route');
+            Route::post('route/optimize', [CourierRouteController::class, 'optimize'])->middleware('throttle:30,1')->name('route.optimize');
+            Route::put('route', [CourierRouteController::class, 'reorder'])->middleware('throttle:60,1')->name('route.reorder');
             // Actions faites hors connexion, envoyées au retour du réseau
             Route::post('sync', OfflineSyncController::class)->middleware('throttle:120,1')->name('sync');
             Route::get('wallet', [FinanceController::class, 'wallet'])->name('wallet');

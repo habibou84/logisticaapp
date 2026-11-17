@@ -47,6 +47,8 @@ class TransitionOrderRequest extends FormRequest
             'handed_by_role' => ['nullable', 'string', 'max:80'],
             'received_by_role' => ['nullable', 'string', 'max:80'],
             // Livraison : position du livreur enregistrée comme celle de l'adresse (annuaire, carnet)
+            // Collecte : colis reconnu par le scan de son étiquette (scan) ou par son code tapé à la main (code)
+            'pickup_check' => ['nullable', Rule::in(['scan', 'code'])],
             'locate' => ['nullable', 'boolean'],
             'accuracy' => ['nullable', 'integer', 'min:0', 'max:100000'],
             'lat' => ['nullable', 'numeric', 'between:-90,90'],

@@ -30,8 +30,12 @@
     <!-- Les colis : décocher ceux qui ne sont pas prêts -->
     <section class="m-card divide-y">
       <p class="p-4 text-sm text-slate-600">
-        {{ toAccept.length ? 'Acceptez les colis, puis cochez ceux que vous récupérez.' : 'Décochez un colis que la boutique ne vous remet pas.' }}
+        {{ toAccept.length ? 'Acceptez les colis, puis cochez ceux que vous récupérez.' : scanning ? 'Les colis se cochent au fur et à mesure que vous scannez leur étiquette.' : 'Décochez un colis que la boutique ne vous remet pas, ou scannez les étiquettes.' }}
       </p>
+      <!-- Scan des étiquettes (facultatif) : chaque colis scanné se coche -->
+      <div v-if="canScan" class="px-4 pb-4">
+        <button type="button" class="m-btn-secondary" @click="openScanner">📷 Scanner les colis<template v-if="scanned.size"> ({{ scanned.size }}/{{ active.length }} scannés)</template></button>
+      </div>
       <label v-for="m in missions" :key="m.id" class="flex items-start gap-3 p-4">
         <input
           v-model="checked"
@@ -52,6 +56,7 @@
             <span v-if="m.order.package.is_fragile" class="rounded-full bg-red-100 text-red-700 text-xs font-semibold px-2 py-0.5">🥚 Fragile</span>
             <span v-if="m.order.package.is_express" class="rounded-full bg-red-100 text-red-700 text-xs font-semibold px-2 py-0.5">⚡ Express</span>
             <span class="font-mono text-xs text-slate-400">{{ m.order.tracking_code }}</span>
+            <span v-if="scanned.has(m.id)" class="rounded-full bg-emerald-100 text-emerald-800 text-xs font-semibold px-2 py-0.5">{{ scanned.get(m.id) === 'scan' ? '📷 Scanné' : '⌨️ Code tapé' }}</span>
           </span>
         </span>
         <RouterLink :to="`/livreur/missions/${m.id}`" class="text-[var(--app-color)] text-sm font-medium whitespace-nowrap" @click.stop>Détail ›</RouterLink>
@@ -73,6 +78,14 @@
         <p v-if="toAccept.length" class="text-center text-xs text-slate-500">Pour refuser un colis, ouvrez son détail.</p>
       </div>
     </div>
+
+    <!-- Scanner : caméra, et code tapé si l'étiquette est abîmée -->
+    <QrScanner :open="scannerOpen" :title="`${scanned.size} / ${active.length} colis scannés`" :message="scanMessage" @code="onCode($event, 'scan')" @close="scannerOpen = false">
+      <form class="flex gap-2" @submit.prevent="typeCode">
+        <input v-model="typedCode" type="text" autocapitalize="characters" class="m-input flex-1 text-slate-900 uppercase" placeholder="Étiquette abîmée : code du colis" aria-label="Code du colis">
+        <button class="rounded-xl bg-white/15 px-4 font-semibold" :disabled="!typedCode.trim()">OK</button>
+      </form>
+    </QrScanner>
 
     <!-- Départements du client : qui remet les colis -->
     <BottomSheet :open="sheet === 'handover'" :title="`${pickedCount} colis récupéré${pickedCount > 1 ? 's' : ''}`" @close="sheet = null">
@@ -116,6 +129,7 @@ import { asksHandover, blankHandover, handoverPayload } from '../../utils/handov
 import StatusBadge from '../../components/StatusBadge.vue'
 import BottomSheet from '../../components/mobile/BottomSheet.vue'
 import ChoiceChips from '../../components/mobile/ChoiceChips.vue'
+import QrScanner from '../../components/mobile/QrScanner.vue'
 import { useAuthStore } from '../../stores/auth'
 import { cachedGet } from '../../composables/useCachedApi'
 import { useToastStore } from '../../stores/toasts'
@@ -135,6 +149,8 @@ const auth = useAuthStore()
 const toasts = useToastStore()
 
 const missions = ref([])
+// Toutes les missions du livreur (message utile quand le colis scanné n'est pas de ce lot)
+const allMissions = ref([])
 const checked = ref([])
 const reasons = ref([])
 const busy = ref(false)
@@ -170,7 +186,8 @@ async function load() {
     toasts.error(apiErrorMessage(e))
     return
   }
-  const list = withPending(data.data).filter((m) => m.type === 'pickup' && m.pickup_group === route.params.key
+  allMissions.value = withPending(data.data)
+  const list = allMissions.value.filter((m) => m.type === 'pickup' && m.pickup_group === route.params.key
     // Déjà récupéré (hors connexion compris) : sort du lot
     && ['pickup_assigned', 'pickup_in_progress'].includes(m.order.status))
   const known = new Set(missions.value.map((m) => m.id))
@@ -203,7 +220,7 @@ async function sendAll(list, extra) {
   const report = { done: 0, offline: 0, errors: [] }
   for (const m of list) {
     try {
-      const result = await sendStatus(m.order, { ...extra, ...(position || {}) }, offlineEnabled.value)
+      const result = await sendStatus(m.order, { ...(typeof extra === 'function' ? extra(m) : extra), ...(position || {}) }, offlineEnabled.value)
       result.offline ? report.offline++ : report.done++
     } catch (e) {
       report.errors.push(`${m.order.tracking_code} : ${apiErrorMessage(e)}`)
@@ -262,7 +279,8 @@ async function confirmPicked(extra = {}) {
   try {
     const left = missing.value
     const done = picked.value
-    const report = await sendAll(done, { status: 'picked_up', ...extra })
+    // Colis scanné ou code tapé : noté dans le journal du colis
+    const report = await sendAll(done, (m) => ({ status: 'picked_up', ...extra, ...(scanned.has(m.id) ? { pickup_check: scanned.get(m.id) } : {}) }))
     if (left.length) {
       // Colis non remis : retour à « Validée », l'agence le reprogramme
       const back = await sendAll(left, { status: 'confirmed', incident_reason_id: incident.reason, note: incident.note || undefined })
@@ -275,6 +293,42 @@ async function confirmPicked(extra = {}) {
   } finally {
     busy.value = false
   }
+}
+
+// Scan des étiquettes (facultatif) : au premier scan, seuls les colis scannés restent cochés
+const canScan = computed(() => active.value.length > 0 && !toStart.value.length)
+const scannerOpen = ref(false)
+const scanning = ref(false)
+const scanned = reactive(new Map())
+const scanMessage = ref(null)
+const typedCode = ref('')
+function openScanner() {
+  if (!scanning.value) {
+    checked.value = checked.value.filter((id) => scanned.has(id))
+    scanning.value = true
+  }
+  scanMessage.value = null
+  scannerOpen.value = true
+}
+function onCode(code, method) {
+  const say = (ok, text) => { scanMessage.value = { ok, text, at: Date.now() } }
+  const mine = active.value.find((m) => m.order.tracking_code?.toUpperCase() === code)
+  if (mine) {
+    if (scanned.has(mine.id)) return say(true, `Déjà scanné : ${mine.order.recipient.name || code}`)
+    scanned.set(mine.id, method)
+    if (!checked.value.includes(mine.id)) checked.value = [...checked.value, mine.id]
+    const left = active.value.length - scanned.size
+    return say(true, `✓ ${mine.order.recipient.name || code}${left ? ` · encore ${left}` : ' · tous les colis sont scannés'}`)
+  }
+  if (missions.value.some((m) => m.order.tracking_code?.toUpperCase() === code)) return say(false, 'Acceptez d\'abord ce colis.')
+  const other = allMissions.value.find((m) => m.order.tracking_code?.toUpperCase() === code)
+  if (other?.type === 'pickup') return say(false, `Ce colis est à récupérer chez ${other.order.merchant?.business_name || 'un autre client'}.`)
+  if (other) return say(false, 'Ce colis est déjà récupéré.')
+  return say(false, `Le colis ${code} n'est pas à récupérer ici.`)
+}
+function typeCode() {
+  onCode(typedCode.value.trim().toUpperCase(), 'code')
+  typedCode.value = ''
 }
 
 // Actions hors connexion envoyées : état du serveur rechargé

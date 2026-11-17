@@ -19,6 +19,7 @@ class OrderAssignmentResource extends JsonResource
             'id' => $this->id,
             'order_id' => $this->order_id,
             'type' => $this->type,
+            'route_position' => $this->route_position,
             'type_label' => $this->type->label(),
             'status' => $this->status,
             'courier_id' => $this->courier_id,
