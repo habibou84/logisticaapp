@@ -28,11 +28,11 @@
 
 <script setup>
 import { computed } from 'vue'
-import { useAccessCatalog } from '../../composables/useAccessCatalog'
+import { APP_ROLES, useAccessCatalog } from '../../composables/useAccessCatalog'
 
 /**
  * Tableau « qui peut faire quoi » : les droits (par domaine) × les rôles de l'équipe.
  */
 const { catalog, permissionsByDomain } = useAccessCatalog()
-const roles = computed(() => catalog.roles.filter((r) => r.value !== 'courier'))
+const roles = computed(() => catalog.roles.filter((r) => !APP_ROLES.includes(r.value)))
 </script>

@@ -7,6 +7,9 @@ import http from '../bootstrap/axios'
  */
 const state = reactive({ loaded: false, roles: [], permissions: [], domains: [], activities: [], templates: [], grantable: [], zones: [], hubs: [] })
 
+/** Rôles qui n'ont que leur application mobile */
+export const APP_ROLES = ['courier', 'mechanic']
+
 export function useAccessCatalog() {
   async function load() {
     const [roles, zones, hubs] = await Promise.all([
@@ -30,8 +33,9 @@ export function useAccessCatalog() {
 
   const role = (value) => state.roles.find((r) => r.value === value)
   const permissionsByDomain = computed(() => state.domains.map((d) => ({ ...d, permissions: state.permissions.filter((p) => p.domain === d.value) })))
-  // Équipe : rôles intégrés de l'équipe et rôles sur mesure (pas les livreurs)
-  const isStaffRole = (value) => !!value && value !== 'courier' && !!role(value)
+  // Équipe : rôles intégrés de l'équipe et rôles sur mesure (pas les livreurs ni les mécaniciens, qui n'ont que leur
+  // application : ni périmètre ni droits à régler)
+  const isStaffRole = (value) => !!value && !APP_ROLES.includes(value) && !!role(value)
 
   return { catalog: state, load, role, permissionsByDomain, isStaffRole }
 }

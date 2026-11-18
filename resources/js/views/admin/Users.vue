@@ -249,6 +249,8 @@ const ROLE_HELP = {
   cashier: 'Reçoit l\'argent des livreurs, reverse aux clients, factures. Ne répartit pas les courses.',
   hub_agent: 'Reçoit et rend les colis au dépôt, gère le stock.',
   courier: 'Application livreur : ses missions, sa caisse, son véhicule.',
+  fleet_manager: 'Véhicules, événements terrain et atelier : pannes et mécaniciens.',
+  mechanic: 'Application mécanicien : les pannes qui lui sont confiées.',
 }
 
 const auth = useAuthStore()
