@@ -61,11 +61,13 @@ en ligne (Codemagic ou GitHub Actions macOS) avec le compte Apple Developer de J
 
 ## Applications installées depuis le navigateur (PWA)
 
-Les deux applications s'installent aussi depuis Chrome, chacune limitée à son espace :
+Les applications s'installent aussi depuis Chrome, chacune limitée à son espace. L'application mécanicien n'existe
+qu'en PWA (pas de projet Capacitor) :
 
 | Application | Lien d'installation | Portée (`scope`) | Connexion |
 |---|---|---|---|
 | Livreur | `/livreur` | `/livreur` | `/livreur/connexion` |
+| Mécanicien | `/mecanicien` | `/mecanicien` | `/mecanicien/connexion` |
 | Client | `/marchand` (ou `/`) | `/marchand` | `/marchand/connexion` (même écran que `/`) |
 
 Les portées ne doivent jamais se recouvrir : une application dont la portée est `/` couvre aussi

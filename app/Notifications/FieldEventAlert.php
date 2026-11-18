@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\FieldEvent;
+use App\Models\Repair;
 use App\Models\User;
 use App\Notifications\Channels\WebPushChannel;
 use App\Services\Push\WebPush;
@@ -13,7 +14,7 @@ use Illuminate\Notifications\Notification;
 
 /**
  * Événement terrain : signalement d'un livreur (équipe), réponse ou prise en charge (livreur).
- * Cloche, temps réel et, pour le livreur, notification push.
+ * Cloche, temps réel et, pour le livreur (et le mécanicien qui suit l'événement), notification push.
  */
 class FieldEventAlert extends Notification implements ShouldQueue
 {
@@ -34,7 +35,7 @@ class FieldEventAlert extends Notification implements ShouldQueue
     {
         $channels = ['database', 'broadcast'];
 
-        if ($notifiable instanceof User && $notifiable->isCourier() && WebPush::enabled() && $notifiable->pushSubscriptions()->exists()) {
+        if ($notifiable instanceof User && ($notifiable->isCourier() || $notifiable->isMechanic()) && WebPush::enabled() && $notifiable->pushSubscriptions()->exists()) {
             $channels[] = WebPushChannel::class;
         }
 
@@ -48,6 +49,13 @@ class FieldEventAlert extends Notification implements ShouldQueue
 
     private function href(object $notifiable): string
     {
+        if ($notifiable instanceof User && $notifiable->isMechanic()) {
+            // Mécanicien qui suit l'événement : sa fiche de la panne
+            $repair = Repair::withoutGlobalScopes()->where('field_event_id', $this->event->id)->latest('id')->value('id');
+
+            return $repair ? "/mecanicien/pannes/{$repair}" : '/mecanicien';
+        }
+
         return $this->forCourier($notifiable) ? "/livreur/evenements/{$this->event->id}" : "/admin/terrain?evenement={$this->event->id}";
     }
 

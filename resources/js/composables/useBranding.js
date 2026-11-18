@@ -31,7 +31,7 @@ export function loadBranding(force = false) {
 
 // Couleurs par défaut des espaces (sans réglage dans Paramètres › Apparence)
 // Charte Logistica : rouge (client), rouge foncé (livreur), graphite (équipe)
-export const DEFAULT_COLORS = { marchand: '#ec1d27', livreur: '#c02125', admin: '#1f2937' }
+export const DEFAULT_COLORS = { marchand: '#ec1d27', livreur: '#c02125', mecanicien: '#d9480f', admin: '#1f2937' }
 
 // Logo Logistica, affiché tant que l'entreprise n'a pas envoyé le sien (Réglages › Entreprise et marque)
 export const DEFAULT_LOGO = '/brand/logistica.png'

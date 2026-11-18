@@ -1,8 +1,8 @@
 @php
-    // Application installable selon l'espace : livreur ou client (l'admin n'est pas une PWA)
+    // Application installable selon l'espace : livreur, mécanicien ou client (l'admin n'est pas une PWA)
     // Pages des clients (boutique d'un client, suivi d'un colis) : pas d'application à installer
     // Fenêtre « Connecter WhatsApp » : rien à installer non plus
-    $pwa = request()->is('livreur*') ? 'livreur' : (request()->is('admin*', 'b/*', 'suivi*', 'connecter-whatsapp') ? null : 'marchand');
+    $pwa = request()->is('livreur*') ? 'livreur' : (request()->is('mecanicien*') ? 'mecanicien' : (request()->is('admin*', 'b/*', 'suivi*', 'connecter-whatsapp') ? null : 'marchand'));
     // Marque blanche : sur l'adresse d'une entreprise, son nom ; sinon celui de la plateforme
     // (sans base de données joignable, le nom de la plateforme : la page doit toujours s'afficher)
     $brandCompany = rescue(fn () => \App\Support\Branding::company(), null, false);
@@ -30,7 +30,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="{{ $look[$pwa ?? 'marchand']['app_name'] ?? ($pwa === 'livreur' ? 'Livreur' : 'Mes livraisons') }}">
+    <meta name="apple-mobile-web-app-title" content="{{ $look[$pwa ?? 'marchand']['app_name'] ?? ($pwa === 'livreur' ? 'Livreur' : ($pwa === 'mecanicien' ? 'Mécanicien' : 'Mes livraisons')) }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="bg-slate-50 text-slate-900 antialiased">

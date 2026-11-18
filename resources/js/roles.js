@@ -3,12 +3,14 @@
 export const SPACES = {
   admin: ['admin', 'activity_manager', 'dispatcher', 'cashier', 'hub_agent', 'staff_custom'],
   livreur: ['courier'],
+  mecanicien: ['mechanic'],
   marchand: ['merchant_owner', 'merchant_manager', 'merchant_staff', 'merchant_viewer'],
 }
 
 export function homeFor(role) {
   if (SPACES.admin.includes(role)) return '/admin'
   if (SPACES.livreur.includes(role)) return '/livreur'
+  if (SPACES.mecanicien.includes(role)) return '/mecanicien'
   if (SPACES.marchand.includes(role)) return '/marchand'
   return '/'
 }

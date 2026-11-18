@@ -2,7 +2,7 @@
   <div v-if="visible" class="m-card p-4 flex items-start gap-3 text-left text-slate-900" :style="{ '--app-color': color }">
     <img :src="`/app-icons/${app}-192.png`" alt="" class="h-12 w-12 rounded-xl">
     <div class="flex-1 text-sm">
-      <p class="font-semibold">Installer l'application {{ app === 'livreur' ? 'livreur' : '' }}</p>
+      <p class="font-semibold">Installer l'application {{ app === 'livreur' ? 'livreur' : app === 'mecanicien' ? 'mécanicien' : '' }}</p>
 
       <p v-if="mode === 'prompt'" class="text-slate-600">Accès en un geste depuis l'écran d'accueil, même avec une connexion faible.</p>
 
@@ -44,7 +44,7 @@ import { pwa, promptInstall } from '../../composables/usePwa'
 
 const props = defineProps({ app: { type: String, required: true } })
 
-const color = computed(() => (props.app === 'livreur' ? '#c02125' : '#ec1d27'))
+const color = computed(() => ({ livreur: '#c02125', mecanicien: '#d9480f' })[props.app] || '#ec1d27')
 
 // Icône « Partager » d'iOS : carré ouvert surmonté d'une flèche
 const ShareIcon = () => h('svg', { viewBox: '0 0 24 24', class: 'inline h-4 w-4 align-text-bottom', fill: 'none', stroke: 'currentColor', 'stroke-width': 2, 'aria-label': 'icône Partager' }, [

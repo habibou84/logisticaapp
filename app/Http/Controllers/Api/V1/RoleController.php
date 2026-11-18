@@ -30,7 +30,7 @@ class RoleController extends Controller
         $actor = $request->user();
         abort_unless($actor->merchant_id === null && $actor->canAny([Permission::UsersView->value, Permission::UsersManage->value]), 403);
 
-        $builtIn = Role::values([...Role::staff(), Role::Courier]);
+        $builtIn = Role::values(Role::company());
         $roles = AccessRole::query()->with('permissions')
             ->where(fn ($q) => $q->where(fn ($q) => $q->where('is_custom', false)->whereIn('name', $builtIn))
                 ->orWhere(fn ($q) => $q->customFor($actor->company_id)))

@@ -35,6 +35,7 @@ const routes = [
   // Chrome la confond avec l'application livreur (une application couvrant « / » couvre aussi /livreur)
   { path: '/marchand/connexion', name: 'login-merchant-app', component: () => import('../views/auth/MerchantHome.vue'), meta: { guest: true } },
   { path: '/livreur/connexion', name: 'login-courier', component: () => import('../views/auth/CourierLogin.vue'), meta: { guest: true } },
+  { path: '/mecanicien/connexion', name: 'login-mechanic', component: () => import('../views/auth/MechanicLogin.vue'), meta: { guest: true } },
   // Inscription des clients et mot de passe oublié (numéro vérifié par WhatsApp ou SMS)
   { path: '/inscription', name: 'signup', component: () => import('../views/auth/Signup.vue'), meta: { guest: true } },
   { path: '/mot-de-passe-oublie', name: 'forgot-password', component: () => import('../views/auth/ForgotPassword.vue'), meta: { guest: true } },
@@ -181,6 +182,8 @@ const routes = [
       { path: 'whatsapp', component: () => import('../views/admin/WhatsApp.vue'), meta: { permission: 'messaging.manage' } },
       { path: 'whatsapp/simulateur', component: () => import('../views/admin/WhatsAppSimulator.vue'), meta: { permission: 'messaging.manage' } },
       { path: 'messages', component: () => import('../views/admin/Messages.vue'), meta: { permission: 'orders.dispatch' } },
+      // Atelier : pannes confiées aux mécaniciens, achats sur place à accorder
+      { path: 'atelier', component: () => import('../views/admin/Workshop.vue'), meta: { permission: ['repairs.manage', 'repairs.purchases'] } },
     ],
   },
   // Application livreur (PWA mobile)
@@ -204,6 +207,22 @@ const routes = [
       { path: 'profil', component: mobile.profile, meta: { title: 'Mon profil' } },
       // Les notifications pointent vers /livreur/courses/:id : on renvoie vers la liste des missions
       { path: 'courses/:id', redirect: '/livreur' },
+    ],
+  },
+  // Application mécanicien (PWA mobile) : les pannes à traiter
+  {
+    path: '/mecanicien',
+    component: () => import('../views/mechanic/MechanicApp.vue'),
+    meta: { roles: SPACES.mecanicien },
+    children: [
+      { path: '', name: 'mecanicien', component: () => import('../views/mechanic/Repairs.vue'), meta: { title: 'Mes pannes' } },
+      { path: 'pannes/:id(\\d+)', component: () => import('../views/mechanic/RepairDetail.vue'), meta: { title: 'Panne', back: true } },
+      { path: 'pannes/:id(\\d+)/diagnostic', component: () => import('../views/mechanic/RepairDiagnosis.vue'), meta: { title: 'Diagnostic', back: true } },
+      { path: 'pannes/:id(\\d+)/cloture', component: () => import('../views/mechanic/RepairClose.vue'), meta: { title: 'Clôturer', back: true } },
+      { path: 'vehicules', component: () => import('../views/mechanic/Vehicles.vue'), meta: { title: 'Véhicules' } },
+      { path: 'vehicules/:id(\\d+)', component: () => import('../views/mechanic/VehicleView.vue'), meta: { title: 'Véhicule', back: true } },
+      { path: 'notifications', component: mobile.notifications, meta: { title: 'Notifications', back: true } },
+      { path: 'profil', component: mobile.profile, meta: { title: 'Mon profil' } },
     ],
   },
   // Application client (PWA mobile)
@@ -250,8 +269,8 @@ const router = createRouter({
 
 // Page de connexion de l'espace demandé, avec retour à la page voulue après connexion
 function loginFor(to) {
-  const login = appLock()?.login || (to.path.startsWith('/admin') ? '/admin/connexion' : to.path.startsWith('/livreur') ? '/livreur/connexion' : '/')
-  return { path: login, query: to.path !== login && !['/admin', '/livreur', '/marchand'].includes(to.path) ? { redirect: to.fullPath } : {} }
+  const login = appLock()?.login || (to.path.startsWith('/admin') ? '/admin/connexion' : to.path.startsWith('/livreur') ? '/livreur/connexion' : to.path.startsWith('/mecanicien') ? '/mecanicien/connexion' : '/')
+  return { path: login, query: to.path !== login && !['/admin', '/livreur', '/mecanicien', '/marchand'].includes(to.path) ? { redirect: to.fullPath } : {} }
 }
 
 router.beforeEach(async (to) => {

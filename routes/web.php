@@ -6,14 +6,14 @@ use App\Http\Controllers\PwaManifestController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/manifest/{app}.webmanifest', PwaManifestController::class)
-    ->whereIn('app', ['marchand', 'livreur'])
+    ->whereIn('app', ['marchand', 'livreur', 'mecanicien'])
     ->name('pwa.manifest');
 
 // Logo de l'entreprise de livraison (pages de connexion, en-têtes)
 Route::get('/branding/logo', [BrandingController::class, 'logo'])->name('branding.logo');
 // Icônes des applications installables, aux couleurs et au logo de l'entreprise
 Route::get('/branding/icon/{app}/{variant}.png', [BrandingController::class, 'icon'])
-    ->whereIn('app', ['marchand', 'livreur'])->whereIn('variant', ['192', '512', 'maskable-512', 'apple-180'])
+    ->whereIn('app', ['marchand', 'livreur', 'mecanicien'])->whereIn('variant', ['192', '512', 'maskable-512', 'apple-180'])
     ->name('branding.icon');
 Route::get('/produits/{product}/photo', [ProductPhotoController::class, 'show'])->name('products.photo');
 

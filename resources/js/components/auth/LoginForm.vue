@@ -58,12 +58,12 @@ import { appLock } from '../../native'
 import { spaceColor } from '../../composables/useBranding'
 
 const props = defineProps({
-  // merchant (vert), staff (ardoise), courier (bleu)
+  // merchant (vert), staff (ardoise), courier (bleu), mechanic (orange)
   tone: { type: String, default: 'merchant' },
 })
 
 // Couleur de l'espace choisie par l'entreprise (Paramètres › Apparence)
-const TONE_SPACES = { merchant: 'marchand', staff: 'admin', courier: 'livreur' }
+const TONE_SPACES = { merchant: 'marchand', staff: 'admin', courier: 'livreur', mechanic: 'mecanicien' }
 const color = computed(() => spaceColor(TONE_SPACES[props.tone]))
 const ring = 'focus:ring-[var(--app-color)]'
 const button = 'bg-[var(--app-color)] hover:brightness-110'
@@ -74,7 +74,7 @@ const showPassword = ref(false)
 const error = ref('')
 const otherSpace = ref(null)
 const loading = ref(false)
-const SPACE_LABELS = { marchand: 'Aller à l\'espace client', livreur: 'Aller à l\'espace livreur', admin: 'Aller à l\'espace équipe' }
+const SPACE_LABELS = { marchand: 'Aller à l\'espace client', livreur: 'Aller à l\'espace livreur', mecanicien: 'Aller à l\'espace mécanicien', admin: 'Aller à l\'espace équipe' }
 
 const auth = useAuthStore()
 const router = useRouter()
