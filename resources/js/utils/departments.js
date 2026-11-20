@@ -22,7 +22,7 @@ export const DEPARTMENT_OPTIONS = [
   { group: 'Remise', key: 'handover_name', type: 'level', label: 'Au ramassage : nom et fonction de la personne qui remet' },
   { group: 'Remise', key: 'handover_signature', type: 'level', label: 'Au ramassage : signature de la personne qui remet' },
   { group: 'Remise', key: 'received_role', type: 'level', label: 'À la remise : fonction de la personne qui reçoit', hint: 'Le nom, la signature et la photo suivent la preuve de remise (Réglages › Courses).' },
-  { group: 'Remise', key: 'slips', type: 'bool', label: 'Bordereau du jour par département', hint: 'Signé dans l\'application ou imprimé.' },
+  { group: 'Remise', key: 'slips', type: 'bool', label: 'Bordereau de livraison par département', hint: 'Signé dans l\'application ou imprimé.' },
   { group: 'Facture et quotas', key: 'invoice_mode', type: 'invoice', label: 'Facture du mois' },
   { group: 'Facture et quotas', key: 'forfait_split', type: 'forfait', label: 'Forfait du mois' },
   { group: 'Facture et quotas', key: 'quota_alerts', type: 'bool', label: 'Avertir à 80 % et à 100 % du quota d\'un département' },

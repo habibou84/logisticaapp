@@ -19,7 +19,7 @@ aussi ses départements dans son application (**Profil › Mes départements**),
   coûts, envois prévus par mois, e-mail, département principal (et notes internes pour l'agence).
 - Puis **qui y travaille** : on coche les comptes et le chef de service (le responsable choisi est déjà coché).
 - Un nom ou un code déjà pris chez le client est refusé ; les erreurs s'affichent en français sous chaque champ.
-- Liste : menu ⋯ (modifier, bordereau du jour, désactiver ou supprimer avec une confirmation qui dit ce qui se passe).
+- Liste : menu ⋯ (modifier, bordereau de livraison, désactiver ou supprimer avec une confirmation qui dit ce qui se passe).
 
 ## Les comptes
 - Chaque compte « Employé du client » est rattaché à un ou plusieurs départements (onglet **Comptes**).
@@ -41,8 +41,11 @@ aussi ses départements dans son application (**Profil › Mes départements**),
 - Frise « Qui a fait quoi » sur la course : demandée par, remise par, livrée par, reçue par.
 - Alertes du client : un employé limité à ses départements ne reçoit que celles de leurs courses ; les messages
   disent qui a remis et qui a reçu.
-- **Bordereau du jour** par département : ce qu'il a remis au livreur, ou reçu en courrier interne ; signé sur
-  place dans l'application (nom, fonction, signature) ou imprimé.
+- **Bordereau de livraison** du jour, par département : ce qu'il a remis au livreur (remise), ou reçu en courrier
+  interne (réception). Numéro (BL-code-jour), total par type (plis, chèques, colis), phrase d'accord des
+  signataires, et deux cadres de signature : le département (nom et prénoms, fonction, date, heure, signature,
+  cachet) et le livreur (nom, téléphone, date, heure, signature, observations). Signé sur place dans l'application
+  (le cadre du département se remplit tout seul, le cachet reste à tamponner) ou imprimé et signé à la main.
 
 ## Quotas
 - Quota d'envois du mois par département (plis comptés un à un s'ils sont facturés ainsi).

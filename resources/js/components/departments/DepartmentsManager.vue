@@ -39,7 +39,7 @@
               <button type="button" class="grid h-9 w-9 place-items-center rounded-xl border border-slate-200 text-gray-500 hover:bg-slate-50" :aria-label="`Actions pour ${d.name}`" :aria-expanded="menuFor === d.id" @click="menuFor = menuFor === d.id ? null : d.id">⋯</button>
               <div v-if="menuFor === d.id" class="absolute right-0 top-10 z-20 w-56 overflow-hidden rounded-xl bg-white text-sm shadow-lg ring-1 ring-slate-200">
                 <button v-if="canManage" type="button" class="block w-full px-4 py-2.5 text-left hover:bg-slate-50" @click="menuFor = null; edit(d)">✏️ Modifier</button>
-                <RouterLink v-if="settings.slips && d.active" :to="`/bordereau/${d.id}`" class="block px-4 py-2.5 hover:bg-slate-50">🧾 Bordereau du jour</RouterLink>
+                <RouterLink v-if="settings.slips && d.active" :to="`/bordereau/${d.id}`" class="block px-4 py-2.5 hover:bg-slate-50">🧾 Bordereau de livraison</RouterLink>
                 <button v-if="canManage && d.active && !d.is_main" type="button" class="block w-full border-t px-4 py-2.5 text-left text-red-600 hover:bg-red-50" @click="menuFor = null; removing = d">{{ d.orders_count ? '⏸️ Désactiver' : '🗑️ Supprimer' }}</button>
               </div>
             </div>

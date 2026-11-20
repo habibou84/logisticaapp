@@ -5,8 +5,8 @@
       <button class="btn-secondary" @click="$router.back()">← Retour</button>
       <input v-model="day" type="date" class="input w-auto" aria-label="Jour" @change="load">
       <select v-model="kind" class="input w-auto" aria-label="Type de bordereau" @change="load">
-        <option value="pickup">Remis au livreur</option>
-        <option value="delivery">Reçu (courrier interne)</option>
+        <option value="pickup">Remise au livreur</option>
+        <option value="delivery">Réception (courrier interne)</option>
       </select>
     </div>
 
@@ -14,11 +14,13 @@
       <header class="flex justify-between items-start gap-4">
         <div>
           <p class="text-sm">{{ slip.company }}</p>
-          <h1 class="text-2xl font-bold">Bordereau {{ kind === 'pickup' ? 'de remise' : 'de réception' }}</h1>
+          <h1 class="text-2xl font-bold">Bordereau de livraison</h1>
+          <p class="text-sm">{{ kind === 'pickup' ? 'Remise au livreur' : 'Réception (courrier interne)' }}</p>
           <p class="text-lg">{{ slip.merchant }} · <strong>{{ slip.department.label }}</strong></p>
         </div>
         <div class="text-right text-sm">
           <p>Journée du {{ date(slip.day) }}</p>
+          <p v-if="slip.number">N° {{ slip.number }}</p>
           <p v-if="slip.department.location">{{ slip.department.location }}</p>
           <p v-if="slip.department.cost_center">Centre de coûts : {{ slip.department.cost_center }}</p>
         </div>
@@ -41,28 +43,39 @@
           </tr>
           <tr v-if="!slip.orders.length"><td colspan="6" class="py-4 text-center">Aucune course ce jour-là.</td></tr>
         </tbody>
-        <tfoot>
-          <tr class="font-semibold"><td colspan="6" class="py-1">{{ slip.orders.length }} course(s){{ couriers ? ` · livreur : ${couriers}` : '' }}</td></tr>
-        </tfoot>
       </table>
+      <p class="text-sm font-semibold">
+        {{ slip.orders.length }} course{{ slip.orders.length > 1 ? 's' : '' }}<template v-if="totalsText"> · {{ totalsText }}</template><template v-if="couriers"> · livreur : {{ couriers }}</template>
+      </p>
 
-      <!-- Signatures enregistrées, ou cadre à signer sur papier -->
-      <section class="grid grid-cols-2 gap-6 border-t border-black pt-3 text-sm">
-        <div>
-          <p class="text-xs uppercase">Pour le département</p>
-          <template v-if="last">
-            <p class="font-semibold">{{ last.signed_by_name }}<span v-if="last.signed_by_role" class="font-normal"> · {{ last.signed_by_role }}</span></p>
-            <p class="text-xs">Signé le {{ dateTime(last.signed_at) }} ({{ last.order_ids.length }} course(s))</p>
-            <img v-if="signature" :src="signature" alt="Signature du département" class="h-28 object-contain">
+      <!-- Phrase d'accord : ce que les signataires reconnaissent -->
+      <p v-if="slip.orders.length" class="border border-dashed border-slate-400 bg-slate-50 px-3 py-2 text-sm">
+        Les signataires reconnaissent que <strong>{{ slip.orders.length > 1 ? `les ${slip.orders.length} courses` : 'la course' }} ci-dessus<template v-if="totalsText"> ({{ totalsText }})</template></strong>
+        {{ slip.orders.length > 1 ? 'ont été' : 'a été' }} {{ kind === 'pickup' ? 'remise' : 'reçue' }}{{ slip.orders.length > 1 ? 's' : '' }} {{ kind === 'pickup' ? 'au livreur' : 'par le département' }} en bon état, et que leur nombre est exact.
+      </p>
+
+      <!-- Signatures : cadres à remplir sur papier, ou remplis par la signature dans l'application -->
+      <section class="grid grid-cols-2 gap-5 text-sm">
+        <div v-for="party in parties" :key="party.key" class="border-[1.5px] border-black p-3 space-y-2.5">
+          <p class="text-xs font-bold uppercase tracking-wide">{{ party.title }}</p>
+          <template v-if="party.key === 'department'">
+            <p class="slip-line"><span>Nom et prénoms :</span><b>{{ last?.signed_by_name || '' }}</b></p>
+            <p class="slip-line"><span>Fonction :</span><b>{{ last?.signed_by_role || '' }}</b></p>
+            <p class="slip-line"><span>Date :</span><b class="!flex-none w-28">{{ last ? date(last.signed_at) : '' }}</b><span>Heure :</span><b>{{ last ? time(last.signed_at) : '' }}</b></p>
+            <div class="slip-box h-24"><small>Signature</small><img v-if="signature" :src="signature" alt="Signature du département" class="h-full mx-auto object-contain"></div>
+            <div class="slip-box h-20" style="border-style: dashed"><small>Cachet du département</small></div>
+            <p v-if="last" class="text-xs">Signé dans l'application ({{ last.order_ids.length }} course{{ last.order_ids.length > 1 ? 's' : '' }}).</p>
           </template>
-          <div v-else class="border border-black h-28" />
-        </div>
-        <div>
-          <p class="text-xs uppercase">Livreur</p>
-          <p class="font-semibold">{{ couriers || '—' }}</p>
-          <div class="border border-black h-28 mt-1" />
+          <template v-else>
+            <p class="slip-line"><span>Nom et prénoms :</span><b>{{ courierList[0]?.name || '' }}</b></p>
+            <p class="slip-line"><span>N° de téléphone :</span><b>{{ courierList[0]?.phone || '' }}</b></p>
+            <p class="slip-line"><span>Date :</span><b class="!flex-none w-28" /><span>Heure :</span><b /></p>
+            <div class="slip-box h-24"><small>Signature</small></div>
+            <div class="slip-box h-20" style="border-style: dotted"><small>Observations (envoi manquant, abîmé…)</small></div>
+          </template>
         </div>
       </section>
+      <p class="text-[11px] text-slate-600">Bordereau imprimé le {{ printedAt }}</p>
     </div>
 
     <!-- Faire signer sur le téléphone ou la tablette -->
@@ -100,7 +113,17 @@ const busy = ref(false)
 const signError = ref('')
 
 const last = computed(() => slip.value?.slips?.[0] || null)
-const couriers = computed(() => [...new Set((slip.value?.orders || []).map((o) => o.courier).filter(Boolean))].join(', '))
+const courierList = computed(() => slip.value?.couriers || [])
+const couriers = computed(() => courierList.value.map((c) => c.name).filter(Boolean).join(', ') || [...new Set((slip.value?.orders || []).map((o) => o.courier).filter(Boolean))].join(', '))
+// Envois par type : « 4 plis, 2 chèques, 1 colis »
+const totalsText = computed(() => Object.entries(slip.value?.totals || {})
+  .map(([type, n]) => `${n} ${{ pli: n > 1 ? 'plis' : 'pli', cheque: n > 1 ? 'chèques' : 'chèque', colis: 'colis' }[type] || type}`).join(', '))
+// Remise : le département remet, le livreur reçoit ; réception (courrier interne) : l'inverse
+const parties = computed(() => (kind.value === 'pickup'
+  ? [{ key: 'department', title: 'Remis par · le département' }, { key: 'courier', title: 'Reçu par · le livreur' }]
+  : [{ key: 'courier', title: 'Remis par · le livreur' }, { key: 'department', title: 'Reçu par · le département' }]))
+const printedAt = new Date().toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+const time = (v) => new Date(v).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
 
 function print() {
   window.print()
@@ -133,6 +156,11 @@ onMounted(load)
 </script>
 
 <style>
+.slip-line { display: flex; gap: 6px; align-items: flex-end; }
+.slip-line span { white-space: nowrap; }
+.slip-line b { flex: 1; border-bottom: 1px dotted #000; min-height: 1.1em; font-weight: 600; }
+.slip-box { position: relative; border: 1px solid #000; padding-top: 14px; }
+.slip-box small { position: absolute; left: 6px; top: 2px; color: #555; font-size: 10.5px; }
 @media print {
   .no-print { display: none; }
   .slip-page { padding: 0; max-width: none; }

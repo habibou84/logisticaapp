@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Enums\OrderStatus;
 use App\Enums\Permission;
+use App\Enums\ShipmentType;
 use App\Exceptions\BusinessRuleException;
 use App\Http\Controllers\Controller;
 use App\Models\Company;
@@ -41,18 +42,27 @@ class DepartmentSlipController extends Controller
         $day = CarbonImmutable::parse($data['day'] ?? 'today')->toDateString();
 
         $slips = DepartmentSlip::query()->where('department_id', $department->id)->where('kind', $kind)->whereDate('day', $day)->latest('id')->get();
+        $orders = $this->orders($department, $kind, $day);
 
         return response()->json(['data' => [
             'company' => Company::query()->whereKey($department->company_id)->value('name'),
             'merchant' => $department->merchant()->value('business_name'),
+            // Numéro du bordereau de livraison : BL-code du département-jour
+            'number' => 'BL-'.($department->code ?: $department->id).'-'.str_replace('-', '', $day),
             'department' => [
-                'id' => $department->id, 'name' => $department->name, 'label' => $department->label(), 'location' => $department->location,
+                'id' => $department->id, 'name' => $department->name, 'code' => $department->code, 'label' => $department->label(), 'location' => $department->location,
                 'manager_name' => $department->manager_name, 'cost_center' => $department->cost_center,
             ],
             'kind' => $kind,
             'day' => $day,
             'enabled' => $this->settings->for($department->merchant()->firstOrFail())['slips'],
-            'orders' => $this->orders($department, $kind, $day)->map(fn (Order $o) => $this->line($o, $kind))->values(),
+            'orders' => $orders->map(fn (Order $o) => $this->line($o, $kind))->values(),
+            // Envois par type (plis et chèques comptés un à un) : total sous le tableau et phrase d'accord
+            'totals' => collect(ShipmentType::cases())->mapWithKeys(fn (ShipmentType $t) => [$t->value => (int) $orders
+                ->filter(fn (Order $o) => $o->shipment_type === $t)->sum(fn (Order $o) => max(1, (int) $o->shipment_quantity))])->filter()->all(),
+            // Livreurs du bordereau, avec leur téléphone (cadre de signature)
+            'couriers' => $orders->map(fn (Order $o) => $kind === 'pickup' ? $o->pickupCourier : $o->deliveryCourier)->filter()
+                ->unique('id')->map(fn ($c) => ['name' => $c->user?->name, 'phone' => $c->user?->phone])->values(),
             'slips' => $slips->map(fn (DepartmentSlip $s) => [
                 'id' => $s->id,
                 'order_ids' => $s->order_ids,
@@ -120,7 +130,7 @@ class DepartmentSlipController extends Controller
     {
         $cancelled = [OrderStatus::Cancelled->value, OrderStatus::Rejected->value];
 
-        return Order::query()->with(['deliveryZone:id,name', 'toDepartment', 'pickupCourier.user:id,name', 'deliveryCourier.user:id,name'])
+        return Order::query()->with(['deliveryZone:id,name', 'toDepartment', 'pickupCourier.user:id,name,phone', 'deliveryCourier.user:id,name,phone'])
             ->whereNotIn('status', $cancelled)
             ->when($kind === 'pickup', fn ($q) => $q->where('department_id', $department->id)
                 ->where(fn ($q) => $q->whereDate('picked_up_at', $day)
@@ -140,7 +150,8 @@ class DepartmentSlipController extends Controller
             'reference' => $o->merchant_reference,
             'recipient' => $o->toDepartment?->label() ?? ($o->recipient_name ?: $o->recipient_phone),
             'zone' => $o->deliveryZone?->name,
-            'shipment' => $o->shipment_type ? ($o->shipment_quantity > 1 ? "{$o->shipment_quantity} × {$o->shipment_type->label()}" : $o->shipment_type->label()) : null,
+            'shipment' => $o->shipment_type ? ($o->shipment_quantity > 1 ? "{$o->shipment_quantity} × {$o->shipment_type->label()}" : $o->shipment_type->label())
+                .($o->pli_kind ? ' ('.mb_strtolower($o->pli_kind).')' : '') : null,
             'requested_by' => $o->requested_by,
             'status_label' => $o->statusLabel(),
             'picked_up_at' => $o->picked_up_at,

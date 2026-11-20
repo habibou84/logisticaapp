@@ -242,6 +242,10 @@ class DepartmentTest extends TestCase
         Sanctum::actingAs($financeStaff);
         $slip = $this->getJson("/api/v1/departments/{$finance->id}/slip?kind=pickup")->assertOk();
         $this->assertSame(['M. Yao (Assistant)', 'Agence Plateau'], [$slip->json('data.orders.0.handed_by'), $slip->json('data.orders.0.recipient')]);
+        // Bordereau de livraison : numéro, total par type, livreur
+        $this->assertStringStartsWith('BL-', $slip->json('data.number'));
+        $this->assertSame(['pli' => 1], $slip->json('data.totals'));
+        $this->assertIsArray($slip->json('data.couriers'));
         $this->getJson("/api/v1/departments/{$agency->id}/slip?kind=delivery")->assertForbidden();
         $this->postJson("/api/v1/departments/{$finance->id}/slips", ['day' => now()->toDateString(), 'kind' => 'pickup', 'signed_by_name' => 'Mme Koné', 'signature' => $signature])->assertCreated()->assertJsonPath('data.orders', 1);
         $signed = $this->getJson("/api/v1/departments/{$finance->id}/slip?kind=pickup")->assertOk()->json('data.slips.0');
