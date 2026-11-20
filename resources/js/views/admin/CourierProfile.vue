@@ -7,7 +7,16 @@
     <template v-if="p">
       <!-- En-tête : identité, note, état, actions -->
       <div class="card flex flex-wrap items-center gap-4 p-4">
-        <span class="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-indigo-100 text-lg font-bold text-indigo-800" aria-hidden="true">{{ initials }}</span>
+        <!-- Photo du livreur (cliquer pour la changer, avec le droit de gérer les livreurs) -->
+        <component
+          :is="canManage ? 'label' : 'span'"
+          :class="['grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-full bg-indigo-100 text-lg font-bold text-indigo-800', canManage ? 'cursor-pointer' : '']"
+          :title="canManage ? (photo ? 'Changer la photo' : 'Ajouter une photo') : null"
+        >
+          <img v-if="photo" :src="photo" :alt="`Photo de ${c.name}`" class="h-full w-full object-cover">
+          <span v-else aria-hidden="true">{{ initials }}</span>
+          <input v-if="canManage" type="file" accept="image/png,image/jpeg,image/webp" class="hidden" :aria-label="photo ? 'Changer la photo' : 'Ajouter une photo'" @change="upload('photo', $event)">
+        </component>
         <div class="min-w-0 flex-1">
           <h1 class="flex flex-wrap items-center gap-2 text-xl font-bold">
             {{ c.name }}
@@ -125,6 +134,24 @@
           </div>
         </div>
         <div class="space-y-4">
+          <!-- Identité : photo, pièce d'identité et son numéro -->
+          <div class="card space-y-2 p-4 text-sm">
+            <h2 class="text-xs font-bold uppercase tracking-wide text-gray-500">Identité</h2>
+            <p class="flex justify-between gap-4"><span class="text-gray-500">N° de pièce</span><b>{{ c.id_number || '—' }}</b></p>
+            <div v-for="f in identityFiles" :key="f.kind" class="flex flex-wrap items-center justify-between gap-2">
+              <span class="text-gray-500">{{ f.label }}</span>
+              <span class="flex flex-wrap items-center gap-3">
+                <button v-if="f.present" type="button" class="text-blue-600" @click="openFile(f.kind)">Voir</button>
+                <span v-else class="text-gray-400">aucune</span>
+                <label v-if="canManage" class="cursor-pointer text-blue-600">
+                  {{ f.present ? 'Changer' : 'Ajouter' }}
+                  <input type="file" accept="image/png,image/jpeg,image/webp" class="hidden" :aria-label="`${f.present ? 'Changer' : 'Ajouter'} : ${f.label}`" @change="upload(f.kind, $event)">
+                </label>
+                <button v-if="canManage && f.present" type="button" class="text-red-600" @click="removeFile(f)">Retirer</button>
+              </span>
+            </div>
+            <p v-if="fileError" class="field-error">{{ fileError }}</p>
+          </div>
           <div v-if="p.vehicle || p.vehicle_warnings.length" class="card space-y-1 p-4">
             <h2 class="text-xs font-bold uppercase tracking-wide text-gray-500">Véhicule</h2>
             <p v-if="p.vehicle" class="text-sm">
@@ -158,7 +185,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import CourierForm from '../../components/CourierForm.vue'
@@ -166,6 +193,7 @@ import FieldEventBadge from '../../components/FieldEventBadge.vue'
 import MadBadge from '../../components/MadBadge.vue'
 import CourierRatingsPanel from '../../components/ratings/CourierRatingsPanel.vue'
 import ColumnChart from '../../components/stats/ColumnChart.vue'
+import { authImage } from '../../composables/useAuthImage'
 import { useAuthStore } from '../../stores/auth'
 import { date, dateTime, mapsLink, money, telLink, waitDuration, whatsappLink } from '../../utils/format'
 import { ACCEPT_MODES } from './settings/options'
@@ -188,6 +216,8 @@ const p = ref(null)
 const field = ref(null)
 const error = ref('')
 const editing = ref(false)
+const photo = ref(null)
+const fileError = ref('')
 const days = ref([7, 30, 90].includes(Number(route.query.jours)) ? Number(route.query.jours) : 30)
 
 const tabs = computed(() => [
@@ -200,6 +230,11 @@ const tab = ref(['activite', 'notes', 'terrain', 'infos'].includes(route.query.o
 
 const c = computed(() => p.value?.courier)
 const score = computed(() => p.value?.score ?? null)
+const canManage = computed(() => auth.can('couriers.manage'))
+const identityFiles = computed(() => [
+  { kind: 'photo', label: 'Photo', present: !!c.value?.has_photo },
+  { kind: 'id-document', label: 'Pièce d\'identité', present: !!c.value?.has_id_document },
+])
 const initials = computed(() => (c.value?.name || '?').split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase())
 const scoreText = (s) => (s === null || s === undefined ? '—' : Number(s).toFixed(1).replace('.', ','))
 const scoreBadge = computed(() => {
@@ -260,9 +295,50 @@ async function load() {
   error.value = ''
   try {
     p.value = (await http.get(`/couriers/${route.params.id}/profile`, { params: { days: days.value } })).data.data
+    if (c.value.has_photo && !photo.value) setPhoto(await authImage(`/couriers/${c.value.id}/files/photo`).catch(() => null))
   } catch (e) {
     error.value = apiErrorMessage(e)
   }
+}
+
+function setPhoto(url) {
+  if (photo.value) URL.revokeObjectURL(photo.value)
+  photo.value = url
+}
+
+// Photo ou pièce d'identité : envoyée, puis la fiche se met à jour
+async function upload(kind, e) {
+  const file = e.target.files[0]
+  e.target.value = ''
+  if (!file) return
+  fileError.value = ''
+  const body = new FormData()
+  body.append('file', file)
+  try {
+    const { data } = await http.post(`/couriers/${c.value.id}/files/${kind}`, body)
+    p.value.courier = { ...p.value.courier, ...data.data }
+    if (kind === 'photo') setPhoto(URL.createObjectURL(file))
+  } catch (err) {
+    fileError.value = apiErrorMessage(err)
+  }
+}
+
+async function removeFile(f) {
+  if (!window.confirm(`Retirer : ${f.label.toLowerCase()} ?`)) return
+  fileError.value = ''
+  try {
+    await http.delete(`/couriers/${c.value.id}/files/${f.kind}`)
+    p.value.courier = { ...p.value.courier, [f.kind === 'photo' ? 'has_photo' : 'has_id_document']: false }
+    if (f.kind === 'photo') setPhoto(null)
+  } catch (err) {
+    fileError.value = apiErrorMessage(err)
+  }
+}
+
+async function openFile(kind) {
+  const src = await authImage(`/couriers/${c.value.id}/files/${kind}`).catch(() => null)
+  if (src) window.open(src, '_blank')
+  else fileError.value = 'Fichier introuvable.'
 }
 
 async function loadField() {
@@ -284,4 +360,5 @@ function setDays(d) {
 watch(tab, (t) => { if (t === 'terrain' && !field.value) loadField() }, { immediate: true })
 watch([tab, days], () => router.replace({ query: { ...(tab.value !== 'activite' ? { onglet: tab.value } : {}), ...(days.value !== 30 ? { jours: days.value } : {}) } }))
 onMounted(load)
+onBeforeUnmount(() => setPhoto(null))
 </script>

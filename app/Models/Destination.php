@@ -17,7 +17,7 @@ class Destination extends Model
 {
     use BelongsToCompany;
 
-    public const SOURCES = ['import', 'order', 'staff'];
+    public const SOURCES = ['import', 'order', 'staff', 'routine'];
 
     protected $fillable = [
         'company_id', 'name', 'acronym', 'city', 'zone_id', 'district', 'address', 'landmark',

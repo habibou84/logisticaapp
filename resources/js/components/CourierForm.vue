@@ -17,6 +17,7 @@
         </div>
         <div><label class="label" for="cf-plate">Immatriculation</label><input id="cf-plate" v-model="data.vehicle_plate" class="input"></div>
       </template>
+      <div><label class="label" for="cf-id-number">N° de pièce d'identité</label><input id="cf-id-number" v-model="data.id_number" class="input" maxlength="60"></div>
       <div v-if="canPay">
         <label class="label" for="courier-plan">Plan de paie</label>
         <select id="courier-plan" v-model="data.pay_plan_id" class="input">
@@ -137,6 +138,7 @@ watch(() => [props.open, props.courier], ([open, c]) => {
   data.value = {
     vehicle_type: c.vehicle_type,
     vehicle_plate: c.vehicle_plate,
+    id_number: c.id_number ?? null,
     ...(canPay.value ? { pay_plan_id: c.pay_plan_id } : {}),
     ...(auth.can('planning.manage') ? { mission_acceptance: c.mission_acceptance ?? null } : {}),
     capabilities: Object.fromEntries(Object.keys(CAPABILITIES).map((k) => [k, c.capabilities?.[k] ?? null])),
@@ -173,7 +175,7 @@ async function save() {
   try {
     // Champs vidés : sans limite
     const blank = (v) => (v === '' ? null : v)
-    const payload = { ...data.value, max_parcels: blank(data.value.max_parcels), max_cash: blank(data.value.max_cash), shift_ends_at: data.value.shift_ends_at || null }
+    const payload = { ...data.value, id_number: data.value.id_number?.trim() || null, max_parcels: blank(data.value.max_parcels), max_cash: blank(data.value.max_cash), shift_ends_at: data.value.shift_ends_at || null }
     // Véhicule du parc : son type et sa plaque se changent dans sa fiche
     if (props.vehicle) {
       delete payload.vehicle_type

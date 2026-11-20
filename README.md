@@ -63,6 +63,7 @@ Puis ouvrir http://localhost:8000.
 | Back-office | `/admin` | administrateurs, dispatch, caisse (écran d'ordinateur) |
 | Mes livraisons | `/marchand` | clients (téléphone) |
 | Livreur | `/livreur` | livreurs (téléphone) |
+| Mécanicien | `/mecanicien` | mécaniciens : pannes des livreurs (téléphone, voir `docs/ATELIER.md`) |
 
 Après connexion, chacun arrive sur son application. Sur Android (Chrome), un bouton « Installer l'application » apparaît ;
 sur iPhone (Safari), *Partager → Sur l'écran d'accueil*. L'installation et le service worker exigent **HTTPS**
@@ -273,6 +274,7 @@ Les envois passent par la file `messages` et les points d'activité par le plani
 | `/` | Clients (page d'accueil du site) | Logo, accroche, avantages, connexion, suivi d'un colis, contact WhatsApp |
 | `/admin` (→ `/admin/connexion`) | Équipe : administration, dispatch, caisse, entrepôt | Sobre, sombre |
 | `/livreur` (→ `/livreur/connexion`) | Livreurs | Application mobile bleue |
+| `/mecanicien` (→ `/mecanicien/connexion`) | Mécaniciens | Application mobile orange |
 
 Chaque page accepte tous les comptes : après connexion, chacun arrive dans son espace. Le logo (PNG, JPEG ou WebP)
 et l'accroche se règlent dans **Réglages › Entreprise et marque**.

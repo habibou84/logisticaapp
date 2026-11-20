@@ -29,6 +29,7 @@
         "@capacitor/app": "8.1.1",
         "@capacitor/core": "8.5.2",
         "@techstark/opencv-js": "4.12.0-release.1",
+        "jsqr": "1.4.0",
         "leaflet": "^1.9.4",
         "pinia": "^3.0.4",
         "qrcode": "^1.5.4",

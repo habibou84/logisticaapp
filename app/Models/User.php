@@ -117,6 +117,12 @@ class User extends Authenticatable
         return $this->hasOne(Courier::class);
     }
 
+    /** Profil mécanicien (disponibilité, position) */
+    public function mechanic(): HasOne
+    {
+        return $this->hasOne(Mechanic::class);
+    }
+
     public function scopeForCompany(Builder $query, ?int $companyId): Builder
     {
         return $query->where('company_id', $companyId);
@@ -166,6 +172,20 @@ class User extends Authenticatable
                 ['company_id' => $this->company_id],
             );
             $this->unsetRelation('courier');
+        }
+    }
+
+    /**
+     * Crée le profil mécanicien (disponibilité, position) si l'utilisateur a le rôle mécanicien et n'en a pas encore.
+     */
+    public function syncMechanicProfile(): void
+    {
+        if ($this->isMechanic() && $this->company_id !== null) {
+            Mechanic::withoutGlobalScopes()->firstOrCreate(
+                ['user_id' => $this->id],
+                ['company_id' => $this->company_id],
+            );
+            $this->unsetRelation('mechanic');
         }
     }
 
@@ -278,6 +298,11 @@ class User extends Authenticatable
         return $this->hasRole(Role::Courier->value);
     }
 
+    public function isMechanic(): bool
+    {
+        return $this->hasRole(Role::Mechanic->value);
+    }
+
     /**
      * Personnel de l'entreprise de livraison (back-office).
      */
@@ -287,12 +312,13 @@ class User extends Authenticatable
     }
 
     /**
-     * Espace de l'application de ce compte : client, livreur, ou équipe (administration).
+     * Espace de l'application de ce compte : client, livreur, mécanicien, ou équipe (administration).
      */
     public function space(): string
     {
         return match (true) {
             $this->isCourier() => 'courier',
+            $this->isMechanic() => 'mechanic',
             $this->merchant_id !== null => 'merchant',
             default => 'staff',
         };

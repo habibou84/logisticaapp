@@ -25,7 +25,7 @@
         <p v-if="todoCount" class="relative mt-3 text-[13px] font-medium opacity-95">⚠️ {{ subtitle }}</p>
       </section>
 
-      <!-- Actions rapides : envoyer selon les activités du client, importer, coller un message, étiquettes -->
+      <!-- Actions rapides : nouvelle course, importer, coller un message, étiquettes, l'argent -->
       <section v-if="quick.length" class="lg:col-span-2 lg:m-card lg:p-5" aria-label="Actions rapides">
         <h2 class="mb-3 hidden text-base font-bold text-slate-800 lg:block">Actions rapides</h2>
         <div class="grid grid-cols-4 gap-2 lg:grid-cols-6">
@@ -268,17 +268,26 @@ const route = useRoute()
 const router = useRouter()
 // Carte du jour : en cours, livrées, à régler (un appui filtre la liste en dessous)
 const dayBoxes = [{ value: 'active', label: 'en cours' }, { value: 'delivered', label: 'livrées' }, { value: 'problems', label: 'à régler' }, { value: 'other', label: 'retours' }]
-// Actions rapides : envoyer selon les activités du client, puis importer, coller un message, étiquettes
-const has = (activity) => space.activities.some((a) => a.value === activity)
+// Argent selon l'activité regardée : e-commerce → Mon argent ; distribution, MAD → Mes factures ;
+// « Tout » avec les deux → Mon argent, qui mène aussi aux factures du mois
+const moneyAction = computed(() => {
+  if (!auth.can('finance.view')) return null
+  const current = space.current
+  if (current === 'ecommerce' || (!current && space.hasEcommerce && !space.hasBilled)) return { to: '/marchand/paiements', color: 'argent', label: 'Mon argent' }
+  if (current || !space.hasEcommerce) return { to: '/marchand/factures', color: 'facture', label: 'Mes factures' }
+  return { to: '/marchand/paiements', color: 'argent', label: 'Argent et factures' }
+})
+// Actions rapides : nouvelle course, importer, coller un message, étiquettes, puis l'argent.
+// « Nouvelle course » suit l'activité regardée en haut (e-commerce, distribution, MAD) ;
+// sur « Tout », le formulaire demande l'activité au client qui en a plusieurs.
 const quick = computed(() => {
   if (!auth.can('orders.create')) return []
   return [
-    ...(has('ecommerce') ? [{ to: '/marchand/courses/nouvelle?activite=ecommerce', color: 'colis', label: 'Nouvelle course' }] : []),
-    ...(has('distribution') ? [{ to: '/marchand/courses/nouvelle?activite=distribution', color: 'pli', label: 'Envoyer des plis' }] : []),
-    ...(has('mad') ? [{ to: '/marchand/courses/nouvelle?activite=mad', color: 'mad', label: 'Demander un livreur' }] : []),
+    { to: '/marchand/courses/nouvelle', color: 'colis', label: 'Nouvelle course' },
     { to: '/marchand/courses/import', color: 'excel', label: 'Plusieurs courses' },
     { to: '/marchand/courses/nouvelle?coller=1', color: 'coller', label: 'Coller WhatsApp' },
     ...(auth.user?.merchant?.label_settings?.client_print !== 'no' ? [{ to: '/marchand/courses?etiquettes=1', color: 'etiquette', label: 'Étiquettes' }] : []),
+    ...(moneyAction.value ? [moneyAction.value] : []),
   ]
 })
 

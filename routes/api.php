@@ -21,8 +21,11 @@ use App\Http\Controllers\Api\V1\CourierAvailabilityController;
 use App\Http\Controllers\Api\V1\CourierController;
 use App\Http\Controllers\Api\V1\CourierDirectoryController;
 use App\Http\Controllers\Api\V1\CourierFieldEventController;
+use App\Http\Controllers\Api\V1\CourierFileController;
 use App\Http\Controllers\Api\V1\CourierMessageController;
 use App\Http\Controllers\Api\V1\CourierRatingController;
+use App\Http\Controllers\Api\V1\CourierRouteController;
+use App\Http\Controllers\Api\V1\CourierShiftController;
 use App\Http\Controllers\Api\V1\CourierSpaceController;
 use App\Http\Controllers\Api\V1\CourierVehicleController;
 use App\Http\Controllers\Api\V1\DeliveryDayController;
@@ -38,6 +41,8 @@ use App\Http\Controllers\Api\V1\IncidentReasonController;
 use App\Http\Controllers\Api\V1\InvitationController;
 use App\Http\Controllers\Api\V1\LabelController;
 use App\Http\Controllers\Api\V1\LegacyImportController;
+use App\Http\Controllers\Api\V1\MechanicController;
+use App\Http\Controllers\Api\V1\MechanicRepairController;
 use App\Http\Controllers\Api\V1\MerchantAccountController;
 use App\Http\Controllers\Api\V1\MerchantController;
 use App\Http\Controllers\Api\V1\MerchantLocationController;
@@ -64,12 +69,15 @@ use App\Http\Controllers\Api\V1\PublicRescheduleController;
 use App\Http\Controllers\Api\V1\PushSubscriptionController;
 use App\Http\Controllers\Api\V1\QuoteController;
 use App\Http\Controllers\Api\V1\ReferenceController;
+use App\Http\Controllers\Api\V1\RepairController;
 use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\RescheduleController;
 use App\Http\Controllers\Api\V1\ReturnSlipController;
 use App\Http\Controllers\Api\V1\RevenueController;
 use App\Http\Controllers\Api\V1\RoleController;
+use App\Http\Controllers\Api\V1\RoutineController;
 use App\Http\Controllers\Api\V1\SetupGuideController;
+use App\Http\Controllers\Api\V1\ShiftController;
 use App\Http\Controllers\Api\V1\ShopController;
 use App\Http\Controllers\Api\V1\SignupController;
 use App\Http\Controllers\Api\V1\StatisticsController;
@@ -342,6 +350,24 @@ Route::prefix('v1')->name('v1.')->group(function () {
             Route::get('{event}/files/{file}', 'file')->name('files');
         });
 
+        // Atelier : pannes confiées aux mécaniciens
+        Route::middleware('can:repairs.manage')->prefix('repairs')->name('repairs.')->controller(RepairController::class)->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::post('/', 'store')->name('store');
+            Route::get('mechanics', 'mechanics')->name('mechanics');
+            Route::get('{repair}', 'show')->whereNumber('repair')->name('show');
+            Route::post('{repair}/assign', 'assign')->name('assign');
+            Route::post('{repair}/cancel', 'cancel')->name('cancel');
+            Route::get('{repair}/files/{file}', 'file')->name('files');
+            Route::get('{repair}/receipts/{purchase}', 'receipt')->name('receipts');
+        });
+        Route::get('repairs/counts', [RepairController::class, 'counts'])->middleware('permission:repairs.manage|repairs.purchases')->name('repairs.counts');
+        // Achats de pièces sur place : accord de l'administrateur
+        Route::middleware('can:repairs.purchases')->prefix('repair-purchases')->name('repair-purchases.')->controller(RepairController::class)->group(function () {
+            Route::get('/', 'purchases')->name('index');
+            Route::post('{purchase}/decide', 'decidePurchase')->name('decide');
+        });
+
         // Bons de retour groupés par marchand (droits vérifiés dans le contrôleur)
         Route::get('return-slips', [ReturnSlipController::class, 'index'])->name('return-slips.index');
         Route::post('return-slips', [ReturnSlipController::class, 'store'])->name('return-slips.store');
@@ -464,6 +490,12 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::get('couriers/directory', [CourierDirectoryController::class, 'index'])->middleware('permission:orders.dispatch|couriers.manage|ratings.manage')->name('couriers.directory');
         Route::get('couriers/{courier}/profile', [CourierDirectoryController::class, 'show'])->middleware('permission:orders.dispatch|couriers.manage|ratings.manage')->whereNumber('courier')->name('couriers.profile');
         Route::get('couriers/map', [CourierController::class, 'map'])->middleware('can:orders.dispatch')->name('couriers.map');
+        // Pointages des livreurs : écran du jour, pointage manuel avec motif, annulation
+        Route::middleware('can:orders.dispatch')->controller(ShiftController::class)->group(function () {
+            Route::get('shifts', 'index')->name('shifts.index');
+            Route::post('couriers/{courier}/shift', 'manual')->whereNumber('courier')->name('couriers.shift');
+            Route::delete('courier-shifts/{shift}', 'destroy')->name('courier-shifts.destroy');
+        });
         Route::get('couriers/availability', [CourierAvailabilityController::class, 'index'])->middleware('can:orders.dispatch')->name('couriers.availability');
         Route::get('couriers/{courier}/availability', [CourierAvailabilityController::class, 'show'])->middleware('can:orders.dispatch')->name('couriers.availability.show');
         Route::post('couriers/{courier}/pickup-mission', [CourierAvailabilityController::class, 'pickupMission'])->middleware('can:orders.dispatch')->name('couriers.pickup-mission');
@@ -471,6 +503,12 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::get('couriers', [CourierController::class, 'index'])->middleware('permission:orders.dispatch|couriers.manage|fleet.manage|planning.manage|pay.manage')->name('couriers.index');
         Route::get('couriers/{courier}', [CourierController::class, 'show'])->middleware('permission:orders.dispatch|couriers.manage|fleet.manage|planning.manage|pay.manage')->name('couriers.show');
         Route::patch('couriers/{courier}', [CourierController::class, 'update'])->middleware('can:couriers.manage')->name('couriers.update');
+        // Photo du livreur et photo de sa pièce d'identité
+        Route::prefix('couriers/{courier}/files/{kind}')->name('couriers.files.')->whereIn('kind', array_keys(CourierFileController::KINDS))->controller(CourierFileController::class)->group(function () {
+            Route::get('/', 'show')->middleware('permission:orders.dispatch|couriers.manage|fleet.manage|planning.manage|pay.manage')->name('show');
+            Route::post('/', 'store')->middleware(['can:couriers.manage', 'throttle:30,1'])->name('store');
+            Route::delete('/', 'destroy')->middleware('can:couriers.manage')->name('destroy');
+        });
 
         // Journée de livraison : état (dispatch, marchands), fermeture et réouverture (dispatch)
         Route::get('delivery-day', [DeliveryDayController::class, 'show'])->name('delivery-day.show');
@@ -551,6 +589,18 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::post('merchants/{merchant}/billing-plans', [BillingPlanController::class, 'store'])->name('merchants.billing-plans.store');
         Route::patch('billing-plans/{billingPlan}', [BillingPlanController::class, 'update'])->name('billing-plans.update');
         Route::delete('billing-plans/{billingPlan}', [BillingPlanController::class, 'destroy'])->name('billing-plans.destroy');
+        // Parcours des livreurs en MAD (routine du matin avant d'arriver chez le client) : équipe et client
+        Route::controller(RoutineController::class)->group(function () {
+            Route::get('billing-plans/{billingPlan}/routines', 'index')->name('billing-plans.routines.index');
+            Route::post('billing-plans/{billingPlan}/routines', 'store')->name('billing-plans.routines.store');
+            Route::put('routines/{routine}', 'update')->name('routines.update');
+            Route::delete('routines/{routine}', 'destroy')->name('routines.destroy');
+            Route::get('routine-places', 'places')->middleware('throttle:120,1')->name('routine-places');
+            Route::get('merchant/routines', 'mine')->name('merchant.routines');
+            Route::post('merchant/routines', 'storeMine')->name('merchant.routines.store');
+            Route::put('merchant/routines/{routine}', 'updateMine')->name('merchant.routines.update');
+            Route::delete('merchant/routines/{routine}', 'destroyMine')->name('merchant.routines.destroy');
+        });
         Route::controller(ClientRateController::class)->group(function () {
             Route::get('client-rates/clients', 'clients')->name('client-rates.clients');
             Route::get('distribution-rates', 'distribution')->name('distribution-rates.index');
@@ -673,12 +723,44 @@ Route::prefix('v1')->name('v1.')->group(function () {
             Route::post('courier-payouts/{courierPayout}/cancel', 'cancelCourierPayout')->name('courier-payouts.cancel');
         });
 
+        // Espace mécanicien
+        Route::prefix('mechanic')->name('mechanic.')->middleware('role:mechanic')->group(function () {
+            Route::get('repairs', [MechanicController::class, 'repairs'])->name('repairs');
+            Route::get('setup', [MechanicController::class, 'setup'])->name('setup');
+            Route::patch('status', [MechanicController::class, 'status'])->name('status');
+            Route::get('vehicles', [MechanicController::class, 'vehicles'])->name('vehicles');
+            Route::get('vehicles/{vehicle}', [MechanicController::class, 'vehicle'])->name('vehicles.show');
+            Route::controller(MechanicRepairController::class)->prefix('repairs/{repair}')->name('repairs.')->group(function () {
+                Route::get('/', 'show')->name('show');
+                Route::post('accept', 'accept')->name('accept');
+                Route::post('decline', 'decline')->name('decline');
+                Route::post('depart', 'depart')->name('depart');
+                Route::post('arrive', 'arrive')->name('arrive');
+                Route::post('start', 'start')->name('start');
+                Route::post('photos', 'photos')->middleware('throttle:60,1')->name('photos');
+                Route::delete('photos/{file}', 'deletePhoto')->name('photos.destroy');
+                Route::post('purchases', 'purchase')->middleware('throttle:30,1')->name('purchases');
+                Route::post('close', 'close')->name('close');
+                Route::post('messages', 'message')->name('messages');
+                Route::get('files/{file}', 'file')->name('files');
+                Route::get('event-files/{file}', 'eventFile')->name('event-files');
+                Route::get('receipts/{purchase}', 'receipt')->name('receipts');
+            });
+        });
+
         // Espace livreur
         Route::prefix('courier')->name('courier.')->middleware('role:courier')->group(function () {
             Route::get('missions', [CourierSpaceController::class, 'missions'])->name('missions');
             Route::post('assignments/{assignment}/accept', [CourierSpaceController::class, 'accept'])->name('assignments.accept');
             Route::post('assignments/{assignment}/refuse', [CourierSpaceController::class, 'refuse'])->name('assignments.refuse');
             Route::patch('status', [CourierSpaceController::class, 'updateStatus'])->name('status');
+            // Pointage à son lieu de début (agence, client MAD ou première étape de son parcours)
+            Route::get('shift', [CourierShiftController::class, 'show'])->name('shift');
+            Route::post('shift', [CourierShiftController::class, 'store'])->middleware('throttle:30,1')->name('shift.store');
+            // Tournée : livraisons dans l'ordre (calculé à vol d'oiseau depuis sa position, ou à la main)
+            Route::get('route', [CourierRouteController::class, 'show'])->name('route');
+            Route::post('route/optimize', [CourierRouteController::class, 'optimize'])->middleware('throttle:30,1')->name('route.optimize');
+            Route::put('route', [CourierRouteController::class, 'reorder'])->middleware('throttle:60,1')->name('route.reorder');
             // Actions faites hors connexion, envoyées au retour du réseau
             Route::post('sync', OfflineSyncController::class)->middleware('throttle:120,1')->name('sync');
             Route::get('wallet', [FinanceController::class, 'wallet'])->name('wallet');

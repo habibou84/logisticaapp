@@ -36,7 +36,7 @@ class Access
         if (! $actor->can(Permission::UsersManage->value)) {
             return collect();
         }
-        $builtIn = Role::values([...Role::staff(), Role::Courier]);
+        $builtIn = Role::values(Role::company());
         $roles = AccessRole::query()->with('permissions')
             ->where(fn ($q) => $q->where(fn ($q) => $q->where('is_custom', false)->whereIn('name', $builtIn))
                 ->orWhere(fn ($q) => $q->customFor($actor->company_id)))
@@ -153,6 +153,8 @@ class Access
             Role::Cashier => 'Caisse, reversements, factures, chiffre d\'affaires.',
             Role::HubAgent => 'Réception au dépôt, préparation, stock.',
             Role::Courier => 'Application livreur : ses missions.',
+            Role::FleetManager => 'Véhicules, événements terrain et atelier : pannes, mécaniciens.',
+            Role::Mechanic => 'Application mécanicien : les pannes qui lui sont confiées.',
             default => null,
         };
     }

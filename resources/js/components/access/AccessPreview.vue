@@ -37,7 +37,7 @@
           </div>
         </div>
       </div>
-      <p v-else class="text-sm text-gray-600">Compte {{ data.space === 'courier' ? 'livreur : application livreur, ses missions' : 'client : espace client' }}.</p>
+      <p v-else class="text-sm text-gray-600">Compte {{ data.space === 'courier' ? 'livreur : application livreur, ses missions' : data.space === 'mechanic' ? 'mécanicien : application mécanicien, ses pannes' : 'client : espace client' }}.</p>
     </div>
   </Modal>
 </template>

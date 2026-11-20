@@ -14,6 +14,10 @@ enum Role: string
     case Cashier = 'cashier';
     case HubAgent = 'hub_agent';
     case Courier = 'courier';
+    // Responsable du parc : véhicules, atelier (pannes, mécaniciens), plus tard magasin de pièces et retenues
+    case FleetManager = 'fleet_manager';
+    // Mécanicien : application /mecanicien, reçoit et traite les pannes
+    case Mechanic = 'mechanic';
     case MerchantOwner = 'merchant_owner';
     // Gestionnaire du client : ses courses, sa caisse, ses comptes (sauf le propriétaire), tous ses départements
     case MerchantManager = 'merchant_manager';
@@ -30,6 +34,8 @@ enum Role: string
             self::Cashier => 'Caissier',
             self::HubAgent => 'Agent de dépôt',
             self::Courier => 'Livreur',
+            self::FleetManager => 'Responsable du parc',
+            self::Mechanic => 'Mécanicien',
             self::MerchantOwner => 'Client',
             self::MerchantManager => 'Gestionnaire du client',
             self::MerchantStaff => 'Agent du client',
@@ -78,6 +84,7 @@ enum Role: string
                 Permission::OrdersView,
                 Permission::OrdersCreate,
                 Permission::OrdersDispatch,
+                Permission::RepairsManage,
             ],
             self::Cashier => [
                 Permission::MerchantsView,
@@ -97,6 +104,15 @@ enum Role: string
             self::Courier => [
                 Permission::OrdersUpdateStatus,
             ],
+            self::FleetManager => [
+                Permission::UsersView,
+                Permission::OrdersView,
+                Permission::FleetManage,
+                Permission::FieldEventsManage,
+                Permission::RepairsManage,
+            ],
+            // Ses droits viennent de son espace (/mecanicien) : rien dans l'espace équipe
+            self::Mechanic => [],
             self::MerchantOwner => [
                 Permission::OrdersView,
                 Permission::OrdersCreate,
@@ -127,7 +143,17 @@ enum Role: string
      */
     public static function staff(): array
     {
-        return [self::Admin, self::ActivityManager, self::Dispatcher, self::Cashier, self::HubAgent];
+        return [self::Admin, self::ActivityManager, self::Dispatcher, self::Cashier, self::HubAgent, self::FleetManager];
+    }
+
+    /**
+     * Rôles intégrés que l'entreprise attribue à ses comptes : l'équipe, les livreurs et les mécaniciens.
+     *
+     * @return list<self>
+     */
+    public static function company(): array
+    {
+        return [...self::staff(), self::Courier, self::Mechanic];
     }
 
     /**
@@ -168,7 +194,7 @@ enum Role: string
     public static function assignableBy(User $actor): array
     {
         if ($actor->hasRole(self::Admin->value)) {
-            return [...self::staff(), self::Courier];
+            return self::company();
         }
 
         return [];

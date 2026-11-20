@@ -22,7 +22,7 @@ class LoginRequest extends FormRequest
             'password' => ['required', 'string'],
             'device_name' => ['nullable', 'string', 'max:100'],
             // Page de connexion utilisée : seuls les comptes de cet espace y entrent
-            'space' => ['nullable', 'in:merchant,courier,staff'],
+            'space' => ['nullable', 'in:merchant,courier,mechanic,staff'],
         ];
     }
 

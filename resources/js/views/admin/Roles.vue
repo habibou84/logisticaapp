@@ -42,7 +42,7 @@
             </div>
             <div class="flex flex-wrap gap-3 text-sm">
               <button v-if="r.editable" type="button" class="text-blue-600" @click="edit(r)">Modifier</button>
-              <button v-if="canManage && !r.custom && r.value !== 'admin' && r.value !== 'courier'" type="button" class="text-blue-600" @click="edit(null, `role:${r.value}`)">Créer un rôle à partir de celui-ci</button>
+              <button v-if="canManage && !r.custom && r.value !== 'admin' && !APP_ROLES.includes(r.value)" type="button" class="text-blue-600" @click="edit(null, `role:${r.value}`)">Créer un rôle à partir de celui-ci</button>
               <RouterLink :to="{ path: '/admin/utilisateurs', query: { role: r.value } }" class="text-gray-600">Voir les comptes</RouterLink>
             </div>
           </li>
@@ -60,7 +60,7 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import RoleEditor from '../../components/access/RoleEditor.vue'
 import PermissionMatrix from '../../components/access/PermissionMatrix.vue'
-import { useAccessCatalog } from '../../composables/useAccessCatalog'
+import { APP_ROLES, useAccessCatalog } from '../../composables/useAccessCatalog'
 import { useAuthStore } from '../../stores/auth'
 import { useToastStore } from '../../stores/toasts'
 

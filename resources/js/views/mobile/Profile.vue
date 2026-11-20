@@ -47,7 +47,12 @@
     </div>
     <CourierScoreCard v-if="app === 'livreur'" />
 
-    <PushSettings v-if="app === 'livreur'" />
+    <!-- Mécanicien : véhicules du parc -->
+    <div v-if="app === 'mecanicien'" class="m-card divide-y">
+      <MenuRow to="/mecanicien/vehicules" icon="truck" tone="blue" label="Véhicules du parc" sub="Fiche, carnet, entretiens à faire" />
+    </div>
+
+    <PushSettings v-if="app === 'livreur' || app === 'mecanicien'" />
 
     <h2 class="px-1 pt-2 text-sm font-semibold text-slate-600 uppercase tracking-wide">Aide</h2>
     <div class="m-card divide-y">
@@ -82,7 +87,7 @@ const auth = useAuthStore()
 const router = useRouter()
 const route = useRoute()
 
-const app = computed(() => (route.path.startsWith('/livreur') ? 'livreur' : 'marchand'))
+const app = computed(() => (route.path.startsWith('/livreur') ? 'livreur' : route.path.startsWith('/mecanicien') ? 'mecanicien' : 'marchand'))
 const merchant = computed(() => (auth.user?.merchant_id ? auth.user.merchant || {} : null))
 const companyPhone = computed(() => auth.user?.company?.phone)
 const initials = computed(() => (auth.user?.name || '?').split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase())
@@ -93,7 +98,7 @@ async function logout() {
   if (offlineQueue.pending.length && !window.confirm(`${offlineQueue.pending.length} action(s) faite(s) hors connexion ne sont pas encore envoyées. Déconnecté, elles ne partiront que lorsque vous vous reconnecterez sur ce téléphone. Se déconnecter quand même ?`)) return
   await forgetPushDevice()
   // Application installée : sa propre page de connexion (le client reste dans /marchand)
-  const login = appLock()?.login || (auth.role === 'courier' ? '/livreur/connexion' : '/')
+  const login = appLock()?.login || (auth.role === 'courier' ? '/livreur/connexion' : auth.role === 'mechanic' ? '/mecanicien/connexion' : '/')
   await auth.logout()
   router.push(login)
 }

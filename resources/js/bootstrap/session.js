@@ -11,16 +11,17 @@ const NATIVE_SPACES = { livreur: 'livreur', ecommercant: 'marchand' }
 /** Espace d'une page ; null pour les pages communes (mot de passe oublié, suivi d'un colis…) */
 export function spaceForPath(path) {
   if (path.startsWith('/livreur')) return 'livreur'
+  if (path.startsWith('/mecanicien')) return 'mecanicien'
   if (path.startsWith('/admin')) return 'admin'
   if (path === '/' || path.startsWith('/marchand') || path.startsWith('/inscription')) return 'marchand'
   return null
 }
 
 /** Valeur attendue par le serveur pour la page de connexion de cet espace */
-export const SERVER_SPACES = { marchand: 'merchant', livreur: 'courier', admin: 'staff' }
+export const SERVER_SPACES = { marchand: 'merchant', livreur: 'courier', mecanicien: 'mechanic', admin: 'staff' }
 /** Page de connexion de chaque espace (et inversement, depuis la réponse du serveur) */
-export const LOGIN_PAGES = { marchand: '/', livreur: '/livreur/connexion', admin: '/admin/connexion' }
-export const SPACE_FROM_SERVER = { merchant: 'marchand', courier: 'livreur', staff: 'admin' }
+export const LOGIN_PAGES = { marchand: '/', livreur: '/livreur/connexion', mecanicien: '/mecanicien/connexion', admin: '/admin/connexion' }
+export const SPACE_FROM_SERVER = { merchant: 'marchand', courier: 'livreur', mechanic: 'mecanicien', staff: 'admin' }
 
 function read(key) {
   try {

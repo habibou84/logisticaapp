@@ -25,6 +25,9 @@ class OrderAssignment extends Model
         'refusal_reason',
         // planning ou auto : mission confiée sans le dispatch (null : à la main)
         'source',
+        // Tournée : place dans l'ordre des livraisons du livreur
+        'route_position',
+        'route_planned_at',
     ];
 
     protected function casts(): array
@@ -37,6 +40,8 @@ class OrderAssignment extends Model
             'accepted_at' => 'datetime',
             'started_at' => 'datetime',
             'completed_at' => 'datetime',
+            'route_position' => 'integer',
+            'route_planned_at' => 'datetime',
             'unreachable_at' => 'datetime',
             'late_alerted_at' => 'datetime',
         ];

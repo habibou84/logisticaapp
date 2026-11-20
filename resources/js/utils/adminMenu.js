@@ -58,6 +58,8 @@ export function adminMenuGroups(badges = {}) {
       items: [
         { to: '/admin/livreurs', icon: '🛵', label: 'Livreurs', permission: ['orders.dispatch', 'couriers.manage', 'ratings.manage'] },
         { to: '/admin/vehicules', icon: '🏍️', label: 'Véhicules', permission: 'fleet.manage', badge: badges.vehicles },
+        // Pannes confiées aux mécaniciens, achats sur place à accorder
+        { to: '/admin/atelier', icon: '🛠️', label: 'Atelier', permission: ['repairs.manage', 'repairs.purchases'], badge: badges.workshop },
         { to: '/admin/utilisateurs', icon: '👥', label: 'Utilisateurs', permission: 'users.view' },
         { to: '/admin/roles', icon: '🔐', label: 'Rôles', permission: 'users.view' },
       ],

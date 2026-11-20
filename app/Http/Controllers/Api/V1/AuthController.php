@@ -19,6 +19,7 @@ class AuthController extends Controller
     private const WRONG_SPACE = [
         'merchant' => 'Ce compte est un compte client : connectez-vous depuis l\'espace client.',
         'courier' => 'Ce compte est un compte livreur : connectez-vous depuis l\'espace livreur.',
+        'mechanic' => 'Ce compte est un compte mécanicien : connectez-vous depuis l\'espace mécanicien.',
         'staff' => 'Ce compte est un compte de l\'équipe : connectez-vous depuis l\'espace équipe.',
     ];
 
@@ -84,23 +85,23 @@ class AuthController extends Controller
         // l'utilisateur de la requête dès maintenant
         request()->setUserResolver(fn () => $user);
 
-        // Équipe de l'entreprise (caisse, dispatch, administrateurs) : 7 jours ; livreurs et clients : la durée par
+        // Équipe de l'entreprise (caisse, dispatch, administrateurs) : 7 jours ; livreurs, mécaniciens et clients : la durée par
         // défaut (30 jours)
         $expires = match (true) {
-            $user->merchant_id === null && ! $user->isCourier() => now()->addDays(7),
+            $user->merchant_id === null && ! $user->isCourier() && ! $user->isMechanic() => now()->addDays(7),
             default => null,
         };
 
         return [
             'token' => $user->createToken($device, ['*'], $expires)->plainTextToken,
             'token_type' => 'Bearer',
-            'user' => UserResource::make($user->load(['company', 'merchant', 'courier']))->withPermissions(),
+            'user' => UserResource::make($user->load(['company', 'merchant', 'courier', 'mechanic']))->withPermissions(),
         ];
     }
 
     public function me(Request $request): UserResource
     {
-        return UserResource::make($request->user()->load(['company', 'merchant', 'courier']))->withPermissions();
+        return UserResource::make($request->user()->load(['company', 'merchant', 'courier', 'mechanic']))->withPermissions();
     }
 
     public function logout(Request $request): JsonResponse

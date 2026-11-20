@@ -1,5 +1,8 @@
 <template>
   <div class="space-y-4">
+    <!-- Pointage d'arrivée sur le lieu de début : met en service -->
+    <ShiftCard @clocked="clocked" />
+
     <!-- Disponibilité -->
     <button
       :class="['tap w-full rounded-2xl p-4 flex items-center gap-4 text-left transition', available ? 'bg-emerald-600 text-white' : 'bg-white ring-1 ring-slate-200']"
@@ -113,6 +116,13 @@
       Hors ligne : voici vos missions telles qu'elles étaient à la dernière connexion.
     </p>
 
+    <!-- Tournée : livraisons dans le meilleur ordre, carte et trajet -->
+    <RouterLink v-if="tab === 'delivery' && count('delivery') > 1" to="/livreur/tournee" class="tap flex items-center gap-3 rounded-2xl bg-white p-3 ring-1 ring-slate-200">
+      <span class="grid h-10 w-10 place-items-center rounded-xl bg-slate-100 text-xl">🧭</span>
+      <span class="flex-1"><span class="block font-semibold">Organiser ma tournée</span><span class="block text-sm text-slate-500">Ordre des livraisons, carte, trajet Google Maps</span></span>
+      <span class="text-xl text-slate-400">›</span>
+    </RouterLink>
+
     <p v-if="tab === 'pickup' && !error && !loading" class="px-1 text-xs text-slate-500">
       Ramassages du jour et en avance. Un colis en retard revient ici quand sa nouvelle date est fixée.
     </p>
@@ -189,6 +199,7 @@ import StatusBadge from '../../components/StatusBadge.vue'
 import EmptyState from '../../components/mobile/EmptyState.vue'
 import InstallBanner from '../../components/mobile/InstallBanner.vue'
 import FieldEventSheet from '../../components/courier/FieldEventSheet.vue'
+import ShiftCard from '../../components/courier/ShiftCard.vue'
 import { fieldEventQueue } from '../../composables/useFieldEvents'
 import { VEHICLE_TYPES, km, remainingText } from '../../utils/vehicles'
 import { useAuthStore } from '../../stores/auth'
@@ -218,7 +229,8 @@ const tabs = [
 // Livraisons d'un même lot (distribution ponctuelle) à la suite, les autres ensuite
 const visible = computed(() => {
   const list = missions.value.filter((m) => m.type === tab.value)
-  if (tab.value !== 'delivery') return list
+  // Tournée organisée : l'ordre choisi par le livreur (donné par le serveur) prime
+  if (tab.value !== 'delivery' || list.some((m) => m.route_position)) return list
   const lotOf = (m) => m.order.lot?.id ?? 0
   return [...list].sort((a, b) => (lotOf(a) === lotOf(b) ? 0 : lotOf(a) === 0 ? 1 : lotOf(b) === 0 ? -1 : lotOf(a) - lotOf(b)))
 })
@@ -292,6 +304,13 @@ async function load() {
     loading.value = false
   }
   if (!count(tab.value)) tab.value = ['pickup', 'delivery', 'return'].find((t) => count(t)) || tab.value
+}
+
+// Pointage fait : le livreur est en service (sauf état des lieux du véhicule à faire)
+function clocked(isAvailable) {
+  available.value = isAvailable
+  if (auth.user.courier) auth.user.courier.is_available = isAvailable
+  load()
 }
 
 async function toggleAvailability() {

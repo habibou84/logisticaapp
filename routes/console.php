@@ -41,6 +41,8 @@ Schedule::command('model:prune', ['--model' => [IdempotencyKey::class, WebhookDe
 // Cloche : anciennes notifications supprimées chaque nuit
 Schedule::command('notifications:prune')->dailyAt('03:40')->withoutOverlapping();
 Schedule::command('field-reports:remind')->everyMinute()->withoutOverlapping();
+// Atelier : propositions de panne sans réponse passées au mécanicien suivant, pannes sans mécanicien reproposées
+Schedule::command('repairs:dispatch')->everyMinute()->withoutOverlapping();
 Schedule::command('parcels:overdue')->everyFifteenMinutes()->withoutOverlapping();
 // Argent gardé trop longtemps par un livreur : caisse prévenue, rappel au livreur (une fois par jour)
 Schedule::command('cash:held')->hourlyAt(5)->between('7:00', '21:00')->withoutOverlapping();
@@ -50,6 +52,8 @@ Schedule::command('cash:close-reminder')->everyFifteenMinutes()->withoutOverlapp
 Schedule::command('orders:unassigned')->everyMinute()->withoutOverlapping();
 // Livreurs libres ou bientôt libres avec des ramassages près d'eux : mission ramassage possible
 Schedule::command('couriers:available')->everyMinute()->withoutOverlapping();
+// Livreurs qui n'ont pas pointé à leur lieu de début (agence, client MAD ou première étape de leur parcours)
+Schedule::command('shifts:missing')->everyFiveMinutes()->between('5:00', '14:00')->withoutOverlapping();
 // Colis gardés par le livreur après une mission ramassage : leur livraison lui est confiée le jour prévu
 // Planning des livreurs : rattrapage de l'assignation automatique, message du matin
 Schedule::command('assignments:auto')->everyFiveMinutes()->withoutOverlapping();

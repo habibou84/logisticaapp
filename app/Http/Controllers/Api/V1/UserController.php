@@ -150,6 +150,7 @@ class UserController extends Controller
             $user->assignRole($data['role']);
             $user->syncPermissions($data['extra_permissions'] ?? []);
             $user->syncCourierProfile();
+            $user->syncMechanicProfile();
             UserAccountEvent::record($user, $actor, UserAccountEvent::CREATED, ['role' => $user->accessRole()?->displayLabel()]);
 
             return $user;
@@ -226,6 +227,7 @@ class UserController extends Controller
             if (isset($data['role'])) {
                 $user->syncRoles([$data['role']]);
                 $user->syncCourierProfile();
+                $user->syncMechanicProfile();
             }
 
             // Un compte suspendu ou dont le mot de passe change est déconnecté partout

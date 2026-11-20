@@ -35,6 +35,7 @@ const routes = [
   // Chrome la confond avec l'application livreur (une application couvrant « / » couvre aussi /livreur)
   { path: '/marchand/connexion', name: 'login-merchant-app', component: () => import('../views/auth/MerchantHome.vue'), meta: { guest: true } },
   { path: '/livreur/connexion', name: 'login-courier', component: () => import('../views/auth/CourierLogin.vue'), meta: { guest: true } },
+  { path: '/mecanicien/connexion', name: 'login-mechanic', component: () => import('../views/auth/MechanicLogin.vue'), meta: { guest: true } },
   // Inscription des clients et mot de passe oublié (numéro vérifié par WhatsApp ou SMS)
   { path: '/inscription', name: 'signup', component: () => import('../views/auth/Signup.vue'), meta: { guest: true } },
   { path: '/mot-de-passe-oublie', name: 'forgot-password', component: () => import('../views/auth/ForgotPassword.vue'), meta: { guest: true } },
@@ -118,6 +119,7 @@ const routes = [
           },
           { path: 'carte', component: () => import('../views/admin/CourierMap.vue'), meta: { permission: 'orders.dispatch' } },
           { path: 'disponibles', component: () => import('../views/admin/CourierAvailability.vue'), meta: { permission: 'orders.dispatch' } },
+          { path: 'pointages', component: () => import('../views/admin/Shifts.vue'), meta: { permission: 'orders.dispatch' } },
           { path: 'colis', component: () => import('../views/admin/HeldParcels.vue'), meta: { permission: 'orders.dispatch' } },
           { path: 'remontees', component: () => import('../views/admin/FieldReports.vue'), meta: { permission: 'field_events.manage' } },
           { path: 'planning', component: () => import('../views/admin/Planning.vue'), meta: { permission: 'planning.manage' } },
@@ -126,6 +128,7 @@ const routes = [
       { path: 'activite/mural', component: () => import('../views/admin/activity/WallScreen.vue'), meta: { permission: 'orders.dispatch' } },
       // Anciennes adresses (liens des notifications, favoris) : vers l'onglet, en gardant les paramètres
       { path: 'carte', redirect: (to) => ({ path: '/admin/activite/carte', query: to.query }) },
+      { path: 'pointages', redirect: (to) => ({ path: '/admin/activite/pointages', query: to.query }) },
       { path: 'disponibilites', redirect: (to) => ({ path: '/admin/activite/disponibles', query: to.query }) },
       { path: 'colis-livreurs', redirect: (to) => ({ path: '/admin/activite/colis', query: to.query }) },
       { path: 'terrain', redirect: (to) => ({ path: '/admin/activite/remontees', query: to.query }) },
@@ -164,6 +167,7 @@ const routes = [
       { path: 'vehicules/:id(\\d+)', component: () => import('../views/admin/VehicleDetail.vue'), meta: { permission: 'fleet.manage' } },
       { path: 'reglages/annuaire', component: () => import('../views/admin/settings/SettingsDestinations.vue'), meta: { permission: 'destinations.manage' } },
       { path: 'reglages/departements', component: () => import('../views/admin/settings/SettingsDepartments.vue'), meta: { permission: 'departments.manage' } },
+      { path: 'reglages/pointage', component: () => import('../views/admin/settings/SettingsShifts.vue'), meta: { permission: 'settings.manage' } },
       { path: 'reglages/vehicules', component: () => import('../views/admin/settings/SettingsVehicles.vue'), meta: { permission: 'fleet.manage' } },
       // Ancienne page « Qualité des livreurs » : la note est dans la liste et la fiche de chaque livreur
       { path: 'qualite-livreurs', redirect: (to) => (to.query.livreur ? { path: `/admin/livreurs/${to.query.livreur}`, query: { onglet: 'notes' } } : '/admin/livreurs') },
@@ -178,6 +182,8 @@ const routes = [
       { path: 'whatsapp', component: () => import('../views/admin/WhatsApp.vue'), meta: { permission: 'messaging.manage' } },
       { path: 'whatsapp/simulateur', component: () => import('../views/admin/WhatsAppSimulator.vue'), meta: { permission: 'messaging.manage' } },
       { path: 'messages', component: () => import('../views/admin/Messages.vue'), meta: { permission: 'orders.dispatch' } },
+      // Atelier : pannes confiées aux mécaniciens, achats sur place à accorder
+      { path: 'atelier', component: () => import('../views/admin/Workshop.vue'), meta: { permission: ['repairs.manage', 'repairs.purchases'] } },
     ],
   },
   // Application livreur (PWA mobile)
@@ -188,6 +194,7 @@ const routes = [
     children: [
       { path: '', name: 'livreur', component: () => import('../views/courier/Missions.vue'), meta: { title: 'Mes missions' } },
       { path: 'missions/:id(\\d+)', component: () => import('../views/courier/MissionDetail.vue'), meta: { title: 'Mission', back: true } },
+      { path: 'tournee', component: () => import('../views/courier/RoutePlan.vue'), meta: { title: 'Ma tournée', back: true } },
       { path: 'ramassage/:key', component: () => import('../views/courier/PickupGroup.vue'), meta: { title: 'Ramassage', back: true } },
       { path: 'stock', component: () => import('../views/admin/Stock.vue'), meta: { permission: 'stock.manage' } },
       { path: 'caisse', component: () => import('../views/courier/Wallet.vue'), meta: { title: 'Ma caisse' } },
@@ -200,6 +207,22 @@ const routes = [
       { path: 'profil', component: mobile.profile, meta: { title: 'Mon profil' } },
       // Les notifications pointent vers /livreur/courses/:id : on renvoie vers la liste des missions
       { path: 'courses/:id', redirect: '/livreur' },
+    ],
+  },
+  // Application mécanicien (PWA mobile) : les pannes à traiter
+  {
+    path: '/mecanicien',
+    component: () => import('../views/mechanic/MechanicApp.vue'),
+    meta: { roles: SPACES.mecanicien },
+    children: [
+      { path: '', name: 'mecanicien', component: () => import('../views/mechanic/Repairs.vue'), meta: { title: 'Mes pannes' } },
+      { path: 'pannes/:id(\\d+)', component: () => import('../views/mechanic/RepairDetail.vue'), meta: { title: 'Panne', back: true } },
+      { path: 'pannes/:id(\\d+)/diagnostic', component: () => import('../views/mechanic/RepairDiagnosis.vue'), meta: { title: 'Diagnostic', back: true } },
+      { path: 'pannes/:id(\\d+)/cloture', component: () => import('../views/mechanic/RepairClose.vue'), meta: { title: 'Clôturer', back: true } },
+      { path: 'vehicules', component: () => import('../views/mechanic/Vehicles.vue'), meta: { title: 'Véhicules' } },
+      { path: 'vehicules/:id(\\d+)', component: () => import('../views/mechanic/VehicleView.vue'), meta: { title: 'Véhicule', back: true } },
+      { path: 'notifications', component: mobile.notifications, meta: { title: 'Notifications', back: true } },
+      { path: 'profil', component: mobile.profile, meta: { title: 'Mon profil' } },
     ],
   },
   // Application client (PWA mobile)
@@ -229,6 +252,7 @@ const routes = [
       { path: 'rapports/:id(\\d+)', component: () => import('../views/merchant/ReportView.vue'), meta: { title: 'Rapport du mois', back: true, roles: ['merchant_owner', 'merchant_manager'] } },
       { path: 'notifications', component: mobile.notifications, meta: { title: 'Notifications', back: true } },
       { path: 'a-noter', component: () => import('../views/merchant/RateCourses.vue'), meta: { title: 'Noter les livreurs', back: true } },
+      { path: 'mes-parcours', component: () => import('../views/merchant/MyRoutines.vue'), meta: { title: 'Parcours de mes livreurs', back: true } },
       { path: 'mes-livreurs', component: () => import('../views/merchant/MyCouriers.vue'), meta: { title: 'Mes livreurs', back: true } },
       { path: 'mes-notifications', component: () => import('../views/merchant/NotificationSettings.vue'), meta: { title: 'Mes notifications', back: true } },
       { path: 'moyens-de-paiement', component: () => import('../views/merchant/PaymentMethods.vue'), meta: { title: 'Comment être payé', back: true, permission: 'finance.view' } },
@@ -245,8 +269,8 @@ const router = createRouter({
 
 // Page de connexion de l'espace demandé, avec retour à la page voulue après connexion
 function loginFor(to) {
-  const login = appLock()?.login || (to.path.startsWith('/admin') ? '/admin/connexion' : to.path.startsWith('/livreur') ? '/livreur/connexion' : '/')
-  return { path: login, query: to.path !== login && !['/admin', '/livreur', '/marchand'].includes(to.path) ? { redirect: to.fullPath } : {} }
+  const login = appLock()?.login || (to.path.startsWith('/admin') ? '/admin/connexion' : to.path.startsWith('/livreur') ? '/livreur/connexion' : to.path.startsWith('/mecanicien') ? '/mecanicien/connexion' : '/')
+  return { path: login, query: to.path !== login && !['/admin', '/livreur', '/mecanicien', '/marchand'].includes(to.path) ? { redirect: to.fullPath } : {} }
 }
 
 router.beforeEach(async (to) => {

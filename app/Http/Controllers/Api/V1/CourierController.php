@@ -161,6 +161,7 @@ class CourierController extends Controller
         $data = $request->validate([
             'vehicle_type' => ['sometimes', Rule::enum(VehicleType::class)],
             'vehicle_plate' => ['sometimes', 'nullable', 'string', 'max:30'],
+            'id_number' => ['sometimes', 'nullable', 'string', 'max:60'],
             // Plan partagé de l'entreprise, ou plan personnel de ce livreur ; null = plan par défaut
             'pay_plan_id' => ['sometimes', 'nullable', 'integer', Rule::exists('pay_plans', 'id')->where('company_id', $courier->company_id)
                 ->where(fn ($q) => $q->whereNull('courier_id')->orWhere('courier_id', $courier->id))],
@@ -181,7 +182,7 @@ class CourierController extends Controller
             'shift_ends_at' => ['sometimes', 'nullable', 'date_format:H:i'],
         ], [], [
             'backup_zone_ids' => 'zones de secours', 'max_parcels' => 'colis au maximum', 'max_cash' => 'argent en main au maximum',
-            'shift_ends_at' => 'fin de service',
+            'shift_ends_at' => 'fin de service', 'id_number' => 'numéro de pièce',
         ]);
 
         // La rémunération relève des réglages de l'entreprise

@@ -82,6 +82,7 @@ class PushSubscriptionController extends Controller
 
         $home = match (true) {
             $request->user()->isCourier() => '/livreur',
+            $request->user()->isMechanic() => '/mecanicien',
             $request->user()->merchant_id !== null => '/marchand',
             default => '/',
         };

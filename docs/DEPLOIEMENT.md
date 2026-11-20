@@ -151,7 +151,29 @@ docker compose exec app rm /tmp/ancienne-base.sql && rm /root/ancienne-base.sql
 ```
 
 Le compte rendu liste les lignes non importées (numéro invalide ou déjà présent) et les points à vérifier
-(commune non reconnue, compte sans mot de passe). Relancer ne crée pas de doublon.
+(commune non reconnue, compte sans mot de passe, photo introuvable). Relancer ne crée pas de doublon.
+Un livreur inscrit plusieurs fois avec le même numéro : seule la fiche la plus récemment utilisée est
+reprise (dernière position envoyée, sinon dernière mise à jour) ; les autres sont dans le compte rendu.
+
+**Photos des livreurs et de leur pièce d'identité** : elles sont dans le dossier `storage/app/public` de
+l'ancienne application (sous-dossiers `image` et `piece`). Copiez ces deux sous-dossiers dans le conteneur
+et ajoutez `--files` (à faire avec l'import des livreurs : un livreur déjà importé n'est pas repris) :
+
+```bash
+# <ancienne_app> : dossier de l'ancienne application sur le serveur
+docker compose exec app mkdir -p /tmp/anciens-fichiers
+docker compose cp <ancienne_app>/storage/app/public/image app:/tmp/anciens-fichiers/image
+docker compose cp <ancienne_app>/storage/app/public/piece app:/tmp/anciens-fichiers/piece
+docker compose exec app chown -R www-data /tmp/anciens-fichiers
+
+docker compose exec -u www-data app php artisan legacy:import /tmp/ancienne-base.sql --files=/tmp/anciens-fichiers --dry-run
+docker compose exec -u www-data app php artisan legacy:import /tmp/ancienne-base.sql --files=/tmp/anciens-fichiers
+
+docker compose exec app rm -rf /tmp/anciens-fichiers
+```
+
+Les photos sont copiées dans les fichiers privés de l'application : l'équipe les voit sur la fiche du
+livreur (onglet **Informations**, carte **Identité**), où elle peut aussi les ajouter ou les changer.
 
 **Avec le bouton de l'ancienne application** : **Réglages › Reprise de l'ancienne application** explique la
 marche à suivre (fichier à copier dans l'ancienne application, clé de reprise valable 7 jours).

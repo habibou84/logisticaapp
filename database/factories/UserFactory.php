@@ -61,6 +61,7 @@ class UserFactory extends Factory
         return $this->afterCreating(function (User $user) use ($role) {
             $user->assignRole($role->value);
             $user->syncCourierProfile();
+            $user->syncMechanicProfile();
         });
     }
 }

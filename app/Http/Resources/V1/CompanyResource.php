@@ -17,6 +17,7 @@ use App\Services\Photos\PhotoSettings;
 use App\Services\Ratings\RatingSettings;
 use App\Services\Reports\DashboardSettings;
 use App\Services\Reports\StatsSettings;
+use App\Services\Shifts\ShiftSettings;
 use App\Services\Vehicles\VehicleSettings;
 use App\Support\Branding;
 use Illuminate\Http\Request;
@@ -113,6 +114,7 @@ class CompanyResource extends JsonResource
             'destination_settings' => app(DestinationSettings::class)->for($this->resource),
             // Envoi (distribution, MAD) : types de pli, décompte du forfait montré au client
             'shipment_settings' => app(ShipmentSettings::class)->for($this->resource),
+            'shift_settings' => app(ShiftSettings::class)->for($this->resource),
             'merchant_signup' => $this->merchant_signup,
             'weekly_report' => $this->weekly_report,
             'guide_videos' => $this->guide_videos,
