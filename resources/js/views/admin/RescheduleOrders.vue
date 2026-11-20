@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-4">
-    <div class="flex flex-wrap items-center justify-between gap-2">
+    <div v-if="!embedded" class="flex flex-wrap items-center justify-between gap-2">
       <div>
         <RouterLink to="/admin/courses" class="text-sm text-blue-600">‹ Courses</RouterLink>
         <h1 class="text-xl font-bold">⏰ À reporter</h1>
@@ -159,6 +159,9 @@ import { useAuthStore } from '../../stores/auth'
 import { useDispatchCountStore } from '../../stores/dispatchCounts'
 import { useToastStore } from '../../stores/toasts'
 import { money } from '../../utils/format'
+
+// embedded : onglet de « Courses en retard »
+defineProps({ embedded: Boolean })
 
 /**
  * File « À reporter » : colis pas ramassés dont la date de livraison est passée, par client. Demander une

@@ -1,7 +1,27 @@
 <template>
-  <SettingsPage icon="📦" title="Courses et livraison" intro="Comment les courses sont validées, quand la journée se termine et comment les livreurs travaillent.">
+  <SettingsPage
+    :icon="automation ? '⚡' : '📦'" :title="automation ? 'Automatisation' : 'Courses et livraison'"
+    :intro="automation ? 'Ce qui se fait tout seul pour les livraisons : validation des courses, journée, ramassages et livraisons confiés aux livreurs, acceptation des missions.' : 'Colis à reporter, livreurs, étiquettes, photos, tableau de bord, distribution et MAD.'"
+  >
+    <!-- Livraison › Automatisation : le planning à côté, puis les réglages de ce qui se fait tout seul -->
+    <RouterLink v-if="automation && auth.can('planning.manage')" to="/admin/activite/planning" class="card flex items-center gap-3 p-4 hover:border-slate-400">
+      <span class="text-2xl" aria-hidden="true">🗓️</span>
+      <span class="min-w-0 flex-1">
+        <span class="block font-semibold">Planning des livreurs</span>
+        <span class="block text-sm text-slate-600">Qui ramasse et qui livre où et quand, les remplaçants, et le bouton pour suspendre l'automatisation.</span>
+      </span>
+      <span class="text-slate-600" aria-hidden="true">›</span>
+    </RouterLink>
+    <RouterLink v-if="!automation" to="/admin/automatisation" class="card flex items-center gap-3 p-4 hover:border-slate-400">
+      <span class="text-2xl" aria-hidden="true">⚡</span>
+      <span class="min-w-0 flex-1">
+        <span class="block font-semibold">Automatisation</span>
+        <span class="block text-sm text-slate-600">Validation des courses, journée, ramassage et livraison automatiques, acceptation des missions : dans le menu Livraison.</span>
+      </span>
+      <span class="text-slate-600" aria-hidden="true">›</span>
+    </RouterLink>
     <template v-if="form">
-      <section id="validation" class="card p-4 space-y-3 scroll-mt-20">
+      <section v-if="automation" id="validation" class="card p-4 space-y-3 scroll-mt-20">
         <h2 class="font-semibold">Validation des nouvelles courses</h2>
         <div class="space-y-2" role="radiogroup" aria-label="Validation des nouvelles courses">
           <label v-for="m in VALIDATION_MODES" :key="m.value" :class="['flex items-start gap-2 rounded-lg border p-3 text-sm cursor-pointer', form.validation_mode === m.value ? 'border-blue-500 bg-blue-50' : 'border-slate-200']">
@@ -14,7 +34,7 @@
         </div>
       </section>
 
-      <section id="journee" class="card p-4 space-y-3 scroll-mt-20">
+      <section v-if="automation" id="journee" class="card p-4 space-y-3 scroll-mt-20">
         <h2 class="font-semibold">Journée</h2>
         <div>
           <label class="label" for="cutoff">Heure limite du jour</label>
@@ -42,7 +62,7 @@
         </div>
       </section>
 
-      <section id="a-reporter" class="card p-4 space-y-3 scroll-mt-20">
+      <section v-if="!automation" id="a-reporter" class="card p-4 space-y-3 scroll-mt-20">
         <h2 class="font-semibold">Colis à reporter</h2>
         <p class="text-sm text-gray-600">
           Ramassage pas commencé et date de livraison passée : le colis est caché chez les livreurs et attend une nouvelle date
@@ -64,7 +84,7 @@
         <MoreHelp>Le client répond sur WhatsApp (« 1 3 demain et 2 lundi », « tout le 9/11 », « 3 annuler ») ou sur la page du lien.</MoreHelp>
       </section>
 
-      <section class="card p-4 space-y-3">
+      <section v-if="!automation" class="card p-4 space-y-3">
         <h2 class="font-semibold">Livreurs</h2>
         <label class="flex items-start gap-2 text-sm">
           <input v-model="form.require_delivery_code" type="checkbox" class="mt-1">
@@ -98,7 +118,7 @@
         </div>
       </section>
 
-      <section id="ramassage-auto" class="card p-4 space-y-3 scroll-mt-20">
+      <section v-if="automation" id="ramassage-auto" class="card p-4 space-y-3 scroll-mt-20">
         <h2 class="font-semibold">Ramassage automatique</h2>
         <p class="text-sm text-gray-600">
           Les ramassages des courses validées vont au livreur prévu par le
@@ -114,7 +134,7 @@
         </div>
       </section>
 
-      <section id="livraison-auto" class="card p-4 space-y-3 scroll-mt-20">
+      <section v-if="automation" id="livraison-auto" class="card p-4 space-y-3 scroll-mt-20">
         <h2 class="font-semibold">Livraison du jour même automatique</h2>
         <p class="text-sm text-gray-600">
           Un colis récupéré ou au dépôt, à livrer aujourd'hui avant l'heure limite, part seul au livreur qui convient :
@@ -144,7 +164,7 @@
         </div>
       </section>
 
-      <section class="card p-4 space-y-3">
+      <section v-if="automation" class="card p-4 space-y-3">
         <h2 class="font-semibold">Acceptation des missions</h2>
         <p class="text-sm text-gray-600">
           Faut-il que le livreur accepte chaque mission ? Les missions du planning sont toujours acceptées d'office.
@@ -182,7 +202,7 @@
       </section>
 
       <!-- Délai interne : pour l'équipe, jamais montré au client -->
-      <section class="card p-4 space-y-3">
+      <section v-if="!automation" class="card p-4 space-y-3">
         <h2 class="font-semibold">Délai interne de distribution</h2>
         <p class="text-sm text-gray-600">
           Délai que l'entreprise se donne pour distribuer une course, à partir de sa création. À 80 % du délai, l'équipe reçoit
@@ -198,7 +218,7 @@
       </section>
 
       <!-- Étiquettes : qui imprime, ce qui est imprimé, format proposé ; chaque client peut faire autrement -->
-      <section v-if="form.label_settings" class="card p-4 space-y-3">
+      <section v-if="!automation && form.label_settings" class="card p-4 space-y-3">
         <h2 class="font-semibold">Étiquettes</h2>
         <div>
           <label class="label" for="label-client">Les clients impriment leurs étiquettes</label>
@@ -225,7 +245,7 @@
       </section>
 
       <!-- Jour où le livreur peut livrer, par activité -->
-      <section v-if="form.delivery_day_rules" class="card p-4 space-y-3">
+      <section v-if="!automation && form.delivery_day_rules" class="card p-4 space-y-3">
         <h2 class="font-semibold">Livraisons du jour dans l'application livreur</h2>
         <p class="text-sm text-gray-600">
           Le livreur ne voit et ne fait que les livraisons permises ici. Les retards et les jours à venir se règlent à
@@ -246,7 +266,7 @@
       </section>
 
       <!-- Tableau de bord de l'équipe et point du jour -->
-      <section v-if="form.dashboard_settings" id="tableau-de-bord" class="card p-4 space-y-3 scroll-mt-20">
+      <section v-if="!automation && form.dashboard_settings" id="tableau-de-bord" class="card p-4 space-y-3 scroll-mt-20">
         <h2 class="font-semibold">Tableau de bord et point du jour</h2>
         <fieldset class="grid sm:grid-cols-2 lg:grid-cols-3 gap-2 text-sm">
           <legend class="label">Cartes « À faire maintenant » affichées (seulement quand il y a quelque chose à faire)</legend>
@@ -271,7 +291,7 @@
       </section>
 
       <!-- Photos de documents : scanner de l'application livreur (recadrage, redressement, nettoyage, contrôle) -->
-      <section v-if="form.photo_settings" class="card p-4 space-y-3">
+      <section v-if="!automation && form.photo_settings" class="card p-4 space-y-3">
         <h2 class="font-semibold">Photos de documents</h2>
         <p class="text-sm text-gray-600">
           Le livreur photographie le document : l'application trouve la feuille, la redresse, efface les ombres, rend le fond
@@ -315,7 +335,7 @@
       </section>
 
       <!-- Distribution et MAD : au choix de l'administrateur ; chaque contrat peut faire autrement -->
-      <section v-if="form.activity_options" class="card p-4 space-y-4">
+      <section v-if="!automation && form.activity_options" class="card p-4 space-y-4">
         <div>
           <h2 class="font-semibold">Distribution et MAD</h2>
           <p class="text-sm text-gray-600">
@@ -330,7 +350,7 @@
       </section>
 
       <!-- Envoi (distribution, MAD) : types de pli proposés au client, décompte du forfait -->
-      <section v-if="form.shipment_settings" id="envoi" class="card p-4 space-y-3 scroll-mt-20">
+      <section v-if="!automation && form.shipment_settings" id="envoi" class="card p-4 space-y-3 scroll-mt-20">
         <div>
           <h2 class="font-semibold">L'envoi des clients (distribution et MAD)</h2>
           <p class="text-sm text-gray-600">Quand le client envoie un pli, il peut dire ce que c'est. Il choisit dans cette liste ; « Autre » lui demande de préciser.</p>
@@ -362,7 +382,8 @@
 
 <script setup>
 import { nextTick, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { RouterLink, useRoute } from 'vue-router'
+import { useAuthStore } from '../../../stores/auth'
 import SettingsPage from '../../../components/settings/SettingsPage.vue'
 import SaveBar from '../../../components/settings/SaveBar.vue'
 import MoreHelp from '../../../components/settings/MoreHelp.vue'
@@ -386,6 +407,9 @@ function addPliKind() {
   newPliKind.value = ''
 }
 // Lien d'un bandeau (ex. « Activer » le ramassage automatique) : le bon réglage à l'écran
+// automation : page Livraison › Automatisation (mêmes réglages, seulement ce qui se fait tout seul)
+defineProps({ automation: Boolean })
+const auth = useAuthStore()
 const route = useRoute()
 watch(form, async (value) => {
   if (!value || !route.hash) return
@@ -397,7 +421,7 @@ const DASHBOARD_CARDS = {
   unassigned: 'Sans livreur',
   to_confirm: 'À valider',
   to_approve: 'À approuver par le chef de service',
-  untreated: 'Courses non traitées',
+  untreated: 'Courses en retard',
   internal_late: 'Délai interne dépassé',
   lots_due: 'Lots à échéance proche',
   mad_uncovered: 'Contrats MAD sans livreur',

@@ -207,7 +207,7 @@ class SetupGuide
 
         return $this->step('order_rules', 'Les règles des courses', true,
             'Elles décident quand une course est validée, jusqu\'à quelle heure on livre le jour même et combien de fois on essaie.',
-            $c->daily_cutoff_time ? self::DONE : self::PARTIAL, $lines, '/admin/reglages/courses', 'Régler les courses');
+            $c->daily_cutoff_time ? self::DONE : self::PARTIAL, $lines, '/admin/automatisation', 'Régler les courses');
     }
 
     private function couriers(Company $c): array

@@ -221,7 +221,7 @@ const mainCards = computed(() => {
       tone: toConfirm ? 'border-amber-300 bg-amber-50 text-amber-900' : 'border-slate-200', text: toConfirm ? 'nouvelles courses en attente' : 'rien à valider',
     },
     {
-      key: 'untreated', title: '⏳ Courses non traitées', value: untreated, to: { path: '/admin/courses/non-traitees', query: activity.value ? { activity: activity.value } : {} }, urgent: untreated > 0,
+      key: 'untreated', title: '⏳ Courses en retard', value: untreated, to: { path: '/admin/courses/en-retard', query: { onglet: 'toutes', ...(activity.value ? { activity: activity.value } : {}) } }, urgent: untreated > 0,
       tone: untreated ? 'border-red-300 bg-red-50 text-red-900' : 'border-slate-200',
       text: untreated ? `date dépassée${oldestUntreated.value ? ` · la plus vieille : ${dayName(oldestUntreated.value)}` : ''}` : 'tout est à jour',
     },

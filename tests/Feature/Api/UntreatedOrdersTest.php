@@ -88,6 +88,13 @@ class UntreatedOrdersTest extends TestCase
         $this->assertSame([[$twoDaysAgo, 1], [$yesterday, 2]], array_map(fn ($g) => [$g['key'], $g['count']], $byDate['groups']));
         $this->assertSame(collect([$alone->id, $returning->id])->sort()->values()->all(), $this->ids("/api/v1/orders?queue=untreated&from={$yesterday}&to={$yesterday}&date_basis=delivery"));
 
+        // Onglet « Ramassées, pas livrées » : sans les colis jamais ramassés (onglet « Pas ramassées »)
+        $picked = collect([$withCourier->id, $returning->id])->sort()->values()->all();
+        $this->assertSame($picked, $this->ids('/api/v1/orders?queue=untreated_picked'));
+        $this->assertSame(2, $this->getJson('/api/v1/orders/untreated-groups?by=date&stage=picked')->json('data.total'));
+        $counts = $this->getJson('/api/v1/orders/counts')->json('data');
+        $this->assertSame([3, 2, 1], [$counts['exceptions']['untreated'], $counts['exceptions']['untreated_picked'], $counts['to_reschedule']]);
+
         $byCourier = collect($this->getJson('/api/v1/orders/untreated-groups?by=courier')->json('data.groups'))->keyBy('key');
         $this->assertSame([1, $this->courierB->user->name], [$byCourier[(string) $this->courierB->id]['count'], $byCourier[(string) $this->courierB->id]['label']]);
         $this->assertSame([$withCourier->id], $this->ids("/api/v1/orders?queue=untreated&lead_courier_id={$this->courierB->id}"));

@@ -91,12 +91,16 @@ const routes = [
     children: [
       { path: '', name: 'admin', component: shared.dashboard },
       { path: 'statistiques', component: () => import('../views/admin/Statistics.vue'), meta: { permission: 'orders.view' } },
+      // Mon compte : mot de passe de la personne connectée (bouton profil de l'en-tête)
+      { path: 'mon-compte', component: () => import('../views/admin/Account.vue') },
       { path: 'courses', component: shared.orders, meta: { permission: 'orders.view' } },
       { path: 'courses/nouvelle', component: shared.orderCreate, meta: { permission: 'orders.create' } },
       { path: 'courses/import', component: () => import('../views/admin/OrderImport.vue'), meta: { permission: 'orders.create' } },
       // Courses non traitées : jour de livraison dépassé, plus dans la règle de l'activité
-      { path: 'courses/non-traitees', component: () => import('../views/admin/UntreatedOrders.vue'), meta: { permission: 'orders.dispatch' } },
-      { path: 'courses/a-reporter', component: () => import('../views/admin/RescheduleOrders.vue'), meta: { permission: 'orders.dispatch' } },
+      // Courses en retard : pas ramassées (à reporter), ramassées pas livrées, toutes (anciennes pages, en onglets)
+      { path: 'courses/en-retard', component: () => import('../views/admin/LateOrders.vue'), meta: { permission: 'orders.dispatch' } },
+      { path: 'courses/non-traitees', redirect: (to) => ({ path: '/admin/courses/en-retard', query: { ...to.query, onglet: 'toutes' } }) },
+      { path: 'courses/a-reporter', redirect: '/admin/courses/en-retard?onglet=pas-ramassees' },
       { path: 'courses/:id(\\d+)', component: shared.orderDetail, meta: { permission: 'orders.view' } },
       { path: 'marchands', component: () => import('../views/admin/Merchants.vue'), meta: { permission: 'merchants.view' } },
       { path: 'marchands/:id(\\d+)/departements', component: () => import('../views/admin/MerchantDepartments.vue'), meta: { permission: 'merchants.view' } },
@@ -160,6 +164,8 @@ const routes = [
       { path: 'reglages', component: () => import('../views/admin/settings/SettingsHub.vue'), meta: { permission: SETTINGS_PERMISSIONS } },
       { path: 'reglages/entreprise', component: () => import('../views/admin/settings/SettingsCompany.vue'), meta: { permission: 'settings.manage' } },
       { path: 'reglages/courses', component: () => import('../views/admin/settings/SettingsOrders.vue'), meta: { permission: 'settings.manage' } },
+      // Livraison › Automatisation : validation, journée, ramassage et livraison automatiques, acceptation des missions
+      { path: 'automatisation', component: () => import('../views/admin/settings/SettingsOrders.vue'), props: { automation: true }, meta: { permission: 'settings.manage' } },
       { path: 'reglages/notation', component: () => import('../views/admin/settings/SettingsRatings.vue'), meta: { permission: 'ratings.manage' } },
       { path: 'reglages/evenements-terrain', component: () => import('../views/admin/settings/SettingsFieldEvents.vue'), meta: { permission: 'field_events.manage' } },
       { path: 'vehicules', component: () => import('../views/admin/Vehicles.vue'), meta: { permission: 'fleet.manage' } },

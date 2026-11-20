@@ -43,7 +43,7 @@ class OrderController extends Controller
             'status' => ['nullable', 'array'],
             'status.*' => [Rule::enum(OrderStatus::class)],
             // File d'attente du dispatch : à valider, à ramasser, à livrer, à retourner
-            'queue' => ['nullable', Rule::in(['to_confirm', 'to_approve', 'on_hold', 'follow_up', 'to_pickup', 'to_reschedule', 'to_prepare', 'to_deliver', 'unassigned', 'to_decide', 'scheduled', 'to_return', 'incidents', 'failed', 'code_to_verify', 'internal_late', 'untreated'])],
+            'queue' => ['nullable', Rule::in(['to_confirm', 'to_approve', 'on_hold', 'follow_up', 'to_pickup', 'to_reschedule', 'to_prepare', 'to_deliver', 'unassigned', 'to_decide', 'scheduled', 'to_return', 'incidents', 'failed', 'code_to_verify', 'internal_late', 'untreated', 'untreated_picked'])],
             // Courses non traitées : celles qui n'ont pas de livreur
             'without_courier' => ['nullable', 'boolean'],
             // Courses non traitées : livreur de la livraison, à défaut du ramassage
@@ -82,7 +82,7 @@ class OrderController extends Controller
             ->when($queue === 'unassigned', fn ($q) => AwaitingCourier::scope($q, $request->input('awaiting'), $day))
             ->when($day !== null, fn ($q) => $this->applyDay($q, $queue, $day, $request->boolean('include_later')))
             // Jour choisi (courses d'avant encore dans leur règle d'abord) et non traitées : de la plus ancienne à la plus récente
-            ->when(($day !== null && ($queue === '' || in_array($queue, self::WORK_QUEUES, true))) || $queue === 'untreated', fn ($q) => $q->orderByRaw(Order::DELIVERY_DAY_SQL))
+            ->when(($day !== null && ($queue === '' || in_array($queue, self::WORK_QUEUES, true))) || in_array($queue, ['untreated', 'untreated_picked'], true), fn ($q) => $q->orderByRaw(Order::DELIVERY_DAY_SQL))
             ->when($request->boolean('without_courier'), fn ($q) => $q->whereNull('pickup_courier_id')->whereNull('delivery_courier_id'))
             ->when($request->filled('lead_courier_id'), fn ($q) => $q->whereRaw('COALESCE(delivery_courier_id, pickup_courier_id) = ?', [$request->integer('lead_courier_id')]))
             // Sans livreur : de la plus ancienne attente à la plus récente
@@ -135,10 +135,13 @@ class OrderController extends Controller
         $data = $request->validate([
             'by' => ['nullable', Rule::in(['date', 'courier', 'merchant'])],
             'activity' => ['nullable', Rule::enum(Activity::class)],
+            // picked : sans les colis jamais ramassés (onglet « Pas ramassées »)
+            'stage' => ['nullable', Rule::in(['all', 'picked'])],
         ]);
         $by = $data['by'] ?? 'date';
 
         $base = Order::query()->visibleTo($request->user())->untreated()
+            ->when(($data['stage'] ?? 'all') === 'picked', fn ($q) => $q->withoutToReschedule(today()->toDateString()))
             ->when($data['activity'] ?? null, fn ($q, $activity) => $q->where('activity', $activity));
         $sums = "COUNT(*) AS n, SUM(CASE WHEN orders.activity = 'ecommerce' THEN cod_amount ELSE 0 END) AS amount, MIN(".Order::DELIVERY_DAY_SQL.') AS oldest';
         $rows = match ($by) {
@@ -240,7 +243,7 @@ class OrderController extends Controller
     private const DAY_QUEUES = ['to_confirm', 'to_return', 'failed'];
 
     /** Cas à régler comptés toutes dates : la page Courses ne montre leur onglet ou leur carte que s'il y en a */
-    private const EXCEPTION_QUEUES = ['untreated', 'to_approve', 'to_return', 'failed', 'to_decide', 'incidents', 'scheduled', 'on_hold', 'follow_up', 'code_to_verify', 'internal_late', 'to_prepare'];
+    private const EXCEPTION_QUEUES = ['untreated', 'untreated_picked', 'to_approve', 'to_return', 'failed', 'to_decide', 'incidents', 'scheduled', 'on_hold', 'follow_up', 'code_to_verify', 'internal_late', 'to_prepare'];
 
     /** Files de travail : limitées au jour choisi (les jours passés sont dans « Courses non traitées ») */
     private const WORK_QUEUES = ['to_pickup', 'to_prepare', 'to_deliver', 'unassigned'];
@@ -356,6 +359,8 @@ class OrderController extends Controller
             'failed' => $query->where('status', OrderStatus::DeliveryFailed),
             // Non traitées : jour dépassé, pas terminée, plus dans la règle de son activité (toutes dates)
             'untreated' => $query->untreated(),
+            // En retard et déjà ramassées (ou à l'entrepôt) : tout sauf les « à reporter »
+            'untreated_picked' => $query->untreated()->withoutToReschedule(today()->toDateString()),
             // Livrées hors connexion avec un code client incorrect : à vérifier auprès du destinataire
             'code_to_verify' => $query->whereNotNull('delivery_code_unverified_at'),
             // Délai interne de distribution dépassé, course pas terminée

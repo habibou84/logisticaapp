@@ -1,6 +1,7 @@
 <template>
   <div class="space-y-4">
-    <div class="flex flex-wrap items-center justify-between gap-2">
+    <!-- Dans « Courses en retard », le titre est celui de la page à onglets -->
+    <div v-if="!embedded" class="flex flex-wrap items-center justify-between gap-2">
       <div>
         <RouterLink to="/admin/courses" class="text-sm text-blue-600">‹ Courses</RouterLink>
         <h1 class="text-xl font-bold">⏳ Courses non traitées</h1>
@@ -142,6 +143,8 @@ import { activityBadge, activityShort, myActivities } from '../../utils/activiti
  * activité. Regroupées par date prévue, par livreur ou par client ; sélection pour une nouvelle date, un livreur ou
  * l'annulation (le livreur ne peut plus faire ces courses tant que l'agence ne les a pas réglées).
  */
+// embedded : onglet de « Courses en retard » ; stage picked : sans les colis jamais ramassés
+const props = defineProps({ embedded: Boolean, stage: { type: String, default: 'all' } })
 const GROUPINGS = [
   { value: 'date', label: '📅 Par date' },
   { value: 'courier', label: '🛵 Par livreur' },
@@ -177,7 +180,7 @@ const dayOf = (o) => (o.delivery.scheduled_date || o.created_at || '').slice(0, 
 
 async function loadGroups() {
   try {
-    data.value = (await http.get('/orders/untreated-groups', { params: { by: by.value, activity: activity.value || undefined } })).data.data
+    data.value = (await http.get('/orders/untreated-groups', { params: { by: by.value, activity: activity.value || undefined, stage: props.stage } })).data.data
   } catch (e) {
     error.value = apiErrorMessage(e)
   }
@@ -193,7 +196,7 @@ function filtersFor(key) {
 async function load(page = 1) {
   loading.value = orders.value.length === 0
   try {
-    const params = { queue: 'untreated', page, per_page: 50, search: search.value || undefined, activity: activity.value || undefined, ...filtersFor(selectedGroup.value) }
+    const params = { queue: props.stage === 'picked' ? 'untreated_picked' : 'untreated', page, per_page: 50, search: search.value || undefined, activity: activity.value || undefined, ...filtersFor(selectedGroup.value) }
     const res = (await http.get('/orders', { params })).data
     orders.value = res.data
     meta.value = res.meta
@@ -218,7 +221,7 @@ function select(key) {
 }
 
 function syncQuery() {
-  router.replace({ query: { by: by.value, ...(activity.value ? { activity: activity.value } : {}) } })
+  router.replace({ query: { ...(route.query.onglet ? { onglet: route.query.onglet } : {}), by: by.value, ...(activity.value ? { activity: activity.value } : {}) } })
 }
 
 function setBy(value) {
@@ -333,6 +336,13 @@ function returnMany(list = returnable.value) {
 }
 
 watch(orderChanges, refresh)
+// Autre onglet de « Courses en retard » : autre file
+watch(() => props.stage, () => {
+  selectedGroup.value = null
+  selected.value = []
+  loadGroups()
+  load(1)
+})
 
 onMounted(async () => {
   loadGroups()

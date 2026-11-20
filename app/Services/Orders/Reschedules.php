@@ -457,7 +457,7 @@ class Reschedules
             Notification::send($staff, new OrderAlert($orders->first(), 'reschedule_evening',
                 "📅 {$orders->count()} colis pas ramassés aujourd'hui",
                 "Nouvelle date demandée à {$sent} client(s). Les réponses arrivent dans « À reporter ».",
-                ['url' => '/admin/courses/a-reporter']));
+                ['url' => '/admin/courses/en-retard?onglet=pas-ramassees']));
         }
 
         return $sent;

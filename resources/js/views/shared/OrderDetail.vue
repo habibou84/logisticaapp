@@ -25,7 +25,7 @@
 
     <!-- Pas ramassé à sa date : caché chez les livreurs jusqu'à la nouvelle date -->
     <RouterLink
-      v-if="order.to_reschedule && isStaff" to="/admin/courses/a-reporter"
+      v-if="order.to_reschedule && isStaff" to="/admin/courses/en-retard?onglet=pas-ramassees"
       class="card flex items-center gap-3 border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 hover:bg-amber-100"
     >
       <span class="text-xl" aria-hidden="true">⏰</span>

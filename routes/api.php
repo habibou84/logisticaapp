@@ -59,6 +59,7 @@ use App\Http\Controllers\Api\V1\OrderDraftController;
 use App\Http\Controllers\Api\V1\OrderExpenseController;
 use App\Http\Controllers\Api\V1\OrderImportController;
 use App\Http\Controllers\Api\V1\ParcelController;
+use App\Http\Controllers\Api\V1\PasswordController;
 use App\Http\Controllers\Api\V1\PasswordResetController;
 use App\Http\Controllers\Api\V1\PayPlanController;
 use App\Http\Controllers\Api\V1\PlanningController;
@@ -204,6 +205,7 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::post('orders/labels/printed', [LabelController::class, 'printed'])->middleware('throttle:60,1')->name('orders.labels.printed');
         Route::get('auth/me', [AuthController::class, 'me'])->name('auth.me');
         Route::post('auth/logout', [AuthController::class, 'logout'])->name('auth.logout');
+        Route::put('auth/password', [PasswordController::class, 'update'])->middleware('throttle:10,1')->name('auth.password');
         Route::post('company/logo', [BrandingController::class, 'upload'])->name('company.logo.store');
         Route::delete('company/logo', [BrandingController::class, 'destroy'])->name('company.logo.destroy');
         // Apparence des espaces : couleurs, noms et icônes des applications

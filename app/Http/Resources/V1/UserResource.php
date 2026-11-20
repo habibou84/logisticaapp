@@ -40,6 +40,8 @@ class UserResource extends JsonResource
             'name' => $this->name,
             'phone' => $this->phone,
             'email' => $this->email,
+            // Compte ouvert par WhatsApp, sans mot de passe : il peut en définir un (Mon compte)
+            'has_password' => $this->password !== null,
             'role' => $role?->name,
             'role_label' => $role?->displayLabel(),
             // Rôle sur mesure de l'équipe (écran Rôles)

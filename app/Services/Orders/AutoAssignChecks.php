@@ -22,7 +22,8 @@ class AutoAssignChecks
         $rules = fn () => CourierRule::withoutGlobalScopes()->where('company_id', $company->id)->where('is_active', true);
         $pickup = $company->auto_pickup ?? 'off';
         $delivery = $company->auto_delivery ?? 'off';
-        $settings = '/admin/reglages/courses';
+        // Livraison › Automatisation
+        $settings = '/admin/automatisation';
 
         if ($company->automationPaused()) {
             $items[] = $this->item('paused', 'Assignation automatique suspendue',

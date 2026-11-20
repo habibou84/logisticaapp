@@ -14,13 +14,22 @@ export function adminMenuGroups(badges = {}) {
       label: 'Opérations',
       items: [
         { to: '/admin/courses', icon: '📦', label: 'Courses', permission: 'orders.view', badge: badges.late },
-        // Jour de livraison dépassé, plus dans la règle de l'activité : toutes dates
-        { to: '/admin/courses/non-traitees', icon: '⏳', label: 'Courses non traitées', permission: 'orders.dispatch', badge: badges.untreated },
-        // Ramassages pas faits à leur date : nouvelle date à demander ou à choisir
-        { to: '/admin/courses/a-reporter', icon: '⏰', label: 'À reporter', permission: 'orders.dispatch', badge: badges.reschedule },
+        // Jour de livraison dépassé : pas ramassées (à reporter), ramassées pas livrées, toutes, en onglets
+        { to: '/admin/courses/en-retard', icon: '⏳', label: 'Courses en retard', permission: 'orders.dispatch', badge: badges.untreated },
         // Suivi du jour, carte, disponibles, colis en main, remontées terrain et planning, en onglets
         { to: '/admin/activite', icon: '🛵', label: 'Activité des livreurs', permission: ACTIVITY_TABS.map((t) => t.permission), badge: (badges.fieldReports || 0) + (badges.heldParcels || 0) },
         { to: '/admin/retours', icon: '📮', label: 'Retours clients', permission: 'orders.dispatch' },
+      ],
+    },
+    {
+      // Où on livre et à quel prix, ce qui se fait tout seul, qui travaille où et quand
+      id: 'livraison',
+      label: 'Livraison',
+      items: [
+        { to: '/admin/zones', icon: '🗺️', label: 'Zones', permission: 'zones.manage' },
+        { to: '/admin/tarifs', icon: '🏷️', label: 'Tarifs de livraison', permission: 'pricing.manage' },
+        { to: '/admin/automatisation', icon: '⚡', label: 'Automatisation', permission: 'settings.manage' },
+        { to: '/admin/activite/planning', icon: '🗓️', label: 'Planning des livreurs', permission: 'planning.manage' },
       ],
     },
     {
@@ -49,7 +58,15 @@ export function adminMenuGroups(badges = {}) {
       items: [
         { to: '/admin/marchands', icon: '🏪', label: 'Clients', permission: 'merchants.view' },
         { to: '/admin/stock', icon: '🏬', label: 'Stock', permission: 'stock.manage' },
+      ],
+    },
+    {
+      id: 'messages',
+      label: 'Messages',
+      items: [
         { to: '/admin/messages', icon: '💬', label: 'Messages', permission: 'orders.dispatch' },
+        // Connexion du numéro et messages prédéfinis
+        { to: '/admin/whatsapp', icon: '🟢', label: 'WhatsApp', permission: 'messaging.manage' },
       ],
     },
     {
@@ -67,7 +84,7 @@ export function adminMenuGroups(badges = {}) {
     {
       id: 'configuration',
       label: 'Configuration',
-      // Zones, tarifs, WhatsApp, intégrations… : tout passe par la page Réglages, rangée par thèmes
+      // Intégrations, entreprise, motifs… : la page Réglages, rangée par thèmes (zones, tarifs et WhatsApp y restent aussi)
       items: [
         // Point rouge : alertes du bilan de santé
         { to: '/admin/reglages', icon: '⚙️', label: 'Réglages', permission: SETTINGS_PERMISSIONS, badge: badges.health },

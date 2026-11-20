@@ -39,17 +39,17 @@
 
     <!-- Courses non traitées (jour dépassé, plus dans la règle de l'activité) : page à part, toutes dates -->
     <RouterLink
-      v-if="isStaff && untreatedCount" to="/admin/courses/non-traitees"
+      v-if="isStaff && untreatedCount" to="/admin/courses/en-retard?onglet=toutes"
       class="card flex items-center gap-3 border-red-300 bg-red-50 px-3 py-2 text-red-900 hover:bg-red-100"
     >
       <span class="text-2xl" aria-hidden="true">⏳</span>
-      <span class="min-w-0 flex-1 text-sm"><b>{{ untreatedCount }} course{{ untreatedCount > 1 ? 's' : '' }} non traitée{{ untreatedCount > 1 ? 's' : '' }}</b> : date de livraison dépassée, pas encore livrée{{ untreatedCount > 1 ? 's' : '' }}, retournée{{ untreatedCount > 1 ? 's' : '' }} ni annulée{{ untreatedCount > 1 ? 's' : '' }}</span>
+      <span class="min-w-0 flex-1 text-sm"><b>{{ untreatedCount }} course{{ untreatedCount > 1 ? 's' : '' }} en retard</b> : date de livraison dépassée, pas encore livrée{{ untreatedCount > 1 ? 's' : '' }}, retournée{{ untreatedCount > 1 ? 's' : '' }} ni annulée{{ untreatedCount > 1 ? 's' : '' }}</span>
       <span class="text-sm font-semibold underline">Voir</span>
     </RouterLink>
 
     <!-- Ramassages pas faits à leur date : cachés chez les livreurs jusqu'à la nouvelle date -->
     <RouterLink
-      v-if="isStaff && rescheduleCount" to="/admin/courses/a-reporter"
+      v-if="isStaff && rescheduleCount" to="/admin/courses/en-retard?onglet=pas-ramassees"
       class="card flex items-center gap-3 border-amber-300 bg-amber-50 px-3 py-2 text-amber-900 hover:bg-amber-100"
     >
       <span class="text-2xl" aria-hidden="true">⏰</span>
