@@ -161,6 +161,7 @@
             <select id="f-status" v-model="filters.status" class="input" @change="load(1)">
               <option value="">Tous les statuts</option>
               <option v-for="(label, value) in STATUS_LABELS" :key="value" :value="value">{{ label }}</option>
+              <option value="delivered_late">Livrées en retard (après la 1re date prévue)</option>
             </select>
           </div>
           <!-- Distribution, MAD : les courses d'un contrat ou d'un lot -->
@@ -201,6 +202,7 @@
         <select v-model="filters.status" class="input" @change="load(1)">
           <option value="">Tous les statuts</option>
           <option v-for="(label, value) in STATUS_LABELS" :key="value" :value="value">{{ label }}</option>
+          <option value="delivered_late">Livrées en retard (après la 1re date prévue)</option>
         </select>
         <select v-if="isStaff && plans.length" v-model="filters.billing_plan_id" class="input" aria-label="Contrat ou lot" @change="syncQuery(); load(1)">
           <option value="">Tous les contrats</option>
@@ -594,6 +596,11 @@ async function load(page = 1) {
   const params = { page }
   for (const [k, v] of Object.entries(filters)) {
     if (v) params[k] = k === 'status' ? [v] : (k === 'include_later' ? 1 : v)
+  }
+  // Livrées en retard : livrées après leur première date prévue
+  if (filters.status === 'delivered_late') {
+    delete params.status
+    params.delivered_late = 1
   }
   const { data } = await http.get('/orders', { params })
   orders.value = data.data

@@ -107,7 +107,9 @@ class DeliveryDay
             return null;
         }
 
-        $order->forceFill(['delivery_scheduled_date' => $this->nextDay($company)->toDateString()])->save();
+        // À l'enregistrement : c'est la date prévue dès le départ (pas un report)
+        $next = $this->nextDay($company)->toDateString();
+        $order->forceFill(['delivery_scheduled_date' => $next, 'first_delivery_date' => $next])->save();
 
         return $this->reasonText($company, $reason);
     }

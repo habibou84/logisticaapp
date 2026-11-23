@@ -75,6 +75,8 @@ class OrderResource extends JsonResource
                 'lat' => $this->delivery_lat,
                 'lng' => $this->delivery_lng,
                 'scheduled_date' => $this->delivery_scheduled_date?->toDateString(),
+                // Première date prévue, figée (la date de livraison suit les reports et devient le jour de la livraison)
+                'first_date' => $this->first_delivery_date?->toDateString(),
                 'time_slot' => $this->delivery_time_slot,
             ],
             // Commande préparée à l'entrepôt : pas de ramassage

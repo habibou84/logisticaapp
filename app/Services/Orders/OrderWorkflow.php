@@ -557,6 +557,8 @@ class OrderWorkflow
             case OrderStatus::Delivered:
                 $this->finish($delivery, AssignmentStatus::Completed);
                 $order->delivered_at = $now;
+                // La date de livraison devient le jour où la course est livrée (la première date prévue reste à part)
+                $order->delivery_scheduled_date = Carbon::parse($now)->setTimezone($order->company?->timezone ?: config('app.timezone'))->toDateString();
                 $order->handTo(null);
                 $order->collected_amount = $context['collected_amount'] ?? $order->cod_amount;
                 if (filled($context['received_by_name'] ?? null)) {

@@ -60,7 +60,10 @@
             <p v-if="order.recipient.phone2">2e numéro : <a :href="telLink(order.recipient.phone2)" class="text-blue-600">{{ order.recipient.phone2 }}</a></p>
             <p>{{ order.delivery.address || '—' }}</p>
             <p v-if="order.delivery.landmark" class="text-gray-600">Repère : {{ order.delivery.landmark }}</p>
-            <p v-if="order.delivery.scheduled_date">Prévue le {{ date(order.delivery.scheduled_date) }} {{ order.delivery.time_slot ? `(${order.delivery.time_slot}h)` : '' }}</p>
+            <p v-if="order.delivery.scheduled_date">
+              {{ order.status === 'delivered' ? 'Livrée le' : 'Date de livraison :' }} {{ date(order.delivery.scheduled_date) }} {{ order.delivery.time_slot && order.status !== 'delivered' ? `(${order.delivery.time_slot}h)` : '' }}
+              <span v-if="order.delivery.first_date && order.delivery.first_date !== order.delivery.scheduled_date" class="block text-xs text-gray-500">Prévue d'abord le {{ date(order.delivery.first_date) }}</span>
+            </p>
             <p v-if="order.delivery_courier" class="pt-1">Livreur : <strong>{{ order.delivery_courier.name }}</strong></p>
             <button v-if="canEditDelivery" class="text-blue-600 text-xs underline pt-1" @click="openEdit">Modifier la livraison</button>
           </div>

@@ -27,8 +27,9 @@ use Illuminate\Support\Collection;
  * - MAD : livreurs mis à disposition aujourd'hui et courses faites pour leurs clients ;
  * - livreurs de la période.
  *
- * Les courses prévues sont celles dont le jour de livraison tombe dans la période ; les livrées sont celles livrées
- * pendant la période (quel que soit leur jour prévu). Les courses suivent le périmètre de l'utilisateur (activités).
+ * Une seule date compte : la date de livraison de la course (elle suit les reports et devient le jour de la
+ * livraison). Courses de la période = date de livraison dans la période ; livrées = celles-ci, livrées : les mêmes
+ * courses que la liste du jour. Les courses suivent le périmètre de l'utilisateur (activités).
  */
 class DayReport
 {
@@ -58,12 +59,11 @@ class DayReport
         $end = CarbonImmutable::parse($to, $tz)->endOfDay();
         $today = CarbonImmutable::now($tz)->toDateString();
         $orders = fn (): Builder => Order::query()->where('orders.company_id', $company->id)->whereIn('orders.activity', $activities);
-        $columns = ['id', 'merchant_id', 'activity', 'shipment_type', 'shipment_quantity', 'status', 'billing_plan_id', 'internal_due_at', 'delivery_courier_id'];
+        $columns = ['id', 'merchant_id', 'activity', 'shipment_type', 'shipment_quantity', 'status', 'billing_plan_id', 'internal_due_at', 'delivery_courier_id', 'is_shipping'];
 
         $planned = $orders()->forPeriod($from, $to, 'delivery')->get($columns);
         $count = fn (array $statuses) => $planned->whereIn('status', $statuses)->count();
-        $delivered = $orders()->where('status', OrderStatus::Delivered)
-            ->whereBetween('delivered_at', [$start->utc(), $end->utc()])->get([...$columns, 'is_shipping']);
+        $delivered = $planned->where('status', OrderStatus::Delivered)->values();
         $created = fn (): Builder => $orders()->whereBetween('created_at', [$start->utc(), $end->utc()]);
 
         $report = [

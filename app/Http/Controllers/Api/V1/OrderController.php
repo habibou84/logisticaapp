@@ -66,6 +66,8 @@ class OrderController extends Controller
             'day' => ['nullable', 'date'],
             // Files de travail : ajouter les courses à livrer après ce jour (ramassage en avance)
             'include_later' => ['nullable', 'boolean'],
+            // Livrées après leur première date prévue
+            'delivered_late' => ['nullable', 'boolean'],
             'search' => ['nullable', 'string', 'max:100'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:200'],
         ]);
@@ -78,6 +80,8 @@ class OrderController extends Controller
             ->visibleTo($request->user())
             ->with(self::LIST_RELATIONS)
             ->when($request->filled('status'), fn ($q) => $q->whereIn('status', $request->input('status')))
+            ->when($request->boolean('delivered_late'), fn ($q) => $q->where('status', OrderStatus::Delivered)
+                ->whereNotNull('first_delivery_date')->whereRaw(Order::DELIVERY_DAY_SQL.' > DATE(orders.first_delivery_date)'))
             ->when($queue !== '' && $queue !== 'unassigned', fn ($q) => $this->applyQueue($q, $queue, $day))
             ->when($queue === 'unassigned', fn ($q) => AwaitingCourier::scope($q, $request->input('awaiting'), $day))
             ->when($day !== null, fn ($q) => $this->applyDay($q, $queue, $day, $request->boolean('include_later')))
