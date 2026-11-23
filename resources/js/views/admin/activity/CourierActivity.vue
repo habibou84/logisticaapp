@@ -1,5 +1,6 @@
 <template>
   <div class="space-y-4">
+    <CoursesTabs />
     <h1 class="text-xl font-bold">Activité des livreurs</h1>
 
     <!-- Onglets : chaque ancienne page garde son adresse sous /admin/activite -->
@@ -29,6 +30,7 @@ import { useFieldReportStore } from '../../../stores/fieldReports'
 import { useHeldParcelStore } from '../../../stores/heldParcels'
 import { useAuthStore } from '../../../stores/auth'
 import { ACTIVITY_TABS } from '../../../utils/courierActivity'
+import CoursesTabs from '../../../components/CoursesTabs.vue'
 
 const route = useRoute()
 const auth = useAuthStore()

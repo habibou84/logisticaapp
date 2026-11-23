@@ -1,6 +1,5 @@
 import { SETTINGS_PERMISSIONS } from './permissions'
-import { ACTIVITY_TABS } from './courierActivity'
-import { FLEET_TABS, TEAM_TABS } from './pageTabs'
+import { COURSES_PAGES, FLEET_TABS, TEAM_TABS } from './pageTabs'
 
 /**
  * Menu de l'espace équipe, en rubriques. Partagé par le menu lui-même et par l'aperçu « Voir comme ce compte »
@@ -17,12 +16,8 @@ export function adminMenuGroups(badges = {}) {
       id: 'operations',
       label: 'Opérations',
       items: [
-        { to: '/admin/courses', icon: '📦', label: 'Courses', permission: 'orders.view', badge: badges.late },
-        // Jour de livraison dépassé : pas ramassées (à reporter), ramassées pas livrées, toutes, en onglets
-        { to: '/admin/courses/en-retard', icon: '⏳', label: 'Courses en retard', permission: 'orders.dispatch', badge: badges.untreated },
-        // Suivi du jour, carte, disponibles, colis en main, remontées terrain et planning, en onglets
-        { to: '/admin/activite', icon: '🛵', label: 'Activité des livreurs', permission: ACTIVITY_TABS.map((t) => t.permission), badge: (badges.fieldReports || 0) + (badges.heldParcels || 0) },
-        { to: '/admin/retours', icon: '📮', label: 'Retours clients', permission: 'orders.dispatch' },
+        // Une entrée : courses, activité des livreurs, retours clients et courses en retard, en cartes en haut des pages
+        { icon: '📦', label: 'Courses', routes: COURSES_PAGES, badge: (badges.late || 0) + (badges.untreated || 0) + (badges.fieldReports || 0) + (badges.heldParcels || 0) },
       ],
     },
     {
@@ -111,7 +106,10 @@ export function filterMenu(can, activities, badges = {}) {
   const resolve = (item) => {
     if (!item.routes) return allowed(item) ? item : null
     const tabs = item.routes.filter(allowed)
-    return tabs.length ? { ...item, to: tabs[0].to, also: tabs.map((t) => t.to) } : null
+    if (!tabs.length) return null
+    // Première page pas permise : l'entrée prend le nom et l'icône de celle où elle mène
+    const first = tabs[0] === item.routes[0] ? {} : { label: tabs[0].label, ...(tabs[0].icon ? { icon: tabs[0].icon } : {}) }
+    return { ...item, ...first, to: tabs[0].to, also: tabs.map((t) => t.to) }
   }
 
   return {

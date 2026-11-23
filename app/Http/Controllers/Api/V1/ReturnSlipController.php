@@ -46,6 +46,26 @@ class ReturnSlipController extends Controller
         ]);
     }
 
+    /**
+     * Résumé pour la carte « Retours clients » : colis à rendre, à mettre sur un bon ou déjà confiés à un livreur.
+     */
+    public function count(Request $request): JsonResponse
+    {
+        $this->authorizeDispatch($request);
+
+        $waiting = $this->slips->candidates();
+        $onSlips = Order::query()->whereIn('return_slip_id', ReturnSlip::query()->where('status', ReturnSlip::OPEN)->select('id'));
+        $oldest = $waiting->map(fn (Order $o) => $o->status_changed_at ?? $o->updated_at)->filter()->min();
+
+        return response()->json(['data' => [
+            'to_return' => $waiting->count() + (clone $onSlips)->count(),
+            'to_assign' => $waiting->count(),
+            'assigned' => (clone $onSlips)->count(),
+            'merchants' => $waiting->pluck('merchant_id')->merge((clone $onSlips)->pluck('merchant_id'))->unique()->count(),
+            'oldest_days' => $oldest ? (int) $oldest->copy()->startOfDay()->diffInDays(today()) : null,
+        ]]);
+    }
+
     public function store(Request $request): JsonResponse
     {
         $this->authorizeDispatch($request);

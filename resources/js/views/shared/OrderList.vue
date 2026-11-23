@@ -9,6 +9,9 @@
       </div>
     </div>
 
+    <!-- Courses, activité des livreurs, retours et retards : quatre cartes, celle-ci allumée -->
+    <CoursesTabs v-if="isStaff" />
+
     <!-- Réglages manquants pour l'assignation automatique : bandeau d'action -->
     <AutoAssignBanner v-if="isStaff" />
 
@@ -31,31 +34,11 @@
         aria-label="Autre jour" title="Autre jour"
         @change="$event.target.value && setDay($event.target.value)"
       >
-      <span v-if="filters.day" class="hidden sm:inline text-gray-500">· seulement les courses prévues ce jour (jours passés dans « Courses non traitées »)</span>
+      <span v-if="filters.day" class="hidden sm:inline text-gray-500">· seulement les courses prévues ce jour (jours passés dans « Courses en retard »)</span>
     </div>
 
     <!-- Point du jour : livrées, argent (e-commerce), plis et accusés (distribution), MAD -->
     <DayPoint v-if="isStaff && isDispatch && filters.day" :day="filters.day" :activity="filters.activity" @delivered="showDelivered" />
-
-    <!-- Courses non traitées (jour dépassé, plus dans la règle de l'activité) : page à part, toutes dates -->
-    <RouterLink
-      v-if="isStaff && untreatedCount" to="/admin/courses/en-retard?onglet=toutes"
-      class="card flex items-center gap-3 border-red-300 bg-red-50 px-3 py-2 text-red-900 hover:bg-red-100"
-    >
-      <span class="text-2xl" aria-hidden="true">⏳</span>
-      <span class="min-w-0 flex-1 text-sm"><b>{{ untreatedCount }} course{{ untreatedCount > 1 ? 's' : '' }} en retard</b> : date de livraison dépassée, pas encore livrée{{ untreatedCount > 1 ? 's' : '' }}, retournée{{ untreatedCount > 1 ? 's' : '' }} ni annulée{{ untreatedCount > 1 ? 's' : '' }}</span>
-      <span class="text-sm font-semibold underline">Voir</span>
-    </RouterLink>
-
-    <!-- Ramassages pas faits à leur date : cachés chez les livreurs jusqu'à la nouvelle date -->
-    <RouterLink
-      v-if="isStaff && rescheduleCount" to="/admin/courses/en-retard?onglet=pas-ramassees"
-      class="card flex items-center gap-3 border-amber-300 bg-amber-50 px-3 py-2 text-amber-900 hover:bg-amber-100"
-    >
-      <span class="text-2xl" aria-hidden="true">⏰</span>
-      <span class="min-w-0 flex-1 text-sm"><b>{{ rescheduleCount }} colis à reporter</b> : pas ramassé{{ rescheduleCount > 1 ? 's' : '' }} à la date prévue, caché{{ rescheduleCount > 1 ? 's' : '' }} chez les livreurs jusqu'à la nouvelle date</span>
-      <span class="text-sm font-semibold underline">Voir</span>
-    </RouterLink>
 
     <!-- Cas à régler : cartes visibles seulement s'il y en a, jusqu'à ce qu'ils soient réglés -->
     <div v-if="isStaff && exceptionCards.length" class="grid grid-cols-2 gap-2 lg:grid-cols-4">
@@ -83,13 +66,44 @@
       </button>
     </div>
 
-    <!-- Onglets : les courses du jour choisi ; files propres à Logistica visibles seulement s'il y en a -->
-    <div v-if="isStaff" class="flex gap-2 overflow-x-auto no-scrollbar pb-1 [mask-image:linear-gradient(to_right,black_88%,transparent)] md:[mask-image:none] md:flex-wrap md:overflow-visible">
+    <!-- Étapes du colis : validation, ramassage, livraison ; les cases rouges demandent une action -->
+    <div v-if="isStaff" class="space-y-2">
+      <div class="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          :class="['rounded-full px-4 py-1.5 text-sm ring-1', filters.queue === '' ? 'bg-slate-900 font-semibold text-white ring-transparent' : 'bg-white ring-slate-400 hover:bg-slate-50']"
+          :aria-pressed="filters.queue === ''" @click="setQueue('')"
+        >
+          Toutes les courses<template v-if="isDispatch && tabCount('') !== null"> · {{ tabCount('') }}</template>
+        </button>
+        <span class="hidden text-xs text-slate-600 sm:inline">Ou une étape : les cases rouges demandent une action.</span>
+      </div>
+      <div class="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] 2xl:grid-cols-[var(--stage-cols)]" :style="{ '--stage-cols': stageCols }" role="group" aria-label="Étapes des courses">
+        <section v-for="(st, i) in stages" :key="st.key" :class="['card space-y-2 p-3', st.key === 'delivery' ? 'sm:col-span-2 2xl:col-span-1' : '']" :aria-label="st.label">
+          <p :class="['text-xs font-bold uppercase tracking-wide', STAGE_COLORS[st.key].title]">{{ i + 1 }}. {{ st.label }}</p>
+          <div :class="['grid gap-2', CELL_GRID[st.items.length] || 'grid-cols-2']">
+            <button
+              v-for="q in st.items" :key="q.value" type="button"
+              :class="['min-w-0 rounded-xl px-3 py-2 text-left transition', stageCellClass(st, q), filters.queue === q.value ? 'ring-2 ring-slate-900' : 'hover:brightness-95']"
+              :aria-pressed="filters.queue === q.value" :title="q.hint" @click="setQueue(filters.queue === q.value ? '' : q.value)"
+            >
+              <span class="block truncate text-sm font-semibold">{{ q.label }}</span>
+              <span v-if="isDispatch" class="block text-2xl font-extrabold tabular-nums">{{ tabCount(q.value) ?? '—' }}</span>
+              <span v-if="isDispatch && tabLate(q.value)" class="block truncate text-xs font-semibold text-red-700">{{ tabLate(q.value) }} attendent trop</span>
+              <span v-else-if="q.hint" class="hidden truncate text-xs opacity-80 sm:block">{{ q.hint }}</span>
+            </button>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <!-- Autres files : par client, retours, et celles propres à Logistica visibles seulement s'il y en a -->
+    <div v-if="isStaff && visibleQueues.length" class="flex gap-2 overflow-x-auto no-scrollbar pb-1 [mask-image:linear-gradient(to_right,black_88%,transparent)] md:[mask-image:none] md:flex-wrap md:overflow-visible">
       <button
         v-for="q in visibleQueues"
         :key="q.value"
         :class="['btn whitespace-nowrap', filters.queue === q.value ? 'bg-slate-900 text-white' : 'bg-white border border-slate-300']"
-        @click="setQueue(q.value)"
+        @click="setQueue(filters.queue === q.value ? '' : q.value)"
       >
         {{ q.label }}
         <span v-if="tabCount(q.value)" :class="['ml-1 rounded-full px-1.5 text-xs font-semibold', filters.queue === q.value ? 'bg-white/20' : 'bg-slate-100 text-slate-700']">{{ tabCount(q.value) }}</span>
@@ -352,12 +366,13 @@ import CourierCell from '../../components/CourierCell.vue'
 import PickupGroupsPanel from '../../components/PickupGroupsPanel.vue'
 import DeliveryDayBar from '../../components/DeliveryDayBar.vue'
 import AutoAssignBanner from '../../components/AutoAssignBanner.vue'
+import CoursesTabs from '../../components/CoursesTabs.vue'
 import DayPoint from '../../components/DayPoint.vue'
 import { useAuthStore } from '../../stores/auth'
 import { useToastStore } from '../../stores/toasts'
 import { useDispatchCountStore } from '../../stores/dispatchCounts'
 import { orderChanges, lastOrderChange } from '../../composables/useRealtime'
-import { date, dateTime, money, STATUS_LABELS } from '../../utils/format'
+import { collectsOnly, date, dateTime, money, STATUS_LABELS } from '../../utils/format'
 import { ACTIVITIES, activityBadge, activityShort, myActivities } from '../../utils/activities'
 
 const auth = useAuthStore()
@@ -381,20 +396,50 @@ const initialDay = () => {
   return /^\d{4}-\d{2}-\d{2}$/.test(q || '') ? q : todayIso
 }
 // Files de travail (limitées au jour) ; on peut y ajouter les courses prévues plus tard (ramassage en avance)
-const LATER_QUEUES = { to_pickup: 'à ramasser', by_client: 'à ramasser', to_prepare: 'à préparer', unassigned: 'à ramasser' }
+const LATER_QUEUES = { to_pickup: 'à ramasser', by_client: 'à ramasser', to_prepare: 'à préparer', unassigned: 'à ramasser', pickup_unassigned: 'à ramasser' }
 
+// Étapes du colis (cases au-dessus de la liste), dans l'ordre du parcours ; « action » : rouge quand il y en a
+const pick = computed(() => (collectsOnly(myActivities(auth.user).map((a) => a.value)) ? 'Collecte' : 'Ramassage'))
+const STAGES = computed(() => [
+  { key: 'validation', label: 'Validation', items: [{ value: 'to_confirm', label: 'À valider', action: true }] },
+  { key: 'pickup', label: pick.value, items: [
+    { value: 'pickup_unassigned', label: 'À assigner', hint: 'sans livreur', action: true },
+    { value: 'to_pickup', label: 'En cours', hint: 'livreur désigné' },
+    // Commandes stockées à l'entrepôt : préparées au lieu d'être ramassées
+    { value: 'to_prepare', label: 'À préparer', hint: 'au stock' },
+  ] },
+  { key: 'delivery', label: 'Livraison', items: [
+    { value: 'delivery_unassigned', label: 'À assigner', hint: 'sans livreur', action: true },
+    { value: 'delivery_assigned', label: 'Assignées', hint: 'pas encore parties' },
+    { value: 'on_the_way', label: 'En chemin', hint: 'chez le livreur' },
+    { value: 'delivered', label: 'Livrées', done: true },
+    { value: 'failed', label: 'Échecs', hint: 'à relivrer', action: true },
+  ] },
+])
+const CELL_GRID = { 1: 'grid-cols-1', 2: 'grid-cols-2', 3: 'grid-cols-3', 4: 'grid-cols-2 sm:grid-cols-4', 5: 'grid-cols-3 sm:grid-cols-5' }
+const STAGE_COLORS = {
+  validation: { title: 'text-violet-700', cell: 'bg-violet-50 text-violet-900' },
+  pickup: { title: 'text-amber-700', cell: 'bg-amber-50 text-amber-900' },
+  delivery: { title: 'text-blue-700', cell: 'bg-blue-50 text-blue-900' },
+}
+// « À préparer » : seulement avec un stock (ou s'il reste des commandes à préparer)
+const stages = computed(() => STAGES.value.map((st) => ({ ...st, items: st.items.filter((q) => q.value !== 'to_prepare' || auth.can('stock.manage') || tabCount('to_prepare') > 0 || filters.queue === 'to_prepare') })))
+// Largeur de chaque étape selon son nombre de cases (grand écran : une seule ligne)
+const stageCols = computed(() => stages.value.map((st) => `minmax(0,${st.items.length + 0.4}fr)`).join(' '))
+function stageCellClass(st, q) {
+  if (q.action && isDispatch.value && tabCount(q.value) > 0) return 'bg-red-50 text-red-900 ring-1 ring-red-200'
+  if (q.done) return 'bg-emerald-50 text-emerald-900'
+  return STAGE_COLORS[st.key].cell
+}
+
+// Files sous les étapes
 const queues = [
-  // Onglets du jour choisi (parcours d'une course)
-  { value: '', label: 'Toutes' },
-  { value: 'to_confirm', label: 'À valider' },
-  // Ramassages en cours (livreur assigné) ; sans livreur : « Sans livreur » et « Ramassages par client »
-  { value: 'to_pickup', label: 'À ramasser' },
+  // Sans livreur pour le ramassage, regroupés par client et adresse (lot à assigner d'un coup)
   { value: 'by_client', label: '🏪 Ramassages par client' },
-  { value: 'to_prepare', label: '📦 À préparer' },
-  { value: 'unassigned', label: '🛵 Sans livreur' },
-  { value: 'to_deliver', label: 'À livrer' },
-  { value: 'failed', label: '❌ Échec' },
   { value: 'to_return', label: '↩️ À retourner' },
+  // Liens venus d'ailleurs (tableau de bord) : visibles quand on y est
+  { value: 'unassigned', label: '🛵 Sans livreur', linked: true },
+  { value: 'to_deliver', label: 'À livrer', linked: true },
   // Files toutes dates, visibles seulement s'il y en a
   { value: 'to_approve', label: '🏢 À approuver', extra: true },
   { value: 'to_decide', label: 'À décider', extra: true },
@@ -405,7 +450,7 @@ const queues = [
   { value: 'internal_late', label: '⏰ Délai interne dépassé', extra: true },
   { value: 'incidents', label: 'Incidents', extra: true },
   { value: 'scheduled', label: 'Prévues plus tard', extra: true },
-  // Hors onglets : carte « à régler » et page « Courses non traitées »
+  // Hors onglets : carte « à régler » et page « Courses en retard »
   { value: 'code_to_verify', label: '⚠️ Codes à vérifier', hidden: true },
   { value: 'untreated', label: '⏳ Non traitées', hidden: true },
 ]
@@ -415,6 +460,7 @@ const ALL_DATES_QUEUES = queues.filter((q) => q.extra || q.hidden).map((q) => q.
 // Files propres à Logistica : seulement quand il y en a (ou quand on y est) ; « Par client » réservé au dispatch
 const visibleQueues = computed(() => queues.filter((q) => {
   if (q.hidden) return false
+  if (q.linked) return filters.queue === q.value
   if (q.value === 'by_client') return isDispatch.value
   if (q.extra) return filters.queue === q.value || exceptionCount(q.value) > 0
   return true
@@ -425,9 +471,6 @@ const EXCEPTIONS = [
 ]
 const exceptionCount = (queue) => (isDispatch.value ? dispatchCounts.counts.exceptions?.[queue] || 0 : 0)
 const exceptionCards = computed(() => EXCEPTIONS.map((e) => ({ ...e, count: exceptionCount(e.value) })).filter((e) => e.count > 0 || filters.queue === e.value))
-// Courses non traitées (jour dépassé, plus dans la règle de l'activité), toutes dates : page à part
-const rescheduleCount = computed(() => (isDispatch.value ? dispatchCounts.counts.to_reschedule || 0 : 0))
-const untreatedCount = computed(() => exceptionCount('untreated'))
 
 const filters = reactive({
   queue: route.query.queue || '',
@@ -500,7 +543,9 @@ const dispatchCounts = useDispatchCountStore()
 const isDispatch = computed(() => auth.can('orders.dispatch'))
 const COUNTED = { to_confirm: 'to_confirm', to_pickup: 'to_pickup', to_deliver: 'to_deliver', unassigned: 'unassigned' }
 // Jour choisi : compteurs de ce jour (retards compris) ; sinon compteurs généraux
-const DAY_COUNTED = { '': 'all', to_confirm: 'to_confirm', to_pickup: 'to_pickup', to_prepare: 'to_prepare', to_deliver: 'to_deliver', unassigned: 'unassigned', failed: 'failed', to_return: 'to_return' }
+const DAY_COUNTED = { '': 'all', to_confirm: 'to_confirm', to_pickup: 'to_pickup', to_prepare: 'to_prepare', to_deliver: 'to_deliver', unassigned: 'unassigned', failed: 'failed', to_return: 'to_return', pickup_unassigned: 'pickup_unassigned', delivery_unassigned: 'delivery_unassigned', delivery_assigned: 'delivery_assigned', on_the_way: 'on_the_way', delivered: 'delivered' }
+// Toutes les dates : étapes sans compteur général (trait à la place du chiffre)
+const DAY_ONLY = ['', 'pickup_unassigned', 'delivery_unassigned', 'delivery_assigned', 'on_the_way', 'delivered']
 const dayCounts = computed(() => (filters.day && dispatchCounts.dayCounts?.date === filters.day ? dispatchCounts.dayCounts : null))
 const tabCount = (queue) => {
   if (!isDispatch.value) return 0
@@ -509,6 +554,7 @@ const tabCount = (queue) => {
   if (dayCounts.value) return dayCounts.value[DAY_COUNTED[queue]] || 0
   // Jour choisi, compteurs du jour pas encore arrivés : rien plutôt que le total de toutes les dates
   if (filters.day) return 0
+  if (DAY_ONLY.includes(queue)) return null
   return COUNTED[queue] ? dispatchCounts.counts[COUNTED[queue]] : exceptionCount(queue)
 }
 // Courses prévues après le jour choisi, hors de la file tant qu'on ne les demande pas
@@ -527,7 +573,7 @@ const DAY_CHOICES = computed(() => [
 ])
 const tabLate = (queue) => {
   if (!isDispatch.value) return 0
-  const late = { to_pickup: dispatchCounts.counts.late.pickup, to_deliver: dispatchCounts.counts.late.delivery, unassigned: dispatchCounts.counts.late.total }[queue] || 0
+  const late = { pickup_unassigned: dispatchCounts.counts.late.pickup, delivery_unassigned: dispatchCounts.counts.late.delivery, to_deliver: dispatchCounts.counts.late.delivery, unassigned: dispatchCounts.counts.late.total }[queue] || 0
   // Jour choisi : pas plus que la file n'en montre (les autres sont dans « prévues plus tard »)
   return dayCounts.value ? Math.min(late, tabCount(queue)) : late
 }
@@ -577,7 +623,7 @@ function setQueue(value) {
   filters.queue = value
   filters.awaiting = ''
   filters.include_later = false
-  bulk.type = { to_deliver: 'delivery', incidents: 'delivery', to_return: 'return', unassigned: 'auto' }[value] || 'pickup'
+  bulk.type = { to_deliver: 'delivery', delivery_unassigned: 'delivery', delivery_assigned: 'delivery', failed: 'delivery', incidents: 'delivery', to_return: 'return', unassigned: 'auto' }[value] || 'pickup'
   syncQuery()
   load(1)
 }

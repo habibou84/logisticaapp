@@ -372,6 +372,7 @@ Route::prefix('v1')->name('v1.')->group(function () {
 
         // Bons de retour groupés par marchand (droits vérifiés dans le contrôleur)
         Route::get('return-slips', [ReturnSlipController::class, 'index'])->name('return-slips.index');
+        Route::get('return-slips/count', [ReturnSlipController::class, 'count'])->name('return-slips.count');
         Route::post('return-slips', [ReturnSlipController::class, 'store'])->name('return-slips.store');
         Route::get('return-slips/{returnSlip}', [ReturnSlipController::class, 'show'])->name('return-slips.show');
         Route::post('return-slips/{returnSlip}/hand-over', [ReturnSlipController::class, 'handOver'])->middleware('throttle:30,1')->name('return-slips.hand-over');

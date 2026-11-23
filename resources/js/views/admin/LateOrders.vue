@@ -1,8 +1,8 @@
 <template>
   <div class="space-y-4">
+    <CoursesTabs />
     <div class="flex flex-wrap items-center justify-between gap-2">
       <div>
-        <RouterLink to="/admin/courses" class="text-sm text-blue-600">‹ Courses</RouterLink>
         <h1 class="text-xl font-bold">⏳ Courses en retard</h1>
         <p class="text-sm text-gray-600">
           Date de livraison dépassée, et pas encore livrées, retournées ni annulées. La distribution n'y arrive qu'après
@@ -36,6 +36,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 import { useDispatchCountStore } from '../../stores/dispatchCounts'
+import CoursesTabs from '../../components/CoursesTabs.vue'
 import RescheduleOrders from './RescheduleOrders.vue'
 import UntreatedOrders from './UntreatedOrders.vue'
 

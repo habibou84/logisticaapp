@@ -132,6 +132,13 @@ class OrderListDayTest extends TestCase
             ->assertJsonPath('data.day.to_deliver', 0)
             ->assertJsonPath('data.day.unassigned', 1)
             ->assertJsonPath('data.day.later.unassigned', 1)
+            // Cases par étape de la page Courses
+            ->assertJsonPath('data.day.pickup_unassigned', 1)
+            ->assertJsonPath('data.day.later.pickup_unassigned', 1)
+            ->assertJsonPath('data.day.delivery_unassigned', 0)
+            ->assertJsonPath('data.day.delivery_assigned', 0)
+            ->assertJsonPath('data.day.on_the_way', 0)
+            ->assertJsonPath('data.day.delivered', 0)
             ->assertJsonPath('data.day.days.today', 2)
             ->assertJsonPath('data.day.days.tomorrow', 1)
             // Compteurs généraux et cas à régler (toutes dates)
@@ -147,5 +154,19 @@ class OrderListDayTest extends TestCase
         $this->assertSame([false, true], [$later[$this->o['today']->id]['later'], $later[$this->o['tomorrow']->id]['later']]);
         $this->assertSame(self::TOMORROW, $later[$this->o['tomorrow']->id]['delivery_day']);
         $this->assertSame(0, $this->getJson('/api/v1/orders/pickup-groups')->json('data.0.later_count'));
+    }
+
+    public function test_stage_queues_list_orders_by_step(): void
+    {
+        $this->o['today']->forceFill(['status' => OrderStatus::OutForDelivery])->saveQuietly();
+        $this->o['picking']->forceFill(['status' => OrderStatus::Delivered])->saveQuietly();
+
+        $ids = fn (string $queue) => collect($this->getJson("/api/v1/orders?queue={$queue}&day=".self::TODAY)->assertOk()->json('data'))->pluck('id')->all();
+        $this->assertSame([$this->o['today']->id], $ids('on_the_way'));
+        $this->assertSame([$this->o['picking']->id], $ids('delivered'));
+        $this->assertSame([], $ids('pickup_unassigned'));
+        $this->getJson('/api/v1/orders/counts?day='.self::TODAY)
+            ->assertJsonPath('data.day.on_the_way', 1)
+            ->assertJsonPath('data.day.delivered', 1);
     }
 }

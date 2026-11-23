@@ -43,7 +43,7 @@ class OrderController extends Controller
             'status' => ['nullable', 'array'],
             'status.*' => [Rule::enum(OrderStatus::class)],
             // File d'attente du dispatch : à valider, à ramasser, à livrer, à retourner
-            'queue' => ['nullable', Rule::in(['to_confirm', 'to_approve', 'on_hold', 'follow_up', 'to_pickup', 'to_reschedule', 'to_prepare', 'to_deliver', 'unassigned', 'to_decide', 'scheduled', 'to_return', 'incidents', 'failed', 'code_to_verify', 'internal_late', 'untreated', 'untreated_picked'])],
+            'queue' => ['nullable', Rule::in(['to_confirm', 'to_approve', 'on_hold', 'follow_up', 'to_pickup', 'to_reschedule', 'to_prepare', 'to_deliver', 'unassigned', 'pickup_unassigned', 'delivery_unassigned', 'delivery_assigned', 'on_the_way', 'delivered', 'to_decide', 'scheduled', 'to_return', 'incidents', 'failed', 'code_to_verify', 'internal_late', 'untreated', 'untreated_picked'])],
             // Courses non traitées : celles qui n'ont pas de livreur
             'without_courier' => ['nullable', 'boolean'],
             // Courses non traitées : livreur de la livraison, à défaut du ramassage
@@ -86,7 +86,7 @@ class OrderController extends Controller
             ->when($request->boolean('without_courier'), fn ($q) => $q->whereNull('pickup_courier_id')->whereNull('delivery_courier_id'))
             ->when($request->filled('lead_courier_id'), fn ($q) => $q->whereRaw('COALESCE(delivery_courier_id, pickup_courier_id) = ?', [$request->integer('lead_courier_id')]))
             // Sans livreur : de la plus ancienne attente à la plus récente
-            ->when($queue === 'unassigned', fn ($q) => $q->orderBy('status_changed_at'))
+            ->when(in_array($queue, ['unassigned', 'pickup_unassigned', 'delivery_unassigned'], true), fn ($q) => $q->orderBy('status_changed_at'))
             ->when($request->filled('merchant_id'), fn ($q) => $q->where('merchant_id', $request->integer('merchant_id')))
             ->when($request->filled('activity'), fn ($q) => $q->where('activity', $request->string('activity')))
             ->when($request->filled('department_id'), fn ($q) => $q->where(fn ($q) => $q->where('department_id', $request->integer('department_id'))->orWhere('to_department_id', $request->integer('department_id'))))
@@ -223,7 +223,7 @@ class OrderController extends Controller
      */
     private function dayCounts(string $day, callable $base): array
     {
-        $queue = fn (string $name) => $name === 'unassigned' ? AwaitingCourier::scope($base(), null, $day) : $this->applyQueue($base(), $name, $day);
+        $queue = fn (string $name) => $this->applyQueue($base(), $name, $day);
         $later = fn (string $name) => $queue($name)->whereRaw(Order::DELIVERY_DAY_SQL.' > ?', [$day])->count();
 
         return [
@@ -246,10 +246,10 @@ class OrderController extends Controller
     private const EXCEPTION_QUEUES = ['untreated', 'untreated_picked', 'to_approve', 'to_return', 'failed', 'to_decide', 'incidents', 'scheduled', 'on_hold', 'follow_up', 'code_to_verify', 'internal_late', 'to_prepare'];
 
     /** Files de travail : limitées au jour choisi (les jours passés sont dans « Courses non traitées ») */
-    private const WORK_QUEUES = ['to_pickup', 'to_prepare', 'to_deliver', 'unassigned'];
+    private const WORK_QUEUES = ['to_pickup', 'to_prepare', 'to_deliver', 'unassigned', 'pickup_unassigned', 'delivery_unassigned', 'delivery_assigned', 'on_the_way', 'delivered'];
 
     /** Files où l'on peut ajouter les courses prévues plus tard (ramassage ou préparation en avance) */
-    private const LATER_QUEUES = ['to_pickup', 'to_prepare', 'unassigned'];
+    private const LATER_QUEUES = ['to_pickup', 'to_prepare', 'unassigned', 'pickup_unassigned'];
 
     /**
      * Jour choisi dans la liste : « Toutes » montre les courses du jour et les retards encore en cours, les files
@@ -346,6 +346,17 @@ class OrderController extends Controller
                     ->orWhereDate('delivery_scheduled_date', '<=', $day))
                 ->where('return_requested', false)
                 ->whereDoesntHave('assignments', fn ($q) => $q->active()->where('type', AssignmentType::Delivery->value)),
+            // Sans livreur, par étape : pour aller chercher le colis, ou pour le livrer
+            'unassigned' => AwaitingCourier::scope($query, null, $day),
+            'pickup_unassigned' => AwaitingCourier::scope($query, AwaitingCourier::PICKUP, $day),
+            'delivery_unassigned' => AwaitingCourier::scope($query, AwaitingCourier::DELIVERY, $day),
+            // Livreur désigné pour la livraison, pas encore parti
+            'delivery_assigned' => $query->where(fn ($q) => $q->where('status', OrderStatus::DeliveryAssigned)
+                ->orWhere(fn ($q) => $q->whereIn('status', OrderStatus::values([OrderStatus::PickedUp, OrderStatus::AtHub, OrderStatus::Rescheduled]))
+                    ->where('return_requested', false)
+                    ->whereHas('assignments', fn ($a) => $a->active()->where('type', AssignmentType::Delivery->value)))),
+            'on_the_way' => $query->where('status', OrderStatus::OutForDelivery),
+            'delivered' => $query->where('status', OrderStatus::Delivered),
             // Échecs sans suite : relivrer, retourner ou remettre en stock
             'to_decide' => $query->needingDecision(),
             // Livraisons prévues un autre jour : reports, colis ramassés en avance et courses pas encore ramassées

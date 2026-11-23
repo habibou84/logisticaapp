@@ -1,5 +1,6 @@
 <template>
   <div class="space-y-4 max-w-6xl">
+    <CoursesTabs />
     <div>
       <h1 class="text-xl font-bold">Retours clients</h1>
       <p class="text-sm text-gray-600">
@@ -76,6 +77,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import CoursesTabs from '../../components/CoursesTabs.vue'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import { useToastStore } from '../../stores/toasts'
 import { dateTime, money } from '../../utils/format'

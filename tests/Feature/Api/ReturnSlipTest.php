@@ -73,6 +73,10 @@ class ReturnSlipTest extends TestCase
         Sanctum::actingAs($this->dispatcher);
         $index = $this->getJson('/api/v1/return-slips')->assertOk();
         $index->assertJsonPath('candidates.0.merchant.id', $this->merchant->id)->assertJsonCount(3, 'candidates.0.orders');
+        // Carte « Retours clients » de la page Courses
+        $this->getJson('/api/v1/return-slips/count')->assertOk()
+            ->assertJsonPath('data.to_return', 3)->assertJsonPath('data.to_assign', 3)
+            ->assertJsonPath('data.assigned', 0)->assertJsonPath('data.merchants', 1)->assertJsonPath('data.oldest_days', 0);
 
         // Colis encore chez B : impossible de le confier à A
         $this->postJson('/api/v1/return-slips', [
@@ -87,6 +91,8 @@ class ReturnSlipTest extends TestCase
             ->json('data.id');
 
         $slip = ReturnSlip::find($slipId);
+        $this->getJson('/api/v1/return-slips/count')
+            ->assertJsonPath('data.to_return', 3)->assertJsonPath('data.to_assign', 1)->assertJsonPath('data.assigned', 2);
         $this->assertMatchesRegularExpression('/^BR-\d{6}-\d{5}$/', $slip->reference);
         $this->assertSame('return_assigned', $first->fresh()->status->value);
         $this->assertSame($this->courierA->id, $first->fresh()->return_courier_id);
