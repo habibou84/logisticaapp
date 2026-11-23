@@ -1,7 +1,7 @@
 <template>
   <!-- Parcours d'un contrat MAD : liste, ajout, modification, suppression -->
   <div class="space-y-3">
-    <p class="text-sm text-slate-600">
+    <p v-if="!compact" class="text-sm text-slate-600">
       Un parcours, c'est la routine du matin du livreur avant d'arriver chez {{ plan?.merchant || 'le client' }} : récupérer un colis dans une agence,
       puis dans une autre, puis déposer au siège. Le livreur pointe à la <strong>première étape</strong>, à l'heure du parcours.
       Sans parcours, il pointe au siège du client. Les changements valent tout de suite.
@@ -58,6 +58,8 @@ const props = defineProps({
   updateUrl: { type: String, required: true },
   mobile: { type: Boolean, default: false },
   editable: { type: Boolean, default: true },
+  // Page Parcours : l'explication est donnée une fois, en tête de page
+  compact: { type: Boolean, default: false },
 })
 const toasts = useToastStore()
 const routines = ref([])

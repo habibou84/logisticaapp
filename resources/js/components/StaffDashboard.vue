@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-4">
     <div class="flex flex-wrap items-center justify-between gap-2">
-      <h1 class="text-xl font-bold">Tableau de bord</h1>
+      <h1 class="text-xl font-bold">Poste de pilotage</h1>
       <div class="flex flex-wrap items-center gap-2 text-sm" role="group" aria-label="Période du point">
         <button
           v-for="p in PERIODS" :key="p.value" type="button"

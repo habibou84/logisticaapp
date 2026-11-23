@@ -192,6 +192,25 @@ class CourierShiftTest extends TestCase
         $this->getJson('/api/v1/courier/shift')->assertOk()->assertJsonPath('data.place.label', 'Siège · Mamadou SA');
     }
 
+    public function test_the_team_sees_every_mad_contract_on_the_routines_page(): void
+    {
+        $plan = $this->madPlan();
+        Sanctum::actingAs($this->dispatcher);
+        $this->postJson("/api/v1/billing-plans/{$plan->id}/routines", $this->routinePayload())->assertCreated();
+
+        $this->getJson('/api/v1/routines/contracts')->assertOk()
+            ->assertJsonPath('data.0.id', $plan->id)
+            ->assertJsonPath('data.0.merchant', $this->madClient->business_name)
+            ->assertJsonPath('data.0.routines_count', 1)
+            ->assertJsonPath('can_edit', true);
+
+        // Ni le client ni le livreur
+        Sanctum::actingAs($this->merchantUser);
+        $this->getJson('/api/v1/routines/contracts')->assertForbidden();
+        Sanctum::actingAs($this->courierA->user);
+        $this->getJson('/api/v1/routines/contracts')->assertForbidden();
+    }
+
     public function test_routine_only_on_its_days_and_for_its_courier(): void
     {
         $plan = $this->madPlan();

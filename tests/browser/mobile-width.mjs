@@ -15,7 +15,7 @@ const PAGES = [
   'mise-en-route', 'reglages', 'reglages/entreprise', 'reglages/courses', 'reglages/alertes', 'reglages/e-commercants', 'reglages/reprise',
   'zones', 'tarifs', 'whatsapp', 'integrations', 'factures', 'atelier',
   // Menu repris de Jibiat : courses en retard (onglets), automatisation, mon compte
-  'courses/en-retard', 'courses/en-retard?onglet=toutes', 'automatisation', 'mon-compte',
+  'courses/en-retard', 'courses/en-retard?onglet=toutes', 'automatisation', 'mon-compte', 'parcours', 'roles',
 ]
 
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {})

@@ -11,6 +11,7 @@ use App\Models\BillingPlan;
 use App\Models\CourierRoutine;
 use App\Services\Orders\ActivityOptions;
 use App\Services\Shifts\Routines;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -23,6 +24,30 @@ class RoutineController extends Controller
     public function __construct(private readonly Routines $routines) {}
 
     // ——— Équipe ———
+
+    /** Page Livraison › Parcours : les contrats de mise à disposition en cours, avec le nombre de parcours */
+    public function contracts(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        abort_unless($user->merchant_id === null && ! $user->isCourier()
+            && $user->canAny([Permission::RatesManage->value, Permission::OrdersDispatch->value, Permission::MerchantsView->value]), 403);
+        abort_unless($user->seesActivity(Activity::Mad), 403, 'Vous ne gérez pas cette activité.');
+        $today = CarbonImmutable::now($user->company?->timezone ?: config('app.timezone'))->toDateString();
+
+        $plans = BillingPlan::query()->where('activity', Activity::Mad->value)->activeOn($today)
+            ->with(['merchant:id,business_name', 'couriers.user:id,name'])->withCount('routines')->get()
+            ->sortBy(fn (BillingPlan $p) => mb_strtolower((string) $p->merchant?->business_name))->values();
+
+        return response()->json([
+            'data' => $plans->map(fn (BillingPlan $p) => [
+                'id' => $p->id,
+                'merchant' => $p->merchant?->business_name,
+                'couriers' => $p->couriers->map(fn ($c) => $c->user?->name)->filter()->values(),
+                'routines_count' => $p->routines_count,
+            ]),
+            'can_edit' => $user->canAny([Permission::RatesManage->value, Permission::OrdersDispatch->value]),
+        ]);
+    }
 
     public function index(Request $request, BillingPlan $billingPlan): JsonResponse
     {

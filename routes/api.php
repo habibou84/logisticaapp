@@ -593,6 +593,7 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::delete('billing-plans/{billingPlan}', [BillingPlanController::class, 'destroy'])->name('billing-plans.destroy');
         // Parcours des livreurs en MAD (routine du matin avant d'arriver chez le client) : équipe et client
         Route::controller(RoutineController::class)->group(function () {
+            Route::get('routines/contracts', 'contracts')->name('routines.contracts');
             Route::get('billing-plans/{billingPlan}/routines', 'index')->name('billing-plans.routines.index');
             Route::post('billing-plans/{billingPlan}/routines', 'store')->name('billing-plans.routines.store');
             Route::put('routines/{routine}', 'update')->name('routines.update');

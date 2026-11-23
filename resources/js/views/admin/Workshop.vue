@@ -1,5 +1,6 @@
 <template>
   <div class="space-y-4">
+    <PageTabs :tabs="FLEET_TABS" />
     <div class="flex flex-wrap items-end justify-between gap-3">
       <div>
         <h1 class="text-xl font-bold">Atelier</h1>
@@ -151,6 +152,8 @@
 </template>
 
 <script setup>
+import PageTabs from '../../components/PageTabs.vue'
+import { FLEET_TABS } from '../../utils/pageTabs'
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'

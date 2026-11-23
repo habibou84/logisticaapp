@@ -1,5 +1,6 @@
 <template>
   <div class="space-y-4">
+    <PageTabs :tabs="TEAM_TABS" />
     <div class="flex flex-wrap items-center justify-between gap-2">
       <div>
         <h1 class="text-xl font-bold">Utilisateurs</h1>
@@ -218,6 +219,8 @@
 </template>
 
 <script setup>
+import PageTabs from '../../components/PageTabs.vue'
+import { TEAM_TABS } from '../../utils/pageTabs'
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'

@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * Formule de facturation d'un client : distribution (au forfait ou à l'unité) ou mise à disposition de
@@ -74,6 +75,12 @@ class BillingPlan extends Model
     public function zones(): BelongsToMany
     {
         return $this->belongsToMany(Zone::class, 'billing_plan_zone');
+    }
+
+    /** Parcours des livreurs en mise à disposition (routine du matin) */
+    public function routines(): HasMany
+    {
+        return $this->hasMany(CourierRoutine::class);
     }
 
     public function couriers(): BelongsToMany

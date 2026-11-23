@@ -14,7 +14,7 @@
       <span aria-hidden="true" :class="['transition-transform', open ? 'rotate-90' : '']">›</span>
     </button>
     <div v-show="open" class="mt-1 space-y-1">
-      <SidebarItem v-for="item in items" :key="item.to" :icon="item.icon" :label="item.label" :to="item.to" :badge="item.badge || 0" />
+      <SidebarItem v-for="item in items" :key="item.to" :icon="item.icon" :label="item.label" :to="item.to" :badge="item.badge || 0" :tags="item.tags || []" :also="item.also || []" />
     </div>
   </div>
 </template>
@@ -48,7 +48,7 @@ const open = ref(stored() ?? props.defaultOpen)
 const badgeTotal = computed(() => props.items.reduce((sum, item) => sum + (item.badge || 0), 0))
 
 // La rubrique de la page affichée s'ouvre d'elle-même
-const containsCurrentPage = computed(() => props.items.some((item) => route.path === item.to || route.path.startsWith(`${item.to}/`)))
+const containsCurrentPage = computed(() => props.items.some((item) => [item.to, ...(item.also || [])].some((p) => route.path === p || route.path.startsWith(`${p}/`))))
 watch(containsCurrentPage, (inside) => {
   if (inside) open.value = true
 }, { immediate: true })
