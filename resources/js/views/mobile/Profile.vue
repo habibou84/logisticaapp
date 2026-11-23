@@ -37,7 +37,7 @@
         <MenuRow to="/marchand/a-noter" color="avis" icon="user" tone="amber" label="Noter les livreurs" sub="Vos dernières courses, votre livreur attitré" />
         <MenuRow to="/marchand/mes-livreurs" color="mad" icon="user" tone="slate" label="Mes livreurs" sub="Préféré ou écarté" />
         <MenuRow v-if="auth.can('orders.create')" to="/marchand/courses/import" color="excel" icon="upload" tone="blue" label="Importer des courses" sub="Fichier Excel ou CSV" />
-        <MenuRow v-if="auth.can('integrations.manage')" to="/marchand/integrations" color="partage" icon="plug" tone="violet" label="Intégrations" sub="Jibiat Marchand, API, webhooks" />
+        <MenuRow v-if="auth.can('integrations.manage')" to="/marchand/integrations" color="partage" icon="plug" tone="violet" label="Intégrations" sub="Relier votre logiciel : clés API, webhooks" />
       </div>
     </template>
 
