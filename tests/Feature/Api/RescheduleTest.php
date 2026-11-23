@@ -142,7 +142,7 @@ class RescheduleTest extends TestCase
         $this->assertSame('2026-11-06', $a->fresh()->delivery_scheduled_date->toDateString());
         $this->assertNull($a->fresh()->reschedule_request_id);
         $this->assertSame(OrderStatus::Cancelled, $b->fresh()->status);
-        $this->assertStringContainsString('Produit en rupture', $b->fresh()->cancel_reason);
+        $this->assertSame('out_of_stock', $b->fresh()->cancel_reason_code);
         $this->assertSame([RescheduleRequest::ANSWERED, 'page'], [$request->fresh()->status, $request->fresh()->answered_via]);
         $this->postJson('/api/v1/reschedule/'.$request->token, ['choices' => [['order_id' => $a->id, 'date' => '2026-11-07']]])->assertStatus(410);
     }
@@ -188,7 +188,7 @@ class RescheduleTest extends TestCase
         $this->assertStringContainsString("Annulé : {$c->tracking_code}", $done['text']);
         $this->assertStringContainsString("{$b->tracking_code} (déjà ramassé)", $done['text']);
         $this->assertSame('2026-11-06', $a->fresh()->delivery_scheduled_date->toDateString());
-        $this->assertStringContainsString('Je livre moi-même', $c->fresh()->cancel_reason);
+        $this->assertSame('self_delivery', $c->fresh()->cancel_reason_code);
         $this->assertSame('2026-11-05', $b->fresh()->delivery_scheduled_date->toDateString());
         $this->assertSame(RescheduleRequest::ANSWERED, $request->fresh()->status);
         $this->assertSame('whatsapp', $request->fresh()->answered_via);

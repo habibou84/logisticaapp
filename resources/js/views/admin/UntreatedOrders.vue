@@ -119,6 +119,15 @@
     </div>
 
     <OrderDecision :open="!!deciding" :order="deciding" :couriers="couriers" @close="deciding = null" @decided="deciding = null; refresh()" />
+    <Modal :open="cancelOpen" :title="`Annuler ${selected.length} course${selected.length > 1 ? 's' : ''} ?`" @close="cancelOpen = false">
+      <div class="space-y-4">
+        <CancelReasonPicker v-if="cancelOpen" v-model="cancelCode" v-model:note="cancelNote" />
+        <div class="flex justify-end gap-2">
+          <button type="button" class="btn-secondary" @click="cancelOpen = false">Non, garder</button>
+          <button type="button" class="btn-danger" :disabled="busy || !cancelCode || (cancelCode === 'other' && !cancelNote.trim())" @click="confirmCancel">Oui, annuler</button>
+        </div>
+      </div>
+    </Modal>
   </div>
 </template>
 
@@ -126,6 +135,8 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
+import CancelReasonPicker from '../../components/CancelReasonPicker.vue'
+import Modal from '../../components/Modal.vue'
 import Pagination from '../../components/Pagination.vue'
 import StatusBadge from '../../components/StatusBadge.vue'
 import CourierCell from '../../components/CourierCell.vue'
@@ -293,10 +304,18 @@ const assign = () => run(async () => {
   report(done, errors, 'confiée(s) au livreur')
 })
 
-const cancel = () => run(async () => {
-  const reason = window.prompt(`Annuler ${selected.value.length} course(s) ? Les clients seront prévenus.\nMotif :`, 'Course non traitée')
-  if (reason === null) return
-  const { data: res } = await http.post('/orders/bulk-cancel', { order_ids: selected.value, reason: reason.trim() || undefined })
+// Annulation de plusieurs courses : un seul motif (obligatoire) pour toutes
+const cancelOpen = ref(false)
+const cancelCode = ref(null)
+const cancelNote = ref('')
+function cancel() {
+  cancelCode.value = 'not_treated'
+  cancelNote.value = ''
+  cancelOpen.value = true
+}
+const confirmCancel = () => run(async () => {
+  const { data: res } = await http.post('/orders/bulk-cancel', { order_ids: selected.value, reason_code: cancelCode.value, reason: cancelNote.value.trim() || undefined })
+  cancelOpen.value = false
   report(res.data.cancelled, res.data.errors, 'annulée(s)')
 })
 

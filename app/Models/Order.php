@@ -362,6 +362,11 @@ class Order extends Model
         $this->hold_escalated_at = null;
     }
 
+    public function cancelledBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'cancelled_by_id');
+    }
+
     public function lastIncidentReason(): BelongsTo
     {
         return $this->belongsTo(IncidentReason::class, 'last_incident_reason_id');

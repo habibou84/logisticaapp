@@ -159,6 +159,18 @@
       <p class="text-slate-500">Frais d'expédition de {{ money(order.shipping.fee) }} déduits de votre point.</p>
     </section>
 
+    <!-- Annulée ou refusée : par qui et pourquoi -->
+    <section v-if="order.cancellation" class="rounded-[22px] bg-white p-4 shadow-sm ring-1 ring-slate-100">
+      <p class="text-[13px] font-extrabold text-[#E54A6E]">{{ order.cancellation.rejected ? 'Course refusée' : 'Course annulée' }}</p>
+      <p class="mt-1 font-semibold">
+        {{ order.cancellation.by === 'merchant' ? `Annulée par ${order.cancellation.name || 'vous'}` : `Par ${order.cancellation.name || 'l\'entreprise de livraison'}${order.cancellation.role ? ` (${order.cancellation.role})` : ''}` }}
+      </p>
+      <div v-if="order.cancellation.reason_label || order.cancellation.note" class="mt-2 rounded-xl bg-slate-50 p-3 text-sm">
+        <p v-if="order.cancellation.reason_label" class="font-medium">{{ order.cancellation.reason_label }}</p>
+        <p v-if="order.cancellation.note" class="text-slate-600">« {{ order.cancellation.note }} »</p>
+      </div>
+    </section>
+
     <!-- Pas ramassé à sa date : l'agence attend une nouvelle date (ou l'annulation) -->
     <section v-if="order.to_reschedule" class="rounded-[22px] bg-[#FFF7EB] p-4 ring-1 ring-[#FFD89A]">
       <div class="flex items-center gap-3">
@@ -231,8 +243,8 @@
 
     <BottomSheet :open="sheet === 'cancel'" title="Annuler la course ?" @close="sheet = null">
       <div class="space-y-3">
-        <textarea v-model="noteText" rows="2" class="m-input" placeholder="Raison (facultatif)" />
-        <button class="m-btn-danger" :disabled="busy" @click="doCancel">Oui, annuler la course</button>
+        <CancelReasonPicker v-if="sheet === 'cancel'" v-model="cancelCode" v-model:note="noteText" mobile />
+        <button class="m-btn-danger" :disabled="busy || !cancelCode || (cancelCode === 'other' && !noteText.trim())" @click="doCancel">Oui, annuler la course</button>
         <button class="m-btn-secondary" @click="sheet = null">Non, garder</button>
       </div>
     </BottomSheet>
@@ -274,6 +286,7 @@
 </template>
 
 <script setup>
+import CancelReasonPicker from '../../components/CancelReasonPicker.vue'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
@@ -453,7 +466,8 @@ const doReschedule = () => run(() => http.post(`/orders/${order.value.id}/status
   status: 'rescheduled', rescheduled_to: reschedule.delivery_scheduled_date, note: reschedule.note || undefined,
 }), 'Relivraison prévue.')
 const doReturn = () => run(() => http.post(`/orders/${order.value.id}/return-request`, { note: noteText.value || undefined }), 'Retour demandé.')
-const doCancel = () => run(() => http.post(`/orders/${order.value.id}/status`, { status: 'cancelled', cancel_reason: noteText.value || undefined }), 'Course annulée.')
+const cancelCode = ref(null)
+const doCancel = () => run(() => http.post(`/orders/${order.value.id}/status`, { status: 'cancelled', cancel_reason_code: cancelCode.value, cancel_reason: noteText.value || undefined }), 'Course annulée.')
 const doNote = () => run(() => http.post(`/orders/${order.value.id}/notes`, { note: noteText.value }), 'Message envoyé.')
 
 async function openEdit(thenRedeliver = false) {

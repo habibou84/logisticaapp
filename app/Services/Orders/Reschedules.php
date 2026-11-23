@@ -267,7 +267,7 @@ class Reschedules
             }
 
             if (isset($choice['cancel'])) {
-                $this->workflow->transition($actor, $order, OrderStatus::Cancelled, ['cancel_reason' => self::CANCEL_REASONS[$choice['cancel']].(filled($choice['note'] ?? null) ? ' : '.$choice['note'] : '')]);
+                $this->workflow->transition($actor, $order, OrderStatus::Cancelled, Cancellations::context($actor, $choice['cancel'], $choice['note'] ?? ($choice['cancel'] === 'other' ? 'Sans précision' : null), true));
                 $this->detach($order->fresh());
                 $result['cancelled'][] = $order->tracking_code;
 

@@ -56,6 +56,7 @@ class OrderWorkflow
      *     delivery_code?: string|null,
      *     collected_amount?: int|null,
      *     cancel_reason?: string|null,
+     *     cancel_reason_code?: string|null,
      *     lat?: float|null,
      *     lng?: float|null,
      *     offline?: bool,
@@ -88,6 +89,11 @@ class OrderWorkflow
             $this->validate($order, $from, $to, $reason, $context);
 
             $assignment = $this->applyEffects($order, $from, $to, $reason, $context);
+            if (in_array($to, [OrderStatus::Cancelled, OrderStatus::Rejected], true)) {
+                // Qui a annulé : le client ou l'équipe, et la personne
+                $order->cancelled_by_type = $actor->merchant_id !== null ? 'merchant' : 'company';
+                $order->cancelled_by_id = $actor->id;
+            }
 
             $order->status = $to;
             $order->save();
@@ -618,7 +624,13 @@ class OrderWorkflow
                 $order->assignments()->active()->update(['status' => AssignmentStatus::Cancelled, 'completed_at' => $now]);
                 $order->cancelled_at = $now;
                 $order->handTo(null);
-                $order->cancel_reason = $context['cancel_reason'] ?? $context['note'] ?? null;
+                // Motif de la liste (code) et précision écrite ; sans code (API publique), la note sert de motif
+                if (array_key_exists('cancel_reason_code', $context)) {
+                    $order->cancel_reason_code = $context['cancel_reason_code'];
+                    $order->cancel_reason = $context['cancel_reason'] ?? null;
+                } else {
+                    $order->cancel_reason = $context['cancel_reason'] ?? $context['note'] ?? null;
+                }
 
                 return null;
 

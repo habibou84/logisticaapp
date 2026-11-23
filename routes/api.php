@@ -247,6 +247,7 @@ Route::prefix('v1')->name('v1.')->group(function () {
         // Référentiels
         Route::get('zones', [ZoneController::class, 'index'])->name('zones.index');
         Route::get('incident-reasons', [ReferenceController::class, 'incidentReasons'])->name('incident-reasons.index');
+        Route::get('cancel-reasons', [ReferenceController::class, 'cancelReasons'])->name('cancel-reasons.index');
         Route::get('recipients', [ReferenceController::class, 'recipients'])->name('recipients.index');
         Route::post('quotes', QuoteController::class)->name('quotes.store');
         Route::get('hubs', [HubController::class, 'index'])->name('hubs.index');

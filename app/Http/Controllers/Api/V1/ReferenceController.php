@@ -7,11 +7,24 @@ use App\Http\Resources\V1\IncidentReasonResource;
 use App\Http\Resources\V1\RecipientResource;
 use App\Models\IncidentReason;
 use App\Models\Recipient;
+use App\Services\Orders\Cancellations;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class ReferenceController extends Controller
 {
+    /** Motifs d'annulation proposés à la personne connectée (liste du client ou de l'équipe) */
+    public function cancelReasons(Request $request): JsonResponse
+    {
+        $merchant = $request->user()->merchant_id !== null;
+
+        return response()->json(['data' => [
+            'merchant' => $merchant,
+            'reasons' => collect(Cancellations::reasons($merchant))->map(fn ($label, $code) => ['code' => $code, 'label' => $label])->values(),
+        ]]);
+    }
+
     /**
      * Motifs d'incident disponibles (communs + propres à l'entreprise).
      */

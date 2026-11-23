@@ -13,6 +13,7 @@ use App\Http\Resources\V1\OrderResource;
 use App\Models\Courier;
 use App\Models\Order;
 use App\Models\OrderAttachment;
+use App\Services\Orders\Cancellations;
 use App\Services\Orders\OrderDecisions;
 use App\Services\Orders\OrderDispatcher;
 use App\Services\Orders\OrderFollowUps;
@@ -46,12 +47,11 @@ class OrderActionController extends Controller
     {
         $data = $request->validated();
 
-        $order = $this->workflow->transition(
-            $request->user(),
-            $order,
-            OrderStatus::from($data['status']),
-            $data,
-        );
+        $to = OrderStatus::from($data['status']);
+        // Annulation, refus : motif obligatoire, et la course garde qui l'a fait
+        $order = in_array($to, [OrderStatus::Cancelled, OrderStatus::Rejected], true)
+            ? Cancellations::cancel($this->workflow, $request->user(), $order, $to, $data)
+            : $this->workflow->transition($request->user(), $order, $to, $data);
 
         return $this->detail($request, $order);
     }
@@ -288,13 +288,16 @@ class OrderActionController extends Controller
         $data = $request->validate([
             'order_ids' => ['required', 'array', 'min:1', 'max:200'],
             'order_ids.*' => ['integer', 'distinct'],
+            'reason_code' => ['nullable', 'string', 'max:40'],
             'reason' => ['nullable', 'string', 'max:500'],
         ]);
+        // Un seul motif (obligatoire) pour toutes les courses choisies
+        $context = Cancellations::context($request->user(), $data['reason_code'] ?? null, $data['reason'] ?? null);
 
         $result = ['cancelled' => [], 'errors' => []];
         foreach (Order::whereIn('id', $data['order_ids'])->orderBy('id')->get() as $order) {
             try {
-                $this->workflow->transition($request->user(), $order, OrderStatus::Cancelled, ['cancel_reason' => $data['reason'] ?? 'Course non traitée annulée par l\'agence']);
+                $this->workflow->transition($request->user(), $order, OrderStatus::Cancelled, $context);
                 $result['cancelled'][] = $order->id;
             } catch (BusinessRuleException|AuthorizationException $e) {
                 $result['errors'][$order->id] = $e->getMessage();

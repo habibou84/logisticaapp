@@ -166,10 +166,10 @@ class OrderNotifier
                     : ['confirmed', "Course {$code} validée", 'Votre course a été validée. Le livreur passe bientôt.'], null]
                 : [null, ['pickup_failed', "Échec du ramassage {$code}", trim("{$reason}{$note}")]],
             OrderStatus::Returned => [['returned', "Colis {$code} retourné", 'Le colis vous a été retourné.'], null],
-            OrderStatus::Rejected => [['rejected', "Course {$code} refusée", 'La course a été refusée par l\'entreprise de livraison.'.$note], null],
+            OrderStatus::Rejected => [['rejected', "Course {$code} refusée", 'La course a été refusée'.Cancellations::byWhom($order).'.'.$note], null],
             OrderStatus::Cancelled => $actorIsMerchant
                 ? [null, ['cancelled', "Course {$code} annulée", 'Le client a annulé la course.'.$note]]
-                : [['cancelled', "Course {$code} annulée", 'La course a été annulée.'.$note], null],
+                : [['cancelled', "Course {$code} annulée", 'La course a été annulée'.Cancellations::byWhom($order).'.'.$note], null],
             default => [null, null],
         };
     }

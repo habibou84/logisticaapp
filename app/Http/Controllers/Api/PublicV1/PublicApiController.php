@@ -17,6 +17,7 @@ use App\Models\Order;
 use App\Models\OrderAttachment;
 use App\Models\Product;
 use App\Models\Zone;
+use App\Services\Orders\Cancellations;
 use App\Services\Orders\DeliveryDay;
 use App\Services\Orders\OrderService;
 use App\Services\Orders\OrderWorkflow;
@@ -127,11 +128,16 @@ class PublicApiController extends Controller
 
     public function cancel(Request $request, string $trackingCode, OrderWorkflow $workflow): PublicOrderResource
     {
-        $data = $request->validate(['reason' => ['nullable', 'string', 'max:500']]);
-
-        $order = $workflow->transition($request->user(), $this->find($request, $trackingCode), OrderStatus::Cancelled, [
-            'cancel_reason' => $data['reason'] ?? null,
+        $data = $request->validate([
+            'reason_code' => ['nullable', Rule::in(array_keys(Cancellations::reasons(true)))],
+            'reason' => ['nullable', 'string', 'max:500'],
         ]);
+
+        // Motif de la liste du client (facultatif ici) ; un texte seul vaut « Autre »
+        $order = $workflow->transition($request->user(), $this->find($request, $trackingCode), OrderStatus::Cancelled,
+            filled($data['reason_code'] ?? null) || filled($data['reason'] ?? null)
+                ? Cancellations::context($request->user(), $data['reason_code'] ?? null, $data['reason'] ?? null)
+                : []);
 
         return PublicOrderResource::make($order->fresh()->load(self::RELATIONS));
     }

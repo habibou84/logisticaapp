@@ -225,7 +225,7 @@ class OrderIncidentTest extends TestCase
         $this->as($this->dispatcher)
             ->postJson("/api/v1/orders/{$order->id}/assign", ['type' => 'pickup', 'courier_id' => $this->courierA->id]);
 
-        $this->move($order, 'cancelled')->assertOk();
+        $this->move($order, 'cancelled', ['cancel_reason_code' => 'duplicate'])->assertOk();
 
         $this->assertSame('cancelled', $order->assignments()->first()->status->value);
         $this->as($this->courierA->user)->getJson('/api/v1/courier/missions')->assertJsonCount(0, 'data');

@@ -70,6 +70,16 @@
           🚨 Colis déclaré perdu le {{ dateTime(order.lost_at) }}<span v-if="order.lost_reason"> : {{ order.lost_reason }}</span>
         </p>
 
+        <!-- Annulée ou refusée : par qui et pourquoi -->
+        <div v-if="order.cancellation" class="rounded-lg bg-slate-50 ring-1 ring-slate-200 px-4 py-3 text-sm space-y-0.5">
+          <p class="font-semibold">
+            {{ order.cancellation.rejected ? '⛔ Refusée' : '❌ Annulée' }} le {{ dateTime(order.cancellation.cancelled_at) }}
+            par {{ order.cancellation.by === 'merchant' ? `le client${order.cancellation.name ? ` (${order.cancellation.name})` : ''}` : (order.cancellation.name || 'l\'entreprise') + (order.cancellation.role ? ` (${order.cancellation.role})` : '') }}
+          </p>
+          <p v-if="order.cancellation.reason_label">Motif : {{ order.cancellation.reason_label }}</p>
+          <p v-if="order.cancellation.note" class="text-slate-600">« {{ order.cancellation.note }} »</p>
+        </div>
+
         <!-- Livrée hors connexion avec un code client incorrect -->
         <div v-if="order.delivery_code_unverified_at" class="rounded-lg bg-orange-50 ring-1 ring-orange-200 px-4 py-3 text-sm text-orange-900 space-y-2">
           <p>⚠️ Livrée hors connexion avec un <strong>code client incorrect</strong> : vérifiez la livraison auprès du destinataire.</p>

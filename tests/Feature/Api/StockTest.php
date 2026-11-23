@@ -234,7 +234,7 @@ class StockTest extends TestCase
         $this->receiveAtHub(5);
 
         $cancelled = $this->warehouseOrder(2);
-        $this->as($this->merchantUser)->postJson("/api/v1/orders/{$cancelled->id}/status", ['status' => 'cancelled'])->assertOk();
+        $this->as($this->merchantUser)->postJson("/api/v1/orders/{$cancelled->id}/status", ['status' => 'cancelled', 'cancel_reason_code' => 'out_of_stock'])->assertOk();
         $this->assertSame(0, $this->level($this->hub->id)->reserved);
         $this->assertSame('released', $cancelled->items()->first()->stock_state);
 

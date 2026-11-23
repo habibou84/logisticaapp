@@ -224,7 +224,7 @@ class OrderLifecycleTest extends TestCase
         $a = $this->createOrder();
         $b = $this->createOrder();
         $cancelled = $this->createOrder();
-        $this->as($this->merchantUser)->move($cancelled, 'cancelled')->assertOk();
+        $this->as($this->merchantUser)->move($cancelled, 'cancelled', ['cancel_reason_code' => 'out_of_stock'])->assertOk();
 
         $result = $this->as($this->dispatcher)->postJson('/api/v1/orders/bulk-assign', [
             'order_ids' => [$a->id, $b->id, $cancelled->id, 999999],
@@ -242,7 +242,7 @@ class OrderLifecycleTest extends TestCase
         $a = $this->createOrder();
         $b = $this->createOrder();
         $cancelled = $this->createOrder();
-        $this->as($this->merchantUser)->move($cancelled, 'cancelled')->assertOk();
+        $this->as($this->merchantUser)->move($cancelled, 'cancelled', ['cancel_reason_code' => 'out_of_stock'])->assertOk();
 
         // Réservé au dispatch
         $this->as($this->merchantUser)->postJson('/api/v1/orders/bulk-confirm', ['order_ids' => [$a->id]])->assertForbidden();

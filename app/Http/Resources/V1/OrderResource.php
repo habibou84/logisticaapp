@@ -11,6 +11,7 @@ use App\Services\Departments\DepartmentSettings;
 use App\Services\Labels\LabelSettings;
 use App\Services\Orders\ActivityOptions;
 use App\Services\Orders\AwaitingCourier;
+use App\Services\Orders\Cancellations;
 use App\Services\Orders\Reschedules;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -202,6 +203,8 @@ class OrderResource extends JsonResource
                 'label' => $this->lastIncidentReason->label,
             ] : null),
             'cancel_reason' => $this->cancel_reason,
+            // Qui a annulé (client ou équipe, personne, rôle) et pourquoi
+            'cancellation' => Cancellations::describe($this->resource),
             // Colis pas ramassé à sa date : à reporter, et demande de nouvelle date en cours
             'to_reschedule' => $this->resource->needsReschedule(today()->toDateString()),
             'reschedule' => Reschedules::describe($this->resource),

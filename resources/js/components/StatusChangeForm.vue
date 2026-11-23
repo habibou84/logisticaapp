@@ -70,16 +70,20 @@
       </div>
     </template>
 
-    <div>
-      <label class="label" for="note">{{ form.status === 'cancelled' ? 'Raison' : 'Note' }}{{ noteRequired ? ' *' : '' }}</label>
+    <CancelReasonPicker v-if="cancelling" v-model="form.cancel_reason_code" v-model:note="form.note" :question="form.status === 'rejected' ? 'Pourquoi refusez-vous ?' : 'Pourquoi annulez-vous ?'" />
+    <div v-else>
+      <label class="label" for="note">Note{{ noteRequired ? ' *' : '' }}</label>
       <textarea id="note" v-model="form.note" rows="2" class="input" :required="noteRequired" />
     </div>
 
-    <button type="submit" class="btn-primary w-full" :disabled="saving">{{ saving ? 'Envoi…' : 'Valider' }}</button>
+    <button type="submit" :class="['w-full', cancelling ? 'btn-danger' : 'btn-primary']" :disabled="saving || (cancelling && (!form.cancel_reason_code || (form.cancel_reason_code === 'other' && !form.note.trim())))">
+      {{ saving ? 'Envoi…' : cancelling ? (form.status === 'rejected' ? 'Refuser la course' : 'Annuler la course') : 'Valider' }}
+    </button>
   </form>
 </template>
 
 <script setup>
+import CancelReasonPicker from './CancelReasonPicker.vue'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import http, { apiErrorMessage } from '../bootstrap/axios'
 import { DELIVERY_PAYMENT_METHODS, PAYMENT_METHODS, STATUS_LABELS, today } from '../utils/format'
@@ -108,6 +112,7 @@ const form = reactive({
   shipping_reference: '',
   shipping_paid_by: 'courier',
   note: '',
+  cancel_reason_code: null,
 })
 const allReasons = ref([])
 const error = ref('')
@@ -118,8 +123,9 @@ const reasons = computed(() => reasonsFor(allReasons.value, stage.value, props.o
 const reasonGroups = computed(() => Object.entries(REASON_FAMILIES)
   .map(([key, f]) => ({ key, label: f.label, reasons: reasons.value.filter((r) => (r.family || 'other') === key) }))
   .filter((g) => g.reasons.length))
+const cancelling = computed(() => ['cancelled', 'rejected'].includes(form.status))
 const reasonRequired = computed(() => needsReason(props.order.status, form.status))
-const showReason = computed(() => reasonRequired.value || ['rescheduled', 'cancelled'].includes(form.status))
+const showReason = computed(() => reasonRequired.value || form.status === 'rescheduled')
 const selectedReason = computed(() => allReasons.value.find((r) => r.id === form.incident_reason_id))
 const noteRequired = computed(() => showReason.value && !!selectedReason.value?.requires_note)
 const showDate = computed(() => needsDate(form.status) || selectedReason.value?.requires_date)
@@ -157,7 +163,11 @@ async function submit() {
         })
       }
     }
-    if (form.status === 'cancelled') payload.cancel_reason = form.note || undefined
+    if (cancelling.value) {
+      payload.cancel_reason_code = form.cancel_reason_code
+      payload.cancel_reason = form.note || undefined
+      delete payload.note
+    }
     if (props.position) Object.assign(payload, props.position)
     const { data } = await http.post(`/orders/${props.order.id}/status`, payload)
     emit('done', data.data)

@@ -38,6 +38,8 @@ class TransitionOrderRequest extends FormRequest
             'shipping_reference' => ['nullable', 'string', 'max:100'],
             // Frais de gare payés par le livreur (défaut) ou directement par l'agence
             'shipping_paid_by' => ['nullable', Rule::in(['courier', 'company'])],
+            // Annulation, refus : motif de la liste (obligatoire) et précision
+            'cancel_reason_code' => ['nullable', 'string', 'max:40'],
             'cancel_reason' => ['nullable', 'string', 'max:1000'],
             // Distribution, MAD : preuve de remise (nom de la personne qui a reçu, signature dessinée)
             'received_by_name' => ['nullable', 'string', 'max:120'],
