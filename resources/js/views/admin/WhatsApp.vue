@@ -1,9 +1,13 @@
 <template>
   <div class="max-w-4xl space-y-4">
-    <div class="flex flex-wrap items-center justify-between gap-2">
-      <h1 class="text-xl font-bold">WhatsApp</h1>
+    <div class="flex flex-wrap items-end justify-between gap-2">
+      <div>
+        <h1 class="text-xl font-bold">WhatsApp</h1>
+        <p class="text-sm text-slate-600">Le numéro de l'entreprise, les messages qui partent tout seuls, et comment ils partent.</p>
+      </div>
       <RouterLink to="/admin/messages" class="btn-secondary">Messages</RouterLink>
     </div>
+    <div><WhatsAppTabs /></div>
 
     <p v-if="loadError" class="field-error">{{ loadError }}</p>
 
@@ -97,59 +101,6 @@
         </details>
       </section>
 
-      <!-- Courses reçues sur WhatsApp -->
-      <div class="card p-4 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <h2 class="font-semibold">Courses par WhatsApp</h2>
-          <RouterLink to="/admin/whatsapp/simulateur" class="btn-secondary">Ouvrir le simulateur</RouterLink>
-        </div>
-        <label class="flex items-start gap-2 text-sm">
-          <input :checked="s.whatsapp_orders" type="checkbox" class="mt-1" @change="saveOption('whatsapp_orders', $event.target.checked)">
-          <span>Les clients peuvent créer des courses en écrivant à ce numéro
-            <span class="block text-gray-500">
-              Ils envoient les informations de la course (ou transfèrent la commande de leur client) ; le bot demande ce qui manque,
-              affiche un récapitulatif avec le prix et crée la course après confirmation. Menu : nouvelle course, point du jour, suivi d'un colis.
-            </span></span>
-        </label>
-        <p class="text-sm" :class="s.ai_parser ? 'text-emerald-700' : 'text-gray-500'">
-          {{ s.ai_parser
-            ? '✨ Analyse des messages libres par Claude activée.'
-            : 'Analyse par règles (numéros, montants, communes, format « Nom : … »). Ajoutez ANTHROPIC_API_KEY dans .env pour que Claude comprenne aussi les messages sans format.' }}
-        </p>
-      </div>
-
-      <!-- Options -->
-      <div class="card p-4 space-y-3">
-        <h2 class="font-semibold">Envois</h2>
-        <label class="flex items-start gap-2 text-sm">
-          <input :checked="s.notify_recipients" type="checkbox" class="mt-1" @change="saveOption('notify_recipients', $event.target.checked)">
-          <span>Prévenir le destinataire quand son colis part en livraison
-            <span class="block text-gray-500">Message avec le montant à payer, le code de livraison et le lien de suivi.</span></span>
-        </label>
-        <label class="flex items-start gap-2 text-sm">
-          <input :checked="s.sms_fallback" type="checkbox" class="mt-1" @change="saveOption('sms_fallback', $event.target.checked)">
-          <span>Envoyer un SMS si le message WhatsApp n'arrive pas
-            <span class="block text-gray-500">
-              Numéro sans WhatsApp ou échec définitif.
-              <template v-if="s.sms_driver === 'none'">Les SMS sont désactivés sur ce serveur (<code>SMS_DRIVER=none</code>).</template>
-              <template v-else-if="s.sms_driver === 'log'">SMS simulés sur ce serveur (<code>SMS_DRIVER=log</code>).</template>
-            </span></span>
-        </label>
-        <label class="flex items-start gap-2 text-sm">
-          <input :checked="s.merchant_push_first" type="checkbox" class="mt-1" :disabled="!s.push_enabled" @change="saveOption('merchant_push_first', $event.target.checked)">
-          <span>Prévenir les clients par notification sur leur téléphone plutôt que par WhatsApp
-            <span class="block text-gray-500">
-              Gratuit. WhatsApp ne sert que pour les clients qui n'ont pas activé les notifications dans leur application,
-              ou si la notification n'arrive pas.
-              <template v-if="!s.push_enabled">Notifications push non configurées sur ce serveur (<code>php artisan webpush:vapid</code>).</template>
-              <template v-else-if="s.merchants_total">
-                <strong>{{ s.merchants_with_push }} client{{ s.merchants_with_push > 1 ? 's' : '' }} sur {{ s.merchants_total }}</strong> reçoivent déjà les notifications.
-              </template>
-            </span></span>
-        </label>
-        <p class="text-sm text-gray-500">Quels messages envoyer aux clients, étape par étape : <RouterLink to="/admin/reglages/messages-clients" class="text-blue-600">Messages aux clients</RouterLink>.</p>
-      </div>
-
       <!-- Test -->
       <form class="card p-4 space-y-3" @submit.prevent="sendTest">
         <h2 class="font-semibold">Message de test</h2>
@@ -216,6 +167,7 @@
 </template>
 
 <script setup>
+import WhatsAppTabs from '../../components/WhatsAppTabs.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import MessageStatus from '../../components/MessageStatus.vue'
@@ -339,15 +291,6 @@ async function submitTemplates() {
     toasts.error(apiErrorMessage(e))
   } finally {
     submitting.value = false
-  }
-}
-
-async function saveOption(key, value) {
-  try {
-    apply((await http.put('/whatsapp/settings', { [key]: value })).data.data)
-    toasts.success('Réglage enregistré.')
-  } catch (e) {
-    toasts.error(apiErrorMessage(e))
   }
 }
 

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\CompanyStatus;
 use App\Enums\NotificationEvent;
+use App\Enums\WhatsAppTemplate;
 use App\Services\Connect\Directory;
 use App\Services\Orders\ActivityOptions;
 use Carbon\CarbonImmutable;
@@ -97,7 +98,7 @@ class Company extends Model
         'reschedule_evening_time',
         'reschedule_channel',
         'reschedule_no_answer',
-        'merchant_whatsapp_events', 'merchant_messages_locked',
+        'merchant_whatsapp_events', 'merchant_messages_locked', 'message_settings',
         // Alerte « livreur libre avec des ramassages près de lui »
         'courier_available_alert',
         // Annuaire des entreprises de livraison (jibiat.com/annuaire, Jibiat Marchand)
@@ -170,6 +171,7 @@ class Company extends Model
             'late_pickup_alert_minutes' => 'integer',
             'reschedule_evening' => 'boolean',
             'merchant_whatsapp_events' => 'array',
+            'message_settings' => 'array',
             'merchant_messages_locked' => 'boolean',
             'reschedule_evening_sent_on' => 'date',
             'courier_available_alert' => 'boolean',
@@ -324,6 +326,12 @@ class Company extends Model
     public function couriers(): HasMany
     {
         return $this->hasMany(Courier::class);
+    }
+
+    /** WhatsApp › Messages automatiques : ce modèle part-il ? (absent : oui) */
+    public function messageOn(WhatsAppTemplate $template): bool
+    {
+        return (bool) ($this->message_settings[$template->value] ?? true);
     }
 
     /** Message WhatsApp (ou notification sur le téléphone) au client pour cette étape, choix de l'agence */

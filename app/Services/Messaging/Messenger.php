@@ -155,7 +155,8 @@ class Messenger
     public function whatsapp(int $companyId, ?string $to, string $recipientType, WhatsAppTemplate $template, array $params, array $context = []): ?OutboundMessage
     {
         $to = PhoneNumber::normalize($to);
-        if ($to === null) {
+        // Message coupé dans WhatsApp › Messages automatiques
+        if ($to === null || Company::find($companyId)?->messageOn($template) === false) {
             return null;
         }
 

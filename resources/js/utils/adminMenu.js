@@ -59,8 +59,8 @@ export function adminMenuGroups(badges = {}) {
       label: 'Messages',
       items: [
         { to: '/admin/messages', icon: '💬', label: 'Messages', permission: 'orders.dispatch', badge: badges.inbox },
-        // Connexion du numéro et messages prédéfinis
-        { to: '/admin/whatsapp', icon: '🟢', label: 'WhatsApp', permission: 'messaging.manage' },
+        // Connexion du numéro, messages automatiques, options d'envoi (l'entrée reste allumée sur ses onglets)
+        { to: '/admin/whatsapp', icon: '🟢', label: 'WhatsApp', permission: 'messaging.manage', also: ['/admin/whatsapp'] },
       ],
     },
     {

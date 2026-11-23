@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\PublicV1\PublicApiController;
 use App\Http\Controllers\Api\V1\ApiKeyController;
 use App\Http\Controllers\Api\V1\AppearanceController;
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\AutomaticMessageController;
 use App\Http\Controllers\Api\V1\BillingPlanController;
 use App\Http\Controllers\Api\V1\CashClosingController;
 use App\Http\Controllers\Api\V1\ClientInvoiceController;
@@ -294,6 +295,9 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::middleware('can:messaging.manage')->group(function () {
             Route::get('whatsapp/settings', [WhatsAppSettingsController::class, 'show'])->name('whatsapp.settings');
             Route::put('whatsapp/settings', [WhatsAppSettingsController::class, 'update'])->name('whatsapp.settings.update');
+            // WhatsApp › Messages automatiques : une ligne par message, son interrupteur
+            Route::get('whatsapp/messages', [AutomaticMessageController::class, 'index'])->name('whatsapp.messages.index');
+            Route::put('whatsapp/messages/{id}', [AutomaticMessageController::class, 'update'])->where('id', '[a-z_]+')->name('whatsapp.messages.update');
             Route::post('whatsapp/test', [WhatsAppSettingsController::class, 'test'])->middleware('throttle:10,1')->name('whatsapp.test');
             Route::post('whatsapp/templates/sync', [WhatsAppSettingsController::class, 'syncTemplates'])->name('whatsapp.templates.sync');
             Route::post('whatsapp/connect', [WhatsAppSettingsController::class, 'connect'])->middleware('throttle:20,1')->name('whatsapp.connect');

@@ -189,6 +189,8 @@ const routes = [
       { path: 'parametres', redirect: '/admin/reglages' },
       { path: 'integrations', component: () => import('../views/admin/Integrations.vue'), meta: { permission: 'integrations.manage' } },
       { path: 'whatsapp', component: () => import('../views/admin/WhatsApp.vue'), meta: { permission: 'messaging.manage' } },
+      { path: 'whatsapp/messages', component: () => import('../views/admin/AutomaticMessages.vue'), meta: { permission: 'messaging.manage' } },
+      { path: 'whatsapp/options', component: () => import('../views/admin/WhatsAppOptions.vue'), meta: { permission: 'messaging.manage' } },
       { path: 'whatsapp/simulateur', component: () => import('../views/admin/WhatsAppSimulator.vue'), meta: { permission: 'messaging.manage' } },
       { path: 'messages', component: () => import('../views/admin/Inbox.vue'), meta: { permission: 'orders.dispatch' } },
       // Atelier : pannes confiées aux mécaniciens, achats sur place à accorder
