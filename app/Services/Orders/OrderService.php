@@ -127,6 +127,10 @@ class OrderService
             if ($data['pickup_zone_id'] === null) {
                 throw new BusinessRuleException('Indiquez la zone de ramassage.', 'pickup_zone_id');
             }
+            // Zones et tarifs : commune où l'entreprise livre sans y collecter
+            if ($hub === null && ($pickup = Zone::forCompany($merchant->company_id)->with('parent')->find($data['pickup_zone_id'])) && ! $pickup->acceptsPickup()) {
+                throw new BusinessRuleException("Nous ne collectons pas à {$pickup->name}.", 'pickup_zone_id');
+            }
 
             $feePayer = FeePayer::tryFrom($data['fee_payer'] ?? '') ?? $merchant->default_fee_payer;
             $itemsAmount = (int) ($data['items_amount'] ?? 0);

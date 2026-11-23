@@ -14,7 +14,7 @@ final readonly class Quote
         public int $basePrice,
         public array $surcharges,
         public int $pricingGridId,
-        public int $pricingRuleId,
+        public ?int $pricingRuleId,
     ) {}
 
     public function surchargesTotal(): int

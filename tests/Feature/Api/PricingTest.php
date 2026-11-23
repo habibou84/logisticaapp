@@ -96,4 +96,39 @@ class PricingTest extends TestCase
         $this->postJson('/api/v1/quotes', ['delivery_zone_id' => $foreign->id])
             ->assertJsonValidationErrors('delivery_zone_id');
     }
+
+    public function test_base_price_covers_any_route_without_a_price(): void
+    {
+        Sanctum::actingAs($this->admin);
+        // Paliers de la commune de départ gardés avec la grille ; une zone inconnue est ignorée
+        $this->putJson("/api/v1/pricing-grids/{$this->grid->id}", ['base_price' => 2000, 'tiers' => [$this->cocody->id => [1000, 1500, 2000, 3000], 999999 => [1]]])
+            ->assertOk()
+            ->assertJsonPath('data.base_price', 2000)
+            ->assertJsonPath("data.tiers.{$this->cocody->id}", [1000, 1500, 2000, 3000])
+            ->assertJsonMissingPath('data.tiers.999999');
+
+        // Trajet réglé : son prix ; sans prix : le prix de base, suppléments compris
+        $this->assertSame(1500, $this->price($this->cocody, $this->yopougon));
+        $this->assertSame(2000, $this->price($this->cocody, $this->plateau));
+        $this->grid->surcharges()->create(['type' => SurchargeType::Express, 'amount' => 500]);
+        $this->assertSame(2500, $this->price($this->cocody, $this->plateau, ['is_express' => true]));
+
+        $this->putJson("/api/v1/pricing-grids/{$this->grid->id}", ['base_price' => null])->assertOk()->assertJsonPath('data.base_price', null);
+    }
+
+    public function test_a_commune_can_be_delivered_without_being_collected(): void
+    {
+        Sanctum::actingAs($this->admin);
+        $this->patchJson("/api/v1/zones/{$this->cocody->id}", ['is_pickup' => false])->assertOk()->assertJsonPath('data.is_pickup', false);
+        // Le quartier suit sa commune
+        $zones = collect($this->getJson('/api/v1/zones')->json('data'))->keyBy('id');
+        $this->assertFalse($zones[$this->angre->id]['is_pickup']);
+        $this->assertTrue($zones[$this->yopougon->id]['is_pickup']);
+
+        Sanctum::actingAs($this->merchantUser);
+        $this->postJson('/api/v1/orders', [
+            'recipient_name' => 'Awa', 'recipient_phone' => '0707070707', 'delivery_zone_id' => $this->yopougon->id,
+            'delivery_address' => 'Rue 12', 'items_amount' => 5000, 'fee_payer' => 'merchant',
+        ])->assertJsonValidationErrors('pickup_zone_id');
+    }
 }

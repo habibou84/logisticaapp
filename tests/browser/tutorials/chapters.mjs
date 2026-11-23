@@ -29,7 +29,7 @@ export const CHAPTERS = [
     key: 'pricing',
     title: 'Les tarifs',
     segments: [
-      { say: 'Le prix de chaque course se calcule à partir de votre grille de tarifs. Ouvrez Tarifs.', do: async (s) => { await s.go('/admin/tarifs') } },
+      { say: 'Le prix de chaque course se calcule à partir de votre grille de tarifs. Ouvrez Tarifs.', do: async (s) => { await s.go('/admin/zones') } },
       { say: 'Pour chaque trajet, d\'une commune de ramassage à une commune de livraison, indiquez le prix. Les trajets sans prix sont signalés.', do: async (s) => { await s.hl('table >> nth=0') } },
       { say: 'Ajoutez les suppléments : express, fragile, ou selon le poids, en francs ou en pourcentage du tarif.', do: async (s) => { await s.scrollTo('h2:has-text("Suppléments")'); await s.hl('text=+ Supplément') } },
       { say: 'Un client a négocié ses prix ? Créez-lui une grille négociée, elle remplace la grille commune pour lui seul.', do: async (s) => { await s.scrollTop(); await s.hl('text=+ Grille négociée') } },

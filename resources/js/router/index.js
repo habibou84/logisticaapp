@@ -142,8 +142,9 @@ const routes = [
       { path: 'livreurs/:id(\\d+)', component: () => import('../views/admin/CourierProfile.vue'), meta: { permission: ['orders.dispatch', 'couriers.manage', 'ratings.manage'] } },
       { path: 'utilisateurs', component: () => import('../views/admin/Users.vue'), meta: { permission: 'users.view' } },
       { path: 'roles', component: () => import('../views/admin/Roles.vue'), meta: { permission: 'users.view' } },
-      { path: 'zones', component: () => import('../views/admin/Zones.vue'), meta: { permission: 'zones.manage' } },
-      { path: 'tarifs', component: () => import('../views/admin/Pricing.vue'), meta: { permission: 'pricing.manage' } },
+      // Zones et tarifs : une seule page (anciennes pages Zones, Tarifs de livraison et Tarifs distribution)
+      { path: 'zones', component: () => import('../views/admin/Delivery.vue'), meta: { permission: ['zones.manage', 'pricing.manage', 'rates.manage'] } },
+      { path: 'tarifs', redirect: '/admin/zones' },
       { path: 'paie-livreurs', component: () => import('../views/admin/PayPlans.vue'), meta: { permission: 'pay.manage' } },
       { path: 'stock', component: () => import('../views/admin/Stock.vue'), meta: { permission: 'stock.manage' } },
       { path: 'caisse', component: () => import('../views/admin/Finance.vue'), meta: { permission: 'finance.view' } },
@@ -157,7 +158,7 @@ const routes = [
       { path: 'contrats', component: () => import('../views/admin/Contracts.vue'), meta: { permission: 'merchants.view' } },
       // Livraison › Parcours : routine du matin des livreurs en mise à disposition, client par client
       { path: 'parcours', component: () => import('../views/admin/MadRoutines.vue'), meta: { permission: ['rates.manage', 'orders.dispatch', 'merchants.view'] } },
-      { path: 'formules', component: () => import('../views/admin/ClientFormulas.vue'), meta: { permission: ['pricing.manage', 'rates.manage'] } },
+      { path: 'formules', redirect: (to) => ({ path: '/admin/zones', query: { ...to.query, onglet: 'distribution' } }) },
       { path: 'caisse/versements/:id(\\d+)', component: () => import('../views/admin/RemittanceReceipt.vue'), meta: { permission: 'finance.view' } },
       { path: 'caisse/journal', component: () => import('../views/admin/CashJournal.vue'), meta: { permission: 'finance.view' } },
       { path: 'caisse/cloture', component: () => import('../views/admin/CashClosing.vue'), meta: { permission: 'finance.view' } },

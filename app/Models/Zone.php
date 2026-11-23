@@ -15,7 +15,7 @@ class Zone extends Model
     /** @use HasFactory<ZoneFactory> */
     use BelongsToCompany, HasFactory;
 
-    protected $fillable = ['company_id', 'parent_id', 'name', 'city', 'is_shipping', 'in_forfait', 'shipping_fee_estimate', 'is_active', 'sort_order'];
+    protected $fillable = ['company_id', 'parent_id', 'name', 'city', 'is_shipping', 'in_forfait', 'shipping_fee_estimate', 'is_active', 'is_pickup', 'sort_order'];
 
     protected function casts(): array
     {
@@ -23,6 +23,7 @@ class Zone extends Model
             'is_active' => 'boolean',
             'is_shipping' => 'boolean',
             'in_forfait' => 'boolean',
+            'is_pickup' => 'boolean',
             'shipping_fee_estimate' => 'integer',
             'sort_order' => 'integer',
         ];
@@ -49,5 +50,16 @@ class Zone extends Model
     public function fullName(): string
     {
         return $this->parent ? $this->parent->name.' › '.$this->name : $this->name;
+    }
+
+    /** L'entreprise collecte-t-elle ici ? (un quartier suit sa commune quand elle est coupée) */
+    public function acceptsPickup(): bool
+    {
+        if (! $this->is_pickup) {
+            return false;
+        }
+
+        // Commune pas chargée : on s'en tient au lieu lui-même (la création de course, elle, charge la commune)
+        return $this->parent_id === null || ! $this->relationLoaded('parent') || ($this->parent?->is_pickup ?? true);
     }
 }

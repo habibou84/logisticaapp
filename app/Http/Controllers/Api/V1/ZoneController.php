@@ -93,6 +93,8 @@ class ZoneController extends Controller
                 Rule::notIn(array_filter([$zone?->id]))],
             'city' => ['sometimes', 'string', 'max:100'],
             'is_active' => ['sometimes', 'boolean'],
+            // On collecte ici (couper une commune coupe aussi ses quartiers)
+            'is_pickup' => ['sometimes', 'boolean'],
             'is_shipping' => ['sometimes', 'boolean'],
             // Commune couverte par les forfaits (distribution, MAD)
             'in_forfait' => ['sometimes', 'boolean'],

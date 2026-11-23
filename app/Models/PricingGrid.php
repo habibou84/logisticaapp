@@ -13,11 +13,11 @@ class PricingGrid extends Model
     /** @use HasFactory<PricingGridFactory> */
     use BelongsToCompany, HasFactory;
 
-    protected $fillable = ['company_id', 'name', 'is_default'];
+    protected $fillable = ['company_id', 'name', 'is_default', 'base_price', 'tiers'];
 
     protected function casts(): array
     {
-        return ['is_default' => 'boolean'];
+        return ['is_default' => 'boolean', 'base_price' => 'integer', 'tiers' => 'array'];
     }
 
     public function rules(): HasMany

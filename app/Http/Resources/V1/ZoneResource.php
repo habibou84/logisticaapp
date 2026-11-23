@@ -21,6 +21,8 @@ class ZoneResource extends JsonResource
             'city' => $this->city,
             'is_shipping' => $this->is_shipping,
             'in_forfait' => (bool) $this->in_forfait,
+            // Collecte possible ici (quartier : et dans sa commune). Hors de l'API publique : pas au contrat
+            'is_pickup' => $this->when(! $request->is('api/public/*'), fn () => $this->acceptsPickup()),
             'shipping_fee_estimate' => $this->shipping_fee_estimate,
             'is_active' => $this->is_active,
             'sort_order' => $this->sort_order,

@@ -14,6 +14,7 @@ use App\Models\Zone;
  * 1. grille négociée du client, sinon grille par défaut de l'entreprise ;
  * 2. règle exacte (quartier -> quartier), puis zones parentes (communes),
  *    dans les deux sens si la règle est symétrique ;
+ * 2 bis. sinon prix de base de la grille (tout trajet sans prix, hors expédition) ;
  * 3. suppléments (express, fragile, poids).
  */
 class PricingService
@@ -32,6 +33,16 @@ class PricingService
                     surcharges: $this->surcharges($grid, $rule->price, $options),
                     pricingGridId: $grid->id,
                     pricingRuleId: $rule->id,
+                );
+            }
+
+            // Aucun trajet réglé : prix de base de la grille (hors expédition, dont le prix se règle à part)
+            if ($grid->base_price !== null && ! $deliveryZone->is_shipping) {
+                return new Quote(
+                    basePrice: $grid->base_price,
+                    surcharges: $this->surcharges($grid, $grid->base_price, $options),
+                    pricingGridId: $grid->id,
+                    pricingRuleId: null,
                 );
             }
         }

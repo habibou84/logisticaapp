@@ -25,10 +25,8 @@ export function adminMenuGroups(badges = {}) {
       id: 'livraison',
       label: 'Livraison',
       items: [
-        { to: '/admin/zones', icon: '🗺️', label: 'Zones', permission: 'zones.manage' },
-        { to: '/admin/tarifs', icon: '🏷️', label: 'Tarifs de livraison', permission: 'pricing.manage' },
-        // Distribution à l'unité, villes de l'intérieur, prix négociés
-        { to: '/admin/formules', icon: '🧮', label: 'Tarifs', permission: ['pricing.manage', 'rates.manage'], activities: DM, tags: DM },
+        // Communes, prix au départ, suppléments, grilles négociées, tarifs de la distribution et de la MAD
+        { to: '/admin/zones', icon: '🗺️', label: 'Zones et tarifs', permission: ['zones.manage', 'pricing.manage', 'rates.manage'] },
         { to: '/admin/automatisation', icon: '⚡', label: 'Automatisation', permission: 'settings.manage' },
         { to: '/admin/activite/planning', icon: '🗓️', label: 'Planning des livreurs', permission: 'planning.manage' },
         // Routine du matin des livreurs en mise à disposition, et lieu où ils pointent

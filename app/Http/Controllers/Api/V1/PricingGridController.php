@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\V1\PricingGridResource;
 use App\Models\PricingGrid;
 use App\Models\PricingRule;
+use App\Models\Zone;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -55,7 +56,18 @@ class PricingGridController extends Controller
         $data = $request->validate([
             'name' => ['sometimes', 'required', 'string', 'max:100'],
             'is_default' => ['sometimes', 'accepted'], // on désigne une nouvelle grille par défaut, on ne retire pas
+            // Prix de base : tout trajet sans prix ; vide pour l'enlever
+            'base_price' => ['sometimes', 'nullable', 'integer', 'min:0', 'max:10000000'],
+            // Paliers de prix par commune de départ (quatre au plus), pour saisir les trajets
+            'tiers' => ['sometimes', 'nullable', 'array', 'max:500'],
+            'tiers.*' => ['array', 'max:4'],
+            'tiers.*.*' => ['integer', 'min:0', 'max:1000000'],
         ]);
+        if (isset($data['tiers'])) {
+            $zones = Zone::query()->whereIn('id', array_map('intval', array_keys($data['tiers'])))->pluck('id')->all();
+            $data['tiers'] = collect($data['tiers'])->only(array_map('strval', $zones))
+                ->map(fn ($list) => array_values(array_map('intval', $list)))->all() ?: null;
+        }
 
         DB::transaction(function () use ($pricingGrid, $data) {
             $pricingGrid->update($data);
@@ -85,7 +97,7 @@ class PricingGridController extends Controller
         $zone = Rule::exists('zones', 'id')->where('company_id', $pricingGrid->company_id);
 
         $data = $request->validate([
-            'rules' => ['present', 'array', 'max:2000'],
+            'rules' => ['present', 'array', 'max:6000'],
             'rules.*.origin_zone_id' => ['required', 'integer', $zone],
             'rules.*.destination_zone_id' => ['required', 'integer', $zone],
             'rules.*.price' => ['required', 'integer', 'min:0', 'max:1000000'],
