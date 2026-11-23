@@ -190,7 +190,7 @@ const routes = [
       { path: 'integrations', component: () => import('../views/admin/Integrations.vue'), meta: { permission: 'integrations.manage' } },
       { path: 'whatsapp', component: () => import('../views/admin/WhatsApp.vue'), meta: { permission: 'messaging.manage' } },
       { path: 'whatsapp/simulateur', component: () => import('../views/admin/WhatsAppSimulator.vue'), meta: { permission: 'messaging.manage' } },
-      { path: 'messages', component: () => import('../views/admin/Messages.vue'), meta: { permission: 'orders.dispatch' } },
+      { path: 'messages', component: () => import('../views/admin/Inbox.vue'), meta: { permission: 'orders.dispatch' } },
       // Atelier : pannes confiées aux mécaniciens, achats sur place à accorder
       { path: 'atelier', component: () => import('../views/admin/Workshop.vue'), meta: { permission: ['repairs.manage', 'repairs.purchases'] } },
     ],

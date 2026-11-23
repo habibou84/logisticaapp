@@ -15,12 +15,14 @@ class InboundMessage extends Model
 
     protected $fillable = [
         'company_id', 'whatsapp_account_id', 'provider_message_id', 'from_phone', 'merchant_id',
-        'type', 'body', 'payload', 'order_id', 'processed_at',
+        'type', 'body', 'payload', 'order_id', 'processed_at', 'read_at', 'read_by', 'simulated',
     ];
 
     protected function casts(): array
     {
         return [
+            'read_at' => 'datetime',
+            'simulated' => 'boolean',
             'payload' => 'array',
             'processed_at' => 'datetime',
         ];

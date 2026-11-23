@@ -195,7 +195,8 @@ class Messenger
             'whatsapp_account_id' => WhatsAppAccount::forCompanyId($companyId)?->id,
             'to' => PhoneNumber::normalize($to) ?? $to,
             'recipient_type' => $context['recipient_type'] ?? 'merchant',
-            'event' => 'conversation',
+            // « inbox_reply » : réponse écrite par l'équipe (Messages) ; sinon réponse du robot
+            'event' => $context['event'] ?? 'conversation',
             'template_name' => null,
             'payload' => $buttons === [] ? null : ['buttons' => $buttons],
             'body' => $text,
@@ -237,6 +238,7 @@ class Messenger
         if ($message->channel !== MessageChannel::WhatsApp
             || $message->recipient_type === 'test'
             || $message->event === 'conversation'
+            || $message->event === 'inbox_reply'
             || config('messaging.sms.driver') === 'none'
             || ! Company::find($message->company_id)?->sms_fallback
             || $message->fallback()->exists()) {

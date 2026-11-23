@@ -2,7 +2,7 @@
   <div class="max-w-4xl space-y-4">
     <div class="flex flex-wrap items-center justify-between gap-2">
       <h1 class="text-xl font-bold">WhatsApp</h1>
-      <RouterLink to="/admin/messages" class="btn-secondary">Journal des messages</RouterLink>
+      <RouterLink to="/admin/messages" class="btn-secondary">Messages</RouterLink>
     </div>
 
     <p v-if="loadError" class="field-error">{{ loadError }}</p>
@@ -26,7 +26,7 @@
         <template v-else>
           <p class="font-semibold">Mode simulation : votre numéro n'est pas encore connecté.</p>
           <p>
-            Les messages sont seulement inscrits dans le <RouterLink to="/admin/messages" class="underline">journal des messages</RouterLink>.
+            Les messages sont seulement inscrits dans la page <RouterLink to="/admin/messages" class="underline">Messages</RouterLink>.
             Renseignez votre numéro WhatsApp Business ci-dessous : dès que Meta le confirme, les envois deviennent réels.
           </p>
         </template>

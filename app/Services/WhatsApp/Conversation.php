@@ -48,6 +48,8 @@ class Conversation
 
     private ?InboundMessage $inbound = null;
 
+    private bool $simulated = false;
+
     public function __construct(
         private readonly Messenger $messenger,
         private readonly OrderService $orders,
@@ -76,11 +78,12 @@ class Conversation
             'type' => $type,
             'body' => $text,
             'payload' => $buttonId ? ['button_id' => $buttonId] : null,
+            'simulated' => (bool) ($meta['simulated'] ?? false),
         ]);
 
         // Simulateur des réglages : ni vérification de numéro ni avis (le numéro est choisi librement, il
         // n'appartient pas à la personne qui tape)
-        $simulated = (bool) ($meta['simulated'] ?? false);
+        $simulated = $this->simulated = (bool) ($meta['simulated'] ?? false);
 
         // Message de vérification d'un numéro (inscription, mot de passe oublié)
         if (! $simulated && $type === 'text' && ($answer = $this->verifier->handleWhatsApp($company, $this->phone, $text)) !== null) {
@@ -533,6 +536,8 @@ class Conversation
     {
         $this->messenger->reply($this->company->id, $this->phone, $text, $buttons, [
             'merchant_id' => $this->inbound?->merchant_id,
+            // Simulateur : ses réponses restent hors de la messagerie
+            ...($this->simulated ? ['recipient_type' => 'test'] : []),
         ]);
     }
 

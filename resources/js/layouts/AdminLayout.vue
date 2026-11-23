@@ -189,7 +189,15 @@ function fetchCounts() {
   if (!isDispatch.value) return
   heldParcels.fetchCounts().catch(() => {})
   dispatchCounts.fetchCounts().catch(() => {})
+  fetchInbox()
 }
+// Conversations non lues : pastille du menu « Messages » ; relue quand une conversation est ouverte
+const inboxUnread = ref(0)
+async function fetchInbox() {
+  if (!isDispatch.value) return
+  inboxUnread.value = (await http.get('/inbox/summary').catch(() => null))?.data?.data?.unread ?? inboxUnread.value
+}
+window.addEventListener('inbox-changed', fetchInbox)
 // Mise en route (administrateurs) : bandeau du tableau de bord, ouverture à la première connexion, retour au parcours
 const setup = ref(null)
 const setupNext = computed(() => setup.value?.steps.find((s) => s.essential && s.status !== 'done'))
@@ -237,7 +245,10 @@ onMounted(() => {
   fetchCounts()
   countsTimer = setInterval(fetchCounts, 60000)
 })
-onBeforeUnmount(() => clearInterval(countsTimer))
+onBeforeUnmount(() => {
+  clearInterval(countsTimer)
+  window.removeEventListener('inbox-changed', fetchInbox)
+})
 
 // Menu en rubriques (utils/adminMenu) ; entrée propre à certaines activités : cachée aux comptes limités à d'autres
 const menu = computed(() => filterMenu((p) => auth.can(p), myActivities(auth.user).map((a) => a.value), {
@@ -246,6 +257,7 @@ const menu = computed(() => filterMenu((p) => auth.can(p), myActivities(auth.use
   reschedule: isDispatch.value ? dispatchCounts.counts.to_reschedule || 0 : 0,
   fieldReports: fieldReports.badge,
   heldParcels: heldParcels.counts.overdue,
+  inbox: inboxUnread.value,
   vehicles: vehicleUrgent.value,
   workshop: workshopWaiting.value,
   health: (setup.value?.health || []).filter((h) => h.level === 'alert').length,
