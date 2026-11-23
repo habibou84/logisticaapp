@@ -13,6 +13,10 @@
         </div>
       </div>
       <OrderProgress :status="order.status" :incident="order.last_incident?.label" :rescheduled-to="order.delivery.scheduled_date" :shipping="order.is_shipping" :activity="order.activity" />
+      <!-- Livrée un autre jour que prévu au départ -->
+      <p v-if="order.status === 'delivered' && order.delivery.first_date && order.delivery.scheduled_date && order.delivery.first_date !== order.delivery.scheduled_date" class="rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-700">
+        Livrée le <strong>{{ longDay(order.delivery.scheduled_date) }}</strong> · prévue d'abord le {{ longDay(order.delivery.first_date) }}
+      </p>
       <p v-if="plannedDay" class="flex items-center gap-2 rounded-xl bg-sky-50 px-3 py-2 text-sm text-sky-900"><StatusIcon name="calendar" class="h-4 w-4 shrink-0" /><span>Livraison prévue le <strong>{{ plannedDay }}</strong></span></p>
 
       <!-- Note de suivi de l'agence, quand elle est montrée au client (Réglages › Motifs) -->

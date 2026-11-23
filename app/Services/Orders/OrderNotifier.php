@@ -91,6 +91,10 @@ class OrderNotifier
                 $toStaff = $actorIsMerchant
                     ? ['return_requested', "Décision du client {$code}", $merchantName.' demande le retour du colis.'.$note]
                     : ['return_requested', "Retour demandé pour {$code}", ($event->actor_name ?: 'L\'agence').' a demandé le retour du colis.'.$note];
+                // Retour décidé par l'agence : le client l'apprend, avec la raison
+                if (! $actorIsMerchant) {
+                    $toMerchant = ['return_requested', "Retour du colis {$code}", ($order->return_cause?->merchantLabel() ?? 'Le colis vous sera retourné').'.'.$note];
+                }
                 break;
 
             case OrderEventType::StatusChanged:
@@ -150,7 +154,9 @@ class OrderNotifier
                 : [['delivered', "Colis {$code} livré", 'Votre colis a été livré.'
                     .($order->received_by_name ? " Reçu par {$order->received_by_name}".($order->received_by_role ? " ({$order->received_by_role})" : '').'.' : '')], $this->moneyAlert($order, $note)],
             OrderStatus::DeliveryFailed => [
-                ['incident', "Échec de livraison {$code}", "La livraison n'a pas pu être effectuée.{$why}{$note}"],
+                ['incident', "Échec de livraison {$code}", "La livraison n'a pas pu être effectuée.{$why}{$note}"
+                    // Refusé ou tentatives épuisées : le colis repart chez le client
+                    .($order->return_requested && $order->return_cause ? ' '.$order->return_cause->merchantLabel().'.' : '')],
                 ['incident', "Échec de livraison {$code}", trim("{$reason}{$note}")],
             ],
             OrderStatus::Rescheduled => [

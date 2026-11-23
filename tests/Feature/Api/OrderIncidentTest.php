@@ -162,6 +162,7 @@ class OrderIncidentTest extends TestCase
     {
         $order = $this->orderOutForDelivery();
 
+        Notification::fake();
         $this->move($order, 'delivery_failed', ['incident_reason_id' => $this->reason('refused')])
             ->assertJsonPath('data.return_requested', true)
             ->assertJsonPath('data.return_cause', 'refused');
@@ -170,6 +171,9 @@ class OrderIncidentTest extends TestCase
         $this->as($this->dispatcher)->postJson("/api/v1/orders/{$order->id}/return-request")
             ->assertJsonPath('data.return_cause', 'refused')
             ->assertJsonPath('data.return_cause_label', 'Retour : refusé par le destinataire');
+        // Le message d'échec dit au client que le colis lui revient
+        Notification::assertSentTo($this->merchantUser, OrderAlert::class, fn (OrderAlert $n) => $n->kind === 'incident'
+            && str_contains($n->body, 'Refusé par le destinataire : le colis vous sera retourné.'));
     }
 
     public function test_merchant_requests_a_return(): void
@@ -197,6 +201,9 @@ class OrderIncidentTest extends TestCase
 
         Notification::assertSentTo($this->admin, OrderAlert::class, fn (OrderAlert $n) => $n->kind === 'return_requested'
             && $n->body === $this->dispatcher->name.' a demandé le retour du colis.');
+        // Le client l'apprend aussi, avec la raison
+        Notification::assertSentTo($this->merchantUser, OrderAlert::class, fn (OrderAlert $n) => $n->kind === 'return_requested'
+            && $n->body === 'L\'agence vous retourne le colis.');
     }
 
     public function test_pickup_failure_puts_the_order_back_to_confirmed(): void
