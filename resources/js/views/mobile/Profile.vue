@@ -44,7 +44,14 @@
     <!-- Livreur : son véhicule ; sa note (si l'entreprise la montre) -->
     <div v-if="app === 'livreur'" class="m-card divide-y">
       <MenuRow to="/livreur/vehicule" icon="truck" tone="blue" label="Mon véhicule" sub="État des lieux, plein, papiers, entretien" />
+      <!-- Aussi en bas de l'écran des missions -->
+      <button type="button" class="tap flex w-full items-center gap-3 p-4 text-left active:bg-slate-50" @click="reporting = true">
+        <span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-slate-100 text-xl" aria-hidden="true">⚠️</span>
+        <span class="flex-1"><span class="block font-semibold">Signaler un problème</span><span class="block text-sm text-slate-600">Panne, accident, contrôle, vol…</span></span>
+        <span class="text-xl text-slate-400" aria-hidden="true">›</span>
+      </button>
     </div>
+    <FieldEventSheet v-if="app === 'livreur'" :open="reporting" @close="reporting = false" @sent="reported" />
     <CourierScoreCard v-if="app === 'livreur'" />
 
     <!-- Mécanicien : véhicules du parc -->
@@ -69,8 +76,9 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import FieldEventSheet from '../../components/courier/FieldEventSheet.vue'
 import InstallBanner from '../../components/mobile/InstallBanner.vue'
 import MenuRow from '../../components/mobile/MenuRow.vue'
 import CourierScoreCard from '../../components/mobile/CourierScoreCard.vue'
@@ -78,12 +86,21 @@ import StatusIcon from '../../components/mobile/StatusIcon.vue'
 import PushSettings from '../../components/mobile/PushSettings.vue'
 import { forgetPushDevice } from '../../composables/usePush'
 import { useAuthStore } from '../../stores/auth'
+import { useToastStore } from '../../stores/toasts'
 import { pwa } from '../../composables/usePwa'
 import { offlineQueue } from '../../composables/useOfflineQueue'
 import { localPhone, telLink } from '../../utils/format'
 import { appLock } from '../../native'
 
 const auth = useAuthStore()
+const toasts = useToastStore()
+
+// Livreur : signaler un problème depuis son profil
+const reporting = ref(false)
+function reported(result) {
+  toasts.success(result?.offline ? 'Pas de réseau : le signalement partira dès que possible.' : 'Signalement envoyé : l\'agence est prévenue.')
+  if (!result?.offline && result?.data?.capacity !== 'continue' && auth.user?.courier) auth.user.courier.is_available = false
+}
 const router = useRouter()
 const route = useRoute()
 

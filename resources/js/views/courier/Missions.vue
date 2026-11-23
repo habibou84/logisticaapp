@@ -3,19 +3,17 @@
     <!-- Pointage d'arrivée sur le lieu de début : met en service -->
     <ShiftCard @clocked="clocked" />
 
-    <!-- Disponibilité -->
+    <!-- Disponibilité : une ligne fine, la place est pour les missions -->
     <button
-      :class="['tap w-full rounded-2xl p-4 flex items-center gap-4 text-left transition', available ? 'bg-emerald-600 text-white' : 'bg-white ring-1 ring-slate-200']"
+      :class="['tap flex w-full items-center gap-3 rounded-2xl px-4 py-2.5 text-left transition', available ? 'bg-emerald-600 text-white' : 'bg-white ring-1 ring-slate-200']"
       :aria-pressed="available"
       @click="toggleAvailability"
     >
-      <span :class="['h-8 w-14 rounded-full p-1 transition', available ? 'bg-white/30' : 'bg-slate-200']">
-        <span :class="['block h-6 w-6 rounded-full bg-white shadow transition', available ? 'translate-x-6' : '']" />
+      <span :class="['h-6 w-11 shrink-0 rounded-full p-0.5 transition', available ? 'bg-white/30' : 'bg-slate-200']">
+        <span :class="['block h-5 w-5 rounded-full bg-white shadow transition', available ? 'translate-x-5' : '']" />
       </span>
-      <span class="flex-1">
-        <span class="block font-semibold text-lg">{{ available ? 'Je suis en service' : 'Je suis hors service' }}</span>
-        <span :class="['block text-sm', available ? 'text-white/80' : 'text-slate-500']">{{ available ? 'Vous recevez des missions' : 'Touchez pour commencer votre journée' }}</span>
-      </span>
+      <span class="flex-1 whitespace-nowrap font-semibold">{{ available ? 'En service' : 'Hors service' }}</span>
+      <span :class="['truncate text-xs', available ? 'text-white/80' : 'text-slate-500']">{{ available ? 'Vous recevez des missions' : 'Touchez pour commencer' }}</span>
     </button>
 
     <!-- Véhicule du jour : état des lieux à faire, entretien à prévoir -->
@@ -25,12 +23,7 @@
         <p class="text-sm text-indigo-800">{{ vehicle.vehicle.name }} · dernier relevé {{ km(vehicle.vehicle.odometer) }}</p>
         <RouterLink to="/livreur/vehicule/etat-des-lieux" class="m-btn-primary mt-3">📋 Faire l'état des lieux{{ vehicle.blocks_service ? ' pour commencer' : '' }}</RouterLink>
       </div>
-      <RouterLink v-else-if="vehicle.vehicle" to="/livreur/vehicule" class="tap flex items-center gap-3 rounded-2xl bg-white p-3 ring-1 ring-slate-200">
-        <span class="grid h-10 w-10 place-items-center rounded-xl bg-slate-100 text-xl">{{ VEHICLE_TYPES[vehicle.vehicle.type]?.icon }}</span>
-        <span class="flex-1"><span class="block font-semibold">{{ vehicle.vehicle.plate }}</span><span class="block text-sm text-slate-500">Mon véhicule · plein, papiers, entretien</span></span>
-        <span class="text-xl text-slate-400">›</span>
-      </RouterLink>
-      <RouterLink v-else-if="vehicle.free" to="/livreur/vehicule/etat-des-lieux" class="tap block rounded-2xl bg-indigo-50 p-4 ring-1 ring-indigo-200">
+      <RouterLink v-else-if="!vehicle.vehicle && vehicle.free" to="/livreur/vehicule/etat-des-lieux" class="tap block rounded-2xl bg-indigo-50 p-4 ring-1 ring-indigo-200">
         <span class="block font-semibold text-indigo-900">🔑 Prendre un véhicule pour la journée</span>
         <span class="block text-sm text-indigo-800">{{ vehicle.free }} véhicule{{ vehicle.free > 1 ? 's' : '' }} libre{{ vehicle.free > 1 ? 's' : '' }} · état des lieux en 1 minute →</span>
       </RouterLink>
@@ -41,15 +34,6 @@
       </div>
     </template>
 
-    <!-- Événement sur la route : panne, accident, contrôle… -->
-    <button type="button" class="tap w-full rounded-2xl bg-white ring-1 ring-red-200 p-3 flex items-center gap-3 text-left active:bg-red-50" @click="reporting = true">
-      <span class="h-10 w-10 shrink-0 rounded-xl grid place-items-center text-xl bg-red-100">⚠️</span>
-      <span class="flex-1">
-        <span class="block font-semibold text-red-700">Signaler un problème</span>
-        <span class="block text-sm text-slate-500">Panne, accident, contrôle, vol…</span>
-      </span>
-      <span class="text-slate-400 text-xl">›</span>
-    </button>
     <p v-if="fieldEventQueue.pending.length" class="rounded-xl bg-sky-50 text-sky-800 text-sm px-4 py-3">
       ⏳ {{ fieldEventQueue.pending.length }} signalement{{ fieldEventQueue.pending.length > 1 ? 's' : '' }} en attente de réseau : envoi automatique dès que possible.
     </p>
@@ -104,24 +88,32 @@
       </div>
     </RouterLink>
 
-    <!-- Onglets -->
-    <div class="flex rounded-xl bg-slate-200 p-1">
-      <button v-for="t in tabs" :key="t.value" :class="['tap flex-1 rounded-lg py-2.5 text-sm font-semibold', tab === t.value ? 'bg-white shadow-sm text-[var(--app-color)]' : 'text-slate-600']" @click="tab = t.value">
-        {{ t.label }}
-        <span :class="['ml-1 rounded-full px-1.5 text-xs', count(t.value) ? 'bg-[var(--app-color)] text-white' : 'bg-slate-300 text-slate-600']">{{ count(t.value) }}</span>
+    <!-- Mon itinéraire : tous les arrêts dans l'ordre (ramassages, livraisons, retours), sur son écran -->
+    <RouterLink v-if="missions.length" to="/livreur/itineraire" class="tap flex items-center gap-3 rounded-2xl bg-[var(--app-color)] p-4 text-white shadow-md active:opacity-90">
+      <span class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-white/20 text-2xl" aria-hidden="true">🧭</span>
+      <span class="min-w-0 flex-1">
+        <span class="block text-[17px] font-bold">Mon itinéraire</span>
+        <span class="block truncate text-[13px] text-white/90">{{ itineraryText }}</span>
+      </span>
+      <span class="text-2xl" aria-hidden="true">›</span>
+    </RouterLink>
+
+    <!-- À ramasser (ou à collecter), à livrer, à retourner : trois grandes tuiles -->
+    <div class="grid grid-cols-3 gap-2" role="tablist" aria-label="Missions">
+      <button
+        v-for="t in tabs" :key="t.value" type="button" role="tab" :aria-selected="tab === t.value"
+        :class="['tap flex min-h-[104px] flex-col items-center justify-center gap-1 rounded-2xl border-2 bg-white px-1 shadow-sm', tab === t.value ? 'border-[var(--app-color)]' : 'border-transparent']"
+        @click="tab = t.value"
+      >
+        <span class="text-4xl leading-none" aria-hidden="true">{{ t.icon }}</span>
+        <span :class="['whitespace-nowrap text-[15px] leading-tight', tab === t.value ? 'font-bold text-[var(--app-color)]' : 'font-semibold text-slate-900']">{{ t.label }}</span>
+        <span :class="['text-[13px]', count(t.value) ? 'font-semibold text-slate-700' : 'text-slate-500']">{{ count(t.value) }} à faire</span>
       </button>
     </div>
 
     <p v-if="stale" class="rounded-xl bg-amber-50 text-amber-800 text-sm px-4 py-3">
       Hors ligne : voici vos missions telles qu'elles étaient à la dernière connexion.
     </p>
-
-    <!-- Tournée : livraisons dans le meilleur ordre, carte et trajet -->
-    <RouterLink v-if="tab === 'delivery' && count('delivery') > 1" to="/livreur/tournee" class="tap flex items-center gap-3 rounded-2xl bg-white p-3 ring-1 ring-slate-200">
-      <span class="grid h-10 w-10 place-items-center rounded-xl bg-slate-100 text-xl">🧭</span>
-      <span class="flex-1"><span class="block font-semibold">Organiser ma tournée</span><span class="block text-sm text-slate-500">Ordre des livraisons, carte, trajet Google Maps</span></span>
-      <span class="text-xl text-slate-400">›</span>
-    </RouterLink>
 
     <p v-if="tab === 'pickup' && !error && !loading" class="px-1 text-xs text-slate-500">
       Ramassages du jour et en avance. Un colis en retard revient ici quand sa nouvelle date est fixée.
@@ -186,6 +178,18 @@
         </div>
       </RouterLink>
     </template>
+
+    <!-- Sous les missions : mon véhicule, et signaler un problème (aussi dans Profil) -->
+    <div class="grid grid-cols-2 gap-2 pt-2">
+      <RouterLink v-if="vehicle?.vehicle && !vehicle.check_needed" to="/livreur/vehicule" class="tap rounded-2xl bg-white p-3 ring-1 ring-slate-200 active:bg-slate-50">
+        <span class="block font-semibold">{{ VEHICLE_TYPES[vehicle.vehicle.type]?.icon }} {{ vehicle.vehicle.plate }}</span>
+        <span class="block text-sm text-slate-500">Mon véhicule</span>
+      </RouterLink>
+      <button type="button" :class="['tap rounded-2xl bg-white p-3 text-left ring-1 ring-slate-200 active:bg-slate-50', vehicle?.vehicle && !vehicle.check_needed ? '' : 'col-span-2']" @click="reporting = true">
+        <span class="block font-semibold text-slate-800">⚠️ Signaler un problème</span>
+        <span class="block text-sm text-slate-500">Panne, accident, contrôle…</span>
+      </button>
+    </div>
   </div>
 </template>
 
@@ -220,11 +224,21 @@ const stale = ref(false)
 const error = ref('')
 const available = ref(auth.user?.courier?.is_available ?? false)
 const tab = ref('pickup')
-const tabs = [
-  { value: 'pickup', label: 'Ramasser' },
-  { value: 'delivery', label: 'Livrer' },
-  { value: 'return', label: 'Retours' },
-]
+// Distribution, mise à disposition seulement : on collecte, on ne ramasse pas
+const collects = computed(() => {
+  const pickups = missions.value.filter((m) => m.type === 'pickup')
+  return pickups.length > 0 && pickups.every((m) => ['distribution', 'mad'].includes(m.order?.activity))
+})
+const tabs = computed(() => [
+  { value: 'pickup', label: collects.value ? 'À collecter' : 'À ramasser', icon: '📦' },
+  { value: 'delivery', label: 'À livrer', icon: '🛵' },
+  { value: 'return', label: 'À retourner', icon: '↩️' },
+])
+const itineraryText = computed(() => {
+  const n = (type) => missions.value.filter((m) => m.type === type).length
+  return [[n('pickup'), collects.value ? 'collecte' : 'ramassage'], [n('delivery'), 'livraison'], [n('return'), 'retour']]
+    .filter(([k]) => k).map(([k, w]) => `${k} ${w}${k > 1 ? 's' : ''}`).join(', ')
+})
 
 // Livraisons d'un même lot (distribution ponctuelle) à la suite, les autres ensuite
 const visible = computed(() => {

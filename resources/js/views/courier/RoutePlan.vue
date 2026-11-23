@@ -1,21 +1,21 @@
 <template>
-  <!-- Ma tournée : livraisons dans l'ordre (à vol d'oiseau depuis ma position), carte, trajet Google Maps -->
+  <!-- Mon itinéraire : tous les arrêts dans l'ordre (ramassages ou collectes, livraisons, retours), carte, trajet Google Maps -->
   <div class="space-y-4 pb-6">
     <div class="m-card space-y-3 p-4">
       <p class="text-sm text-slate-600">
-        L'ordre est calculé à vol d'oiseau depuis votre position : colis express d'abord, puis le plus court chemin.
-        Changez-le avec les flèches si vous connaissez mieux la route.
+        Tous vos arrêts : ramassages, livraisons et retours. L'ordre est calculé à vol d'oiseau depuis votre position : colis express
+        d'abord, puis le plus court chemin. Un colis est toujours ramassé avant d'être livré. Changez l'ordre avec les flèches.
       </p>
       <button type="button" class="m-btn-primary" :disabled="busy" @click="optimize">{{ busy ? 'Calcul…' : '🧭 Organiser depuis ma position' }}</button>
       <p v-if="route?.unplaced && route.stops.length > route.unplaced" class="rounded-xl bg-amber-50 p-3 text-sm text-amber-900">
-        {{ route.unplaced }} nouvelle{{ route.unplaced > 1 ? 's' : '' }} livraison{{ route.unplaced > 1 ? 's' : '' }} pas encore placée{{ route.unplaced > 1 ? 's' : '' }} : réorganisez pour l'inclure.
+        {{ route.unplaced }} nouvel{{ route.unplaced > 1 ? 's' : '' }} arrêt{{ route.unplaced > 1 ? 's' : '' }} pas encore placé{{ route.unplaced > 1 ? 's' : '' }} : réorganisez pour l'inclure.
       </p>
       <p v-if="route?.total_meters" class="text-sm text-slate-600">≈ {{ meters(route.total_meters) }} à vol d'oiseau · {{ route.stops.length }} arrêt{{ route.stops.length > 1 ? 's' : '' }}</p>
     </div>
 
     <p v-if="loading" class="py-8 text-center text-slate-400">Chargement…</p>
     <p v-else-if="error" class="py-8 text-center text-red-600">{{ error }}</p>
-    <p v-else-if="!route?.stops.length" class="m-card p-4 text-center text-slate-500">Aucune livraison en cours.</p>
+    <p v-else-if="!route?.stops.length" class="m-card p-4 text-center text-slate-500">Aucun arrêt pour le moment.</p>
 
     <template v-else>
       <div ref="mapEl" class="h-64 overflow-hidden rounded-2xl ring-1 ring-slate-200" />
@@ -31,7 +31,8 @@
         <li v-for="(s, i) in route.stops" :key="s.assignment_ids[0]" class="flex items-start gap-3 p-3">
           <span :class="['grid h-8 w-8 shrink-0 place-items-center rounded-full text-sm font-bold text-white', s.is_express ? 'bg-red-600' : 'bg-[var(--app-color)]']">{{ i + 1 }}</span>
           <RouterLink :to="`/livreur/missions/${s.assignment_ids[0]}`" class="min-w-0 flex-1">
-            <span class="block font-semibold">{{ s.orders.map((o) => o.recipient).join(', ') }}<template v-if="s.orders.length > 1"> · {{ s.orders.length }} colis</template></span>
+            <span class="block font-semibold">{{ [...new Set(s.orders.map((o) => o.recipient))].join(', ') }}</span>
+            <span class="block text-sm font-medium text-slate-800">{{ tasks(s) }}</span>
             <span class="block text-sm text-slate-600">📍 {{ s.zone }}<template v-if="s.address"> · {{ s.address }}</template></span>
             <span class="mt-1 flex flex-wrap gap-1.5 text-xs">
               <span v-if="s.is_express" class="rounded-full bg-red-100 px-2 py-0.5 font-semibold text-red-700">⚡ Express</span>
@@ -61,6 +62,15 @@ import { useToastStore } from '../../stores/toasts'
 import { meters } from '../../utils/shifts'
 
 const toasts = useToastStore()
+
+// Ce qu'il y a à faire à cet arrêt : « 📦 Ramasser 2 colis · 🛵 Livrer »
+const TASKS = { pickup: ['📦', 'Ramasser'], delivery: ['🛵', 'Livrer'], return: ['↩️', 'Rendre'] }
+function tasks(stop) {
+  return Object.entries(TASKS).map(([type, [icon, verb]]) => {
+    const n = stop.orders.filter((o) => o.type === type).length
+    return n ? `${icon} ${verb}${n > 1 ? ` ${n} colis` : ''}` : null
+  }).filter(Boolean).join(' · ')
+}
 const route = ref(null)
 const loading = ref(true)
 const busy = ref(false)
@@ -76,7 +86,7 @@ async function load() {
     route.value = (await http.get('/courier/route', { params: here.value || {} })).data.data
     error.value = ''
   } catch (e) {
-    error.value = apiErrorMessage(e, 'Impossible de charger la tournée.')
+    error.value = apiErrorMessage(e, 'Impossible de charger l\'itinéraire.')
   } finally {
     loading.value = false
   }
@@ -86,9 +96,9 @@ async function optimize() {
   busy.value = true
   try {
     here.value = await currentPosition(8000)
-    if (!here.value) toasts.error('Position introuvable : la tournée part de votre livraison la plus ancienne.')
+    if (!here.value) toasts.error('Position introuvable : l\'itinéraire part de votre mission la plus ancienne.')
     route.value = (await http.post('/courier/route/optimize', here.value || {})).data.data
-    toasts.success('Tournée organisée : vos livraisons suivent cet ordre.')
+    toasts.success('Itinéraire organisé : vos arrêts suivent cet ordre.')
   } catch (e) {
     toasts.error(apiErrorMessage(e))
   } finally {

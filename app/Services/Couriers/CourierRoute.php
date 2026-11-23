@@ -12,13 +12,14 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Tournée du livreur : ses livraisons en cours dans le meilleur ordre, calculé à vol d'oiseau (gratuit, sans service
+ * Itinéraire du livreur : tous ses arrêts en cours (ramassages ou collectes, livraisons, retours) dans le meilleur ordre, calculé à vol d'oiseau (gratuit, sans service
  * extérieur) depuis sa position. Le livreur l'organise lui-même et peut changer l'ordre à la main ; l'ordre est gardé
  * sur ses missions (liste « Livrer » de son application).
  *  - position de l'arrêt : celle de l'adresse (course, ou destination de l'annuaire) ; sinon approximative, au milieu
  *    des livraisons déjà faites dans le même quartier ; sinon inconnue (placée à la fin) ;
  *  - livraisons à la même adresse (moins de SAME_PLACE_METERS) : un seul arrêt ;
- *  - colis express d'abord, puis le plus court chemin (plus proche voisin, puis amélioré en décroisant les trajets).
+ *  - colis express d'abord, puis le plus court chemin (plus proche voisin, puis amélioré en décroisant les trajets) ;
+ *  - un colis est toujours ramassé avant d'être livré : sa livraison ne passe jamais avant son ramassage.
  */
 class CourierRoute
 {
@@ -50,7 +51,7 @@ class CourierRoute
     public function optimize(Courier $courier, ?float $lat, ?float $lng): array
     {
         $stops = $this->group($this->assignments($courier));
-        $ordered = $this->save($this->solve($stops, $lat, $lng));
+        $ordered = $this->save($this->pickupFirst($this->solve($stops, $lat, $lng)));
 
         return $this->present($ordered, $lat, $lng);
     }
@@ -71,26 +72,25 @@ class CourierRoute
             $s['first_assigned'],
         ])->values();
 
-        return $this->present($this->save($ordered), $lat, $lng);
+        return $this->present($this->save($this->pickupFirst($ordered)), $lat, $lng);
     }
 
     /**
-     * Livraisons en cours du livreur, prévues aujourd'hui (même règle que sa liste de missions).
+     * Missions en cours du livreur : ramassages, retours, et livraisons prévues aujourd'hui (même règle que sa liste).
      *
      * @return Collection<int, OrderAssignment>
      */
     private function assignments(Courier $courier): Collection
     {
         return OrderAssignment::query()->where('courier_id', $courier->id)->active()
-            ->where('type', AssignmentType::Delivery->value)
-            ->with(['order' => fn ($q) => $q->with(['deliveryZone:id,name', 'destination:id,lat,lng'])])
+            ->with(['order' => fn ($q) => $q->with(['deliveryZone:id,name', 'pickupZone:id,name', 'destination:id,lat,lng', 'merchant:id,business_name,pickup_lat,pickup_lng'])])
             ->orderBy('assigned_at')->get()
-            ->filter(fn (OrderAssignment $a) => $a->order !== null && $this->days->allows($a->order))
+            ->filter(fn (OrderAssignment $a) => $a->order !== null && ($a->type !== AssignmentType::Delivery || $this->days->allows($a->order)))
             ->values();
     }
 
     /**
-     * Livraisons regroupées par adresse, avec leur position.
+     * Missions regroupées par lieu (un lieu, un arrêt), avec leur position.
      *
      * @param  Collection<int, OrderAssignment>  $assignments
      * @return Collection<int, array<string, mixed>>
@@ -101,7 +101,8 @@ class CourierRoute
         $stops = [];
         foreach ($assignments as $a) {
             $order = $a->order;
-            [$lat, $lng, $precision] = $this->point($order, $centers);
+            $delivery = $a->type === AssignmentType::Delivery;
+            [$lat, $lng, $precision] = $delivery ? $this->point($order, $centers) : $this->pickupPoint($order);
             $key = null;
             foreach ($stops as $i => $stop) {
                 if ($precision === 'exact' && $stop['precision'] === 'exact'
@@ -113,8 +114,11 @@ class CourierRoute
             $item = [
                 'assignment_id' => $a->id,
                 'order_id' => $order->id,
+                // pickup (ramasser ou collecter), delivery (livrer), return (rendre au client)
+                'type' => $a->type->value,
                 'tracking_code' => $order->tracking_code,
-                'recipient' => $order->recipient_name ?: $order->recipient_phone,
+                // Chez qui l'on passe : le destinataire pour une livraison, le client sinon
+                'recipient' => $delivery ? ($order->recipient_name ?: $order->recipient_phone) : ($order->merchant?->business_name ?: $order->pickup_contact_name),
                 'is_express' => (bool) $order->is_express,
                 'time_slot' => $order->delivery_time_slot,
                 'status' => $order->status->value,
@@ -131,8 +135,8 @@ class CourierRoute
             $stops[] = [
                 'assignment_ids' => [$a->id],
                 'orders' => [$item],
-                'address' => trim(implode(', ', array_filter([$order->delivery_address, $order->delivery_landmark]))) ?: null,
-                'zone' => $order->deliveryZone?->name,
+                'address' => trim(implode(', ', array_filter($delivery ? [$order->delivery_address, $order->delivery_landmark] : [$order->pickup_address, $order->pickup_landmark]))) ?: null,
+                'zone' => $delivery ? $order->deliveryZone?->name : $order->pickupZone?->name,
                 'lat' => $lat,
                 'lng' => $lng,
                 'precision' => $precision,
@@ -165,6 +169,62 @@ class CourierRoute
     }
 
     /**
+     * Ramassage, collecte ou retour : chez le client (position de la course, sinon celle de sa fiche).
+     *
+     * @return array{0: float|null, 1: float|null, 2: string}
+     */
+    private function pickupPoint(Order $order): array
+    {
+        if ($order->pickup_lat !== null && $order->pickup_lng !== null) {
+            return [(float) $order->pickup_lat, (float) $order->pickup_lng, 'exact'];
+        }
+        if ($order->merchant?->pickup_lat !== null && $order->merchant?->pickup_lng !== null) {
+            return [(float) $order->merchant->pickup_lat, (float) $order->merchant->pickup_lng, 'exact'];
+        }
+
+        return [null, null, 'unknown'];
+    }
+
+    /**
+     * Un colis est ramassé avant d'être livré : une livraison placée avant le ramassage du même colis descend juste
+     * après lui.
+     *
+     * @param  Collection<int, array<string, mixed>>  $stops
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function pickupFirst(Collection $stops): Collection
+    {
+        $list = $stops->values()->all();
+        $has = fn (array $stop, string $type, int $orderId) => collect($stop['orders'])->contains(fn (array $o) => $o['type'] === $type && $o['order_id'] === $orderId);
+        // Chaque passage règle au moins un colis : au plus un passage par arrêt
+        for ($pass = 0, $moved = true; $moved && $pass <= count($list); $pass++) {
+            $moved = false;
+            foreach ($list as $i => $stop) {
+                foreach ($stop['orders'] as $o) {
+                    if ($o['type'] !== 'delivery') {
+                        continue;
+                    }
+                    $pickup = null;
+                    foreach ($list as $j => $other) {
+                        if ($j > $i && $has($other, 'pickup', $o['order_id'])) {
+                            $pickup = $j;
+                        }
+                    }
+                    if ($pickup !== null) {
+                        array_splice($list, $i, 1);
+                        array_splice($list, $pickup, 0, [$stop]);
+                        $moved = true;
+
+                        continue 3;
+                    }
+                }
+            }
+        }
+
+        return collect($list);
+    }
+
+    /**
      * Milieu de chaque quartier : moyenne des positions des livraisons qui y ont été faites.
      *
      * @param  Collection<int, OrderAssignment>  $assignments
@@ -172,7 +232,7 @@ class CourierRoute
      */
     private function zoneCenters(Collection $assignments): array
     {
-        $zones = $assignments->map(fn (OrderAssignment $a) => $a->order->delivery_zone_id)->filter()->unique()->values();
+        $zones = $assignments->where('type', AssignmentType::Delivery)->map(fn (OrderAssignment $a) => $a->order->delivery_zone_id)->filter()->unique()->values();
         if ($zones->isEmpty()) {
             return [];
         }

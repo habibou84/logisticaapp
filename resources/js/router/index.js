@@ -205,7 +205,8 @@ const routes = [
     children: [
       { path: '', name: 'livreur', component: () => import('../views/courier/Missions.vue'), meta: { title: 'Mes missions' } },
       { path: 'missions/:id(\\d+)', component: () => import('../views/courier/MissionDetail.vue'), meta: { title: 'Mission', back: true } },
-      { path: 'tournee', component: () => import('../views/courier/RoutePlan.vue'), meta: { title: 'Ma tournée', back: true } },
+      { path: 'itineraire', component: () => import('../views/courier/RoutePlan.vue'), meta: { title: 'Mon itinéraire', back: true } },
+      { path: 'tournee', redirect: '/livreur/itineraire' },
       { path: 'ramassage/:key', component: () => import('../views/courier/PickupGroup.vue'), meta: { title: 'Ramassage', back: true } },
       { path: 'stock', component: () => import('../views/admin/Stock.vue'), meta: { permission: 'stock.manage' } },
       { path: 'caisse', component: () => import('../views/courier/Wallet.vue'), meta: { title: 'Ma caisse' } },

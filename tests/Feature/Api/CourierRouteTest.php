@@ -112,6 +112,30 @@ class CourierRouteTest extends TestCase
         $this->getJson('/api/v1/courier/route')->assertForbidden();
     }
 
+    public function test_itinerary_covers_pickups_and_returns_and_never_delivers_before_picking_up(): void
+    {
+        // D'ouest en est : livraison de X (1 km), ramassage de X (2 km), livraison de Y (3 km), retour chez le client (4 km)
+        $x = $this->createOrder(['recipient_name' => 'X', 'delivery_lat' => 5.3, 'delivery_lng' => -3.991, 'pickup_lat' => 5.3, 'pickup_lng' => -3.982]);
+        app(OrderDispatcher::class)->assign($this->dispatcher, $x->fresh(), AssignmentType::Pickup, $this->courierA);
+        OrderAssignment::create(['order_id' => $x->id, 'courier_id' => $this->courierA->id, 'type' => AssignmentType::Delivery, 'status' => 'accepted', 'order_status_before' => OrderStatus::PickedUp, 'assigned_at' => now()]);
+        $this->delivery('Y', [5.3, -3.973]);
+        $back = $this->createOrder(['recipient_name' => 'Z', 'pickup_lat' => 5.3, 'pickup_lng' => -3.964]);
+        $back->forceFill(['status' => OrderStatus::DeliveryFailed, 'return_requested' => true])->save();
+        app(OrderDispatcher::class)->assign($this->dispatcher, $back->fresh(), AssignmentType::Return, $this->courierA);
+
+        Sanctum::actingAs($this->courierA->user);
+        $route = $this->postJson('/api/v1/courier/route/optimize', ['lat' => 5.3, 'lng' => -4.0])->assertOk()->json('data');
+        $types = array_map(fn (array $s) => implode('+', array_column($s['orders'], 'type')), $route['stops']);
+        // Le plus proche est la livraison de X, mais son colis n'est pas encore ramassé : elle passe juste après le ramassage
+        $this->assertSame(['pickup', 'delivery', 'delivery', 'return'], $types);
+        $this->assertSame([$this->merchant->business_name, 'X', 'Y', $this->merchant->business_name], $this->names($route));
+
+        // Rangée à la main dans le mauvais sens : remise dans l'ordre
+        $ids = array_merge(...array_column(array_reverse($route['stops']), 'assignment_ids'));
+        $manual = $this->putJson('/api/v1/courier/route', ['assignment_ids' => $ids])->assertOk()->json('data');
+        $this->assertSame(['return', 'delivery', 'pickup', 'delivery'], array_map(fn (array $s) => $s['orders'][0]['type'], $manual['stops']));
+    }
+
     public function test_pickup_scan_is_noted_in_the_order_history(): void
     {
         $scanned = $this->createOrder();
