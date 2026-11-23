@@ -6,6 +6,7 @@ use App\Enums\Activity;
 use App\Enums\FeePayer;
 use App\Enums\OrderEventType;
 use App\Enums\OrderStatus;
+use App\Enums\ReturnCause;
 use App\Exceptions\BusinessRuleException;
 use App\Models\Company;
 use App\Models\Hub;
@@ -362,7 +363,8 @@ class OrderService
         }
 
         DB::transaction(function () use ($actor, $order, $note) {
-            $order->forceFill(['return_requested' => true])->save();
+            $order->markForReturn($actor->merchant_id !== null ? ReturnCause::Merchant : ReturnCause::Company);
+            $order->save();
             $this->journal->record($order, $actor, OrderEventType::ReturnRequested, ['note' => $note]);
         });
     }

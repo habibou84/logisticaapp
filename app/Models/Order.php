@@ -9,6 +9,7 @@ use App\Enums\DeliveryDelay;
 use App\Enums\FeePayer;
 use App\Enums\OrderEventType;
 use App\Enums\OrderStatus;
+use App\Enums\ReturnCause;
 use App\Enums\Role;
 use App\Enums\ShipmentType;
 use App\Models\Concerns\BelongsToCompany;
@@ -146,6 +147,7 @@ class Order extends Model
             'is_shipping' => 'boolean',
             'shipping_fee' => 'integer',
             'return_requested' => 'boolean',
+            'return_cause' => ReturnCause::class,
             'is_test' => 'boolean',
             'delivery_fee' => 'integer',
             'surcharges_total' => 'integer',
@@ -360,6 +362,18 @@ class Order extends Model
         $this->held_since = $courierId ? now() : null;
         $this->hold_alerted_at = null;
         $this->hold_escalated_at = null;
+    }
+
+    /**
+     * Le colis repart chez le client. La première raison reste (un colis refusé par le destinataire reste
+     * « refusé » même si l'agence organise ensuite le retour).
+     */
+    public function markForReturn(ReturnCause $cause): void
+    {
+        if (! $this->return_requested || $this->return_cause === null) {
+            $this->return_cause = $cause;
+        }
+        $this->return_requested = true;
     }
 
     public function cancelledBy(): BelongsTo

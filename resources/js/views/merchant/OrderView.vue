@@ -159,6 +159,11 @@
       <p class="text-slate-500">Frais d'expédition de {{ money(order.shipping.fee) }} déduits de votre point.</p>
     </section>
 
+    <!-- Le colis revient : pourquoi -->
+    <section v-if="order.return_requested && order.return_cause_label && !['returned', 'cancelled', 'rejected', 'lost'].includes(order.status)" class="rounded-[22px] bg-violet-50 p-4 text-sm font-semibold text-violet-900 ring-1 ring-violet-200">
+      ↩️ {{ order.return_cause_label }}
+    </section>
+
     <!-- Annulée ou refusée : par qui et pourquoi -->
     <section v-if="order.cancellation" class="rounded-[22px] bg-white p-4 shadow-sm ring-1 ring-slate-100">
       <p class="text-[13px] font-extrabold text-[#E54A6E]">{{ order.cancellation.rejected ? 'Course refusée' : 'Course annulée' }}</p>

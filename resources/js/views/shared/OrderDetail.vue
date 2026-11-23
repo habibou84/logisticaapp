@@ -9,7 +9,7 @@
       <span v-if="order.internal_due_at" :class="['text-xs rounded-full px-2 py-0.5 font-medium', order.internal_late ? 'bg-red-100 text-red-700' : order.internal_risk ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-600']">
         {{ order.internal_late ? '⏰ Délai interne dépassé' : order.internal_risk ? '⚠️ Risque de retard' : '⏱ Délai interne' }} · {{ dateTime(order.internal_due_at) }}
       </span>
-      <span v-if="order.return_requested && !['returned', 'return_assigned', 'returning'].includes(order.status)" class="text-xs rounded-full bg-rose-100 text-rose-700 px-2 py-0.5">Retour demandé</span>
+      <span v-if="order.return_requested && !['returned', 'return_assigned', 'returning'].includes(order.status)" class="text-xs rounded-full bg-rose-100 text-rose-700 px-2 py-0.5">{{ order.return_cause_label || 'Retour à organiser' }}</span>
       <!-- Demande d'un agent du client : elle attend l'accord de son chef de service -->
       <span v-if="order.approval?.awaiting" class="text-xs rounded-full bg-amber-100 text-amber-800 px-2 py-0.5" title="Ni validable ni assignable avant l'accord du client">✋ Attend le chef de service du client</span>
       <span v-if="order.follow_up" :class="['text-xs rounded-full px-2 py-0.5', order.follow_up.holds ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700']">{{ order.follow_up.holds ? '⏸' : '📌' }} {{ order.follow_up.label }}</span>

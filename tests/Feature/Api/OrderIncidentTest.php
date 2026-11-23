@@ -140,7 +140,8 @@ class OrderIncidentTest extends TestCase
         $this->move($order, 'delivery_failed', ['incident_reason_id' => $this->reason('absent')])
             ->assertOk()
             ->assertJsonPath('data.attempts_count', 2)
-            ->assertJsonPath('data.return_requested', true);
+            ->assertJsonPath('data.return_requested', true)
+            ->assertJsonPath('data.return_cause', 'max_attempts');
 
         $this->as($this->dispatcher)
             ->postJson("/api/v1/orders/{$order->id}/assign", ['type' => 'delivery', 'courier_id' => $this->courierB->id])
@@ -162,7 +163,13 @@ class OrderIncidentTest extends TestCase
         $order = $this->orderOutForDelivery();
 
         $this->move($order, 'delivery_failed', ['incident_reason_id' => $this->reason('refused')])
-            ->assertJsonPath('data.return_requested', true);
+            ->assertJsonPath('data.return_requested', true)
+            ->assertJsonPath('data.return_cause', 'refused');
+
+        // La première raison reste, même si l'agence organise ensuite le retour
+        $this->as($this->dispatcher)->postJson("/api/v1/orders/{$order->id}/return-request")
+            ->assertJsonPath('data.return_cause', 'refused')
+            ->assertJsonPath('data.return_cause_label', 'Retour : refusé par le destinataire');
     }
 
     public function test_merchant_requests_a_return(): void
@@ -173,7 +180,9 @@ class OrderIncidentTest extends TestCase
         $this->as($this->merchantUser)
             ->postJson("/api/v1/orders/{$order->id}/return-request", ['note' => 'Le client a annulé'])
             ->assertOk()
-            ->assertJsonPath('data.return_requested', true);
+            ->assertJsonPath('data.return_requested', true)
+            ->assertJsonPath('data.return_cause', 'merchant')
+            ->assertJsonPath('data.return_cause_label', 'Vous avez demandé le retour');
 
         $this->assertSame('return_requested', $order->events()->latest('id')->first()->type->value);
     }

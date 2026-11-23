@@ -66,7 +66,7 @@
                   <span :class="['rounded-full px-2 py-0.5 text-xs font-medium', p.on_the_road ? 'bg-sky-100 text-sky-800' : 'bg-amber-100 text-amber-900']">{{ p.status_label }}</span>
                   <div v-if="p.incident" class="text-xs text-gray-600 mt-0.5">{{ p.incident }}</div>
                   <div v-if="p.rescheduled_to" class="text-xs text-gray-600">📅 {{ date(p.rescheduled_to) }}</div>
-                  <div v-if="p.return_requested" class="text-xs text-rose-700 font-medium">↩️ Retour au client à organiser</div>
+                  <div v-if="p.return_requested" class="text-xs text-rose-700 font-medium">↩️ {{ p.return_cause_label || 'Retour au client à organiser' }}</div>
                   <div v-if="p.kept_for" class="text-xs text-indigo-700 font-medium">🌙 Gardé pour sa livraison du {{ date(p.kept_for) }}</div>
                   <div v-else-if="p.custody_plan === 'depot' && p.status === 'picked_up'" class="text-xs text-slate-700 font-medium">🏢 À rapporter au dépôt (mission ramassage)</div>
                 </td>

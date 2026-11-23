@@ -30,7 +30,7 @@ function line(order) {
     case 'delivered': return ['check', order.delivered_at ? `Livrée à ${hour(order.delivered_at)}` : 'Livrée', 'green']
     // Décision prise : le colis revient, ou une nouvelle livraison est prévue
     case 'delivery_failed': return order.return_requested
-      ? ['back', 'Retour demandé : le colis va vous revenir', 'violet']
+      ? ['back', order.return_cause_label || 'Le colis va vous revenir', 'violet']
       : ['alert', order.last_incident?.label || 'Livraison échouée : à régler', 'amber']
     case 'rescheduled': return ['calendar', order.delivery?.scheduled_date ? `Relivraison prévue le ${longDay(order.delivery.scheduled_date)}` : 'Relivraison prévue', 'blue']
     case 'return_assigned':

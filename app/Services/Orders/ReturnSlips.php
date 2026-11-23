@@ -6,6 +6,7 @@ use App\Enums\AssignmentType;
 use App\Enums\NotificationEvent;
 use App\Enums\OrderEventType;
 use App\Enums\OrderStatus;
+use App\Enums\ReturnCause;
 use App\Enums\WhatsAppTemplate;
 use App\Exceptions\BusinessRuleException;
 use App\Models\Courier;
@@ -85,7 +86,8 @@ class ReturnSlips
 
             foreach ($orders as $order) {
                 if (! $order->return_requested) {
-                    $order->forceFill(['return_requested' => true])->save();
+                    $order->markForReturn(ReturnCause::Company);
+                    $order->save();
                 }
                 $this->dispatcher->assign($actor, $order, AssignmentType::Return, $courier);
                 Order::whereKey($order->id)->update(['return_slip_id' => $slip->id]);

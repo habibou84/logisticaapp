@@ -8,6 +8,7 @@ use App\Enums\OrderEventType;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\Permission;
+use App\Enums\ReturnCause;
 use App\Exceptions\BusinessRuleException;
 use App\Models\CashCollection;
 use App\Models\Destination;
@@ -588,8 +589,10 @@ class OrderWorkflow
                     $order->delivery_scheduled_date = $context['rescheduled_to'];
                 }
 
-                if ($reason?->triggers_return || $order->attempts_count >= $order->max_attempts) {
-                    $order->return_requested = true;
+                if ($reason?->triggers_return) {
+                    $order->markForReturn(ReturnCause::Refused);
+                } elseif ($order->attempts_count >= $order->max_attempts) {
+                    $order->markForReturn(ReturnCause::MaxAttempts);
                 }
 
                 return $delivery;
