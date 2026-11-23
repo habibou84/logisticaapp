@@ -436,11 +436,12 @@ function stageCellClass(st, q) {
 const queues = [
   // Sans livreur pour le ramassage, regroupés par client et adresse (lot à assigner d'un coup)
   { value: 'by_client', label: '🏪 Ramassages par client' },
-  { value: 'to_return', label: '↩️ À retourner' },
   // Liens venus d'ailleurs (tableau de bord) : visibles quand on y est
   { value: 'unassigned', label: '🛵 Sans livreur', linked: true },
   { value: 'to_deliver', label: 'À livrer', linked: true },
   // Files toutes dates, visibles seulement s'il y en a
+  // Colis à rendre, pas encore sur un bon (même liste que Retours clients)
+  { value: 'to_return', label: '↩️ À retourner', extra: true },
   { value: 'to_approve', label: '🏢 À approuver', extra: true },
   { value: 'to_decide', label: 'À décider', extra: true },
   // Notes de suivi de l'équipe (Réglages › Motifs) ; « En attente » : celles qui retiennent la course

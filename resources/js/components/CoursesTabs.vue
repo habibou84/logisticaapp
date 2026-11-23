@@ -74,7 +74,7 @@ const cards = computed(() => {
   const end = activity.value?.totals?.estimated_end
   const r = returns.value
   const late = general.to_reschedule || 0
-  const toDecide = general.exceptions?.untreated_picked || 0
+  const toDecide = general.exceptions?.picked_late || 0
   const watch = fieldReports.badge + heldParcels.counts.overdue
   const s = (n) => (n > 1 ? 's' : '')
 

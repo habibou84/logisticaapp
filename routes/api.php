@@ -62,6 +62,7 @@ use App\Http\Controllers\Api\V1\ParcelController;
 use App\Http\Controllers\Api\V1\PasswordController;
 use App\Http\Controllers\Api\V1\PasswordResetController;
 use App\Http\Controllers\Api\V1\PayPlanController;
+use App\Http\Controllers\Api\V1\PickedLateController;
 use App\Http\Controllers\Api\V1\PlanningController;
 use App\Http\Controllers\Api\V1\PricingGridController;
 use App\Http\Controllers\Api\V1\ProductController;
@@ -530,6 +531,7 @@ Route::prefix('v1')->name('v1.')->group(function () {
         // Avant la ressource : « counts » n'est pas un identifiant de course
         Route::get('orders/counts', [OrderController::class, 'counts'])->name('orders.counts');
         // Courses non traitées (jour dépassé, plus dans la règle de l'activité) regroupées par date, livreur ou client
+        Route::post('orders/picked-late/decide', [PickedLateController::class, 'decide'])->name('orders.picked-late.decide');
         Route::get('orders/untreated-groups', [OrderController::class, 'untreatedGroups'])->name('orders.untreated-groups');
         Route::get('orders/pickup-groups', [OrderController::class, 'pickupGroups'])->name('orders.pickup-groups');
         // À reporter : colis pas ramassés dont la date de livraison est passée

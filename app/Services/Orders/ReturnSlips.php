@@ -30,10 +30,7 @@ use Illuminate\Support\Str;
 class ReturnSlips
 {
     // Statuts d'où un retour peut partir (colis récupéré, pas encore rendu)
-    public const RETURNABLE = [
-        OrderStatus::PickedUp, OrderStatus::AtHub, OrderStatus::DeliveryAssigned,
-        OrderStatus::DeliveryFailed, OrderStatus::Rescheduled, OrderStatus::ReturnAssigned,
-    ];
+    public const RETURNABLE = Order::RETURNABLE_STATUSES;
 
     public function __construct(
         private readonly OrderDispatcher $dispatcher,
@@ -50,10 +47,7 @@ class ReturnSlips
     public function candidates(?int $merchantId = null): Collection
     {
         return Order::query()
-            ->where('return_requested', true)
-            ->whereNull('return_slip_id')
-            ->whereNull('pickup_hub_id')
-            ->whereIn('status', OrderStatus::values(self::RETURNABLE))
+            ->toGiveBack()
             ->when($merchantId, fn ($q) => $q->where('merchant_id', $merchantId))
             ->with(['merchant', 'deliveryZone:id,name', 'lastIncidentReason:id,label', 'holder.user', 'returnCourier.user'])
             ->orderBy('merchant_id')->orderBy('id')

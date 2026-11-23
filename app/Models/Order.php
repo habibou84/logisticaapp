@@ -510,6 +510,41 @@ class Order extends Model
             ->orWhereRaw(self::DELIVERY_DAY_SQL.' >= ?', [$today]));
     }
 
+    /** Colis ramassés (chez un livreur ou au dépôt) : à renvoyer ou à reporter quand leur date est dépassée */
+    public const PICKED_LATE_STATUSES = [
+        OrderStatus::PickedUp, OrderStatus::AtHub, OrderStatus::DeliveryAssigned, OrderStatus::DeliveryFailed, OrderStatus::Rescheduled,
+    ];
+
+    /**
+     * À décider : ramassé, date de livraison dépassée selon la règle de son activité (lot de distribution échu,
+     * jamais la MAD), retour pas encore décidé, hors commandes d'entrepôt.
+     */
+    public function scopePickedLate(Builder $query, ?Company $company = null): Builder
+    {
+        return $query->untreated($company)
+            ->whereIn('orders.status', OrderStatus::values(self::PICKED_LATE_STATUSES))
+            ->where('orders.return_requested', false)
+            ->whereNull('orders.pickup_hub_id');
+    }
+
+    /** Colis récupéré dont le retour peut être organisé (jamais une course livrée, annulée, perdue ou déjà rendue) */
+    public const RETURNABLE_STATUSES = [
+        OrderStatus::PickedUp, OrderStatus::AtHub, OrderStatus::DeliveryAssigned,
+        OrderStatus::DeliveryFailed, OrderStatus::Rescheduled, OrderStatus::ReturnAssigned,
+    ];
+
+    /**
+     * Colis à rendre : retour demandé, colis récupéré, pas encore sur un bon de retour, hors commandes d'entrepôt.
+     * Même règle partout : Retours clients, file « À retourner », compteurs.
+     */
+    public function scopeToGiveBack(Builder $query): Builder
+    {
+        return $query->where('orders.return_requested', true)
+            ->whereNull('orders.return_slip_id')
+            ->whereNull('orders.pickup_hub_id')
+            ->whereIn('orders.status', OrderStatus::values(self::RETURNABLE_STATUSES));
+    }
+
     /** Colis à reporter (voir scopeToReschedule) */
     public function needsReschedule(string $today): bool
     {

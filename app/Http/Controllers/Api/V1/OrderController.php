@@ -43,7 +43,7 @@ class OrderController extends Controller
             'status' => ['nullable', 'array'],
             'status.*' => [Rule::enum(OrderStatus::class)],
             // File d'attente du dispatch : à valider, à ramasser, à livrer, à retourner
-            'queue' => ['nullable', Rule::in(['to_confirm', 'to_approve', 'on_hold', 'follow_up', 'to_pickup', 'to_reschedule', 'to_prepare', 'to_deliver', 'unassigned', 'pickup_unassigned', 'delivery_unassigned', 'delivery_assigned', 'on_the_way', 'delivered', 'to_decide', 'scheduled', 'to_return', 'incidents', 'failed', 'code_to_verify', 'internal_late', 'untreated', 'untreated_picked'])],
+            'queue' => ['nullable', Rule::in(['to_confirm', 'to_approve', 'on_hold', 'follow_up', 'to_pickup', 'to_reschedule', 'to_prepare', 'to_deliver', 'unassigned', 'pickup_unassigned', 'delivery_unassigned', 'delivery_assigned', 'on_the_way', 'delivered', 'to_decide', 'scheduled', 'to_return', 'incidents', 'failed', 'code_to_verify', 'internal_late', 'untreated', 'untreated_picked', 'picked_late'])],
             // Courses non traitées : celles qui n'ont pas de livreur
             'without_courier' => ['nullable', 'boolean'],
             // Courses non traitées : livreur de la livraison, à défaut du ramassage
@@ -230,6 +230,8 @@ class OrderController extends Controller
             'date' => $day,
             'all' => $base()->ofDay($day)->count(),
             ...collect(self::DAY_QUEUES)->mapWithKeys(fn (string $name) => [$name => $queue($name)->ofDay($day)->count()])->all(),
+            // Colis à rendre : toutes dates (un retour reste à faire tant qu'il n'est pas fait)
+            'to_return' => $queue('to_return')->count(),
             ...collect(self::WORK_QUEUES)->mapWithKeys(fn (string $name) => [$name => $queue($name)->ofDay($day)->count()])->all(),
             'later' => collect(self::LATER_QUEUES)->mapWithKeys(fn (string $name) => [$name => $later($name)])->all(),
             'days' => [
@@ -240,10 +242,10 @@ class OrderController extends Controller
     }
 
     /** Onglets limités aux courses du jour choisi (les jours passés sont dans « Courses non traitées ») */
-    private const DAY_QUEUES = ['to_confirm', 'to_return', 'failed'];
+    private const DAY_QUEUES = ['to_confirm', 'failed'];
 
     /** Cas à régler comptés toutes dates : la page Courses ne montre leur onglet ou leur carte que s'il y en a */
-    private const EXCEPTION_QUEUES = ['untreated', 'untreated_picked', 'to_approve', 'to_return', 'failed', 'to_decide', 'incidents', 'scheduled', 'on_hold', 'follow_up', 'code_to_verify', 'internal_late', 'to_prepare'];
+    private const EXCEPTION_QUEUES = ['untreated', 'untreated_picked', 'picked_late', 'to_approve', 'to_return', 'failed', 'to_decide', 'incidents', 'scheduled', 'on_hold', 'follow_up', 'code_to_verify', 'internal_late', 'to_prepare'];
 
     /** Files de travail : limitées au jour choisi (les jours passés sont dans « Courses non traitées ») */
     private const WORK_QUEUES = ['to_pickup', 'to_prepare', 'to_deliver', 'unassigned', 'pickup_unassigned', 'delivery_unassigned', 'delivery_assigned', 'on_the_way', 'delivered'];
@@ -363,8 +365,8 @@ class OrderController extends Controller
             'scheduled' => $query->whereIn('status', OrderStatus::values([OrderStatus::Pending, OrderStatus::Confirmed, OrderStatus::PickupAssigned, OrderStatus::PickupInProgress, OrderStatus::Rescheduled, OrderStatus::PickedUp, OrderStatus::AtHub]))
                 ->whereDate('delivery_scheduled_date', '>', $day)
                 ->where('return_requested', false),
-            'to_return' => $query->where('return_requested', true)
-                ->whereNotIn('status', OrderStatus::values([OrderStatus::ReturnAssigned, OrderStatus::Returning, OrderStatus::Returned])),
+            // Colis à rendre, pas encore sur un bon : même règle que Retours clients, toutes dates
+            'to_return' => $query->toGiveBack(),
             'incidents' => $query->whereIn('status', OrderStatus::values([OrderStatus::DeliveryFailed, OrderStatus::Rescheduled])),
             // Échec de livraison
             'failed' => $query->where('status', OrderStatus::DeliveryFailed),
@@ -372,6 +374,8 @@ class OrderController extends Controller
             'untreated' => $query->untreated(),
             // En retard et déjà ramassées (ou à l'entrepôt) : tout sauf les « à reporter »
             'untreated_picked' => $query->untreated()->withoutToReschedule(today()->toDateString()),
+            // À décider : ramassées, date dépassée, retour pas encore décidé (renvoyer ou reporter)
+            'picked_late' => $query->pickedLate(),
             // Livrées hors connexion avec un code client incorrect : à vérifier auprès du destinataire
             'code_to_verify' => $query->whereNotNull('delivery_code_unverified_at'),
             // Délai interne de distribution dépassé, course pas terminée

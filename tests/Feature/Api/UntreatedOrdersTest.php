@@ -49,15 +49,19 @@ class UntreatedOrdersTest extends TestCase
         $failedToday = $this->orderOn($today, OrderStatus::DeliveryFailed);
         $this->orderOn($yesterday, OrderStatus::DeliveryFailed);
         $returnToday = $this->orderOn($today, OrderStatus::PickedUp, ['return_requested' => true]);
-        $this->orderOn($yesterday, OrderStatus::PickedUp, ['return_requested' => true]);
+        $returnYesterday = $this->orderOn($yesterday, OrderStatus::PickedUp, ['return_requested' => true]);
+        // Retour demandé mais course livrée : rien à rendre
+        $this->orderOn($today, OrderStatus::Delivered, ['return_requested' => true]);
 
         Sanctum::actingAs($this->dispatcher);
         $this->assertSame([$pendingToday->id], $this->ids("/api/v1/orders?queue=to_confirm&day={$today}"));
         $this->assertSame([$failedToday->id], $this->ids("/api/v1/orders?queue=failed&day={$today}"));
-        $this->assertSame([$returnToday->id], $this->ids("/api/v1/orders?queue=to_return&day={$today}"));
+        // Colis à rendre : toutes dates, même règle que Retours clients
+        $this->assertSame([$returnToday->id, $returnYesterday->id], $this->ids("/api/v1/orders?queue=to_return&day={$today}"));
+        $this->getJson('/api/v1/return-slips/count')->assertJsonPath('data.to_assign', 2);
 
         $day = $this->getJson("/api/v1/orders/counts?day={$today}")->assertOk()->json('data.day');
-        $this->assertSame([1, 1, 1], [$day['to_confirm'], $day['failed'], $day['to_return']]);
+        $this->assertSame([1, 1, 2], [$day['to_confirm'], $day['failed'], $day['to_return']]);
         $this->assertCount(2, $this->ids('/api/v1/orders?queue=to_confirm'));
     }
 
@@ -80,6 +84,8 @@ class UntreatedOrdersTest extends TestCase
         $this->orderOn($twoDaysAgo, OrderStatus::PickedUp, ['activity' => 'mad']);
 
         Sanctum::actingAs($this->dispatcher);
+        // À décider : ramassé et en retard selon la règle de l'activité ; ni retour déjà demandé, ni lot pas échu, ni MAD
+        $this->assertSame([$withCourier->id], $this->ids('/api/v1/orders?queue=picked_late'));
         $this->assertSame(collect([$withCourier->id, $alone->id, $returning->id])->sort()->values()->all(), $this->ids('/api/v1/orders?queue=untreated'));
         $this->assertSame(3, $this->getJson('/api/v1/orders/counts')->json('data.exceptions.untreated'));
 

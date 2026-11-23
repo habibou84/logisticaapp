@@ -24,10 +24,12 @@
     </nav>
     <p class="text-sm text-gray-600">{{ current.help }}</p>
 
-    <!-- Pas ramassées : nouvelle date à demander ou à choisir (ancienne page « À reporter ») -->
-    <RescheduleOrders v-if="tab === 'pas-ramassees'" embedded />
-    <!-- Ramassées pas livrées, ou toutes : actions sur les courses (ancienne page « Courses non traitées ») -->
-    <UntreatedOrders v-else embedded :stage="tab === 'ramassees' ? 'picked' : 'all'" />
+    <!-- À décider : ramassées, date dépassée ; renvoyer au client ou reporter, par client -->
+    <PickedLateGroups v-if="tab === 'a-decider'" />
+    <!-- Jamais ramassées : nouvelle date à demander ou à choisir -->
+    <RescheduleOrders v-else-if="tab === 'pas-ramassees'" embedded />
+    <!-- Toutes les courses en retard, quelle que soit l'étape -->
+    <UntreatedOrders v-else embedded stage="all" />
   </div>
 </template>
 
@@ -37,25 +39,27 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 import { useDispatchCountStore } from '../../stores/dispatchCounts'
 import CoursesTabs from '../../components/CoursesTabs.vue'
+import PickedLateGroups from '../../components/PickedLateGroups.vue'
 import RescheduleOrders from './RescheduleOrders.vue'
 import UntreatedOrders from './UntreatedOrders.vue'
 
-/** Courses en retard (repris de Jibiat) : un seul menu, trois onglets (pas ramassées, ramassées pas livrées, toutes) */
+/** Courses en retard (repris de Jibiat) : trois onglets (à décider, jamais ramassées, toutes) */
 const auth = useAuthStore()
 const dispatchCounts = useDispatchCountStore()
 const route = useRoute()
 const router = useRouter()
-const KEYS = ['pas-ramassees', 'ramassees', 'toutes']
+const KEYS = ['a-decider', 'pas-ramassees', 'toutes']
 
 const tabs = computed(() => {
   const c = dispatchCounts.counts
   return [
-    { key: 'pas-ramassees', label: '📦 Pas ramassées', count: c.to_reschedule || 0, help: 'Colis jamais ramassés ni collectés : ils sont cachés chez les livreurs tant que la date n\'est pas actualisée. Demandez une nouvelle date ou choisissez-la.' },
-    { key: 'ramassees', label: '🛵 Ramassées, pas livrées', count: c.exceptions?.untreated_picked || 0, help: 'Colis chez un livreur ou à l\'entrepôt : à livrer, reporter ou faire revenir.' },
-    { key: 'toutes', label: '⏳ Toutes', count: c.exceptions?.untreated || 0, help: 'Toutes les courses en retard, quelle que soit l\'étape.' },
+    { key: 'a-decider', label: '🛵 À décider', count: c.exceptions?.picked_late || 0, help: 'Colis ramassés ou collectés, chez un livreur ou au dépôt, dont la date de livraison est dépassée : à renvoyer au client ou à reporter.' },
+    { key: 'pas-ramassees', label: '📦 Jamais ramassées', count: c.to_reschedule || 0, help: 'Colis jamais ramassés ni collectés : ils sont cachés chez les livreurs tant que la date n\'est pas actualisée. Demandez une nouvelle date au client ou choisissez-la.' },
+    { key: 'toutes', label: '⏳ Toutes', count: c.exceptions?.untreated || 0, help: 'Toutes les courses en retard, quelle que soit l\'étape : en chemin, pas encore validées, retours en cours.' },
   ]
 })
-const pick = (value) => (KEYS.includes(value) ? value : 'pas-ramassees')
+// Ancien onglet « Ramassées, pas livrées » : devenu « À décider »
+const pick = (value) => (value === 'ramassees' ? 'a-decider' : KEYS.includes(value) ? value : 'a-decider')
 const tab = ref(pick(route.query.onglet))
 const current = computed(() => tabs.value.find((t) => t.key === tab.value))
 
