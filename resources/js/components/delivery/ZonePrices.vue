@@ -195,6 +195,7 @@ import { useToastStore } from '../../stores/toasts'
 import { myActivities } from '../../utils/activities'
 import { resolveRoute } from '../../utils/routePrices'
 import DeparturePrices from './DeparturePrices.vue'
+import { confirmDialog, promptDialog } from '../../composables/useDialog'
 
 /**
  * Zones et prix (repris de Jibiat). Prix de base (tout trajet sans prix). Puis chaque commune : « on collecte »,
@@ -376,7 +377,7 @@ async function setEstimate(zone, value) {
 }
 
 async function rename(zone) {
-  const name = window.prompt('Nouveau nom du lieu :', zone.name)?.trim()
+  const name = (await promptDialog('Nouveau nom du lieu :', zone.name))?.trim()
   if (!name || name === zone.name) return
   try {
     await http.patch(`/zones/${zone.id}`, { name })
@@ -387,7 +388,7 @@ async function rename(zone) {
 }
 
 async function remove(zone) {
-  if (!window.confirm(`Supprimer le lieu « ${zone.name} » et ses prix ?`)) return
+  if (!(await confirmDialog(`Supprimer le lieu « ${zone.name} » et ses prix ?`))) return
   try {
     await http.delete(`/zones/${zone.id}`)
     toasts.success('Lieu supprimé.')
@@ -398,7 +399,7 @@ async function remove(zone) {
 }
 
 async function create() {
-  if (changes.value && !window.confirm('Des prix modifiés ne sont pas enregistrés : ils seront perdus. Continuer ?')) return
+  if (changes.value && !(await confirmDialog('Des prix modifiés ne sont pas enregistrés : ils seront perdus. Continuer ?'))) return
   draft.error = ''
   draft.saving = true
   try {
@@ -417,7 +418,7 @@ async function create() {
   }
 }
 
-onBeforeRouteLeave(() => !changes.value || window.confirm(leaveWarning))
+onBeforeRouteLeave(async () => !changes.value || (await confirmDialog(leaveWarning)))
 function warnBeforeUnload(event) {
   if (changes.value) event.preventDefault()
 }

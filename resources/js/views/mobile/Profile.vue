@@ -91,6 +91,7 @@ import { pwa } from '../../composables/usePwa'
 import { offlineQueue } from '../../composables/useOfflineQueue'
 import { localPhone, telLink } from '../../utils/format'
 import { appLock } from '../../native'
+import { confirmDialog } from '../../composables/useDialog'
 
 const auth = useAuthStore()
 const toasts = useToastStore()
@@ -112,7 +113,7 @@ const installedLabel = computed(() => (pwa.installed ? 'application installée' 
 
 async function logout() {
   // Actions faites hors connexion pas encore envoyées : elles attendraient la prochaine connexion
-  if (offlineQueue.pending.length && !window.confirm(`${offlineQueue.pending.length} action(s) faite(s) hors connexion ne sont pas encore envoyées. Déconnecté, elles ne partiront que lorsque vous vous reconnecterez sur ce téléphone. Se déconnecter quand même ?`)) return
+  if (offlineQueue.pending.length && !(await confirmDialog(`${offlineQueue.pending.length} action(s) faite(s) hors connexion ne sont pas encore envoyées. Déconnecté, elles ne partiront que lorsque vous vous reconnecterez sur ce téléphone. Se déconnecter quand même ?`))) return
   await forgetPushDevice()
   // Application installée : sa propre page de connexion (le client reste dans /marchand)
   const login = appLock()?.login || (auth.role === 'courier' ? '/livreur/connexion' : auth.role === 'mechanic' ? '/mecanicien/connexion' : '/')

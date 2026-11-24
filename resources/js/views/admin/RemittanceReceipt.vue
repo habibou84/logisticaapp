@@ -94,6 +94,7 @@ import http, { apiErrorMessage } from '../../bootstrap/axios'
 import { useAuthStore } from '../../stores/auth'
 import { useToastStore } from '../../stores/toasts'
 import { dateTime, money } from '../../utils/format'
+import { confirmDialog } from '../../composables/useDialog'
 
 /**
  * Caisse › reçu d'un versement : imprimable, renvoyé au livreur par WhatsApp, annulable le jour même.
@@ -128,7 +129,7 @@ async function resend() {
 }
 
 async function cancel() {
-  if (!window.confirm(`Annuler le versement ${r.value.reference} de ${r.value.courier_name} ?`)) return
+  if (!(await confirmDialog(`Annuler le versement ${r.value.reference} de ${r.value.courier_name} ?`))) return
   busy.value = true
   try {
     await http.post(`/finance/remittances/${r.value.id}/cancel`, { reason: reason.value.trim() })

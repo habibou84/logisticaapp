@@ -50,6 +50,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import { useAuthStore } from '../../stores/auth'
 import { date, money, today } from '../../utils/format'
+import { confirmDialog } from '../../composables/useDialog'
 
 const emit = defineEmits(['changed'])
 const auth = useAuthStore()
@@ -97,7 +98,7 @@ async function save() {
 }
 
 async function remove(c) {
-  if (!window.confirm(`Supprimer « ${c.label} » ?`)) return
+  if (!(await confirmDialog(`Supprimer « ${c.label} » ?`))) return
   await http.delete(`/fixed-costs/${c.id}`)
   await load()
   emit('changed')

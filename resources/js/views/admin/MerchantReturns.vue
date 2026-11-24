@@ -81,6 +81,7 @@ import CoursesTabs from '../../components/CoursesTabs.vue'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import { useToastStore } from '../../stores/toasts'
 import { dateTime, money } from '../../utils/format'
+import { confirmDialog } from '../../composables/useDialog'
 
 const router = useRouter()
 const toasts = useToastStore()
@@ -124,7 +125,7 @@ async function create(g) {
 }
 
 async function cancel(s) {
-  if (!confirm(`Annuler le bon ${s.reference} ? Les missions de retour restent assignées.`)) return
+  if (!(await confirmDialog(`Annuler le bon ${s.reference} ? Les missions de retour restent assignées.`))) return
   try {
     await http.post(`/return-slips/${s.id}/cancel`)
     load()

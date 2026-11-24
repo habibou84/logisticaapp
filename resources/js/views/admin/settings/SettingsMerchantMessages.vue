@@ -76,6 +76,7 @@ import { computed, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import http, { apiErrorMessage } from '../../../bootstrap/axios'
 import { useToastStore } from '../../../stores/toasts'
+import { confirmDialog } from '../../../composables/useDialog'
 
 /** Réglages › Messages aux clients : WhatsApp oui ou non par étape, choix laissés ou non aux clients */
 const HINTS = {
@@ -111,7 +112,7 @@ async function save(payload) {
 const toggle = (e) => save({ events: { [e.event]: !e.whatsapp } })
 
 async function applyAll(e) {
-  if (!window.confirm(e ? `« ${e.label} » : appliquer votre choix à tous les clients ?` : 'Appliquer vos choix à tous les clients ? Leurs propres réglages seront remplacés.')) return
+  if (!(await confirmDialog(e ? `« ${e.label} » : appliquer votre choix à tous les clients ?` : 'Appliquer vos choix à tous les clients ? Leurs propres réglages seront remplacés.'))) return
   busy.value = true
   try {
     data.value = (await http.post('/company/merchant-messages/apply-all', { event: e?.event ?? null })).data.data

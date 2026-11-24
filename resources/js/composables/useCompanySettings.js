@@ -3,6 +3,7 @@ import { onBeforeRouteLeave } from 'vue-router'
 import http, { apiErrorMessage } from '../bootstrap/axios'
 import { useAuthStore } from '../stores/auth'
 import { useToastStore } from '../stores/toasts'
+import { confirmDialog } from './useDialog'
 
 // Champs qu'on peut vider (sinon un champ vide est ignoré) ; les heures vides deviennent null
 const CLEARABLE = ['tagline', 'legal_name', 'ncc', 'rccm', 'tax_regime', 'tax_office', 'daily_cutoff_time', 'depot_closes_at', 'auto_delivery_max_cod', 'invoice_payment_info']
@@ -65,7 +66,7 @@ export function useCompanySettings(fields) {
   }
   onMounted(() => { load(); window.addEventListener('beforeunload', warn) })
   onBeforeUnmount(() => window.removeEventListener('beforeunload', warn))
-  onBeforeRouteLeave(() => !dirty.value || window.confirm('Des modifications ne sont pas enregistrées. Quitter quand même ?'))
+  onBeforeRouteLeave(async () => !dirty.value || (await confirmDialog('Des modifications ne sont pas enregistrées. Quitter quand même ?')))
 
   return { form, company, dirty, saving, error, save, reset }
 }

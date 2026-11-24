@@ -244,6 +244,7 @@ import Modal from '../../components/Modal.vue'
 import { useAuthStore } from '../../stores/auth'
 import { useToastStore } from '../../stores/toasts'
 import { date as shortDate } from '../../utils/format'
+import { confirmDialog } from '../../composables/useDialog'
 
 // Onglet de « Activité des livreurs » : le titre de la page n'est pas répété
 defineProps({ embedded: { type: Boolean, default: false } })
@@ -304,7 +305,7 @@ async function load() {
 // Suspendre en cas de souci (livreurs mal répartis, journée particulière), reprendre ensuite
 const pausing = ref(false)
 async function pause(paused) {
-  if (paused && !confirm('Suspendre l\'automatisation ? Plus aucune course ne sera confiée automatiquement jusqu\'à la reprise.')) return
+  if (paused && !(await confirmDialog('Suspendre l\'automatisation ? Plus aucune course ne sera confiée automatiquement jusqu\'à la reprise.'))) return
   pausing.value = true
   try {
     board.value.automation = (await http.post('/planning/pause', { paused })).data.data
@@ -400,7 +401,7 @@ async function saveRule() {
 }
 
 async function removeRule(rule) {
-  if (!window.confirm(`Supprimer la règle de ${rule.courier.name} (${rule.label}) ?`)) return
+  if (!(await confirmDialog(`Supprimer la règle de ${rule.courier.name} (${rule.label}) ?`))) return
   await http.delete(`/planning/rules/${rule.id}`)
   await load()
 }

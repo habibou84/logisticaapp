@@ -113,6 +113,7 @@ import AuthImage from '../AuthImage.vue'
 import Modal from '../Modal.vue'
 import PaymentMethodIcon from './PaymentMethodIcon.vue'
 import PaymentMethodStatus from './PaymentMethodStatus.vue'
+import { confirmDialog, promptDialog } from '../../composables/useDialog'
 
 /**
  * Moyens de paiement d'un client : le client les gère depuis son application (ils restent
@@ -226,13 +227,13 @@ async function refresh() {
 
 const prefer = (m) => act(() => http.post(`/merchant-payment-methods/${m.id}/preferred`), 'Utilisé en premier.')
 const verify = (m) => act(() => http.post(`/merchant-payment-methods/${m.id}/verify`), 'Moyen de paiement validé.')
-function reject(m) {
-  const reason = window.prompt('Pourquoi ce moyen est-il refusé ? (facultatif)')
+async function reject(m) {
+  const reason = (await promptDialog('Pourquoi ce moyen est-il refusé ? (facultatif)'))
   if (reason === null) return
   act(() => http.post(`/merchant-payment-methods/${m.id}/reject`, { reason: reason || undefined }), 'Moyen de paiement refusé.')
 }
-function remove(m) {
-  if (!window.confirm(`Retirer ${m.summary} ?`)) return
+async function remove(m) {
+  if (!(await confirmDialog(`Retirer ${m.summary} ?`))) return
   act(() => http.delete(`/merchant-payment-methods/${m.id}`), 'Moyen de paiement retiré.')
 }
 

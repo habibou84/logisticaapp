@@ -51,6 +51,7 @@ import ReasonEditor from '../../../components/settings/ReasonEditor.vue'
 import { ACTIVITIES, activityShort } from '../../../utils/activities'
 import { DESTINATION_EFFECTS, REASON_FAMILIES } from '../../../utils/reasons'
 import { useToastStore } from '../../../stores/toasts'
+import { confirmDialog } from '../../../composables/useDialog'
 
 const TABS = [
   { key: 'delivery', label: 'Non-livraison', help: 'Choisis par le livreur quand il ne peut pas remettre la course. Rangés par famille.' },
@@ -154,7 +155,7 @@ async function toggle(r) {
 }
 
 async function remove(r) {
-  if (!confirm(`Supprimer « ${r.label} » ?`)) return
+  if (!(await confirmDialog(`Supprimer « ${r.label} » ?`))) return
   try {
     await http.delete(`/incident-reason-settings/${r.id}`)
     reasons.value = reasons.value.filter((x) => x.id !== r.id)

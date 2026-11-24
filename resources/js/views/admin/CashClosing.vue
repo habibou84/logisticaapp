@@ -114,6 +114,7 @@ import http from '../../bootstrap/axios'
 import StatCard from '../../components/StatCard.vue'
 import { downloadCsv } from '../../components/stats/chart'
 import { date, dateTime, money } from '../../utils/format'
+import { confirmDialog } from '../../composables/useDialog'
 
 const loaded = ref(false)
 const closed = ref(null)
@@ -154,7 +155,7 @@ async function submit() {
     error.value = 'Comptez les espèces de la caisse.'
     return
   }
-  if (!window.confirm('Clôturer la journée ? Elle ne pourra plus être modifiée.')) return
+  if (!(await confirmDialog('Clôturer la journée ? Elle ne pourra plus être modifiée.'))) return
   saving.value = true
   try {
     const payload = Object.fromEntries(Object.entries(counted).filter(([, v]) => v !== '' && v !== undefined && v !== null))

@@ -321,6 +321,7 @@ import Pagination from '../../components/Pagination.vue'
 import { useAuthStore } from '../../stores/auth'
 import { useToastStore } from '../../stores/toasts'
 import { date, dateTime, money, today } from '../../utils/format'
+import { confirmDialog } from '../../composables/useDialog'
 
 const MOVEMENT_TYPES = { receipt: 'Entrée', withdrawal: 'Retrait', adjustment: 'Inventaire', reservation: 'Réservé', release: 'Libéré', shipment: 'Livré' }
 const MOVE_TITLES = { receipt: 'Entrée en stock', withdrawal: 'Retrait', count: 'Inventaire' }
@@ -520,7 +521,7 @@ async function saveContract() {
 }
 
 async function deleteContract() {
-  if (!window.confirm('Supprimer ce contrat ?')) return
+  if (!(await confirmDialog('Supprimer ce contrat ?'))) return
   try {
     await http.delete(`/storage-contracts/${contract.id}`)
     contract.open = false

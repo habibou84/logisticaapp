@@ -197,6 +197,7 @@ import { authImage } from '../../composables/useAuthImage'
 import { useAuthStore } from '../../stores/auth'
 import { date, dateTime, mapsLink, money, telLink, waitDuration, whatsappLink } from '../../utils/format'
 import { ACCEPT_MODES } from './settings/options'
+import { confirmDialog } from '../../composables/useDialog'
 
 /** Fiche d'un livreur : aujourd'hui, chiffres de la période, note, événements terrain, informations */
 const VEHICLES = { moto: 'Moto', velo: 'Vélo', voiture: 'Voiture', tricycle: 'Tricycle', pieton: 'À pied' }
@@ -324,7 +325,7 @@ async function upload(kind, e) {
 }
 
 async function removeFile(f) {
-  if (!window.confirm(`Retirer : ${f.label.toLowerCase()} ?`)) return
+  if (!(await confirmDialog(`Retirer : ${f.label.toLowerCase()} ?`))) return
   fileError.value = ''
   try {
     await http.delete(`/couriers/${c.value.id}/files/${f.kind}`)

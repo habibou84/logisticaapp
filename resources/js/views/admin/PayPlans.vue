@@ -313,6 +313,7 @@ import http, { apiErrorMessage } from '../../bootstrap/axios'
 import Modal from '../../components/Modal.vue'
 import PaySimulatorPanel from '../../components/PaySimulatorPanel.vue'
 import { useToastStore } from '../../stores/toasts'
+import { confirmDialog } from '../../composables/useDialog'
 
 const VEHICLES = { moto: 'Moto', velo: 'Vélo', voiture: 'Voiture', tricycle: 'Tricycle', pieton: 'À pied' }
 const DAYS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
@@ -507,7 +508,7 @@ async function duplicate() {
 
 async function remove() {
   const who = plan.value.personal ? `${plan.value.courier?.name} reviendra` : `Ses ${plan.value.couriers_count ?? 0} livreur(s) reviendront`
-  if (!window.confirm(`Supprimer le plan « ${plan.value.name} » ? ${who} au plan par défaut. Les gains déjà acquis ne changent pas.`)) return
+  if (!(await confirmDialog(`Supprimer le plan « ${plan.value.name} » ? ${who} au plan par défaut. Les gains déjà acquis ne changent pas.`))) return
   try {
     await http.delete(`/pay-plans/${plan.value.id}`)
     await load(null)

@@ -145,6 +145,7 @@ import { computed, reactive, ref, watch } from 'vue'
 import http, { apiErrorMessage } from '../bootstrap/axios'
 import { useToastStore } from '../stores/toasts'
 import { date, dateTime } from '../utils/format'
+import { confirmDialog } from '../composables/useDialog'
 
 // merchantId : marchand choisi par l'administration (null pour le client lui-même)
 const props = defineProps({ merchantId: { type: Number, default: null }, staff: { type: Boolean, default: false } })
@@ -200,7 +201,7 @@ async function createKey() {
 }
 
 async function revoke(k) {
-  if (!window.confirm(`Révoquer la clé « ${k.name} » ? Les logiciels qui l'utilisent n'auront plus accès.`)) return
+  if (!(await confirmDialog(`Révoquer la clé « ${k.name} » ? Les logiciels qui l'utilisent n'auront plus accès.`))) return
   await http.delete(`/api-keys/${k.id}`)
   load()
 }
@@ -232,13 +233,13 @@ async function toggleHook(h) {
 }
 
 async function rotate(h) {
-  if (!window.confirm('Générer un nouveau secret ? L\'ancien cesse aussitôt de fonctionner.')) return
+  if (!(await confirmDialog('Générer un nouveau secret ? L\'ancien cesse aussitôt de fonctionner.'))) return
   const { data } = await http.post(`/webhooks/${h.id}/secret`)
   reveal.value = { title: 'Nouveau secret de signature', value: data.secret }
 }
 
 async function removeHook(h) {
-  if (!window.confirm('Supprimer cette adresse et son journal ?')) return
+  if (!(await confirmDialog('Supprimer cette adresse et son journal ?'))) return
   await http.delete(`/webhooks/${h.id}`)
   load()
 }

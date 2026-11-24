@@ -122,6 +122,7 @@
 import { onMounted, reactive, ref } from 'vue'
 import http, { apiErrorMessage } from '../bootstrap/axios'
 import { useToastStore } from '../stores/toasts'
+import { confirmDialog } from '../composables/useDialog'
 
 const TYPES = ['pli', 'colis', 'cheque']
 const PRICE_FIELDS = ['pli_price', 'colis_price', 'extra_kg_price']
@@ -217,7 +218,7 @@ async function updateRate(rate) {
 }
 
 async function removeRate(rate) {
-  if (!window.confirm(`Retirer le tarif ${rate.city} en ${rate.delivery_delay} ?`)) return
+  if (!(await confirmDialog(`Retirer le tarif ${rate.city} en ${rate.delivery_delay} ?`))) return
   await http.delete(`/interior-rates/${rate.id}`)
   interior.value = interior.value.filter((r) => r.id !== rate.id)
 }

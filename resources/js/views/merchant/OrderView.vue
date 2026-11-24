@@ -318,6 +318,7 @@ import { siteOrigin } from '../../native'
 import StarRating from '../../components/StarRating.vue'
 import RatingSheet from '../../components/client/RatingSheet.vue'
 import { useCourierRating } from '../../composables/useCourierRating'
+import { promptDialog } from '../../composables/useDialog'
 
 const route = useRoute()
 const router = useRouter()
@@ -465,8 +466,8 @@ async function run(action, success) {
   }
 }
 
-function approve(ok) {
-  const reason = ok ? null : window.prompt('Pourquoi refuser cette demande ? (facultatif)')
+async function approve(ok) {
+  const reason = ok ? null : (await promptDialog('Pourquoi refuser cette demande ? (facultatif)'))
   if (reason === null && !ok) return
   run(() => http.post(`/orders/${order.value.id}/approval`, { approve: ok, reason: reason || null }), ok ? 'Course validée.' : 'Demande refusée.')
 }

@@ -83,6 +83,7 @@ import http, { apiErrorMessage } from '../../bootstrap/axios'
 import Modal from '../Modal.vue'
 import ZoneSelect from '../ZoneSelect.vue'
 import { dateTime, mapsLink } from '../../utils/format'
+import { confirmDialog } from '../../composables/useDialog'
 
 const props = defineProps({ open: Boolean, destination: { type: Object, default: null }, zones: { type: Array, default: () => [] } })
 const emit = defineEmits(['close', 'saved'])
@@ -148,7 +149,7 @@ function searchDuplicates() {
 }
 
 async function merge(d) {
-  if (!confirm(`Regrouper « ${d.label} » dans cette fiche ? Ses numéros, courses et positions y passent, puis elle est supprimée.`)) return
+  if (!(await confirmDialog(`Regrouper « ${d.label} » dans cette fiche ? Ses numéros, courses et positions y passent, puis elle est supprimée.`))) return
   try {
     emit('saved', (await http.post(`/destinations/${props.destination.id}/merge`, { ids: [d.id] })).data.data, true)
     duplicates.value = []
@@ -158,7 +159,7 @@ async function merge(d) {
 }
 
 async function remove() {
-  if (!confirm('Supprimer cette destination de l\'annuaire ?')) return
+  if (!(await confirmDialog('Supprimer cette destination de l\'annuaire ?'))) return
   await http.delete(`/destinations/${props.destination.id}`)
   emit('saved', null)
 }

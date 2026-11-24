@@ -99,6 +99,7 @@ import { useAuthStore } from '../../stores/auth'
 import { useToastStore } from '../../stores/toasts'
 import { date, dateTime } from '../../utils/format'
 import StarRating from '../StarRating.vue'
+import { promptDialog } from '../../composables/useDialog'
 
 const props = defineProps({ courierId: { type: Number, required: true } })
 const emit = defineEmits(['loaded', 'changed'])
@@ -148,7 +149,7 @@ async function evaluate() {
 }
 
 async function neutralize(r) {
-  const reason = window.prompt('Pourquoi cette note ne doit-elle plus compter ? (ex. client mécontent du prix, pas du livreur)')
+  const reason = (await promptDialog('Pourquoi cette note ne doit-elle plus compter ? (ex. client mécontent du prix, pas du livreur)'))
   if (!reason) return
   await http.post(`/courier-ratings/${r.id}/neutralize`, { reason })
   await load()

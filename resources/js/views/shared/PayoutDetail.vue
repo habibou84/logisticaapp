@@ -61,6 +61,7 @@ import PayMerchantPanel from '../../components/payment/PayMerchantPanel.vue'
 import { useAuthStore } from '../../stores/auth'
 import { useToastStore } from '../../stores/toasts'
 import { date, dateTime, money, signedClass } from '../../utils/format'
+import { confirmDialog } from '../../composables/useDialog'
 
 const route = useRoute()
 const router = useRouter()
@@ -84,7 +85,7 @@ async function pay(payment) {
 }
 
 async function cancel() {
-  if (!window.confirm('Annuler ce paiement ? Les opérations redeviendront disponibles.')) return
+  if (!(await confirmDialog('Annuler ce paiement ? Les opérations redeviendront disponibles.'))) return
   payout.value = (await http.post(`/finance/payouts/${payout.value.id}/cancel`)).data.data
 }
 

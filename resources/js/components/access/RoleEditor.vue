@@ -53,6 +53,7 @@ import Modal from '../Modal.vue'
 import PermissionPicker from './PermissionPicker.vue'
 import ScopeFields from './ScopeFields.vue'
 import { useAccessCatalog } from '../../composables/useAccessCatalog'
+import { confirmDialog } from '../../composables/useDialog'
 
 /**
  * Créer ou modifier un rôle sur mesure ; « from » : rôle intégré à copier.
@@ -110,7 +111,7 @@ async function save() {
 }
 
 async function remove() {
-  if (!confirm(`Supprimer le rôle « ${props.role.label} » ?`)) return
+  if (!(await confirmDialog(`Supprimer le rôle « ${props.role.label} » ?`))) return
   saving.value = true
   try {
     await http.delete(`/roles/${props.role.id}`)

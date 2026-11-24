@@ -51,6 +51,7 @@ import { useAuthStore } from '../stores/auth'
 import { useToastStore } from '../stores/toasts'
 import { activityLabel } from '../utils/activities'
 import { date, money, today } from '../utils/format'
+import { confirmDialog } from '../composables/useDialog'
 
 // order : course à l'origine du supplément (fiche course), facultatif
 const props = defineProps({
@@ -124,7 +125,7 @@ async function add() {
 }
 
 async function remove(s) {
-  if (!window.confirm(`Retirer le supplément « ${s.label} » ?`)) return
+  if (!(await confirmDialog(`Retirer le supplément « ${s.label} » ?`))) return
   try {
     await http.delete(`/client-supplements/${s.id}`)
     await load()

@@ -157,6 +157,7 @@ import { useAuthStore } from '../stores/auth'
 import { useToastStore } from '../stores/toasts'
 import { date, money, today } from '../utils/format'
 import { myActivities } from '../utils/activities'
+import { promptDialog } from '../composables/useDialog'
 
 // initialFormula : formule proposée d'abord (ex. lot ponctuel depuis « + Lot de colis »)
 const props = defineProps({ open: Boolean, merchant: { type: Object, default: null }, initialFormula: { type: String, default: null } })
@@ -264,7 +265,7 @@ function editCouriers(plan) {
 
 // Délai interne propre au contrat (vide : celui de l'activité, Réglages › Courses)
 async function editInternalDelay(plan) {
-  const value = window.prompt('Délai interne de ce contrat, en heures (vide : celui de l\'activité) :', plan.internal_delay_hours ?? '')
+  const value = (await promptDialog('Délai interne de ce contrat, en heures (vide : celui de l\'activité) :', plan.internal_delay_hours ?? ''))
   if (value === null) return
   try {
     await http.patch(`/billing-plans/${plan.id}`, { internal_delay_hours: value.trim() === '' ? null : Number(value) })
@@ -277,7 +278,7 @@ async function editInternalDelay(plan) {
 }
 
 async function endPlan(plan) {
-  const end = window.prompt('Dernier jour de la formule (AAAA-MM-JJ) :', today())
+  const end = (await promptDialog('Dernier jour de la formule (AAAA-MM-JJ) :', today()))
   if (!end) return
   try {
     await http.patch(`/billing-plans/${plan.id}`, { ends_on: end })

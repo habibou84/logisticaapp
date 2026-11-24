@@ -252,6 +252,7 @@ import { useAuthStore } from '../../stores/auth'
 import { useToastStore } from '../../stores/toasts'
 import { date, dateTime, money } from '../../utils/format'
 import { OWNERSHIP_STYLES, PERIODS, STATE_STYLES, STATUS_STYLES, VEHICLE_TYPES, daysText, km } from '../../utils/vehicles'
+import { confirmDialog } from '../../composables/useDialog'
 
 const TABS = [
   { value: 'resume', label: 'Résumé' }, { value: 'papiers', label: 'Papiers' }, { value: 'entretien', label: 'Entretien' },
@@ -333,7 +334,7 @@ function openDoc(d) {
   docOpen.value = true
 }
 async function removeDoc(d) {
-  if (!confirm(`Supprimer ce papier (${d.kind_label}) ?`)) return
+  if (!(await confirmDialog(`Supprimer ce papier (${d.kind_label}) ?`))) return
   await http.delete(`/vehicles/documents/${d.id}`)
   load()
 }
@@ -343,7 +344,7 @@ function openLog(kind) {
   logOpen.value = true
 }
 async function removeLog(l) {
-  if (!confirm(`Supprimer cette ligne du carnet ?${l.charged ? ' Ce qui a été retenu ou remboursé au livreur est annulé.' : ''}`)) return
+  if (!(await confirmDialog(`Supprimer cette ligne du carnet ?${l.charged ? ' Ce qui a été retenu ou remboursé au livreur est annulé.' : ''}`))) return
   v.value = (await http.delete(`/vehicles/logs/${l.id}`)).data.data
 }
 
@@ -382,7 +383,7 @@ async function pay(l) {
 }
 
 async function cancelLease(l) {
-  if (!confirm('Arrêter ce contrat ? Le véhicule redevient à l\'entreprise.')) return
+  if (!(await confirmDialog('Arrêter ce contrat ? Le véhicule redevient à l\'entreprise.'))) return
   v.value = (await http.post(`/vehicles/leases/${l.id}/cancel`)).data.data
 }
 

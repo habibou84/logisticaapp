@@ -123,6 +123,7 @@ import { useToastStore } from '../../stores/toasts'
 import { date } from '../../utils/format'
 import BottomSheet from '../mobile/BottomSheet.vue'
 import ClientReportView from './ClientReportView.vue'
+import { confirmDialog, promptDialog } from '../../composables/useDialog'
 
 const auth = useAuthStore()
 const toasts = useToastStore()
@@ -176,11 +177,11 @@ async function send() {
 const feed = ref(null)
 const loadFeed = async () => { feed.value = (await http.get('/stats/feed-link')).data.data }
 async function regenerate() {
-  if (feed.value?.enabled && !window.confirm('Créer un nouveau lien ? L\'ancien ne marchera plus dans vos feuilles.')) return
+  if (feed.value?.enabled && !(await confirmDialog('Créer un nouveau lien ? L\'ancien ne marchera plus dans vos feuilles.'))) return
   feed.value = (await http.post('/stats/feed-link')).data.data
 }
 async function disable() {
-  if (!window.confirm('Couper le lien ? Les feuilles Google Sheets ne se mettront plus à jour.')) return
+  if (!(await confirmDialog('Couper le lien ? Les feuilles Google Sheets ne se mettront plus à jour.'))) return
   feed.value = (await http.delete('/stats/feed-link')).data.data
 }
 async function copy(text) {
@@ -188,7 +189,7 @@ async function copy(text) {
     await navigator.clipboard.writeText(text)
     toasts.success('Formule copiée : collez-la dans une cellule de Google Sheets.')
   } catch {
-    window.prompt('Copiez la formule :', text)
+    await promptDialog('Copiez la formule :', text)
   }
 }
 

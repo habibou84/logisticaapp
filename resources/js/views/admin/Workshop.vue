@@ -162,6 +162,7 @@ import { authImage } from '../../composables/useAuthImage'
 import { useAuthStore } from '../../stores/auth'
 import { useToastStore } from '../../stores/toasts'
 import { dateTime, localPhone, mapsLink, money } from '../../utils/format'
+import { promptDialog } from '../../composables/useDialog'
 
 const TABS = [{ value: 'waiting', label: 'En attente' }, { value: 'open', label: 'En cours' }, { value: 'done', label: 'Terminées' }, { value: 'all', label: 'Toutes' }]
 const STATUS_STYLES = {
@@ -269,7 +270,7 @@ async function assign() {
 }
 
 async function cancel() {
-  const reason = window.prompt('Pourquoi annuler ? (le mécanicien est prévenu)', '')
+  const reason = (await promptDialog('Pourquoi annuler ? (le mécanicien est prévenu)', ''))
   if (reason === null) return
   busy.value = true
   try {
@@ -286,7 +287,7 @@ async function cancel() {
 async function decide(purchase, approve) {
   let note = null
   if (!approve) {
-    note = window.prompt('Motif du refus (le mécanicien le voit)', '')
+    note = (await promptDialog('Motif du refus (le mécanicien le voit)', ''))
     if (note === null) return
   }
   busy.value = true

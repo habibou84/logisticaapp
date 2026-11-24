@@ -30,13 +30,14 @@
 <script setup>
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import { useToastStore } from '../../stores/toasts'
+import { confirmDialog, promptDialog } from '../../composables/useDialog'
 
 defineProps({ grids: { type: Array, required: true } })
 const emit = defineEmits(['changed', 'edit'])
 const toasts = useToastStore()
 
 async function create() {
-  const name = (window.prompt('Nom de la grille négociée (ex. : Gros volume) :'))?.trim()
+  const name = ((await promptDialog('Nom de la grille négociée (ex. : Gros volume) :')))?.trim()
   if (!name) return
   try {
     const { data } = await http.post('/pricing-grids', { name })
@@ -49,7 +50,7 @@ async function create() {
 }
 
 async function rename(g) {
-  const name = (window.prompt('Nouveau nom de la grille :', g.name))?.trim()
+  const name = ((await promptDialog('Nouveau nom de la grille :', g.name)))?.trim()
   if (!name || name === g.name) return
   try {
     await http.patch(`/pricing-grids/${g.id}`, { name })
@@ -60,7 +61,7 @@ async function rename(g) {
 }
 
 async function makeDefault(g) {
-  if (!window.confirm(`Faire de « ${g.name} » la grille normale, appliquée à tous les clients sans grille négociée ?`)) return
+  if (!(await confirmDialog(`Faire de « ${g.name} » la grille normale, appliquée à tous les clients sans grille négociée ?`))) return
   try {
     await http.patch(`/pricing-grids/${g.id}`, { is_default: true })
     emit('changed')
@@ -72,7 +73,7 @@ async function makeDefault(g) {
 async function remove(g) {
   const count = g.merchants_count ?? 0
   const consequence = count ? ` Ses ${count} client(s) passeront sur la grille normale.` : ''
-  if (!window.confirm(`Supprimer la grille « ${g.name} » et tous ses prix ?${consequence}`)) return
+  if (!(await confirmDialog(`Supprimer la grille « ${g.name} » et tous ses prix ?${consequence}`))) return
   try {
     await http.delete(`/pricing-grids/${g.id}`)
     emit('changed')

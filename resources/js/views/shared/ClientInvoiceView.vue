@@ -262,6 +262,7 @@ import { useToastStore } from '../../stores/toasts'
 import { date, money, today } from '../../utils/format'
 import Modal from '../../components/Modal.vue'
 import FneSticker from '../../components/FneSticker.vue'
+import { confirmDialog } from '../../composables/useDialog'
 
 const route = useRoute()
 const router = useRouter()
@@ -371,14 +372,14 @@ async function run(request, success) {
 
 const act = (action, success) => run(() => http.post(`/client-invoices/${invoice.value.id}/${action}`), success)
 
-function issue() {
-  if (!window.confirm(`Émettre la facture de ${money(invoice.value.total)} ? Elle reçoit son numéro et ne se modifie plus.`)) return
+async function issue() {
+  if (!(await confirmDialog(`Émettre la facture de ${money(invoice.value.total)} ? Elle reçoit son numéro et ne se modifie plus.`))) return
   act('issue', 'Facture émise.')
 }
 
-function voidInvoice() {
+async function voidInvoice() {
   const draft = invoice.value.status === 'draft'
-  if (!window.confirm(draft ? 'Supprimer ce brouillon ? Il pourra être recalculé.' : 'Annuler cette facture ? Elle garde son numéro, marquée annulée.')) return
+  if (!(await confirmDialog(draft ? 'Supprimer ce brouillon ? Il pourra être recalculé.' : 'Annuler cette facture ? Elle garde son numéro, marquée annulée.'))) return
   act('void', draft ? 'Brouillon supprimé.' : 'Facture annulée.')
 }
 

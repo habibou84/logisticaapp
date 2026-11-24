@@ -38,6 +38,7 @@ import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import { useToastStore } from '../../stores/toasts'
+import { confirmDialog } from '../../composables/useDialog'
 
 const props = defineProps({ gridId: { type: Number, required: true } })
 
@@ -71,7 +72,7 @@ async function save() {
   }
 }
 
-onBeforeRouteLeave(() => !dirty.value || window.confirm('Des suppléments modifiés ne sont pas enregistrés. Quitter quand même ?'))
+onBeforeRouteLeave(async () => !dirty.value || (await confirmDialog('Des suppléments modifiés ne sont pas enregistrés. Quitter quand même ?')))
 function warnBeforeUnload(event) {
   if (dirty.value) event.preventDefault()
 }

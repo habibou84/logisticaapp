@@ -232,6 +232,7 @@ import { useAccessCatalog } from '../../composables/useAccessCatalog'
 import { useAuthStore } from '../../stores/auth'
 import { useToastStore } from '../../stores/toasts'
 import { date, dateTime } from '../../utils/format'
+import { promptDialog } from '../../composables/useDialog'
 
 /**
  * Équipe › Utilisateurs (repris de Jibiat, adapté) : compteurs, onglets, recherche, actions par compte (menu ⋯),
@@ -411,7 +412,7 @@ async function copy(text) {
     await navigator.clipboard.writeText(text)
     toasts.success('Lien copié.')
   } catch {
-    window.prompt('Copiez le lien :', text)
+    await promptDialog('Copiez le lien :', text)
   }
 }
 

@@ -28,6 +28,7 @@ import { onMounted, ref } from 'vue'
 import http, { apiErrorMessage } from '../bootstrap/axios'
 import { useToastStore } from '../stores/toasts'
 import { dateTime } from '../utils/format'
+import { confirmDialog } from '../composables/useDialog'
 
 const emit = defineEmits(['accepted'])
 const toasts = useToastStore()
@@ -44,7 +45,7 @@ async function load() {
 }
 
 async function decide(request, action) {
-  if (action === 'decline' && !window.confirm(`Refuser la demande de ${request.business_name} ?`)) return
+  if (action === 'decline' && !(await confirmDialog(`Refuser la demande de ${request.business_name} ?`))) return
   busy.value = request.id
   try {
     await http.post(`/connect-requests/${request.id}/${action}`)

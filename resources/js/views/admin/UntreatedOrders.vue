@@ -148,6 +148,7 @@ import { orderChanges } from '../../composables/useRealtime'
 import { date, money } from '../../utils/format'
 import { madSuffix } from '../../utils/mad'
 import { activityBadge, activityShort, myActivities } from '../../utils/activities'
+import { confirmDialog } from '../../composables/useDialog'
 
 /**
  * Courses non traitées (repris de Jibiat) : jour de livraison dépassé, course pas terminée et plus dans la règle de son
@@ -337,8 +338,8 @@ const rescheduleOne = (o, day) => run(async () => {
   report(res.data.rescheduled, res.data.errors, day === todayIso ? 'prévue(s) aujourd\'hui' : `prévue(s) le ${date(day)}`)
 })
 
-function returnMany(list = returnable.value) {
-  if (!list.length || !window.confirm(`Faire revenir ${list.length > 1 ? `ces ${list.length} colis` : 'ce colis'} chez le client ?`)) return
+async function returnMany(list = returnable.value) {
+  if (!list.length || !(await confirmDialog(`Faire revenir ${list.length > 1 ? `ces ${list.length} colis` : 'ce colis'} chez le client ?`))) return
   return run(async () => {
     const done = []
     const errors = {}

@@ -88,6 +88,7 @@ import Modal from '../../components/Modal.vue'
 import { useToastStore } from '../../stores/toasts'
 import { telLink, today } from '../../utils/format'
 import { SHIFT_STATES, hm, meters } from '../../utils/shifts'
+import { confirmDialog } from '../../composables/useDialog'
 
 defineProps({ embedded: { type: Boolean, default: false } })
 const toasts = useToastStore()
@@ -149,7 +150,7 @@ async function saveManual() {
 }
 
 async function cancel(r) {
-  if (!confirm(`Annuler le pointage de ${r.name} ? Il pourra pointer à nouveau.`)) return
+  if (!(await confirmDialog(`Annuler le pointage de ${r.name} ? Il pourra pointer à nouveau.`))) return
   try {
     await http.delete(`/courier-shifts/${r.shift.id}`)
     load()

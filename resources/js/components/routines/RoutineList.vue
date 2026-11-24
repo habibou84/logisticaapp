@@ -49,6 +49,7 @@ import { useToastStore } from '../../stores/toasts'
 import { dateTime } from '../../utils/format'
 import { daysText } from '../../utils/shifts'
 import RoutineEditor from './RoutineEditor.vue'
+import { confirmDialog } from '../../composables/useDialog'
 
 const props = defineProps({
   // Liste (GET) et création (POST)
@@ -90,7 +91,7 @@ function saved() {
 }
 
 async function remove(r) {
-  if (!confirm(`Supprimer le parcours « ${r.name} » ?`)) return
+  if (!(await confirmDialog(`Supprimer le parcours « ${r.name} » ?`))) return
   try {
     await http.delete(`${props.updateUrl}/${r.id}`)
     load()

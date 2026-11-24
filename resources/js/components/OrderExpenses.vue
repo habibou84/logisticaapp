@@ -65,6 +65,7 @@ import { reactive, ref } from 'vue'
 import http, { apiErrorMessage } from '../bootstrap/axios'
 import { useToastStore } from '../stores/toasts'
 import { money } from '../utils/format'
+import { confirmDialog } from '../composables/useDialog'
 
 const TYPES = {
   transport: 'Transport (taxi, moto-taxi…)',
@@ -113,7 +114,7 @@ async function approve(expense) {
 }
 
 async function cancel(expense) {
-  if (!window.confirm(`Annuler « ${expense.description} » (${money(expense.amount)}) ?`)) return
+  if (!(await confirmDialog(`Annuler « ${expense.description} » (${money(expense.amount)}) ?`))) return
   try {
     await http.post(`/orders/${props.orderId}/expenses/${expense.id}/cancel`)
     toasts.success('Frais annulés.')

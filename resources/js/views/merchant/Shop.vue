@@ -126,6 +126,7 @@ import { useAuthStore } from '../../stores/auth'
 import { useToastStore } from '../../stores/toasts'
 import { money } from '../../utils/format'
 import { siteOrigin } from '../../native'
+import { promptDialog } from '../../composables/useDialog'
 
 const auth = useAuthStore()
 const toasts = useToastStore()
@@ -187,7 +188,7 @@ async function copy() {
     copied.value = true
     setTimeout(() => { copied.value = false }, 2000)
   } catch {
-    window.prompt('Copiez le lien :', settings.value.url)
+    await promptDialog('Copiez le lien :', settings.value.url)
   }
 }
 
