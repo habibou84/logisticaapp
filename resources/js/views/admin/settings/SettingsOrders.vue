@@ -267,9 +267,9 @@
 
       <!-- Tableau de bord de l'équipe et point du jour -->
       <section v-if="!automation && form.dashboard_settings" id="tableau-de-bord" class="card p-4 space-y-3 scroll-mt-20">
-        <h2 class="font-semibold">Tableau de bord et point du jour</h2>
+        <h2 class="font-semibold">Poste de pilotage et point du jour</h2>
         <fieldset class="grid sm:grid-cols-2 lg:grid-cols-3 gap-2 text-sm">
-          <legend class="label">Cartes « À faire maintenant » affichées (seulement quand il y a quelque chose à faire)</legend>
+          <legend class="label">Lignes « À régler » affichées (seulement quand il y a quelque chose à faire)</legend>
           <label v-for="(label, key) in DASHBOARD_CARDS" :key="key" class="flex items-center gap-2">
             <input type="checkbox" :checked="!form.dashboard_settings.hidden_cards.includes(key)" @change="toggleCard(key, $event.target.checked)"> {{ label }}
           </label>
