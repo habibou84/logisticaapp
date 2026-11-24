@@ -318,6 +318,7 @@ Route::prefix('v1')->name('v1.')->group(function () {
             Route::get('/', [FieldReportController::class, 'index'])->name('index');
             Route::get('counts', [FieldReportController::class, 'counts'])->name('counts');
             Route::post('{event}/handle', [FieldReportController::class, 'handle'])->name('handle');
+            Route::post('{event}/act', [FieldReportController::class, 'act'])->name('act');
             Route::post('{event}/reopen', [FieldReportController::class, 'reopen'])->name('reopen');
         });
 

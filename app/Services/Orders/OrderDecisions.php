@@ -33,7 +33,10 @@ class OrderDecisions
     ) {}
 
     /**
-     * @param  array{decision: string, date?: string|null, courier_id?: int|null, note?: string|null}  $data
+     * reopen : l'agence relivre malgré le retour en cours (le client a changé d'avis, ou une tentative de plus est
+     * accordée) tant que le colis n'est pas parti en retour.
+     *
+     * @param  array{decision: string, date?: string|null, courier_id?: int|null, note?: string|null, reopen?: bool}  $data
      */
     public function decide(User $actor, Order $order, array $data): Order
     {
@@ -49,10 +52,29 @@ class OrderDecisions
         $note = filled($data['note'] ?? null) ? trim($data['note']) : null;
 
         return DB::transaction(fn () => match ($data['decision']) {
-            self::REDELIVER => $this->redeliver($actor, $order, $data['date'] ?? null, $courier, $note),
+            self::REDELIVER => $this->redeliver($actor, ($data['reopen'] ?? false) ? $this->reopen($actor, $order) : $order, $data['date'] ?? null, $courier, $note),
             self::RETURN => $this->returnToMerchant($actor, $order, $courier, $note),
             self::RESTOCK => $this->restock($actor, $order, $note),
         })->fresh();
+    }
+
+    /** Retour annulé par l'agence : le colis peut être relivré, une tentative de plus si elles étaient épuisées */
+    private function reopen(User $actor, Order $order): Order
+    {
+        if ($actor->merchant_id !== null) {
+            throw new BusinessRuleException('Seule l\'agence peut relancer la livraison d\'un colis en retour.', 'decision');
+        }
+        if ($order->return_slip_id !== null) {
+            throw new BusinessRuleException('Ce colis est déjà sur un bon de retour.', 'decision');
+        }
+
+        $order->forceFill([
+            'return_requested' => false,
+            'return_cause' => null,
+            'max_attempts' => max($order->max_attempts, $order->attempts_count + 1),
+        ])->save();
+
+        return $order;
     }
 
     private function redeliver(User $actor, Order $order, ?string $date, ?Courier $courier, ?string $note): Order

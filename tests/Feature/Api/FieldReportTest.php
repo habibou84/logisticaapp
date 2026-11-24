@@ -66,6 +66,95 @@ class FieldReportTest extends TestCase
         Notification::assertSentTo($this->dispatcher, OrderAlert::class, fn (OrderAlert $n) => ! isset($n->toArray($this->dispatcher)['field']));
     }
 
+    /** Échec avec ce motif ; renvoie la remontée vue par le dispatch */
+    private function failWith(string $code, ?Order $order = null): array
+    {
+        $order ??= $this->order;
+        Sanctum::actingAs($this->courierB->user);
+        $this->postJson("/api/v1/orders/{$order->id}/status", ['status' => 'delivery_failed', 'incident_reason_id' => IncidentReason::where('code', $code)->value('id')])->assertOk();
+        Sanctum::actingAs($this->dispatcher);
+
+        return collect($this->getJson('/api/v1/field-reports')->json('data'))->firstWhere('order.id', $order->id);
+    }
+
+    public function test_what_to_do_depends_on_the_failure_reason(): void
+    {
+        // Refusé : le retour d'abord ; « Relivrer » annule le retour (le client a changé d'avis)
+        $refused = $this->failWith('refused');
+        $this->assertSame(['return', 'call', 'reopen', 'open'], $refused['suggestions']);
+        $this->assertSame('refused', $refused['incident_code']);
+        $this->assertStringEndsWith('/suivi/'.$this->order->tracking_code, $refused['order']['tracking_url']);
+
+        $this->postJson("/api/v1/field-reports/{$refused['id']}/act", ['action' => 'reopen'])->assertUnprocessable();
+        $this->postJson("/api/v1/field-reports/{$refused['id']}/act", ['action' => 'reopen', 'date' => today()->addDay()->toDateString()])
+            ->assertOk()
+            ->assertJsonPath('data.suggestions', [])
+            ->assertJsonPath('data.review.handled_by', $this->dispatcher->name);
+        $order = $this->order->fresh();
+        $this->assertSame('rescheduled', $order->status->value);
+        $this->assertFalse($order->return_requested);
+        $this->assertNull($order->return_cause);
+        // Remontée traitée : plus d'action
+        $this->postJson("/api/v1/field-reports/{$refused['id']}/act", ['action' => 'return'])->assertUnprocessable()->assertJsonPath('message', 'Cette remontée est déjà traitée.');
+    }
+
+    private function outForDelivery(): Order
+    {
+        $order = $this->createOrder();
+        Sanctum::actingAs($this->dispatcher);
+        $this->postJson("/api/v1/orders/{$order->id}/assign", ['type' => 'pickup', 'courier_id' => $this->courierB->id]);
+        $this->postJson("/api/v1/orders/{$order->id}/assign", ['type' => 'delivery', 'courier_id' => $this->courierB->id]);
+        Sanctum::actingAs($this->courierB->user);
+        $this->postJson("/api/v1/orders/{$order->id}/status", ['status' => 'picked_up']);
+        $this->postJson("/api/v1/orders/{$order->id}/status", ['status' => 'out_for_delivery']);
+
+        return $order;
+    }
+
+    public function test_actions_are_done_and_mark_the_report_as_handled(): void
+    {
+        Notification::fake();
+        // Adresse introuvable : la position est demandée au client d'abord ; reprogrammer
+        $report = $this->failWith('wrong_address');
+        $this->assertSame(['location', 'call', 'redeliver', 'open'], $report['suggestions']);
+        $this->postJson("/api/v1/field-reports/{$report['id']}/act", ['action' => 'redeliver', 'date' => today()->addDay()->toDateString()])->assertOk();
+        $this->assertStringStartsWith('Relivraison prévue', $this->getJson('/api/v1/field-reports?state=handled')->json('data.0.review.comment'));
+        $this->assertSame('rescheduled', $this->order->fresh()->status->value);
+
+        // Injoignable : retour organisé depuis la remontée
+        $unreachable = $this->outForDelivery();
+        $report = $this->failWith('unreachable', $unreachable);
+        $this->assertSame(['redeliver', 'whatsapp', 'ask_merchant', 'return', 'open'], $report['suggestions']);
+        $this->postJson("/api/v1/field-reports/{$report['id']}/act", ['action' => 'return'])
+            ->assertOk()->assertJsonPath('data.review.comment', 'Retour organisé');
+        $this->assertSame('company', $unreachable->fresh()->return_cause->value);
+
+        // Absent : décision demandée au client (note qu'il voit, et il est prévenu)
+        $absent = $this->outForDelivery();
+        $report = $this->failWith('absent', $absent);
+        $this->assertSame(['redeliver', 'call', 'ask_merchant', 'open'], $report['suggestions']);
+        $this->postJson("/api/v1/field-reports/{$report['id']}/act", ['action' => 'ask_merchant'])
+            ->assertOk()->assertJsonPath('data.review.comment', 'Décision demandée au client');
+        Notification::assertSentTo($this->merchantUser, OrderAlert::class, fn (OrderAlert $n) => $n->kind === 'note');
+        $this->assertSame([], $this->getJson('/api/v1/field-reports')->json('data'));
+
+        // Action qui ne correspond pas au motif : refusée
+        $other = $this->outForDelivery();
+        $report = $this->failWith('wrong_address', $other);
+        $this->postJson("/api/v1/field-reports/{$report['id']}/act", ['action' => 'return'])->assertUnprocessable();
+    }
+
+    public function test_exhausted_attempts_offer_the_return_or_one_more_attempt(): void
+    {
+        $this->order->forceFill(['max_attempts' => 1])->save();
+        $report = $this->failWith('absent');
+        $this->assertSame(['return', 'reopen', 'call', 'open'], $report['suggestions']);
+
+        $this->postJson("/api/v1/field-reports/{$report['id']}/act", ['action' => 'reopen', 'date' => today()->addDays(2)->toDateString()])->assertOk();
+        $order = $this->order->fresh();
+        $this->assertSame([2, false, 'rescheduled'], [$order->max_attempts, $order->return_requested, $order->status->value]);
+    }
+
     public function test_reports_are_listed_filtered_and_handled(): void
     {
         Sanctum::actingAs($this->courierB->user);
