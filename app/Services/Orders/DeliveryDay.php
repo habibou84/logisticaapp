@@ -182,7 +182,7 @@ class DeliveryDay
     /**
      * Courses du jour pas encore parties en livraison, hors retours.
      */
-    private function todaysOpenOrders(Company $company): Builder
+    public function todaysOpenOrders(Company $company): Builder
     {
         $today = $this->today($company)->toDateString();
 

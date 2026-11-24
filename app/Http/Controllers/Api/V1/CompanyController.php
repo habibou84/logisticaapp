@@ -37,6 +37,10 @@ class CompanyController extends Controller
     public function update(UpdateCompanyRequest $request, Company $company): CompanyResource
     {
         $data = $request->validated();
+        // Critères du conseil de la journée : les champs envoyés complètent ceux déjà réglés
+        if (isset($data['day_advice'])) {
+            $data['day_advice'] = [...$company->dayAdvice(), ...$data['day_advice']];
+        }
         if (array_key_exists('invoice_payment_methods', $data)) {
             $data['invoice_payment_methods'] = InvoicePayments::clean($data['invoice_payment_methods']);
         }

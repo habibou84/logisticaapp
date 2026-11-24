@@ -55,6 +55,33 @@
             </div>
             <p class="text-xs text-gray-500 mt-1">Un jour laissé vide suit l'heure limite commune.</p>
           </details>
+          <!-- Conseil du poste de pilotage : rouvrir ou fermer la journée selon les livreurs libres -->
+          <div v-if="form.day_advice" class="mt-3 text-sm">
+            <label class="flex items-start gap-2">
+              <input v-model="form.day_advice.enabled" type="checkbox" class="mt-1">
+              <span>
+                <span class="font-medium">Conseiller d'ouvrir ou de fermer la journée</span>
+                <span class="block text-xs text-gray-500">Sur le poste de pilotage : rouvrir quand des livreurs libres peuvent encore livrer, fermer quand trop de courses du jour attendent un livreur. Rien ne se fait sans votre clic.</span>
+              </span>
+            </label>
+            <div v-if="form.day_advice.enabled" class="grid gap-3 mt-3 sm:grid-cols-3">
+              <div>
+                <label class="label" for="advice-couriers">Livreurs libres au minimum</label>
+                <input id="advice-couriers" v-model.number="form.day_advice.min_couriers" type="number" min="1" max="50" class="input w-24">
+                <p class="text-xs text-gray-500 mt-1">pour conseiller de rouvrir</p>
+              </div>
+              <div>
+                <label class="label" for="advice-seen">Vu dans l'application depuis</label>
+                <div class="flex items-center gap-2"><input id="advice-seen" v-model.number="form.day_advice.seen_minutes" type="number" min="5" max="240" class="input w-24"> <span>min</span></div>
+                <p class="text-xs text-gray-500 mt-1">au plus, pour compter un livreur comme libre</p>
+              </div>
+              <div>
+                <label class="label" for="advice-margin">Marge avant la fermeture du dépôt</label>
+                <div class="flex items-center gap-2"><input id="advice-margin" v-model.number="form.day_advice.margin_minutes" type="number" min="30" max="300" class="input w-24"> <span>min</span></div>
+                <p class="text-xs text-gray-500 mt-1">on rouvre jusqu'à cette heure-là au plus tard</p>
+              </div>
+            </div>
+          </div>
         </div>
         <div>
           <label class="label" for="attempts">Nombre maximal de tentatives de livraison</label>
@@ -394,7 +421,7 @@ import { ACCEPT_MODES, AUTO_MODES, CUSTODY_MODES, DELIVERY_MODES, RESCHEDULE_NO_
 const { form, dirty, saving, error, save, reset } = useCompanySettings([
   'validation_mode', 'daily_cutoff_time', 'default_max_attempts', 'require_delivery_code', 'offline_courier_actions', 'pickup_mission_custody', 'depot_closes_at', 'auto_pickup',
   'mission_acceptance', 'unreachable_minutes', 'late_pickup_alert_minutes', 'courier_available_alert',
-  'auto_delivery', 'auto_delivery_max_cod', 'same_courier_delivery', 'cutoff_by_day', 'internal_delays',
+  'auto_delivery', 'auto_delivery_max_cod', 'same_courier_delivery', 'cutoff_by_day', 'day_advice', 'internal_delays',
   'activity_options', 'label_settings', 'photo_settings', 'delivery_day_rules', 'dashboard_settings',
   'reschedule_evening', 'reschedule_evening_time', 'reschedule_no_answer', 'shipment_settings',
 ])

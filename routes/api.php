@@ -539,6 +539,8 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::get('delivery-day', [DeliveryDayController::class, 'show'])->name('delivery-day.show');
         Route::post('delivery-day/close', [DeliveryDayController::class, 'close'])->name('delivery-day.close');
         Route::post('delivery-day/reopen', [DeliveryDayController::class, 'reopen'])->name('delivery-day.reopen');
+        Route::get('delivery-day/advice', [DeliveryDayController::class, 'advice'])->name('delivery-day.advice');
+        Route::post('delivery-day/advice/dismiss', [DeliveryDayController::class, 'dismissAdvice'])->name('delivery-day.advice.dismiss');
 
         // Courses
         Route::get('orders/import/template', [OrderImportController::class, 'template'])->name('orders.import.template');

@@ -18,6 +18,9 @@
       </div>
     </div>
 
+    <!-- Conseil : rouvrir ou fermer la journée selon les livreurs libres -->
+    <DayAdvice :advice="advice" @changed="refresh" />
+
     <!-- 1. État du jour : une seule ligne -->
     <section class="card flex flex-wrap items-center gap-x-7 gap-y-4 px-5 py-4" aria-label="État du jour">
       <div v-if="deliveryDay?.rules" class="min-w-[11rem]">
@@ -197,6 +200,7 @@
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import http from '../bootstrap/axios'
+import DayAdvice from './DayAdvice.vue'
 import DayPoint from './DayPoint.vue'
 import StatusBadge from './StatusBadge.vue'
 import GuideVideosCard from './guide/GuideVideosCard.vue'
@@ -235,6 +239,7 @@ const todo = ref(null)
 const report = ref(null)
 const couriers = ref(null)
 const deliveryDay = ref(null)
+const advice = ref(null)
 const returns = ref(null)
 const inbox = ref(0)
 const contracts = ref(null)
@@ -369,7 +374,7 @@ async function refresh() {
   version.value++
   const params = scope()
   const get = (url, p = {}) => http.get(url, { params: { ...params, ...p } }).then((r) => r.data).catch(() => null)
-  const [c, t, r, a, d, ret, box, last] = await Promise.all([
+  const [c, t, r, a, d, ret, box, last, adv] = await Promise.all([
     get('/orders/counts', { day: todayIso }),
     get('/reports/todo'),
     get('/reports/day', { day: todayIso }),
@@ -378,6 +383,7 @@ async function refresh() {
     http.get('/return-slips/count').then((x) => x.data).catch(() => null),
     http.get('/inbox/summary').then((x) => x.data).catch(() => null),
     get('/orders', { per_page: 5 }),
+    http.get('/delivery-day/advice').then((x) => x.data).catch(() => null),
   ])
   counts.value = c?.data ?? counts.value
   todo.value = t?.data ?? todo.value
@@ -387,6 +393,7 @@ async function refresh() {
   returns.value = ret?.data ?? returns.value
   inbox.value = box?.data?.unread ?? inbox.value
   recent.value = last?.data ?? recent.value
+  advice.value = adv?.data ?? null
   updatedAt.value = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }).replace(':', ' h ')
   loadContracts()
 }
