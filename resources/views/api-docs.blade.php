@@ -12,6 +12,8 @@
         <a href="{{ asset('docs/openapi.yaml') }}">spécification OpenAPI</a> dans votre outil (Postman, Insomnia, Swagger).
     </p>
     <redoc spec-url="{{ asset('docs/openapi.yaml') }}" hide-download-button="false"></redoc>
-    <script src="https://cdn.jsdelivr.net/npm/redoc@2.1.5/bundles/redoc.standalone.js" onload="document.getElementById('fallback').remove()"></script>
+    <script src="https://cdn.jsdelivr.net/npm/redoc@2.1.5/bundles/redoc.standalone.js" nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}"></script>
+    {{-- Pas de onload= en ligne (refusé par la politique de contenu) : le message d'attente part une fois Redoc chargé --}}
+    <script nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}">if (window.Redoc) document.getElementById('fallback').remove();</script>
 </body>
 </html>

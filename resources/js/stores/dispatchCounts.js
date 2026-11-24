@@ -3,6 +3,9 @@ import http from '../bootstrap/axios'
 
 // Files du dispatch : courses à valider, à ramasser, à livrer, et celles qui attendent
 // un livreur au-delà du délai de l'entreprise (badge du menu « Courses »)
+let inFlight = null
+let again = null
+
 export const useDispatchCountStore = defineStore('dispatchCounts', {
   state: () => ({
     counts: {
@@ -18,11 +21,21 @@ export const useDispatchCountStore = defineStore('dispatchCounts', {
     dayCounts: null,
   }),
   actions: {
-    async fetchCounts() {
-      const data = (await http.get('/orders/counts', { params: this.day ? { day: this.day } : {} })).data.data
-      this.counts = data
-      this.dayCounts = data.day || null
-      this.loaded = true
+    // Appels regroupés : pendant un chargement, les demandes suivantes attendent sa fin et n'en relancent
+    // qu'un seul (le dernier état), au lieu d'empiler des requêtes /orders/counts identiques.
+    fetchCounts() {
+      if (inFlight) {
+        again ??= inFlight.catch(() => {}).then(() => { again = null; return this.fetchCounts() })
+        return again
+      }
+      inFlight = http.get('/orders/counts', { params: this.day ? { day: this.day } : {} })
+        .then(({ data }) => {
+          this.counts = data.data
+          this.dayCounts = data.data.day || null
+          this.loaded = true
+        })
+        .finally(() => { inFlight = null })
+      return inFlight
     },
     // Alerte reçue en temps réel : les listes ouvertes se rafraîchissent
     received() {

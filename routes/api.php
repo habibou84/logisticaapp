@@ -3,6 +3,7 @@
 use App\Enums\ApiScope;
 use App\Http\Controllers\Api\Connect\ConnectController;
 use App\Http\Controllers\Api\Connect\PublicConnectController;
+use App\Http\Controllers\Api\CspReportController;
 use App\Http\Controllers\Api\PublicV1\PublicAccountController;
 use App\Http\Controllers\Api\PublicV1\PublicApiController;
 use App\Http\Controllers\Api\V1\ApiKeyController;
@@ -817,3 +818,6 @@ Route::prefix('v1')->name('v1.')->group(function () {
         });
     });
 });
+
+// Rapports des navigateurs sur la politique de contenu (CSP, mode « signalement seul ») : sans compte, limités
+Route::post('csp-report', CspReportController::class)->middleware('throttle:30,1')->name('csp-report');

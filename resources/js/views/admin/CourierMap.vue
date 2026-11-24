@@ -121,7 +121,7 @@ import 'leaflet/dist/leaflet.css'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import { useEcho } from '../../bootstrap/echo'
 import { useAuthStore } from '../../stores/auth'
-import { orderChanges } from '../../composables/useRealtime'
+import { orderListChanges } from '../../composables/useRealtime'
 import { useToastStore } from '../../stores/toasts'
 import { today, waitDuration } from '../../utils/format'
 
@@ -434,7 +434,7 @@ function onLocation(payload) {
 }
 
 watch([couriers, pickups, showOffDuty, showPickups, now], render, { deep: true })
-watch(orderChanges, load)
+watch(orderListChanges, load)
 
 const channel = auth.user?.company_id ? `company.${auth.user.company_id}` : null
 let refreshTimer

@@ -253,7 +253,7 @@ import ForfaitCard from '../../components/client/ForfaitCard.vue'
 import MadCouriers from '../../components/client/MadCouriers.vue'
 import { useClientSpaceStore } from '../../stores/clientSpace'
 import { useAuthStore } from '../../stores/auth'
-import { orderChanges } from '../../composables/useRealtime'
+import { orderListChanges } from '../../composables/useRealtime'
 import { date, localPhone, money, today as todayDate } from '../../utils/format'
 import { ORDER_FILTERS, filterParams } from '../../utils/orderFilters'
 import { periodFromQuery, periodQuery } from '../../utils/periods'
@@ -431,7 +431,7 @@ async function load() {
   }
 }
 
-watch(orderChanges, () => {
+watch(orderListChanges, () => {
   load()
   loadToReschedule()
   loadBalance()

@@ -27,6 +27,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
 class Order extends Model
 {
@@ -467,11 +468,17 @@ class Order extends Model
      */
     public function scopeForPeriod(Builder $query, ?string $from, ?string $to, string $basis = 'created'): Builder
     {
-        $column = $basis === 'delivery' ? self::DELIVERY_DAY_SQL : 'DATE(orders.created_at)';
+        if ($basis !== 'delivery') {
+            // Bornes sur created_at lui-même (et non DATE(created_at)) : l'index (company_id, created_at) sert
+            return $query
+                ->when($from, fn ($q) => $q->where('orders.created_at', '>=', Carbon::parse($from)->startOfDay()))
+                ->when($to, fn ($q) => $q->where('orders.created_at', '<', Carbon::parse($to)->addDay()->startOfDay()));
+        }
 
+        // Comparaison sur l'expression exacte : index fonctionnel orders_company_delivery_day_index (PostgreSQL)
         return $query
-            ->when($from, fn ($q) => $q->whereRaw("{$column} >= ?", [$from]))
-            ->when($to, fn ($q) => $q->whereRaw("{$column} <= ?", [$to]));
+            ->when($from, fn ($q) => $q->whereRaw(self::DELIVERY_DAY_SQL.' >= ?', [$from]))
+            ->when($to, fn ($q) => $q->whereRaw(self::DELIVERY_DAY_SQL.' <= ?', [$to]));
     }
 
     /**

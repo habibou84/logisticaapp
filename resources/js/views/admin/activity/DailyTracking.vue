@@ -305,7 +305,7 @@ import { computed, defineComponent, h, nextTick, onBeforeUnmount, onMounted, rea
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../../bootstrap/axios'
 import { useEcho } from '../../../bootstrap/echo'
-import { orderChanges } from '../../../composables/useRealtime'
+import { orderListChanges } from '../../../composables/useRealtime'
 import Modal from '../../../components/Modal.vue'
 import { downloadCsv } from '../../../components/stats/chart'
 import { useAuthStore } from '../../../stores/auth'
@@ -557,7 +557,7 @@ function onLocation(payload) {
   if (!c || !isToday.value) return
   Object.assign(c, { lat: payload.lat, lng: payload.lng, last_location_at: payload.last_location_at, is_available: payload.is_available })
 }
-watch(orderChanges, refreshSoon)
+watch(orderListChanges, refreshSoon)
 const channel = auth.user?.company_id ? `company.${auth.user.company_id}` : null
 
 onMounted(async () => {

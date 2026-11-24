@@ -179,7 +179,7 @@ import GuideVideosCard from '../../components/guide/GuideVideosCard.vue'
 import StatusBadge from '../../components/StatusBadge.vue'
 import { useAuthStore } from '../../stores/auth'
 import { useDispatchCountStore } from '../../stores/dispatchCounts'
-import { orderChanges } from '../../composables/useRealtime'
+import { orderListChanges } from '../../composables/useRealtime'
 import { date, money, today, waitDuration } from '../../utils/format'
 import { myActivities } from '../../utils/activities'
 
@@ -278,6 +278,6 @@ function refresh() {
   loadContracts()
 }
 
-watch(orderChanges, refresh)
+watch(orderListChanges, refresh)
 onMounted(refresh)
 </script>

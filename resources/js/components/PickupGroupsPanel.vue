@@ -73,7 +73,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue'
 import http, { apiErrorMessage } from '../bootstrap/axios'
 import { useAuthStore } from '../stores/auth'
 import { useToastStore } from '../stores/toasts'
-import { orderChanges } from '../composables/useRealtime'
+import { orderListChanges } from '../composables/useRealtime'
 import { date, dateTime, money } from '../utils/format'
 
 /**
@@ -151,7 +151,7 @@ async function assign(g) {
 }
 
 // Temps réel : nouveaux colis validés, assignations faites ailleurs
-watch(orderChanges, load)
+watch(orderListChanges, load)
 watch(() => props.day, load)
 
 onMounted(load)

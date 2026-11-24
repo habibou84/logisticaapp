@@ -54,6 +54,27 @@ class OrderListDayTest extends TestCase
         Sanctum::actingAs($this->dispatcher);
     }
 
+    public function test_creation_period_includes_whole_days(): void
+    {
+        $edge = function (string $at): Order {
+            $order = $this->createOrder();
+            $order->forceFill(['created_at' => $at])->saveQuietly();
+
+            return $order;
+        };
+        $first = $edge('2026-11-20 00:00:00');
+        $last = $edge('2026-11-21 23:59:59');
+        $before = $edge('2026-11-19 23:59:59');
+        $after = $edge('2026-11-22 00:00:00');
+
+        $ids = Order::query()->forPeriod('2026-11-20', '2026-11-21')->pluck('id');
+
+        $this->assertTrue($ids->contains($first->id) && $ids->contains($last->id));
+        $this->assertFalse($ids->contains($before->id) || $ids->contains($after->id));
+        $this->assertTrue(Order::query()->forPeriod('2026-11-22', null)->pluck('id')->contains($after->id));
+        $this->assertFalse(Order::query()->forPeriod(null, '2026-11-19')->pluck('id')->contains($first->id));
+    }
+
     /** @return list<string> */
     private function names(array $params): array
     {

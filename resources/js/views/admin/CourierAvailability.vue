@@ -115,7 +115,7 @@ import { useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import Modal from '../../components/Modal.vue'
 import StatCard from '../../components/StatCard.vue'
-import { orderChanges } from '../../composables/useRealtime'
+import { orderListChanges } from '../../composables/useRealtime'
 import { useToastStore } from '../../stores/toasts'
 import { date, telLink } from '../../utils/format'
 
@@ -224,7 +224,7 @@ watch(mission, (m) => { if (!m && route.query.livreur) router.replace({ query: {
 
 // Changements de courses en direct (missions terminées, colis validés)
 let timer
-watch(orderChanges, () => {
+watch(orderListChanges, () => {
   clearTimeout(timer)
   timer = setTimeout(load, 800)
 })

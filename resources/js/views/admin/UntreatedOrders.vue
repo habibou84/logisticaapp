@@ -145,7 +145,7 @@ import OrderDecision from '../../components/OrderDecision.vue'
 import { useAuthStore } from '../../stores/auth'
 import { useToastStore } from '../../stores/toasts'
 import { useDispatchCountStore } from '../../stores/dispatchCounts'
-import { orderChanges } from '../../composables/useRealtime'
+import { orderListChanges } from '../../composables/useRealtime'
 import { date, money } from '../../utils/format'
 import { madSuffix } from '../../utils/mad'
 import { activityBadge, activityShort, myActivities } from '../../utils/activities'
@@ -356,7 +356,7 @@ async function returnMany(list = returnable.value) {
   })
 }
 
-watch(orderChanges, refresh)
+watch(orderListChanges, refresh)
 // Autre onglet de « Courses en retard » : autre file
 watch(() => props.stage, () => {
   selectedGroup.value = null

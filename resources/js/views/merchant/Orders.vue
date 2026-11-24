@@ -104,7 +104,7 @@ import OrderCard from '../../components/mobile/OrderCard.vue'
 import EmptyState from '../../components/mobile/EmptyState.vue'
 import SkeletonList from '../../components/mobile/SkeletonList.vue'
 import StatusIcon from '../../components/mobile/StatusIcon.vue'
-import { orderChanges } from '../../composables/useRealtime'
+import { orderListChanges } from '../../composables/useRealtime'
 import { useAuthStore } from '../../stores/auth'
 import { telLink, today } from '../../utils/format'
 import { needsDecision } from '../../utils/merchantStatus'
@@ -250,7 +250,7 @@ function debouncedLoad() {
   timer = setTimeout(() => load(), 300)
 }
 
-watch(orderChanges, () => {
+watch(orderListChanges, () => {
   load()
   loadCounts()
 })

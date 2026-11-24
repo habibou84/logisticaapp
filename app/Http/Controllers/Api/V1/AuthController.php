@@ -33,8 +33,12 @@ class AuthController extends Controller
             ? User::query()->where('email', mb_strtolower($login))
             : User::query()->where('phone', PhoneNumber::normalize($login)))
             ->with('company')
-            ->get()
-            ->filter(fn (User $u) => Hash::check($request->string('password'), $u->password));
+            ->get();
+        // Même temps de réponse qu'un numéro soit ou non inscrit (pas de devinette des comptes par le délai)
+        if ($matches->isEmpty()) {
+            Hash::check($request->string('password'), self::dummyHash());
+        }
+        $matches = $matches->filter(fn (User $u) => Hash::check($request->string('password'), $u->password));
 
         // Chaque page de connexion n'ouvre que les comptes de son espace (client, livreur, équipe)
         $space = $request->input('space');
@@ -114,5 +118,12 @@ class AuthController extends Controller
         }
 
         return response()->json(['message' => 'Déconnecté.']);
+    }
+
+    private static function dummyHash(): string
+    {
+        static $hash = null;
+
+        return $hash ??= Hash::make('compte-inexistant');
     }
 }

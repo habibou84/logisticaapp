@@ -1,4 +1,4 @@
-import { onBeforeUnmount, ref } from 'vue'
+import { onBeforeUnmount, ref, watch } from 'vue'
 import { useEcho } from '../bootstrap/echo'
 import { useAuthStore } from '../stores/auth'
 import { useNotificationStore } from '../stores/notifications'
@@ -14,6 +14,35 @@ import router from '../router'
 // les écrans le surveillent pour se rafraîchir.
 export const orderChanges = ref(0)
 export const lastOrderChange = ref(null)
+
+// Même signal, regroupé pour les écrans qui rechargent une liste, des compteurs ou des statistiques : une rafale
+// de changements (dispatch en série, mission terminée…) ne donne qu'un rechargement. Chaque écran attend que les
+// changements se calment (LIST_QUIET_MS), sans dépasser LIST_MAX_WAIT_MS, avec un petit décalage aléatoire pour
+// que tous les postes connectés ne rechargent pas à la même milliseconde. Les fiches d'une course
+// (lastOrderChange) gardent orderChanges, immédiat.
+export const orderListChanges = ref(0)
+const LIST_QUIET_MS = 2000
+const LIST_MAX_WAIT_MS = 8000
+const LIST_JITTER_MS = 1500
+let listTimer = null
+let listFirstChangeAt = null
+
+function flushListChanges() {
+  clearTimeout(listTimer)
+  listTimer = null
+  listFirstChangeAt = null
+  orderListChanges.value++
+}
+
+export function scheduleListChange() {
+  const now = Date.now()
+  listFirstChangeAt ??= now
+  clearTimeout(listTimer)
+  const wait = Math.min(LIST_QUIET_MS + Math.random() * LIST_JITTER_MS, Math.max(0, listFirstChangeAt + LIST_MAX_WAIT_MS - now))
+  listTimer = setTimeout(flushListChanges, wait)
+}
+
+watch(orderChanges, scheduleListChange)
 
 // Vibration d'une nouvelle mission (aussi dans le service worker) : trois longues
 export const MISSION_VIBRATION = [500, 200, 500, 200, 500]

@@ -65,6 +65,15 @@ return [
             'replace_placeholders' => true,
         ],
 
+        // Rapports de la politique de contenu (CSP) envoyés par les navigateurs
+        'csp' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/csp.log'),
+            'level' => 'warning',
+            'days' => 14,
+            'replace_placeholders' => true,
+        ],
+
         'daily' => [
             'driver' => 'daily',
             'path' => storage_path('logs/laravel.log'),

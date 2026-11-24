@@ -100,7 +100,7 @@ defineProps({ embedded: { type: Boolean, default: false } })
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import StatCard from '../../components/StatCard.vue'
-import { orderChanges } from '../../composables/useRealtime'
+import { orderListChanges } from '../../composables/useRealtime'
 import { useAuthStore } from '../../stores/auth'
 import { useHeldParcelStore } from '../../stores/heldParcels'
 import { useToastStore } from '../../stores/toasts'
@@ -206,7 +206,7 @@ async function receive(c) {
 
 // Changements de courses et alertes en direct
 let timer
-watch([orderChanges, () => store.version], () => {
+watch([orderListChanges, () => store.version], () => {
   clearTimeout(timer)
   timer = setTimeout(() => {
     load()

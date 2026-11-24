@@ -7,7 +7,9 @@ use App\Models\OrderAssignment;
 use App\Services\Accounts\PhoneVerifier;
 use App\Services\Webhooks\UrlGuard;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Log;
 use Laravel\Sanctum\Sanctum;
+use Psr\Log\LoggerInterface;
 use Tests\Concerns\BuildsDeliveryWorld;
 use Tests\TestCase;
 
@@ -99,5 +101,35 @@ class SecurityHardeningTest extends TestCase
     {
         $this->getJson('/api/v1/branding')->assertHeader('X-Frame-Options', 'SAMEORIGIN')
             ->assertHeader('X-Content-Type-Options', 'nosniff')->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    }
+
+    public function test_content_security_policy_is_reported_not_enforced(): void
+    {
+        $policy = $this->getJson('/api/v1/branding')->assertHeaderMissing('Content-Security-Policy')
+            ->headers->get('Content-Security-Policy-Report-Only');
+
+        $this->assertMatchesRegularExpression("/script-src 'self' 'nonce-[A-Za-z0-9]+'/", $policy);
+        $this->assertStringContainsString("object-src 'none'", $policy);
+        $this->assertStringContainsString('report-uri /api/csp-report', $policy);
+    }
+
+    public function test_csp_reports_are_logged_once_without_query_strings(): void
+    {
+        $channel = \Mockery::spy(LoggerInterface::class);
+        Log::shouldReceive('channel')->with('csp')->andReturn($channel);
+        $report = ['csp-report' => [
+            'document-uri' => 'https://admin.jibiat.com/commandes?telephone=0700000000',
+            'effective-directive' => 'script-src-elem',
+            'blocked-uri' => 'https://pirate.example/x.js?vol=1',
+        ]];
+
+        foreach (range(1, 3) as $i) {
+            $this->call('POST', '/api/csp-report', [], [], [], ['CONTENT_TYPE' => 'application/csp-report'], json_encode($report))->assertNoContent();
+        }
+        $this->call('POST', '/api/csp-report', [], [], [], ['CONTENT_TYPE' => 'application/csp-report'], 'pas du json')->assertNoContent();
+
+        // Une seule ligne pour la même règle et la même page, sans les paramètres (données personnelles)
+        $channel->shouldHaveReceived('warning')->once()->with('Contenu hors politique', \Mockery::on(fn (array $e) => $e['page'] === 'https://admin.jibiat.com/commandes'
+            && $e['blocked'] === 'https://pirate.example/x.js' && $e['directive'] === 'script-src-elem'));
     }
 }

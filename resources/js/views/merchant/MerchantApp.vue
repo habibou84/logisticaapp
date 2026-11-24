@@ -8,7 +8,7 @@ import MerchantShell from '../../components/mobile/MerchantShell.vue'
 import { BoxIcon, FileIcon, HomeIcon, UserIcon, WalletIcon } from '../../components/mobile/icons'
 import { loadBranding, spaceColor } from '../../composables/useBranding'
 import { cachedGet } from '../../composables/useCachedApi'
-import { orderChanges } from '../../composables/useRealtime'
+import { orderListChanges } from '../../composables/useRealtime'
 import { useAuthStore } from '../../stores/auth'
 import { useClientSpaceStore } from '../../stores/clientSpace'
 
@@ -76,7 +76,7 @@ async function loadToDecide() {
     // Hors ligne : la cloche garde son dernier nombre
   }
 }
-watch(orderChanges, loadToDecide)
+watch(orderListChanges, loadToDecide)
 onMounted(loadToDecide)
 
 // Couleur et logo choisis par l'entreprise (Paramètres › Apparence)

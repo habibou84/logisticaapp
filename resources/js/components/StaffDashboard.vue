@@ -207,7 +207,7 @@ import GuideVideosCard from './guide/GuideVideosCard.vue'
 import { useAuthStore } from '../stores/auth'
 import { useFieldReportStore } from '../stores/fieldReports'
 import { useHeldParcelStore } from '../stores/heldParcels'
-import { orderChanges } from '../composables/useRealtime'
+import { orderListChanges } from '../composables/useRealtime'
 import { money, waitDuration } from '../utils/format'
 import { myActivities } from '../utils/activities'
 
@@ -400,7 +400,7 @@ async function refresh() {
 
 // Rafraîchi quand une course change, et chaque minute quand l'onglet est visible
 let timer
-watch(orderChanges, refresh)
+watch(orderListChanges, refresh)
 onMounted(() => {
   refresh()
   timer = setInterval(() => document.visibilityState === 'visible' && refresh(), 60000)
