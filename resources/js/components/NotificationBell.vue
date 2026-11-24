@@ -44,9 +44,10 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useNotificationStore } from '../stores/notifications'
+import { useToastStore } from '../stores/toasts'
 import { useAuthStore } from '../stores/auth'
 import { dateTime } from '../utils/format'
 
@@ -55,7 +56,15 @@ const auth = useAuthStore()
 const router = useRouter()
 const open = ref(false)
 
-onMounted(() => { if (!store.loaded) store.fetch().catch(() => {}) })
+const toasts = useToastStore()
+
+onMounted(() => {
+  toasts.bellMounted = true
+  if (!store.loaded) store.fetch().catch(() => {})
+})
+onBeforeUnmount(() => { toasts.bellMounted = false })
+// « + N autres alertes » : ouvre la cloche
+watch(() => toasts.bellOpen, () => { open.value = true })
 
 function toggle() { open.value = !open.value }
 
