@@ -156,7 +156,7 @@ class UserController extends Controller
             return $user;
         });
 
-        return UserResource::make($user->load(['roles', 'permissions', 'company']))
+        return UserResource::make($user->load(['roles', 'permissions', 'company', 'courier']))
             ->response()
             ->setStatusCode(201);
     }

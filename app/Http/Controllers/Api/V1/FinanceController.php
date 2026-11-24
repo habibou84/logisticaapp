@@ -237,8 +237,48 @@ class FinanceController extends Controller
             'notes' => ['nullable', 'string', 'max:1000'],
         ], [], ['amount_received' => 'montant reçu', 'courier_id' => 'livreur']);
 
-        $courier = Courier::findOrFail($data['courier_id']);
+        $remittance = $this->recordRemittance($request->user(), Courier::findOrFail($data['courier_id']), $data['amount_received'],
+            $data['collection_ids'] ?? null, $data['returned_order_ids'] ?? [], $data['notes'] ?? null);
 
+        return response()->json(['data' => $this->remittanceData($remittance)], 201);
+    }
+
+    /**
+     * Versements de plusieurs livreurs validés en une fois : chacun verse tout ce qu'il doit (toutes dates),
+     * reçu au montant attendu. Les colis restent notés chez le livreur. Un livreur avec une course « En chemin »
+     * ou sans rien à verser est laissé de côté, avec la raison.
+     */
+    public function storeRemittanceBatch(Request $request): JsonResponse
+    {
+        $this->authorizeStaff($request, manage: true);
+
+        $data = $request->validate([
+            'courier_ids' => ['required', 'array', 'min:1', 'max:200'],
+            'courier_ids.*' => ['integer', Rule::exists('couriers', 'id')->where('company_id', $request->user()->company_id)],
+        ], [], ['courier_ids' => 'livreurs']);
+
+        $done = [];
+        $errors = [];
+        foreach (Courier::with('user')->whereIn('id', array_unique($data['courier_ids']))->get() as $courier) {
+            try {
+                $done[] = $this->remittanceData($this->recordRemittance($request->user(), $courier, null, null, [], 'Versements validés ensemble'));
+            } catch (BusinessRuleException $e) {
+                $errors[$courier->user?->name ?? "Livreur {$courier->id}"] = $e->getMessage();
+            }
+        }
+
+        return response()->json(['data' => $done, 'errors' => (object) $errors]);
+    }
+
+    /**
+     * Point de caisse d'un livreur : colis rendus, encaissements, avances et frais réglés, reçu envoyé.
+     *
+     * @param  int|null  $amountReceived  null : reçu exactement le montant attendu
+     * @param  list<int>|null  $collectionIds  null : tous les encaissements en main
+     * @param  list<int>  $returnedOrderIds
+     */
+    private function recordRemittance(User $actor, Courier $courier, ?int $amountReceived, ?array $collectionIds, array $returnedOrderIds, ?string $notes): CourierRemittance
+    {
         // Pas de point tant qu'une course est « En chemin » : le livreur doit d'abord la clôturer
         $onTheRoad = $this->custody->onTheRoad($courier);
         if ($onTheRoad->isNotEmpty()) {
@@ -249,15 +289,15 @@ class FinanceController extends Controller
             );
         }
 
-        $remittance = DB::transaction(function () use ($request, $courier, $data) {
-            $received = $this->custody->receive($request->user(), $courier, $data['returned_order_ids'] ?? []);
+        $remittance = DB::transaction(function () use ($actor, $courier, $amountReceived, $collectionIds, $returnedOrderIds, $notes) {
+            $received = $this->custody->receive($actor, $courier, $returnedOrderIds);
 
             $remittance = $this->cashDesk->remit(
-                $request->user(),
+                $actor,
                 $courier,
-                $data['amount_received'],
-                $data['collection_ids'] ?? null,
-                $data['notes'] ?? null,
+                $amountReceived,
+                $collectionIds,
+                $notes,
             );
 
             // Trace des colis rendus et de ceux que le livreur garde encore
@@ -269,7 +309,7 @@ class FinanceController extends Controller
                 ]]);
             }
 
-            $this->journal->record($request->user(), $courier->company_id, 'remittance',
+            $this->journal->record($actor, $courier->company_id, 'remittance',
                 ($courier->user?->name ?? 'Livreur').' · attendu '.Money::format($remittance->amount_expected)
                 .($remittance->difference !== 0 ? ' · écart '.($remittance->difference > 0 ? '+' : '').Money::format($remittance->difference) : ''),
                 ['courier_id' => $courier->id, 'amount' => $remittance->amount_received, 'reference' => $remittance->reference()]);
@@ -280,7 +320,7 @@ class FinanceController extends Controller
         // Reçu envoyé au livreur par WhatsApp
         $this->sendReceipt($remittance->load(['courier.user', 'receiver']));
 
-        return response()->json(['data' => $this->remittanceData($remittance)], 201);
+        return $remittance;
     }
 
     /** Reçu d'un versement : détail de ce qui a été réglé, colis rendus et gardés */

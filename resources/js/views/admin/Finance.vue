@@ -129,6 +129,7 @@
           <button type="button" :class="['rounded-full px-3 py-1 text-xs ring-1', filters.withMoney ? 'bg-slate-900 text-white ring-slate-900' : 'bg-white ring-slate-300']" :aria-pressed="filters.withMoney" @click="filters.withMoney = !filters.withMoney">Avec argent ou colis</button>
           <button type="button" :class="['rounded-full px-3 py-1 text-xs ring-1', filters.watchOnly ? 'bg-orange-600 text-white ring-orange-600' : 'bg-white ring-slate-300']" :aria-pressed="filters.watchOnly" @click="filters.watchOnly = !filters.watchOnly">À surveiller</button>
           <button type="button" class="btn-secondary" @click="exportCash">Exporter</button>
+          <button v-if="canManage && remittable.length > 1" type="button" class="btn-primary" :disabled="batch.busy" @click="remitAll">Recevoir tout ({{ remittable.length }} livreurs)</button>
         </div>
 
         <!-- Ordinateur : tableau -->
@@ -668,6 +669,28 @@ const batchPaySelected = computed(() => batchPay.rows.filter((r) => r.selected))
 const draftPayslips = computed(() => courierPayouts.value.filter((p) => p.status === 'draft'))
 const selectedPayslipsTotal = computed(() => draftPayslips.value.filter((p) => batch.payslips.includes(p.id)).reduce((s, p) => s + p.amount, 0))
 const holding = (payslip) => Math.max(0, (cash.value?.data || []).find((c) => c.courier_id === payslip.courier_id)?.cash_in_hand || 0)
+
+// Livreurs affichés qui ont de l'argent à verser (ou que la caisse doit rembourser)
+const remittable = computed(() => visibleCouriers.value.filter((c) => c.pending_collections || c.advances || c.expenses))
+
+// Tous les versements validés ensemble : chaque livreur verse tout ce qu'il doit, toutes dates
+async function remitAll() {
+  const list = remittable.value
+  const total = list.reduce((n, c) => n + c.cash_in_hand, 0)
+  if (!await confirmDialog(`Valider le versement de ${list.length} livreurs pour ${money(total)} au total ?\n\n`
+    + 'Chacun est noté comme ayant remis exactement ce qu\'il doit, toutes dates confondues. Les colis restent notés chez les livreurs ; '
+    + 'ceux qui ont une course « En chemin » sont laissés de côté. Pour un écart ou des colis rendus, utilisez « Recevoir » livreur par livreur.')) return
+  batch.busy = true
+  try {
+    const { data } = await http.post('/finance/remittances/batch', { courier_ids: list.map((c) => c.courier_id) })
+    reportBatch(data.data.length, data.errors, data.data.length > 1 ? 'versements enregistrés' : 'versement enregistré')
+    await load()
+  } catch (e) {
+    toasts.error(apiErrorMessage(e))
+  } finally {
+    batch.busy = false
+  }
+}
 
 function toggleAllMerchants(on) {
   batch.merchants = on ? payableMerchants.value.map((m) => m.merchant_id) : []

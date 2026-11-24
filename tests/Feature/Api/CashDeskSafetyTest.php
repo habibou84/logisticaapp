@@ -55,6 +55,27 @@ class CashDeskSafetyTest extends TestCase
         return $order->fresh();
     }
 
+    public function test_all_couriers_remittances_can_be_validated_at_once(): void
+    {
+        $this->deliver(10000);
+        $this->deliver(5000);
+
+        // Le livreur A n'a rien à verser : laissé de côté avec la raison
+        $response = $this->postJson('/api/v1/finance/remittances/batch', ['courier_ids' => [$this->courierA->id, $this->courierB->id]])
+            ->assertOk()->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.amount_expected', 15000)->assertJsonPath('data.0.amount_received', 15000)->assertJsonPath('data.0.difference', 0);
+        $this->assertStringContainsString('aucun encaissement', $response->json('errors')[$this->courierA->user->name]);
+
+        // Tout est versé, sans manque retenu ; reçu envoyé au livreur
+        $this->assertSame(0, CashCollection::where('courier_id', $this->courierB->id)->whereNull('remittance_id')->count());
+        $this->assertSame(0, CourierEarning::where('courier_id', $this->courierB->id)->where('amount', '<', 0)->count());
+        $this->assertSame(1, OutboundMessage::where('template_name', 'versement_recu')->count());
+
+        // Réservé à qui gère la caisse
+        Sanctum::actingAs($this->dispatcher);
+        $this->postJson('/api/v1/finance/remittances/batch', ['courier_ids' => [$this->courierB->id]])->assertForbidden();
+    }
+
     public function test_remittance_sends_a_receipt_and_can_be_cancelled_the_same_day(): void
     {
         $this->deliver(10000);

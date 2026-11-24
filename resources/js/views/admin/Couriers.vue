@@ -7,7 +7,7 @@
       </div>
       <div class="flex flex-wrap gap-2">
         <RouterLink v-if="auth.can('ratings.manage')" to="/admin/reglages/notation" class="btn-secondary">⭐ Réglages des notes</RouterLink>
-        <RouterLink v-if="auth.can('users.manage')" to="/admin/utilisateurs?onglet=couriers" class="btn-secondary">+ Créer un compte livreur</RouterLink>
+        <button v-if="auth.can('users.manage')" type="button" class="btn-primary" @click="creating = true">+ Nouveau livreur</button>
       </div>
     </div>
 
@@ -173,6 +173,7 @@
       Note sur 5 des {{ ratingWindow }} derniers jours : automatique, clients et équipe. Livrées, réussite, temps de livraison (du ramassage à la livraison, temps habituel) et échecs : sur la période choisie.
     </p>
 
+    <NewCourierModal :open="creating" @close="creating = false" @created="onCreated" />
     <CourierForm :open="!!editing" :courier="editing?.courier" :vehicle="editing?.vehicle" @close="editing = null" @saved="load(meta?.current_page)" />
   </div>
 </template>
@@ -183,6 +184,7 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import CourierForm from '../../components/CourierForm.vue'
 import FieldEventBadge from '../../components/FieldEventBadge.vue'
+import NewCourierModal from '../../components/NewCourierModal.vue'
 import MadBadge from '../../components/MadBadge.vue'
 import Pagination from '../../components/Pagination.vue'
 import { useAuthStore } from '../../stores/auth'
@@ -216,6 +218,7 @@ const zones = ref([])
 const loaded = ref(false)
 const error = ref('')
 const editing = ref(null)
+const creating = ref(false)
 const ratingWindow = ref(90)
 const activities = computed(() => myActivities(auth.user))
 
@@ -287,6 +290,12 @@ function sortBy(key) {
 }
 
 const open = (c) => router.push(`/admin/livreurs/${c.id}`)
+// Nouveau livreur créé : la liste est rechargée, puis son profil (véhicule, zones) s'ouvre
+function onCreated({ courierId }) {
+  creating.value = false
+  load(meta.value?.current_page)
+  if (courierId) edit({ id: courierId })
+}
 async function edit(c) {
   try {
     editing.value = { courier: (await http.get(`/couriers/${c.id}`)).data.data, vehicle: c.vehicle || null }

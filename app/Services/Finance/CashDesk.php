@@ -28,7 +28,7 @@ class CashDesk
      *
      * @param  list<int>|null  $collectionIds
      */
-    public function remit(User $actor, Courier $courier, int $amountReceived, ?array $collectionIds = null, ?string $notes = null): CourierRemittance
+    public function remit(User $actor, Courier $courier, ?int $amountReceived, ?array $collectionIds = null, ?string $notes = null): CourierRemittance
     {
         return DB::transaction(function () use ($actor, $courier, $amountReceived, $collectionIds, $notes) {
             $collections = CashCollection::query()
@@ -52,6 +52,8 @@ class CashDesk
 
             // Négatif : la caisse rembourse au livreur des frais qu'il a avancés
             $expected = $collections->sum('amount_collected') + $advances->sum('amount') - $expenses->sum('amount');
+            // Sans montant (versements validés ensemble) : reçu exactement ce qui est attendu
+            $amountReceived ??= $expected;
 
             $remittance = CourierRemittance::create([
                 'company_id' => $courier->company_id,
