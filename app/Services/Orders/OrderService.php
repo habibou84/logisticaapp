@@ -16,6 +16,7 @@ use App\Models\Product;
 use App\Models\Recipient;
 use App\Models\User;
 use App\Models\Zone;
+use App\Notifications\OrderAlert;
 use App\Services\Assignment\AutoAssigner;
 use App\Services\Departments\Departments;
 use App\Services\Destinations\Destinations;
@@ -27,6 +28,7 @@ use App\Support\PhoneNumber;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 
 /**
  * Création et modification des courses. Le prix est toujours calculé ici,
@@ -358,6 +360,52 @@ class OrderService
             // Une note du client est toujours visible par lui
             'visible_to_merchant' => $actor->merchant_id !== null || $visibleToMerchant,
         ]);
+    }
+
+    /** Le destinataire peut envoyer sa position depuis le lien de suivi tant que le colis n'est pas livré */
+    public static function acceptsRecipientLocation(Order $order): bool
+    {
+        return ! $order->is_shipping && ! $order->status->isFinal();
+    }
+
+    /**
+     * Position GPS envoyée par le destinataire depuis le lien de suivi : enregistrée sur la course et sur sa fiche
+     * du carnet de destinataires (pour ses prochains colis) ; le livreur en mission est prévenu.
+     */
+    public function shareRecipientLocation(Order $order, float $lat, float $lng): Order
+    {
+        if (! self::acceptsRecipientLocation($order)) {
+            throw new BusinessRuleException('Ce colis n\'attend plus de position.', 'status');
+        }
+
+        return DB::transaction(function () use ($order, $lat, $lng) {
+            $order = Order::withoutGlobalScopes()->lockForUpdate()->findOrFail($order->id);
+            $order->fill(['delivery_lat' => round($lat, 7), 'delivery_lng' => round($lng, 7)]);
+            if (! $order->isDirty(['delivery_lat', 'delivery_lng'])) {
+                return $order;
+            }
+            $order->save();
+            if ($order->recipient_id !== null) {
+                Recipient::withoutGlobalScopes()->whereKey($order->recipient_id)
+                    ->update(['lat' => $order->delivery_lat, 'lng' => $order->delivery_lng]);
+            }
+
+            $this->journal->record($order, null, OrderEventType::Edited, [
+                'actor_type' => 'recipient',
+                'note' => 'Position envoyée par le destinataire depuis le lien de suivi.',
+                'lat' => $order->delivery_lat,
+                'lng' => $order->delivery_lng,
+                'meta' => ['source' => 'tracking'],
+            ]);
+
+            // Livreur en mission sur la course : prévenu, il ouvre la carte depuis sa mission
+            $couriers = User::withoutGlobalScopes()->whereIn('id', $order->assignments()->active()->with('courier:id,user_id')->get()->pluck('courier.user_id')->filter())->get();
+            DB::afterCommit(fn () => Notification::send($couriers, new OrderAlert($order, 'recipient_location',
+                "📍 Position du destinataire {$order->tracking_code}",
+                ($order->recipient_name ?: 'Le destinataire').' a envoyé sa position. Ouvrez la mission pour la voir sur la carte.')));
+
+            return $order;
+        });
     }
 
     public function requestReturn(User $actor, Order $order, ?string $note = null): void

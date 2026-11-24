@@ -5,6 +5,7 @@ namespace Tests\Feature\Api;
 use App\Events\OrderChanged;
 use App\Models\IncidentReason;
 use App\Models\Order;
+use App\Models\Recipient;
 use App\Models\User;
 use App\Notifications\OrderAlert;
 use Illuminate\Broadcasting\PrivateChannel;
@@ -168,6 +169,41 @@ class OrderCommunicationTest extends TestCase
             'file' => UploadedFile::fake()->create('virus.exe', 10),
             'type' => 'photo_delivery',
         ])->assertJsonValidationErrors('file');
+    }
+
+    public function test_recipient_shares_location_from_tracking_page(): void
+    {
+        $order = $this->createOrder();
+        $this->outForDelivery($order);
+        $this->app['auth']->forgetGuards();
+        Notification::fake();
+
+        $this->getJson("/api/v1/tracking/{$order->tracking_code}")->assertOk()
+            ->assertJsonPath('data.location_shared', false)->assertJsonPath('data.can_share_location', true);
+
+        $this->postJson("/api/v1/tracking/{$order->tracking_code}/location", ['lat' => 95, 'lng' => -4])->assertUnprocessable();
+        $this->postJson("/api/v1/tracking/{$order->tracking_code}/location", ['lat' => 5.3456789, 'lng' => -3.9876543])
+            ->assertOk()->assertJsonPath('data.location_shared', true);
+
+        $order->refresh();
+        $this->assertSame([5.3456789, -3.9876543], [$order->delivery_lat, $order->delivery_lng]);
+        if ($order->recipient_id) {
+            $this->assertSame(5.3456789, (float) Recipient::withoutGlobalScopes()->find($order->recipient_id)->lat);
+        }
+        $event = $order->events()->where('type', 'edited')->latest('id')->first();
+        $this->assertSame(['recipient', 'tracking'], [$event->actor_type, $event->meta['source']]);
+        // Le livreur en mission est prévenu
+        Notification::assertSentTo($this->courierA->user, OrderAlert::class, fn (OrderAlert $n) => $n->kind === 'recipient_location');
+
+        // Les coordonnées ne sont jamais renvoyées par la page publique
+        $json = $this->getJson("/api/v1/tracking/{$order->tracking_code}")->assertJsonPath('data.location_shared', true)->getContent();
+        $this->assertStringNotContainsString('5.3456789', $json);
+
+        // Colis livré : plus de position attendue
+        $order->forceFill(['status' => 'delivered', 'delivered_at' => now()])->save();
+        $this->getJson("/api/v1/tracking/{$order->tracking_code}")->assertJsonPath('data.can_share_location', false);
+        $this->postJson("/api/v1/tracking/{$order->tracking_code}/location", ['lat' => 5.3, 'lng' => -4])->assertStatus(422);
+        $this->postJson('/api/v1/tracking/LV-XXXX-XXXX/location', ['lat' => 5.3, 'lng' => -4])->assertNotFound();
     }
 
     public function test_public_tracking_shows_progress_without_private_data(): void

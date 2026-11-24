@@ -190,6 +190,10 @@ Route::prefix('v1')->name('v1.')->group(function () {
     Route::get('tracking/{code}', TrackingController::class)
         ->middleware('throttle:30,1')
         ->name('tracking.show');
+    // Le destinataire envoie sa position GPS depuis le lien de suivi
+    Route::post('tracking/{code}/location', [TrackingController::class, 'location'])
+        ->middleware('throttle:10,1')
+        ->name('tracking.location');
     // Étiquette partagée par un lien signé (API publique : Jibiat Marchand)
     // Lien de connexion (équipe, livreurs) : lecture puis ouverture de la session
     Route::get('invitations/{token}', [InvitationController::class, 'show'])->middleware('throttle:30,1')->name('invitations.show');
