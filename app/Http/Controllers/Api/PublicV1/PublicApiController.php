@@ -11,12 +11,16 @@ use App\Http\Requests\V1\StoreOrderRequest;
 use App\Http\Resources\PublicV1\PublicOrderResource;
 use App\Http\Resources\V1\ProductResource;
 use App\Http\Resources\V1\ZoneResource;
+use App\Models\Department;
+use App\Models\Destination;
 use App\Models\Hub;
 use App\Models\Merchant;
 use App\Models\Order;
 use App\Models\OrderAttachment;
 use App\Models\Product;
 use App\Models\Zone;
+use App\Services\Destinations\Destinations;
+use App\Services\Destinations\DestinationSettings;
 use App\Services\Orders\Cancellations;
 use App\Services\Orders\DeliveryDay;
 use App\Services\Orders\OrderService;
@@ -51,6 +55,51 @@ class PublicApiController extends Controller
     {
         return response()->json(['data' => Hub::query()->active()->orderBy('name')->get()
             ->map(fn (Hub $h) => ['id' => $h->id, 'name' => $h->name, 'zone_id' => $h->zone_id])]);
+    }
+
+    /**
+     * Départements du client (entreprises) : à indiquer sur une course avec department_id (qui envoie) ou
+     * to_department_id (courrier interne).
+     */
+    public function departments(Request $request): JsonResponse
+    {
+        $departments = Department::query()->where('merchant_id', $request->user()->merchant_id)->active()
+            ->with('pickupZone:id,name')->ordered()->get();
+
+        return response()->json(['data' => $departments->map(fn (Department $d) => [
+            'id' => $d->id,
+            'name' => $d->name,
+            'code' => $d->code,
+            'is_main' => (bool) $d->is_main,
+            'location' => $d->location,
+            'pickup_zone_id' => $d->pickup_zone_id,
+            'pickup_zone_name' => $d->pickupZone?->name,
+            'pickup_address' => $d->pickup_address,
+        ])]);
+    }
+
+    /**
+     * Annuaire des destinations (banques, ministères, entreprises…) : recherche par nom, pour créer une course
+     * avec destination_id sans retaper l'adresse. Fermé si l'entreprise ne le montre pas à ses clients.
+     */
+    public function destinations(Request $request, Destinations $destinations, DestinationSettings $settings): JsonResponse
+    {
+        $data = $request->validate(['q' => ['required', 'string', 'min:2', 'max:100']]);
+        $user = $request->user();
+        $s = $settings->for($user->company);
+        abort_unless($s['enabled'] && $s['clients_see'], 403, 'L\'annuaire n\'est pas ouvert aux clients.');
+
+        return response()->json(['data' => $destinations->search($user->company_id, $data['q'], $user->merchant_id, false, 20)->loadMissing('zone:id,name')
+            ->map(fn (Destination $d) => [
+                'id' => $d->id,
+                'name' => $d->name,
+                'acronym' => $d->acronym,
+                'city' => $d->city,
+                'zone_id' => $d->zone_id,
+                'zone_name' => $d->zone?->name,
+                'address' => $d->address,
+                'landmark' => $d->landmark,
+            ])->values()]);
     }
 
     /**

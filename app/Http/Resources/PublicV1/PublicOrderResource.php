@@ -51,6 +51,19 @@ class PublicOrderResource extends JsonResource
                 'phone' => $this->pickup_phone,
             ],
             'from_warehouse' => $this->fromWarehouse(),
+            // Activité et envoi (entreprises : plis, colis, chèques ; délai ; départements)
+            'activity' => $this->activity?->value,
+            'shipment' => [
+                'type' => $this->shipment_type?->value,
+                'quantity' => $this->shipment_quantity,
+                'kind' => $this->pli_kind,
+                'delivery_delay' => $this->delivery_delay?->value,
+                'department_id' => $this->department_id,
+                'to_department_id' => $this->to_department_id,
+                'destination_id' => $this->destination_id,
+                'requested_by' => $this->requested_by,
+                'received_by' => $this->received_by_name,
+            ],
             'description' => $this->description,
             'items' => $this->whenLoaded('items', fn () => $this->items->map(fn ($item) => [
                 'product_id' => $item->product_id,

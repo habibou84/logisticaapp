@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: API publique — livraison
-  version: 1.1.0
+  version: 1.2.0
   description: |
     API des e-commerçants : créer et suivre des courses depuis une boutique en ligne,
     un logiciel de caisse ou une application indépendante.
@@ -14,6 +14,20 @@ info:
     `stock:read` (produits et stock), `webhooks:write` (gérer ses adresses webhook par l'API),
     `payouts:read` (reversements et leur détail). Les zones, entrepôts, devis et `GET /me` sont
     accessibles à toute clé.
+
+    ## Entreprises : plis, colis et chèques (distribution, mise à disposition)
+    Une entreprise sous contrat envoie ses plis depuis son propre logiciel :
+    1. `GET /departments` donne ses départements (qui envoie) ; `GET /destinations?q=…` cherche un destinataire
+       dans l'annuaire (banques, ministères, entreprises…).
+    2. `POST /orders` avec `activity: distribution`, `shipment_type: pli` (ou `colis`, `cheque`), le nombre de plis
+       (`shipment_quantity`), le département (`department_id`) et le destinataire : `destination_id` de l'annuaire,
+       ou bien `recipient_phone` et la zone de livraison. Le courrier entre deux départements se donne avec
+       `to_department_id`.
+    3. Le suivi revient par `GET /orders/{tracking_code}` ou par les webhooks ; la personne qui a reçu le pli est
+       dans `shipment.received_by`.
+
+    Ces courses sont comprises dans le forfait du mois ou facturées à l'unité selon le contrat : rien n'est encaissé
+    chez le destinataire, et `fee_payer` est inutile.
 
     ## Applications partenaires
     Une application qui agit pour le marchand peut s'identifier avec l'en-tête `X-Client-App`
@@ -96,6 +110,69 @@ paths:
                       next_day: { type: string, format: date }
                       earliest_delivery_date: { type: string, format: date }
         '401': { $ref: '#/components/responses/Unauthorized' }
+  /departments:
+    get:
+      tags: [Référentiels]
+      summary: Départements du client (entreprises)
+      description: À indiquer sur une course avec `department_id` (qui envoie) ou `to_department_id` (courrier interne).
+      responses:
+        '200':
+          description: Départements actifs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: integer }
+                        name: { type: string, example: Finance }
+                        code: { type: [string, 'null'], example: FIN }
+                        is_main: { type: boolean }
+                        location: { type: [string, 'null'], example: 'Bâtiment A, 3e étage' }
+                        pickup_zone_id: { type: [integer, 'null'], description: 'Autre site que le siège : sa zone de collecte' }
+                        pickup_zone_name: { type: [string, 'null'] }
+                        pickup_address: { type: [string, 'null'] }
+  /destinations:
+    get:
+      tags: [Référentiels]
+      summary: Chercher un destinataire dans l'annuaire
+      description: >-
+        Banques, ministères, entreprises… déjà connus de l'entreprise de livraison. Donnez l'identifiant trouvé dans
+        `destination_id` à la création de la course : l'adresse et le téléphone sont repris. 20 résultats au plus.
+        Réponse 403 si l'entreprise de livraison n'ouvre pas son annuaire à ses clients.
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema: { type: string, minLength: 2, maxLength: 100 }
+          example: banque atlantique
+      responses:
+        '200':
+          description: Destinations trouvées
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: integer }
+                        name: { type: string }
+                        acronym: { type: [string, 'null'] }
+                        city: { type: [string, 'null'] }
+                        zone_id: { type: [integer, 'null'] }
+                        zone_name: { type: [string, 'null'] }
+                        address: { type: [string, 'null'] }
+                        landmark: { type: [string, 'null'] }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
   /hubs:
     get:
       tags: [Référentiels]
@@ -578,9 +655,20 @@ components:
         shipping_fee_estimate: { type: [integer, 'null'] }
     NewOrder:
       type: object
-      required: [recipient_phone]
-      description: 'La zone de livraison se donne par delivery_zone_id ou par delivery_zone (nom).'
+      description: >-
+        La zone de livraison se donne par delivery_zone_id ou par delivery_zone (nom). recipient_phone et la zone sont
+        obligatoires, sauf si destination_id (annuaire) ou to_department_id (courrier interne) les donnent.
       properties:
+        activity: { type: string, enum: [ecommerce, distribution, mad], description: 'Activité de la course, pour un client qui en a plusieurs. Par défaut, la sienne.' }
+        shipment_type: { type: string, enum: [pli, colis, cheque], description: 'Distribution, mise à disposition : ce qui est envoyé' }
+        shipment_quantity: { type: integer, minimum: 1, description: 'Nombre de plis ou de chèques remis ensemble' }
+        pli_kind: { type: string, maxLength: 60, example: Factures, description: 'Ce que contient le pli' }
+        delivery_delay: { type: string, enum: ['24h', '48h', '72h'], description: 'Délai demandé (distribution à l''unité). Sous contrat : celui du contrat.' }
+        department_id: { type: integer, description: 'Département qui envoie (GET /departments)' }
+        to_department_id: { type: integer, description: 'Courrier interne : département qui reçoit' }
+        destination_id: { type: integer, description: 'Destinataire de l''annuaire (GET /destinations) : adresse et téléphone repris' }
+        requested_by: { type: string, maxLength: 120, description: 'Personne qui a demandé l''envoi' }
+        declared_value: { type: integer, description: 'Valeur déclarée du colis (F CFA)' }
         merchant_reference: { type: string, description: 'Votre numéro de commande' }
         recipient_name: { type: string }
         recipient_phone: { type: string, example: '07 08 09 10 11' }
@@ -651,6 +739,20 @@ components:
             contact_name: { type: [string, 'null'] }
             phone: { type: [string, 'null'] }
         from_warehouse: { type: boolean }
+        activity: { type: [string, 'null'], enum: [ecommerce, distribution, mad, null] }
+        shipment:
+          type: object
+          description: 'Entreprises : ce qui est envoyé, par quel département, à qui'
+          properties:
+            type: { type: [string, 'null'], enum: [pli, colis, cheque, null] }
+            quantity: { type: [integer, 'null'] }
+            kind: { type: [string, 'null'], example: Factures }
+            delivery_delay: { type: [string, 'null'], enum: ['24h', '48h', '72h', null] }
+            department_id: { type: [integer, 'null'] }
+            to_department_id: { type: [integer, 'null'] }
+            destination_id: { type: [integer, 'null'] }
+            requested_by: { type: [string, 'null'] }
+            received_by: { type: [string, 'null'], description: 'Nom de la personne qui a reçu, noté par le livreur à la remise' }
         description: { type: [string, 'null'] }
         items:
           type: array
