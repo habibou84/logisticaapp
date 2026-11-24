@@ -19,10 +19,10 @@
             <p class="text-sm text-gray-600">{{ g.merchant.phone }} · {{ [g.merchant.zone, g.merchant.address].filter(Boolean).join(' · ') }}</p>
           </div>
           <div class="flex flex-wrap items-center gap-2">
-            <select v-model="courierFor[g.merchant.id]" class="input w-auto" :aria-label="`Livreur pour ${g.merchant.business_name}`">
-              <option :value="undefined" disabled>Livreur…</option>
-              <option v-for="c in couriers" :key="c.id" :value="c.id">{{ c.name }}{{ holderCount(g, c.id) ? ` · a ${holderCount(g, c.id)} colis` : '' }}{{ c.is_available ? '' : ' · indisponible' }}</option>
-            </select>
+            <SearchSelect
+              v-model="courierFor[g.merchant.id]" input-class="input w-auto min-w-[14rem]" placeholder="Livreur…" :allow-empty="false" :empty-value="null" :aria-label="`Livreur pour ${g.merchant.business_name}`"
+              :options="couriers.map((c) => ({ value: c.id, label: c.name, hint: `${holderCount(g, c.id) ? `a ${holderCount(g, c.id)} colis` : ''}${c.is_available ? '' : ' · indisponible'}`.replace(/^ · /, ''), search: c.phone }))"
+            />
             <button class="btn-primary" :disabled="!selectedOf(g).length || !courierFor[g.merchant.id] || busy" @click="create(g)">📮 Créer le bon ({{ selectedOf(g).length }})</button>
           </div>
         </header>
@@ -75,6 +75,7 @@
 </template>
 
 <script setup>
+import SearchSelect from '../../components/SearchSelect.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import CoursesTabs from '../../components/CoursesTabs.vue'

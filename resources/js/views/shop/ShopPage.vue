@@ -97,10 +97,10 @@
           </div>
           <div>
             <label class="m-label" for="shop-zone">Commune ou quartier</label>
-            <select id="shop-zone" v-model="form.zone_id" class="m-input" required @change="quote">
-              <option :value="null" disabled>Choisissez…</option>
-              <option v-for="z in shop.zones" :key="z.id" :value="z.id">{{ z.name }}</option>
-            </select>
+            <SearchSelect
+              id="shop-zone" v-model="form.zone_id" input-class="m-input" placeholder="Choisissez…" :allow-empty="false" :empty-value="null" required search-placeholder="Commune, quartier…" @change="quote"
+              :options="shop.zones.map((z) => ({ value: z.id, label: z.name }))"
+            />
           </div>
           <div>
             <label class="m-label" for="shop-address">Adresse de livraison</label>
@@ -140,6 +140,7 @@
 </template>
 
 <script setup>
+import SearchSelect from '../../components/SearchSelect.vue'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'

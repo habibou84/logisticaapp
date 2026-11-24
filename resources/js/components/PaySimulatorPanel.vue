@@ -19,10 +19,10 @@
         </div>
         <div>
           <label class="label">Zone {{ scenario.event === 'pickup' ? 'de ramassage' : 'du destinataire' }}</label>
-          <select v-model="scenario.zone_id" class="input w-auto">
-            <option :value="null">—</option>
-            <option v-for="z in zones" :key="z.id" :value="z.id">{{ z.full_name }}</option>
-          </select>
+          <SearchSelect
+            v-model="scenario.zone_id" input-class="input w-auto min-w-[12rem]" placeholder="—" :empty-value="null" search-placeholder="Commune, quartier…"
+            :options="zones.map((z) => ({ value: z.id, label: `${z.is_shipping ? '🚌 ' : ''}${z.full_name}`, search: z.name }))"
+          />
         </div>
         <div>
           <label class="label">Frais de livraison (F)</label>
@@ -120,6 +120,7 @@
 </template>
 
 <script setup>
+import SearchSelect from './SearchSelect.vue'
 import { reactive, ref, watch } from 'vue'
 import http, { apiErrorMessage } from '../bootstrap/axios'
 import { date as date_, money, signedClass, today } from '../utils/format'

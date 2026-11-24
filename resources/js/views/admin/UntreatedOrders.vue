@@ -70,10 +70,10 @@
           <input v-model="newDate" type="date" class="input w-auto" :min="todayIso" aria-label="Nouvelle date">
           <button type="button" class="btn-primary" :disabled="busy || !newDate" @click="reschedule">📅 Nouvelle date</button>
           <span class="mx-1 h-6 w-px bg-blue-200" aria-hidden="true" />
-          <select v-model="courierId" class="input w-auto" aria-label="Livreur">
-            <option :value="null" disabled>Livreur…</option>
-            <option v-for="c in couriers" :key="c.id" :value="c.id">{{ c.name }} ({{ c.active_assignments_count }} en cours){{ c.is_available ? '' : ' · indisponible' }}{{ madSuffix(c) }}</option>
-          </select>
+          <SearchSelect
+            v-model="courierId" input-class="input w-auto min-w-[14rem]" placeholder="Livreur…" :allow-empty="false" :empty-value="null" aria-label="Livreur"
+            :options="couriers.map((c) => ({ value: c.id, label: c.name, hint: `${c.active_assignments_count} en cours${c.is_available ? '' : ' · indisponible'}${madSuffix(c)}`, search: c.phone }))"
+          />
           <button type="button" class="btn-secondary" :disabled="busy || !courierId" @click="assign">🛵 Confier</button>
           <button type="button" class="btn-secondary" :disabled="busy || !returnable.length" @click="returnMany()">↩️ Retour ({{ returnable.length }})</button>
           <button v-if="auth.can('orders.cancel')" type="button" class="btn-secondary text-red-700" :disabled="busy" @click="cancel">Annuler les courses</button>
@@ -132,6 +132,7 @@
 </template>
 
 <script setup>
+import SearchSelect from '../../components/SearchSelect.vue'
 import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'

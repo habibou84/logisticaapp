@@ -63,10 +63,10 @@
             <label class="block text-sm">Votre nom<input v-model.trim="request.contact_name" class="input mt-1" required maxlength="255"></label>
             <label class="block text-sm">Téléphone<input v-model.trim="request.phone" class="input mt-1" type="tel" inputmode="tel" required></label>
             <label v-if="info.zones.length" class="block text-sm">Commune de ramassage
-              <select v-model="request.pickup_zone_id" class="input mt-1">
-                <option :value="null">— Choisir —</option>
-                <option v-for="z in info.zones" :key="z.id" :value="z.id">{{ z.name }}</option>
-              </select>
+              <SearchSelect
+                v-model="request.pickup_zone_id" class="mt-1" placeholder="— Choisir —" :empty-value="null" search-placeholder="Commune…"
+                :options="info.zones.map((z) => ({ value: z.id, label: z.name }))"
+              />
             </label>
             <label class="block text-sm">Adresse de ramassage<input v-model.trim="request.pickup_address" class="input mt-1" maxlength="500"></label>
             <label class="block text-sm">Un mot pour l'équipe (facultatif)<textarea v-model.trim="request.message" class="input mt-1" rows="2" maxlength="500" placeholder="Ex. : environ 30 colis par semaine" /></label>
@@ -82,6 +82,7 @@
 </template>
 
 <script setup>
+import SearchSelect from '../../components/SearchSelect.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'

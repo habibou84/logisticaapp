@@ -13,10 +13,10 @@
           <input v-model="who" type="radio" value="other" class="mt-1">
           <span class="flex-1"><b>Choisir un livreur</b>
             <span class="block text-slate-600">Un colis encore chez un autre livreur doit d'abord lui être remis.</span>
-            <select v-if="who === 'other'" v-model="courierId" class="input mt-2" aria-label="Livreur du retour">
-              <option :value="null" disabled>Livreur…</option>
-              <option v-for="c in couriers" :key="c.id" :value="c.id">{{ c.name }}{{ c.is_available === false ? ' · indisponible' : '' }}</option>
-            </select>
+            <SearchSelect
+              v-if="who === 'other'" v-model="courierId" input-class="input mt-2" placeholder="Livreur…" :allow-empty="false" :empty-value="null" aria-label="Livreur du retour"
+              :options="couriers.map((c) => ({ value: c.id, label: c.name, hint: c.is_available === false ? 'indisponible' : '', search: c.phone }))"
+            />
           </span>
         </label>
         <label :class="choiceClass('later')">
@@ -50,6 +50,7 @@
 </template>
 
 <script setup>
+import SearchSelect from './SearchSelect.vue'
 import { computed, ref, watch } from 'vue'
 import http, { apiErrorMessage } from '../bootstrap/axios'
 import { useToastStore } from '../stores/toasts'

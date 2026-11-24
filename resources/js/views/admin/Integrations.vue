@@ -3,10 +3,10 @@
     <h1 class="text-xl font-bold">Intégrations</h1>
     <div class="card p-4">
       <label class="label" for="int-merchant">Client</label>
-      <select id="int-merchant" v-model="merchantId" class="input">
-        <option :value="null">Tous (consultation)</option>
-        <option v-for="m in merchants" :key="m.id" :value="m.id">{{ m.business_name }}</option>
-      </select>
+      <SearchSelect
+        id="int-merchant" v-model="merchantId" placeholder="Tous (consultation)" :empty-value="null"
+        :options="merchants.map((m) => ({ value: m.id, label: m.business_name, search: m.phone }))"
+      />
       <p class="text-xs text-gray-500 mt-1">Choisissez un client pour lui créer une clé API ou une adresse webhook.</p>
     </div>
     <Integrations :merchant-id="merchantId" staff />
@@ -14,6 +14,7 @@
 </template>
 
 <script setup>
+import SearchSelect from '../../components/SearchSelect.vue'
 import { onMounted, ref } from 'vue'
 import http from '../../bootstrap/axios'
 import Integrations from '../../components/Integrations.vue'

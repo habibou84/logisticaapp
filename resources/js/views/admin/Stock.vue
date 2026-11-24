@@ -27,10 +27,10 @@
       <div class="card p-3 flex flex-wrap gap-2 items-end">
         <div>
           <label class="label" for="f-merchant">Client</label>
-          <select id="f-merchant" v-model="filters.merchant_id" class="input" @change="loadProducts(1)">
-            <option :value="null">Tous</option>
-            <option v-for="m in merchants" :key="m.id" :value="m.id">{{ m.business_name }}</option>
-          </select>
+          <SearchSelect
+            id="f-merchant" v-model="filters.merchant_id" placeholder="Tous" :empty-value="null" @change="loadProducts(1)"
+            :options="merchants.map((m) => ({ value: m.id, label: m.business_name, search: m.phone }))"
+          />
         </div>
         <div class="flex-1 min-w-48">
           <label class="label" for="f-search">Recherche</label>
@@ -313,6 +313,7 @@
 </template>
 
 <script setup>
+import SearchSelect from '../../components/SearchSelect.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'

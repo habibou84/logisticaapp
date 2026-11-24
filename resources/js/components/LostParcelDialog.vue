@@ -23,10 +23,10 @@
       </div>
       <div v-if="form.courier_deduction > 0">
         <label class="label" for="lost-courier">Livreur responsable *</label>
-        <select id="lost-courier" v-model="form.responsible_courier_id" class="input" required>
-          <option :value="null" disabled>Choisir…</option>
-          <option v-for="c in couriers" :key="c.id" :value="c.id">{{ c.name }}{{ order.held_by?.id === c.id ? ' · avait le colis' : '' }}</option>
-        </select>
+        <SearchSelect
+          id="lost-courier" v-model="form.responsible_courier_id" placeholder="Choisir…" :allow-empty="false" :empty-value="null" required
+          :options="couriers.map((c) => ({ value: c.id, label: c.name, hint: order.held_by?.id === c.id ? 'avait le colis' : '', search: c.phone }))"
+        />
       </div>
       <p v-if="error" class="field-error">{{ error }}</p>
       <button class="btn-danger w-full" :disabled="busy || !form.reason">Confirmer la perte du colis</button>
@@ -35,6 +35,7 @@
 </template>
 
 <script setup>
+import SearchSelect from './SearchSelect.vue'
 import { reactive, ref, watch } from 'vue'
 import http, { apiErrorMessage } from '../bootstrap/axios'
 import Modal from './Modal.vue'

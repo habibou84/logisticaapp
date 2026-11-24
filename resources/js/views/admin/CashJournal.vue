@@ -16,10 +16,10 @@
       </div>
       <div>
         <label class="label" for="j-user">Par</label>
-        <select id="j-user" v-model="f.user_id" class="input w-auto" @change="load">
-          <option value="">Tout le monde</option>
-          <option v-for="u in users" :key="u.id" :value="u.id">{{ u.name }}</option>
-        </select>
+        <SearchSelect
+          id="j-user" v-model="f.user_id" input-class="input w-auto min-w-[12rem]" placeholder="Tout le monde" @change="load"
+          :options="users.map((u) => ({ value: u.id, label: u.name }))"
+        />
       </div>
       <div><label class="label" for="j-from">Du</label><input id="j-from" v-model="f.from" type="date" class="input" @change="load"></div>
       <div><label class="label" for="j-to">au</label><input id="j-to" v-model="f.to" type="date" class="input" @change="load"></div>
@@ -49,6 +49,7 @@
 </template>
 
 <script setup>
+import SearchSelect from '../../components/SearchSelect.vue'
 import { onMounted, reactive, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import http from '../../bootstrap/axios'

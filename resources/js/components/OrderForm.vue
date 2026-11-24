@@ -4,10 +4,10 @@
 
     <section v-if="!isMerchant" class="card p-4">
       <label class="label" for="merchant">Client *</label>
-      <select id="merchant" v-model="form.merchant_id" class="input" required>
-        <option :value="null" disabled>Choisir…</option>
-        <option v-for="m in merchants" :key="m.id" :value="m.id">{{ m.business_name }}</option>
-      </select>
+      <SearchSelect
+        id="merchant" v-model="form.merchant_id" placeholder="Choisir…" :allow-empty="false" :empty-value="null" required
+        :options="merchants.map((m) => ({ value: m.id, label: m.business_name, search: m.phone }))"
+      />
       <p v-if="errors.merchant_id" class="field-error">{{ errors.merchant_id[0] }}</p>
     </section>
 
@@ -289,10 +289,10 @@
           <p class="sm:col-span-2 text-sm text-gray-600">Lieu de ramassage, s'il diffère de l'adresse habituelle du client :</p>
           <div>
             <label class="label" for="pzone">Zone de {{ pickupWord(form.activity) }}</label>
-            <select id="pzone" v-model="form.pickup_zone_id" class="input">
-              <option :value="null">Adresse habituelle</option>
-              <option v-for="z in zones" :key="z.id" :value="z.id">{{ z.full_name }}</option>
-            </select>
+            <SearchSelect
+              id="pzone" v-model="form.pickup_zone_id" placeholder="Adresse habituelle" :empty-value="null" search-placeholder="Commune ou quartier…"
+              :options="zones.map((z) => ({ value: z.id, label: z.full_name }))"
+            />
           </div>
           <div>
             <label class="label" for="paddress">Adresse de {{ pickupWord(form.activity) }}</label>
@@ -324,6 +324,7 @@
 </template>
 
 <script setup>
+import SearchSelect from './SearchSelect.vue'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import http, { apiErrorMessage } from '../bootstrap/axios'
 import { useAuthStore } from '../stores/auth'

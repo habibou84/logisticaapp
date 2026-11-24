@@ -11,10 +11,10 @@
 
       <div v-if="staff">
         <label class="label" for="imp-merchant">Client *</label>
-        <select id="imp-merchant" v-model="merchantId" class="input" @change="reset">
-          <option :value="null" disabled>Choisir…</option>
-          <option v-for="m in merchants" :key="m.id" :value="m.id">{{ m.business_name }}</option>
-        </select>
+        <SearchSelect
+          id="imp-merchant" v-model="merchantId" placeholder="Choisir…" :allow-empty="false" :empty-value="null" @change="reset"
+          :options="merchants.map((m) => ({ value: m.id, label: m.business_name, search: m.phone }))"
+        />
       </div>
 
       <!-- Lot de colis en cours : tous les colis du fichier en font partie -->
@@ -87,6 +87,7 @@
 </template>
 
 <script setup>
+import SearchSelect from './SearchSelect.vue'
 import { computed, onMounted, ref, watch } from 'vue'
 import http, { apiErrorMessage } from '../bootstrap/axios'
 import { useAuthStore } from '../stores/auth'

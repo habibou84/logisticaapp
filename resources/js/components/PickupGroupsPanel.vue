@@ -24,10 +24,10 @@
             </span>
           </button>
           <div class="flex flex-wrap items-center gap-2">
-            <select v-model="courier[g.key]" class="input w-auto" :aria-label="`Livreur pour ${g.merchant?.business_name}`">
-              <option :value="undefined" disabled>Livreur…</option>
-              <option v-for="c in couriers" :key="c.id" :value="c.id">{{ c.name }} ({{ c.active_assignments_count }} en cours){{ c.is_available ? '' : ' · indisponible' }}{{ madSuffix(c) }}</option>
-            </select>
+            <SearchSelect
+              v-model="courier[g.key]" input-class="input w-auto min-w-[14rem]" placeholder="Livreur…" :allow-empty="false" :empty-value="null" :aria-label="`Livreur pour ${g.merchant?.business_name}`"
+              :options="couriers.map((c) => ({ value: c.id, label: c.name, hint: `${c.active_assignments_count} en cours${c.is_available ? '' : ' · indisponible'}${madSuffix(c)}`, search: c.phone }))"
+            />
             <a :href="`/etiquettes?ids=${chosen(g).join(',')}`" target="_blank" class="btn-secondary" :class="{ 'pointer-events-none opacity-50': !chosen(g).length }">🏷️ Étiquettes</a>
             <button class="btn-primary" :disabled="!courier[g.key] || !chosen(g).length || busy === g.key" @click="assign(g)">
               {{ busy === g.key ? 'Assignation…' : `Assigner ${chosen(g).length === visible(g).length ? 'les' : ''} ${chosen(g).length}` }}
@@ -67,6 +67,7 @@
 </template>
 
 <script setup>
+import SearchSelect from './SearchSelect.vue'
 import { madSuffix } from '../utils/mad'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import http, { apiErrorMessage } from '../bootstrap/axios'

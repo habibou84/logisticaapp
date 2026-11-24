@@ -257,9 +257,10 @@
         <div><label class="label">Second téléphone</label><input v-model="edit.recipient_phone2" class="input"></div>
         <div>
           <label class="label">Zone</label>
-          <select v-model="edit.delivery_zone_id" class="input">
-            <option v-for="z in zones" :key="z.id" :value="z.id">{{ z.full_name }}</option>
-          </select>
+          <SearchSelect
+            v-model="edit.delivery_zone_id" search-placeholder="Commune ou quartier…" aria-label="Zone de livraison"
+            :options="zones.map((z) => ({ value: z.id, label: z.full_name }))"
+          />
         </div>
         <div><label class="label">Adresse</label><input v-model="edit.delivery_address" class="input"></div>
         <div><label class="label">Repère</label><input v-model="edit.delivery_landmark" class="input"></div>
@@ -277,6 +278,7 @@
 </template>
 
 <script setup>
+import SearchSelect from '../../components/SearchSelect.vue'
 import { madSuffix } from '../../utils/mad'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'

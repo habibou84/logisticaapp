@@ -174,10 +174,10 @@
           </div>
           <div v-if="isStaff">
             <label class="label" for="f-merchant">Client</label>
-            <select id="f-merchant" v-model="filters.merchant_id" class="input" @change="load(1)">
-              <option value="">Tous les clients</option>
-              <option v-for="m in merchants" :key="m.id" :value="String(m.id)">{{ m.business_name }}</option>
-            </select>
+            <SearchSelect
+              id="f-merchant" v-model="filters.merchant_id" placeholder="Tous les clients" @change="load(1)"
+              :options="merchants.map((m) => ({ value: String(m.id), label: m.business_name, search: m.phone }))"
+            />
           </div>
           <div>
             <p class="label">Période <span class="font-normal text-gray-500">(remplace le jour)</span></p>
@@ -208,10 +208,10 @@
           <option value="">Tous les contrats</option>
           <option v-for="p in plans" :key="p.id" :value="String(p.id)">{{ p.merchant?.business_name }} · {{ p.formula === 'distribution_lot' ? p.lot_name : p.formula_label }}</option>
         </select>
-        <select v-if="isStaff" v-model="filters.merchant_id" class="input" @change="load(1)">
-          <option value="">Tous les clients</option>
-          <option v-for="m in merchants" :key="m.id" :value="String(m.id)">{{ m.business_name }}</option>
-        </select>
+        <SearchSelect
+          v-if="isStaff" v-model="filters.merchant_id" placeholder="Tous les clients" aria-label="Client" @change="load(1)"
+          :options="merchants.map((m) => ({ value: String(m.id), label: m.business_name, search: m.phone }))"
+        />
         <!-- Dates : jour de livraison prévu (par défaut) ou jour de création ; le client voit toujours le jour de livraison -->
         <select v-if="isStaff" v-model="filters.date_basis" class="input" aria-label="Dates selon" title="Dates : jour de livraison prévu ou jour de création" @change="filters.from || filters.to ? onPeriod() : null">
           <option value="delivery">📅 Livraison</option>
@@ -241,10 +241,10 @@
           <option value="delivery">Livraison</option>
           <option value="return">Retour</option>
         </select>
-        <select v-model="bulk.courier_id" class="input w-auto">
-          <option :value="null" disabled>Livreur…</option>
-          <option v-for="c in couriers" :key="c.id" :value="c.id">{{ c.name }} ({{ c.active_assignments_count }} en cours){{ c.is_available ? '' : ' · indisponible' }}{{ madSuffix(c) }}</option>
-        </select>
+        <SearchSelect
+          v-model="bulk.courier_id" input-class="input w-auto min-w-[14rem]" placeholder="Livreur…" :allow-empty="false" :empty-value="null" aria-label="Livreur"
+          :options="couriers.map((c) => ({ value: c.id, label: c.name, hint: `${c.active_assignments_count} en cours${c.is_available ? '' : ' · indisponible'}${madSuffix(c)}`, search: c.phone }))"
+        />
         <button class="btn-primary" :disabled="!bulk.courier_id || assigning" @click="bulkAssign">Assigner</button>
         <button v-if="auth.can('orders.dispatch') && withCourierSelected.length" class="btn-secondary text-red-700" :disabled="assigning" @click="bulkUnassign">
           Retirer le livreur ({{ withCourierSelected.length }})
@@ -356,6 +356,7 @@
 </template>
 
 <script setup>
+import SearchSelect from '../../components/SearchSelect.vue'
 import { madSuffix } from '../../utils/mad'
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'

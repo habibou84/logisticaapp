@@ -53,10 +53,10 @@
       </div>
       <div>
         <label class="label" for="fr-courier">Livreur</label>
-        <select id="fr-courier" v-model="filters.courier_id" class="input" @change="load(1)">
-          <option value="">Tous</option>
-          <option v-for="c in couriers" :key="c.id" :value="c.id">{{ c.name }}</option>
-        </select>
+        <SearchSelect
+          id="fr-courier" v-model="filters.courier_id" placeholder="Tous" @change="load(1)"
+          :options="couriers.map((c) => ({ value: c.id, label: c.name, search: c.phone }))"
+        />
       </div>
       <div>
         <label class="label" for="fr-from">Du</label>
@@ -146,6 +146,7 @@
 </template>
 
 <script setup>
+import SearchSelect from '../../components/SearchSelect.vue'
 import { onMounted, reactive, ref, watch } from 'vue'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import { alertSound } from '../../composables/useAlertSound'

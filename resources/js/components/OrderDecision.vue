@@ -41,12 +41,10 @@
       </template>
       <div v-if="form.decision === 'redeliver' || form.decision === 'return'">
         <label class="label" for="dec-courier">Assigner un livreur maintenant (facultatif)</label>
-        <select id="dec-courier" v-model="form.courier_id" class="input">
-          <option :value="null">Assigner plus tard</option>
-          <option v-for="c in couriers" :key="c.id" :value="c.id">
-            {{ c.name }}{{ order.held_by?.id === c.id ? ' · a le colis' : '' }} ({{ c.active_assignments_count }} en cours){{ c.is_available ? '' : ' · indisponible' }}{{ madSuffix(c) }}
-          </option>
-        </select>
+        <SearchSelect
+          id="dec-courier" v-model="form.courier_id" placeholder="Assigner plus tard" :empty-value="null"
+          :options="couriers.map((c) => ({ value: c.id, label: c.name, hint: `${order.held_by?.id === c.id ? 'a le colis · ' : ''}${c.active_assignments_count} en cours${c.is_available ? '' : ' · indisponible'}${madSuffix(c)}`, search: c.phone }))"
+        />
         <p v-if="form.decision === 'redeliver' && form.date !== today && form.courier_id" class="text-xs text-amber-700 mt-1">La mission apparaîtra dès maintenant dans l'application du livreur.</p>
       </div>
 
@@ -63,6 +61,7 @@
 </template>
 
 <script setup>
+import SearchSelect from './SearchSelect.vue'
 import { madSuffix } from '../utils/mad'
 import { computed, reactive, ref, watch } from 'vue'
 import http, { apiErrorMessage } from '../bootstrap/axios'
