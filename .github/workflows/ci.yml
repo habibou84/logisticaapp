@@ -65,7 +65,7 @@ jobs:
           extensions: pdo_pgsql, intl
           tools: composer:v2
           coverage: none
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: ~/.composer/cache/files
           key: composer-${{ matrix.php }}-${{ hashFiles('composer.lock') }}
