@@ -1,5 +1,6 @@
 <template>
-  <Modal :open="open" :title="`Contrat · ${merchant?.business_name || ''}`" @close="$emit('close')">
+  <!-- inline : affiché dans la fiche du client (onglet Contrat), sans fenêtre -->
+  <component :is="inline ? 'div' : Modal" v-bind="inline ? {} : { open, title: `Contrat · ${merchant?.business_name || ''}` }" @close="$emit('close')">
     <div class="space-y-4">
       <p class="text-sm text-gray-600">
         Sans formule, le client paie ses courses une à une (frais déduits de ses reversements). Avec une formule, ses courses
@@ -144,7 +145,7 @@
         </div>
       </form>
     </div>
-  </Modal>
+  </component>
 </template>
 
 <script setup>
@@ -160,7 +161,7 @@ import { myActivities } from '../utils/activities'
 import { promptDialog } from '../composables/useDialog'
 
 // initialFormula : formule proposée d'abord (ex. lot ponctuel depuis « + Lot de colis »)
-const props = defineProps({ open: Boolean, merchant: { type: Object, default: null }, initialFormula: { type: String, default: null } })
+const props = defineProps({ open: Boolean, merchant: { type: Object, default: null }, initialFormula: { type: String, default: null }, inline: Boolean })
 const emit = defineEmits(['close', 'saved'])
 
 const auth = useAuthStore()

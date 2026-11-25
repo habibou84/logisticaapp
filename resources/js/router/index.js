@@ -103,8 +103,9 @@ const routes = [
       { path: 'courses/a-reporter', redirect: '/admin/courses/en-retard?onglet=pas-ramassees' },
       { path: 'courses/:id(\\d+)', component: shared.orderDetail, meta: { permission: 'orders.view' } },
       { path: 'marchands', component: () => import('../views/admin/Merchants.vue'), meta: { permission: 'merchants.view' } },
-      { path: 'marchands/:id(\\d+)/departements', component: () => import('../views/admin/MerchantDepartments.vue'), meta: { permission: 'merchants.view' } },
-      { path: 'marchands/:id(\\d+)/comptes', component: () => import('../views/admin/MerchantAccountsPage.vue'), meta: { permission: 'merchants.view' } },
+      // Anciennes pages Départements et Comptes : onglets de la fiche du client
+      { path: 'marchands/:id(\\d+)/departements', redirect: (to) => ({ path: '/admin/marchands', query: { id: to.params.id, onglet: 'departements' } }) },
+      { path: 'marchands/:id(\\d+)/comptes', redirect: (to) => ({ path: '/admin/marchands', query: { id: to.params.id, onglet: 'comptes' } }) },
       // Activité des livreurs : suivi du jour et, en onglets, carte, disponibles, colis en main, remontées terrain, planning
       {
         path: 'activite',

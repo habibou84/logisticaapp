@@ -34,7 +34,14 @@ class MerchantController extends Controller
             'source' => ['nullable', 'string', 'in:backoffice,signup'],
             'activity' => ['nullable', Rule::enum(Activity::class)],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:200'],
+            // Page Clients : zone de ramassage, position connue ou non, tri, résumé
+            'zone_id' => ['nullable', 'integer'],
+            'located' => ['nullable', 'boolean'],
+            'sort' => ['nullable', 'in:name,orders,created_at'],
+            'dir' => ['nullable', 'in:asc,desc'],
+            'summary' => ['nullable', 'boolean'],
         ]);
+        $dir = $request->input('dir') === 'desc' ? 'desc' : 'asc';
 
         $merchants = Merchant::query()
             ->with(['pickupZone', 'activityRows', 'billingPlans' => fn ($q) => $q->activeOn(now())->with('couriers.user')])
@@ -42,17 +49,34 @@ class MerchantController extends Controller
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
             ->when($request->filled('activity'), fn ($q) => $q->withActivity([$request->string('activity')->toString()]))
             // Inscrits en ligne
-            ->when($request->filled('source'), fn ($q) => $q->where('source', $request->string('source'))->latest())
+            ->when($request->filled('source'), fn ($q) => $q->where('source', $request->string('source'))->when(! $request->filled('sort'), fn ($q) => $q->latest()))
+            ->when($request->filled('zone_id'), fn ($q) => $q->where('pickup_zone_id', $request->integer('zone_id')))
+            ->when($request->filled('located'), fn ($q) => $request->boolean('located') ? $q->whereNotNull('pickup_lat') : $q->whereNull('pickup_lat'))
             ->when($request->filled('search'), function ($q) use ($request) {
                 $term = '%'.mb_strtolower($request->string('search')).'%';
                 $q->where(fn ($q) => $q->whereRaw('LOWER(business_name) LIKE ?', [$term])
                     ->orWhereRaw('LOWER(contact_name) LIKE ?', [$term])
                     ->orWhere('phone', 'like', $term));
             })
-            ->orderBy('business_name')
+            ->when($request->input('sort') === 'orders', fn ($q) => $q->orderBy('orders_count', $dir))
+            ->when($request->input('sort') === 'created_at', fn ($q) => $q->orderBy('created_at', $dir)->orderBy('id', $dir))
+            ->orderBy('business_name', $request->input('sort') === 'name' ? $dir : 'asc')
             ->paginate(min(max($request->integer('per_page', 50), 1), 500));
 
-        return MerchantResource::collection($merchants);
+        $collection = MerchantResource::collection($merchants);
+
+        // Résumé de la page Clients : chaque case filtre la liste
+        if ($request->boolean('summary')) {
+            $collection->additional(['summary' => [
+                'merchants' => Merchant::query()->count(),
+                'active' => Merchant::query()->where('status', 'active')->count(),
+                'suspended' => Merchant::query()->where('status', '!=', 'active')->count(),
+                'signups_new' => Merchant::query()->where('source', 'signup')->where('created_at', '>=', now()->subDays(7))->count(),
+                'without_location' => Merchant::query()->where('status', 'active')->whereNull('pickup_lat')->count(),
+            ]]);
+        }
+
+        return $collection;
     }
 
     public function store(StoreMerchantRequest $request): JsonResponse
