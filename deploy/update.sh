@@ -1,16 +1,18 @@
 #!/usr/bin/env bash
 #
-# Mise à jour : dernière version de la branche suivie, nouvelles images, redémarrage des conteneurs.
-# Les migrations s'appliquent au démarrage du conteneur « app ». À lancer en root :
+# Mise à jour : dernière version de la branche suivie (main), nouvelles images, sauvegarde de la base,
+# redémarrage des conteneurs, contrôle du site. Les migrations s'appliquent au démarrage du conteneur « app ».
+# À lancer en root :
 #
 #   bash /chemin/de/l/application/deploy/update.sh
 #
 # Le site reste en ligne pendant la construction ; la bascule ne coupe que quelques secondes.
+# Retour à la version précédente si besoin : voir docs/DEPLOIEMENT.md (« Revenir en arrière »).
 
 set -euo pipefail
 
 main() {
-    local app_dir branch
+    local app_dir branch previous version port
     app_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
     cd "$app_dir"
 
@@ -25,6 +27,7 @@ main() {
         echo "Des fichiers du code ont été modifiés sur le serveur (ci-dessus) : annulez-les (git checkout -- .) puis relancez." >&2
         exit 1
     fi
+    previous="$(git rev-parse --short HEAD)"
     git checkout -q "$branch"
     # TARGET : version précise validée par GitHub (deploy/auto-update.sh), sinon la dernière de la branche
     git reset -q --hard "${TARGET:-origin/$branch}"
@@ -32,14 +35,34 @@ main() {
     # .env lisible par l'application des conteneurs (groupe www-data, gid 33), fermé aux autres comptes
     chown root:33 .env && chmod 640 .env
 
+    version="$(git rev-parse --short HEAD)"
+
     echo "==> Construction des images (le site reste en ligne)"
-    docker compose build
+    # Numéro de version dans l'image : Sentry indique dans quelle version une erreur apparaît
+    APP_VERSION="$version" docker compose build
+
+    # Juste avant les migrations : de quoi revenir à l'état exact d'avant la mise à jour
+    echo "==> Sauvegarde de la base (version en ligne : $previous)"
+    if [[ -z "$(docker compose ps -q --status running postgres)" ]]; then
+        echo "PostgreSQL ne tourne pas : pas de sauvegarde possible, mise à jour arrêtée (docker compose ps)." >&2
+        exit 1
+    fi
+    BACKUP_LOCAL_ONLY=1 bash deploy/backup.sh "avant-$version"
 
     echo "==> Bascule (migrations comprises)"
-    docker compose up -d --remove-orphans --wait
+    APP_VERSION="$version" docker compose up -d --remove-orphans --wait
     docker image prune -f >/dev/null
 
-    echo "==> Terminé : version $(git rev-parse --short HEAD)"
+    # Le site répond-il vraiment ? /up vérifie aussi la base et Redis
+    echo "==> Contrôle du site"
+    port="$(grep -E '^APP_PORT=' .env | tail -n1 | cut -d= -f2 | tr -d '"' || true)"
+    if ! curl -fsS --retry 10 --retry-delay 3 --retry-all-errors -m 10 -o /dev/null "http://127.0.0.1:${port:-8090}/up"; then
+        echo "Le site ne répond pas après la mise à jour vers $version (version précédente : $previous)." >&2
+        echo "Journaux : docker compose logs --tail=100 app web — retour arrière : docs/DEPLOIEMENT.md" >&2
+        exit 1
+    fi
+
+    echo "==> Terminé : version $version en ligne (précédente : $previous)"
 }
 
 # Tout le script est lu avant de commencer : la mise à jour peut remplacer ce fichier en cours de route

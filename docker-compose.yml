@@ -21,6 +21,8 @@ x-app: &app
       VITE_REVERB_HOST: ${VITE_REVERB_HOST}
       VITE_REVERB_PORT: ${VITE_REVERB_PORT:-443}
       VITE_REVERB_SCHEME: ${VITE_REVERB_SCHEME:-https}
+      # Commit installé (deploy/update.sh), transmis à Sentry
+      APP_VERSION: ${APP_VERSION:-dev}
   restart: unless-stopped
   volumes:
     - ./.env:/var/www/html/.env:ro
