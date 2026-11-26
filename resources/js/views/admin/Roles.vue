@@ -4,7 +4,7 @@
     <div class="flex flex-wrap items-center justify-between gap-2">
       <div>
         <h1 class="text-xl font-bold">Rôles</h1>
-        <p class="text-sm text-gray-600">Ce que chaque rôle de l'équipe peut faire. Les rôles intégrés servent de modèles ; créez vos rôles sur mesure.</p>
+        <p class="text-sm text-slate-600">Ce que chaque rôle de l'équipe peut faire. Les rôles intégrés servent de modèles ; créez vos rôles sur mesure.</p>
       </div>
       <div class="flex flex-wrap gap-2">
         <RouterLink to="/admin/utilisateurs" class="btn-secondary">👥 Comptes</RouterLink>
@@ -19,22 +19,22 @@
       </button>
     </div>
 
-    <p v-if="!catalog.loaded" class="text-sm text-gray-500">Chargement…</p>
+    <p v-if="!catalog.loaded" class="text-sm text-slate-600">Chargement…</p>
 
     <template v-else-if="tab === 'roles'">
       <section v-for="group in groups" :key="group.title" class="space-y-2">
         <h2 class="font-semibold">{{ group.title }}</h2>
-        <p v-if="!group.roles.length" class="text-sm text-gray-500">{{ group.empty }}</p>
+        <p v-if="!group.roles.length" class="text-sm text-slate-600">{{ group.empty }}</p>
         <ul class="grid md:grid-cols-2 gap-3">
           <li v-for="r in group.roles" :key="r.value" class="card p-4 space-y-2">
             <div class="flex items-start justify-between gap-2">
               <div>
                 <p class="font-semibold">{{ r.label }}</p>
-                <p class="text-sm text-gray-600">{{ r.description || '—' }}</p>
+                <p class="text-sm text-slate-600">{{ r.description || '—' }}</p>
               </div>
               <span class="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-xs">{{ r.users_count }} compte(s)</span>
             </div>
-            <p class="text-xs text-gray-500">
+            <p class="text-xs text-slate-600">
               {{ r.value === 'admin' ? 'Tous les droits' : `${r.permissions.length} droit(s)` }}
               <template v-if="scopeText(r)"> · {{ scopeText(r) }}</template>
             </p>
@@ -44,7 +44,7 @@
             <div class="flex flex-wrap gap-3 text-sm">
               <button v-if="r.editable" type="button" class="text-blue-600" @click="edit(r)">Modifier</button>
               <button v-if="canManage && !r.custom && r.value !== 'admin' && !APP_ROLES.includes(r.value)" type="button" class="text-blue-600" @click="edit(null, `role:${r.value}`)">Créer un rôle à partir de celui-ci</button>
-              <RouterLink :to="{ path: '/admin/utilisateurs', query: { role: r.value } }" class="text-gray-600">Voir les comptes</RouterLink>
+              <RouterLink :to="{ path: '/admin/utilisateurs', query: { role: r.value } }" class="text-slate-600">Voir les comptes</RouterLink>
             </div>
           </li>
         </ul>

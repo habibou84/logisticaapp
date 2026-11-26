@@ -9,7 +9,7 @@
       </div>
 
       <div v-if="form.stars && !low">
-        <p class="m-label">Ce qui était bien <span class="font-normal text-slate-500">(facultatif)</span></p>
+        <p class="m-label">Ce qui était bien <span class="font-normal text-slate-600">(facultatif)</span></p>
         <div class="flex flex-wrap gap-2">
           <button
             v-for="c in goodPoints" :key="c.value" type="button"
@@ -25,7 +25,7 @@
       <div v-if="form.stars">
         <label class="m-label" for="rating-reason">
           Qu'est-ce qui n'est pas allé ?
-          <span v-if="low">*</span><span v-else class="font-normal text-slate-500">(facultatif)</span>
+          <span v-if="low">*</span><span v-else class="font-normal text-slate-600">(facultatif)</span>
         </label>
         <select id="rating-reason" class="m-input" :value="''" @change="addReason($event)">
           <option value="">{{ form.reasons.length ? 'Ajouter un autre motif…' : 'Choisir un motif…' }}</option>
@@ -43,7 +43,7 @@
       </div>
 
       <div v-if="form.stars">
-        <label class="m-label" for="rating-comment">Un mot <span class="font-normal text-slate-500">(facultatif)</span></label>
+        <label class="m-label" for="rating-comment">Un mot <span class="font-normal text-slate-600">(facultatif)</span></label>
         <textarea id="rating-comment" v-model="form.comment" rows="2" maxlength="1000" class="m-input" placeholder="Votre avis aide l'agence à s'améliorer" />
       </div>
 

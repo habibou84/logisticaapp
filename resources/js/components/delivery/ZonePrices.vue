@@ -71,7 +71,7 @@
         <template v-for="c in shownCommunes" :key="c.id">
           <div :class="['grid grid-cols-2 items-center gap-x-4 gap-y-2 px-4 py-3', GRID, c.is_active ? '' : 'bg-slate-50']">
             <div class="col-span-2 min-w-0 md:col-span-1">
-              <p :class="['text-base font-semibold', c.is_active ? '' : 'text-slate-500']">
+              <p :class="['text-base font-semibold', c.is_active ? '' : 'text-slate-600']">
                 {{ c.name }}
                 <span v-if="interior(c)" class="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">Intérieur</span>
               </p>
@@ -94,10 +94,10 @@
               <template v-if="!interior(c)">
                 <input type="checkbox" class="h-5 w-5" :checked="c.in_forfait" :disabled="!canZones || busy[c.id]" :aria-label="`Couverte par les forfaits : ${c.name}`" @change="patch(c, 'in_forfait')"><span class="md:hidden">Couverte par les forfaits</span>
               </template>
-              <span v-else class="text-xs text-slate-500">selon le contrat</span>
+              <span v-else class="text-xs text-slate-600">selon le contrat</span>
             </label>
             <div class="col-span-2 flex items-center justify-end gap-3 md:col-span-1">
-              <template v-if="interior(c)"><span class="text-xs text-slate-500">prix dans l'onglet Distribution et MAD</span></template>
+              <template v-if="interior(c)"><span class="text-xs text-slate-600">prix dans l'onglet Distribution et MAD</span></template>
               <template v-else-if="canPrices">
                 <span v-if="c.is_active" class="text-xs tabular-nums text-slate-600">{{ progress(c).done }}/{{ progress(c).total }} réglés</span>
                 <button type="button" class="btn-secondary py-1.5" :disabled="!c.is_active" :aria-label="`Prix au départ de ${c.name}`" @click="departure = c">Prix au départ</button>
@@ -120,8 +120,8 @@
               <label class="flex items-center gap-2 text-sm md:justify-center">
                 <input type="checkbox" class="h-5 w-5" :checked="q.is_active" :disabled="!canZones || busy[q.id]" :aria-label="`On livre ici : ${q.name}`" @change="patch(q, 'is_active')"><span class="md:hidden">On livre</span>
               </label>
-              <span v-if="showForfait" class="hidden text-center text-xs text-slate-500 md:block">comme {{ c.name }}</span>
-              <p class="col-span-2 text-right text-xs text-slate-500 md:col-span-1">{{ hasOwnDeparture(q) ? 'prix à part au départ' : `suit ${c.name}` }}</p>
+              <span v-if="showForfait" class="hidden text-center text-xs text-slate-600 md:block">comme {{ c.name }}</span>
+              <p class="col-span-2 text-right text-xs text-slate-600 md:col-span-1">{{ hasOwnDeparture(q) ? 'prix à part au départ' : `suit ${c.name}` }}</p>
             </div>
           </template>
         </template>

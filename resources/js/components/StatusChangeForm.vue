@@ -18,7 +18,7 @@
         </optgroup>
       </select>
       <p v-if="selectedReason?.photo === 'required'" class="text-xs text-amber-700 mt-1">📷 Ce motif demande une photo du livreur (pièce jointe « photo de l'incident » de moins de 12 h).</p>
-      <p v-if="selectedReason?.triggers_return" class="text-xs text-slate-500 mt-1">↩️ La course part en retour vers le client.</p>
+      <p v-if="selectedReason?.triggers_return" class="text-xs text-slate-600 mt-1">↩️ La course part en retour vers le client.</p>
     </div>
 
     <div v-if="showDate">

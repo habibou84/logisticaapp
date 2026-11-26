@@ -2,7 +2,7 @@
   <div class="max-w-3xl space-y-4">
     <div>
       <h1 class="text-xl font-bold">🧭 Mise en route</h1>
-      <p class="text-sm text-gray-600">Étape par étape, ce qu'il faut régler pour que l'application travaille bien. Chaque étape se coche toute seule quand c'est fait.</p>
+      <p class="text-sm text-slate-600">Étape par étape, ce qu'il faut régler pour que l'application travaille bien. Chaque étape se coche toute seule quand c'est fait.</p>
     </div>
 
     <p v-if="error" class="field-error">{{ error }}</p>
@@ -16,7 +16,7 @@
         <div class="h-2 rounded-full bg-slate-200 overflow-hidden" role="progressbar" :aria-valuenow="guide.essentials.done" :aria-valuemax="guide.essentials.total" aria-label="Étapes essentielles faites">
           <div class="h-full bg-emerald-600 transition-all" :style="{ width: `${percent(guide.essentials)}%` }" />
         </div>
-        <p class="text-sm text-gray-600">Étapes conseillées : {{ guide.recommended.done }} sur {{ guide.recommended.total }}.</p>
+        <p class="text-sm text-slate-600">Étapes conseillées : {{ guide.recommended.done }} sur {{ guide.recommended.total }}.</p>
         <p v-if="next" class="text-sm">
           Prochaine étape : <strong>{{ next.title }}</strong>
           <RouterLink :to="link(next)" class="ml-1 text-blue-600 underline">{{ next.action.label }}</RouterLink>
@@ -27,7 +27,7 @@
       <section class="card p-4 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 class="font-semibold">🎬 Bien démarrer en vidéo</h2>
-          <p class="text-sm text-gray-600">Neuf courtes vidéos avec voix off et sous-titres : les étapes essentielles et le planning des livreurs.</p>
+          <p class="text-sm text-slate-600">Neuf courtes vidéos avec voix off et sous-titres : les étapes essentielles et le planning des livreurs.</p>
         </div>
         <div class="flex flex-wrap items-center gap-3">
           <button type="button" class="btn-primary" @click="video.open(firstVideo)">▶ Regarder</button>
@@ -51,7 +51,7 @@
 
       <section v-for="group in groups" :key="group.title" class="space-y-2">
         <h2 class="font-semibold">{{ group.title }}</h2>
-        <p class="text-sm text-gray-500">{{ group.intro }}</p>
+        <p class="text-sm text-slate-600">{{ group.intro }}</p>
         <ol class="space-y-2">
           <li v-for="(s, i) in group.steps" :key="s.key" :class="['card p-4 space-y-2', s.skipped ? 'opacity-60' : '']">
             <div class="flex items-start gap-3">
@@ -61,14 +61,14 @@
                   {{ group.essential ? `${i + 1}. ` : '' }}{{ s.title }}
                   <span :class="['ml-1 rounded-full px-2 py-0.5 text-xs font-medium', STATUS[s.status].cls]">{{ s.skipped ? 'Plus tard' : STATUS[s.status].label }}</span>
                 </p>
-                <p class="text-sm text-gray-600">{{ s.why }}</p>
-                <ul class="text-sm text-gray-800 space-y-0.5">
+                <p class="text-sm text-slate-600">{{ s.why }}</p>
+                <ul class="text-sm text-slate-800 space-y-0.5">
                   <li v-for="line in s.lines" :key="line">{{ line }}</li>
                 </ul>
                 <!-- Course d'essai : où elle en est -->
                 <template v-if="s.test">
                   <ol class="mt-2 space-y-1 text-sm">
-                    <li v-for="c in s.test.checkpoints" :key="c.label" :class="c.done ? 'text-emerald-800' : 'text-gray-500'">
+                    <li v-for="c in s.test.checkpoints" :key="c.label" :class="c.done ? 'text-emerald-800' : 'text-slate-600'">
                       {{ c.done ? '✅' : '⬜' }} {{ c.label }}
                     </li>
                   </ol>
@@ -86,7 +86,7 @@
               </template>
               <RouterLink v-else :to="link(s)" :class="s.status === 'done' && !s.test ? 'btn-secondary' : 'btn-primary'">{{ s.status === 'done' && !s.test ? 'Revoir' : s.action.label }}</RouterLink>
               <button v-if="hasGuideVideo(s.key)" type="button" class="btn-secondary" @click="video.open(s.key)">
-                ▶ Voir comment faire<span v-if="video.videos.value.watched.includes(s.key)" class="ml-1 text-xs text-gray-500">(vue)</span>
+                ▶ Voir comment faire<span v-if="video.videos.value.watched.includes(s.key)" class="ml-1 text-xs text-slate-600">(vue)</span>
               </button>
               <button v-if="s.test" type="button" class="btn-secondary text-red-700" :disabled="busy" @click="cleanTest">Effacer la course d'essai</button>
               <button v-if="!s.essential && s.status !== 'done'" type="button" class="btn-secondary" :disabled="busy" @click="skip(s, !s.skipped)">
@@ -98,7 +98,7 @@
       </section>
     </template>
 
-    <p v-else-if="!error" class="text-sm text-gray-500">Chargement…</p>
+    <p v-else-if="!error" class="text-sm text-slate-600">Chargement…</p>
 
     <GuideVideoPlayer
       :chapter-key="video.playing.value" :steps="video.steps.value" :watched="video.videos.value.watched"

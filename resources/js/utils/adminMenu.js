@@ -17,7 +17,7 @@ export function adminMenuGroups(badges = {}) {
       label: 'Opérations',
       items: [
         // Une entrée : courses, activité des livreurs, retours clients et courses en retard, en cartes en haut des pages
-        { icon: '📦', label: 'Courses', routes: COURSES_PAGES, badge: (badges.late || 0) + (badges.untreated || 0) + (badges.fieldReports || 0) + (badges.heldParcels || 0) },
+        { icon: 'course', label: 'Courses', routes: COURSES_PAGES, badge: (badges.late || 0) + (badges.untreated || 0) + (badges.fieldReports || 0) + (badges.heldParcels || 0) },
       ],
     },
     {
@@ -26,51 +26,51 @@ export function adminMenuGroups(badges = {}) {
       label: 'Livraison',
       items: [
         // Communes, prix au départ, suppléments, grilles négociées, tarifs de la distribution et de la MAD
-        { to: '/admin/zones', icon: '🗺️', label: 'Zones et tarifs', permission: ['zones.manage', 'pricing.manage', 'rates.manage'] },
-        { to: '/admin/automatisation', icon: '⚡', label: 'Automatisation', permission: 'settings.manage' },
-        { to: '/admin/activite/planning', icon: '🗓️', label: 'Planning des livreurs', permission: 'planning.manage' },
+        { to: '/admin/zones', icon: 'carte', label: 'Zones et tarifs', permission: ['zones.manage', 'pricing.manage', 'rates.manage'] },
+        { to: '/admin/automatisation', icon: 'automatisation', label: 'Automatisation', permission: 'settings.manage' },
+        { to: '/admin/activite/planning', icon: 'planning', label: 'Planning des livreurs', permission: 'planning.manage' },
         // Routine du matin des livreurs en mise à disposition, et lieu où ils pointent
-        { to: '/admin/parcours', icon: '🧭', label: 'Parcours', permission: ['rates.manage', 'orders.dispatch', 'merchants.view'], activities: ['mad'], tags: ['mad'] },
+        { to: '/admin/parcours', icon: 'activite', label: 'Parcours', permission: ['rates.manage', 'orders.dispatch', 'merchants.view'], activities: ['mad'], tags: ['mad'] },
       ],
     },
     {
       id: 'clients',
       label: 'Clients',
       items: [
-        { to: '/admin/marchands', icon: '🏪', label: 'Clients', permission: 'merchants.view' },
+        { to: '/admin/marchands', icon: 'clients', label: 'Clients', permission: 'merchants.view' },
         // Clients sous contrat : forfait du mois, zones couvertes, livreurs attitrés
-        { to: '/admin/contrats', icon: '📑', label: 'Contrats', permission: 'merchants.view', activities: DM, tags: DM },
-        { to: '/admin/annuaire', icon: '📇', label: 'Annuaire', permission: 'merchants.view', activities: DM, tags: DM },
-        { to: '/admin/stock', icon: '🏬', label: 'Stock', permission: 'stock.manage', tags: ['ecommerce'] },
+        { to: '/admin/contrats', icon: 'contrat', label: 'Contrats', permission: 'merchants.view', activities: DM, tags: DM },
+        { to: '/admin/annuaire', icon: 'annuaire', label: 'Annuaire', permission: 'merchants.view', activities: DM, tags: DM },
+        { to: '/admin/stock', icon: 'stock', label: 'Stock', permission: 'stock.manage', tags: ['ecommerce'] },
       ],
     },
     {
       id: 'finances',
       label: 'Finances',
       items: [
-        { to: '/admin/caisse', icon: '💰', label: 'Caisse', permission: 'finance.view' },
-        { to: '/admin/factures', icon: '📄', label: 'Factures', permission: 'invoices.view', activities: DM, tags: DM },
-        { to: '/admin/chiffre-affaires', icon: '📈', label: 'Chiffre d\'affaires', permission: 'revenue.view' },
-        { to: '/admin/paie-livreurs', icon: '🧾', label: 'Paie des livreurs', permission: 'pay.manage' },
+        { to: '/admin/caisse', icon: 'caisse', label: 'Caisse', permission: 'finance.view' },
+        { to: '/admin/factures', icon: 'facture', label: 'Factures', permission: 'invoices.view', activities: DM, tags: DM },
+        { to: '/admin/chiffre-affaires', icon: 'tendance', label: 'Chiffre d\'affaires', permission: 'revenue.view' },
+        { to: '/admin/paie-livreurs', icon: 'paie', label: 'Paie des livreurs', permission: 'pay.manage' },
       ],
     },
     {
       id: 'messages',
       label: 'Messages',
       items: [
-        { to: '/admin/messages', icon: '💬', label: 'Messages', permission: 'orders.dispatch', badge: badges.inbox },
+        { to: '/admin/messages', icon: 'message', label: 'Messages', permission: 'orders.dispatch', badge: badges.inbox },
         // Connexion du numéro, messages automatiques, options d'envoi (l'entrée reste allumée sur ses onglets)
-        { to: '/admin/whatsapp', icon: '🟢', label: 'WhatsApp', permission: 'messaging.manage', also: ['/admin/whatsapp'] },
+        { to: '/admin/whatsapp', icon: 'whatsapp', label: 'WhatsApp', permission: 'messaging.manage', also: ['/admin/whatsapp'] },
       ],
     },
     {
       id: 'equipe',
       label: 'Équipe',
       items: [
-        { to: '/admin/livreurs', icon: '🛵', label: 'Livreurs', permission: ['orders.dispatch', 'couriers.manage', 'ratings.manage'] },
+        { to: '/admin/livreurs', icon: 'livreur', label: 'Livreurs', permission: ['orders.dispatch', 'couriers.manage', 'ratings.manage'] },
         // Une entrée, deux onglets (utils/pageTabs) : elle mène au premier onglet permis
-        { icon: '🏍️', label: 'Véhicules et atelier', routes: FLEET_TABS, badge: (badges.vehicles || 0) + (badges.workshop || 0) },
-        { icon: '👥', label: 'Utilisateurs et rôles', routes: TEAM_TABS },
+        { icon: 'vehicule', label: 'Véhicules et atelier', routes: FLEET_TABS, badge: (badges.vehicles || 0) + (badges.workshop || 0) },
+        { icon: 'utilisateurs', label: 'Utilisateurs et rôles', routes: TEAM_TABS },
       ],
     },
     {
@@ -79,7 +79,7 @@ export function adminMenuGroups(badges = {}) {
       // Intégrations, entreprise, motifs… : la page Réglages, rangée par thèmes
       items: [
         // Point rouge : alertes du bilan de santé
-        { to: '/admin/reglages', icon: '⚙️', label: 'Réglages', permission: SETTINGS_PERMISSIONS, badge: badges.health },
+        { to: '/admin/reglages', icon: 'reglages', label: 'Réglages', permission: SETTINGS_PERMISSIONS, badge: badges.health },
       ],
     },
   ]
@@ -88,7 +88,7 @@ export function adminMenuGroups(badges = {}) {
 // Poste de pilotage pour le dispatch (à faire maintenant, point du jour), tableau de bord pour les autres
 export const adminMenuTop = (can = () => true) => [
   { to: '/admin', icon: can('orders.dispatch') ? '🎛️' : '🏠', label: can('orders.dispatch') ? 'Poste de pilotage' : 'Tableau de bord' },
-  { to: '/admin/statistiques', icon: '📊', label: 'Statistiques', permission: 'orders.view' },
+  { to: '/admin/statistiques', icon: 'statistiques', label: 'Statistiques', permission: 'orders.view' },
 ]
 
 /**

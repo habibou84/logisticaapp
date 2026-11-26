@@ -3,7 +3,7 @@
     <p v-if="merchantSide" class="text-sm text-slate-600">
       Votre agence vous reverse l'argent de vos ventes avec ces moyens. Le moyen ⭐ est utilisé en premier.
     </p>
-    <p v-if="loading" class="text-sm text-gray-500">Chargement…</p>
+    <p v-if="loading" class="text-sm text-slate-600">Chargement…</p>
 
     <!-- Nouveau moyen à vérifier : l'agence appelle le client à son numéro habituel avant de valider -->
     <p v-if="!merchantSide && pending.length" class="rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
@@ -19,7 +19,7 @@
         <PaymentMethodIcon :type="m.type" />
         <div class="min-w-0 flex-1">
           <p class="font-semibold break-words">{{ m.type_label }}{{ m.bank_name ? ` · ${m.bank_name}` : '' }} · {{ m.display_number }} <span v-if="m.is_preferred" title="Utilisé en premier">⭐</span></p>
-          <p v-if="m.holder_name" class="text-xs text-slate-500">{{ m.holder_name }}</p>
+          <p v-if="m.holder_name" class="text-xs text-slate-600">{{ m.holder_name }}</p>
         </div>
         <AuthImage v-if="m.qr_url" :src="`${m.qr_url}`" alt="QR code" class="h-12 w-12 rounded border object-contain" />
       </div>
@@ -38,7 +38,7 @@
       </div>
     </article>
 
-    <p v-if="!loading && !methods.length" class="rounded-xl border border-dashed p-4 text-center text-sm text-slate-500">
+    <p v-if="!loading && !methods.length" class="rounded-xl border border-dashed p-4 text-center text-sm text-slate-600">
       {{ merchantSide ? 'Aucun moyen de paiement pour l\'instant.' : 'Le client n\'a encore donné aucun moyen de paiement.' }}
     </p>
     <button v-if="canEdit && methods.length < 6" type="button" class="tap w-full rounded-xl border-2 border-dashed border-slate-300 py-3 font-medium text-slate-700" @click="openForm()">
@@ -77,15 +77,15 @@
           <input id="pm-number" v-model="form.data.number" class="input" :inputmode="form.data.type === 'bank' ? 'text' : 'tel'" maxlength="60" required :placeholder="form.data.type === 'bank' ? 'CI008 01234 …' : '07 00 00 00 00'">
         </div>
         <div>
-          <label class="label" for="pm-holder">Au nom de <span class="font-normal text-gray-500">(facultatif)</span></label>
+          <label class="label" for="pm-holder">Au nom de <span class="font-normal text-slate-600">(facultatif)</span></label>
           <input id="pm-holder" v-model="form.data.holder_name" class="input" maxlength="120">
         </div>
         <div v-if="form.data.type !== 'bank'">
-          <label class="label" for="pm-link">Lien de paiement marchand <span class="font-normal text-gray-500">(facultatif)</span></label>
+          <label class="label" for="pm-link">Lien de paiement marchand <span class="font-normal text-slate-600">(facultatif)</span></label>
           <input id="pm-link" v-model="form.data.payment_link" type="url" class="input" maxlength="500" placeholder="https://pay.wave.com/m/…">
         </div>
         <div>
-          <p class="label">QR code <span class="font-normal text-gray-500">(facultatif)</span></p>
+          <p class="label">QR code <span class="font-normal text-slate-600">(facultatif)</span></p>
           <div class="flex items-center gap-3">
             <img v-if="form.preview" :src="form.preview" alt="QR code" class="h-20 w-20 rounded border object-contain">
             <AuthImage v-else-if="form.currentQr && !form.removeQr" :src="form.currentQr" alt="QR code" class="h-20 w-20 rounded border object-contain" />
@@ -96,7 +96,7 @@
           </div>
         </div>
         <label class="flex items-center gap-2 text-sm"><input v-model="form.data.is_preferred" type="checkbox"> Utiliser ce moyen en premier</label>
-        <p v-if="merchantSide" class="text-xs text-slate-500">Après l'enregistrement, ce moyen reste « à vérifier » jusqu'à la validation de votre agence.</p>
+        <p v-if="merchantSide" class="text-xs text-slate-600">Après l'enregistrement, ce moyen reste « à vérifier » jusqu'à la validation de votre agence.</p>
         <p v-if="form.error" class="text-sm text-red-600">{{ form.error }}</p>
         <button class="btn-primary w-full" :disabled="form.saving">{{ form.saving ? 'Enregistrement…' : 'Enregistrer' }}</button>
       </form>

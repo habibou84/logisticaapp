@@ -179,7 +179,7 @@
         <h2 class="font-semibold">🕘 Dernières courses</h2>
         <RouterLink to="/admin/courses" class="text-sm text-blue-600">Tout voir</RouterLink>
       </div>
-      <p v-if="!recent.length" class="text-sm text-gray-500">Aucune course pour le moment.</p>
+      <p v-if="!recent.length" class="text-sm text-slate-600">Aucune course pour le moment.</p>
       <ul v-else class="divide-y text-sm">
         <li v-for="o in recent" :key="o.id">
           <RouterLink :to="`/admin/courses/${o.id}`" class="flex items-center gap-3 py-1.5 hover:bg-slate-50">

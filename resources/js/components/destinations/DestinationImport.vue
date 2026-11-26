@@ -1,8 +1,8 @@
 <template>
   <Modal :open="open" title="Importer des destinations" @close="$emit('close')">
     <div class="space-y-3 text-sm">
-      <p class="text-gray-600">Export SQL de l'ancienne base (table <code>base_clients</code>) ou fichier CSV avec les colonnes nom, ville, commune, adresse, contact, secteur, whatsapp, email.</p>
-      <p class="text-gray-600">Les numéros qui ne sont pas au format à 10 chiffres sont gardés tels quels, « à vérifier » : ils se corrigent dès qu'un bon numéro est saisi sur une course.</p>
+      <p class="text-slate-600">Export SQL de l'ancienne base (table <code>base_clients</code>) ou fichier CSV avec les colonnes nom, ville, commune, adresse, contact, secteur, whatsapp, email.</p>
+      <p class="text-slate-600">Les numéros qui ne sont pas au format à 10 chiffres sont gardés tels quels, « à vérifier » : ils se corrigent dès qu'un bon numéro est saisi sur une course.</p>
       <input type="file" accept=".sql,.csv,.txt" class="block" @change="pick">
       <button type="button" class="btn-secondary" :disabled="!file || busy" @click="run(true)">1. Essayer (rien n'est enregistré)</button>
 
@@ -20,15 +20,15 @@
         </ul>
         <details v-if="Object.keys(report.unknown_communes).length">
           <summary class="cursor-pointer">Communes non reconnues (ville gardée)</summary>
-          <p class="text-xs text-gray-600">{{ Object.entries(report.unknown_communes).map(([k, v]) => `${k} (${v})`).join(', ') }}</p>
+          <p class="text-xs text-slate-600">{{ Object.entries(report.unknown_communes).map(([k, v]) => `${k} (${v})`).join(', ') }}</p>
         </details>
         <details v-if="Object.keys(report.cities).length">
           <summary class="cursor-pointer">Villes corrigées</summary>
-          <p class="text-xs text-gray-600">{{ Object.entries(report.cities).map(([k, v]) => `${k} (${v})`).join(', ') }}</p>
+          <p class="text-xs text-slate-600">{{ Object.entries(report.cities).map(([k, v]) => `${k} (${v})`).join(', ') }}</p>
         </details>
         <details v-if="report.samples.length">
           <summary class="cursor-pointer">Exemples</summary>
-          <ul class="text-xs text-gray-600 space-y-1">
+          <ul class="text-xs text-slate-600 space-y-1">
             <li v-for="s in report.samples" :key="s.name"><b>{{ s.name }}</b> · {{ s.phones.join(', ') || '—' }}<template v-if="s.check"> · <span class="text-amber-700">à vérifier : {{ s.raw }}</span></template></li>
           </ul>
         </details>

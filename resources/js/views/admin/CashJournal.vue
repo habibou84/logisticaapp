@@ -3,7 +3,7 @@
     <div>
       <RouterLink to="/admin/caisse" class="text-sm text-blue-600">← Caisse</RouterLink>
       <h1 class="text-xl font-bold mt-1">Journal de la caisse</h1>
-      <p class="text-sm text-gray-600">Tout ce qui touche l'argent, avec qui l'a fait et quand. Rien ne s'efface.</p>
+      <p class="text-sm text-slate-600">Tout ce qui touche l'argent, avec qui l'a fait et quand. Rien ne s'efface.</p>
     </div>
 
     <div class="card p-3 flex flex-wrap items-end gap-3">
@@ -29,22 +29,22 @@
 
     <div class="card overflow-x-auto">
       <table class="w-full text-sm stack-table">
-        <thead class="bg-slate-50 text-left text-gray-600">
+        <thead class="bg-slate-50 text-left text-slate-600">
           <tr><th class="p-2">Quand</th><th class="p-2">Action</th><th class="p-2">Détail</th><th class="p-2 text-right">Montant</th><th class="p-2">Par</th></tr>
         </thead>
         <tbody class="divide-y">
           <tr v-for="l in logs" :key="l.id">
             <td class="p-2 text-xs whitespace-nowrap">{{ dateTime(l.created_at) }}</td>
             <td data-label="Action" class="p-2"><span :class="['rounded-full px-2 py-0.5 text-xs font-semibold', BADGES[l.action] || 'bg-slate-100 text-slate-700']">{{ l.action_label }}</span></td>
-            <td data-label="Détail" class="p-2">{{ l.description }}<span v-if="l.reference" class="block font-mono text-xs text-gray-500">{{ l.reference }}</span></td>
+            <td data-label="Détail" class="p-2">{{ l.description }}<span v-if="l.reference" class="block font-mono text-xs text-slate-600">{{ l.reference }}</span></td>
             <td data-label="Montant" :class="['p-2 text-right whitespace-nowrap', signedClass(l.amount)]">{{ l.amount === null ? '—' : money(l.amount) }}</td>
             <td data-label="Par" class="p-2 text-xs">{{ l.by || 'Automatique' }}</td>
           </tr>
-          <tr v-if="loaded && !logs.length"><td colspan="5" class="p-4 text-center text-gray-500">Aucune action sur cette période.</td></tr>
+          <tr v-if="loaded && !logs.length"><td colspan="5" class="p-4 text-center text-slate-600">Aucune action sur cette période.</td></tr>
         </tbody>
       </table>
     </div>
-    <p v-if="logs.length >= 500" class="text-xs text-gray-500">Les 500 dernières actions : resserrez les dates pour voir plus loin.</p>
+    <p v-if="logs.length >= 500" class="text-xs text-slate-600">Les 500 dernières actions : resserrez les dates pour voir plus loin.</p>
   </div>
 </template>
 

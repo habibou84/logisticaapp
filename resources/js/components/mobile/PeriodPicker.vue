@@ -2,9 +2,9 @@
   <div>
     <!-- Menu : un bouton « Aujourd'hui ▾ », les choix dans un panneau -->
     <button v-if="menu" type="button" class="tap flex h-11 w-full items-center gap-2 rounded-xl bg-white px-3 text-sm font-semibold ring-1 ring-slate-200 active:bg-slate-50" aria-haspopup="dialog" @click="listOpen = true">
-      <StatusIcon name="calendar" class="h-4 w-4 shrink-0 text-slate-500" />
+      <StatusIcon name="calendar" class="h-4 w-4 shrink-0 text-slate-600" />
       <span class="flex-1 truncate text-left">{{ modelValue.label }}</span>
-      <StatusIcon name="down" class="h-4 w-4 shrink-0 text-slate-500" />
+      <StatusIcon name="down" class="h-4 w-4 shrink-0 text-slate-600" />
     </button>
     <div v-else class="-mx-4 px-4 flex gap-2 overflow-x-auto no-scrollbar" role="radiogroup" aria-label="Période">
       <button

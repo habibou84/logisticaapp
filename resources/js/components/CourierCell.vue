@@ -27,7 +27,7 @@
     <label v-if="assignStage" class="flex items-center gap-1">
       <span aria-hidden="true">{{ assignStage === 'pickup' ? '↑' : '↓' }}</span>
       <select
-        value="" :class="['courier-select', order.awaiting_courier?.late ? 'border-red-300 text-red-700' : 'text-gray-500']" :disabled="busy"
+        value="" :class="['courier-select', order.awaiting_courier?.late ? 'border-red-300 text-red-700' : 'text-slate-600']" :disabled="busy"
         :aria-label="`Assigner ${assignStage === 'pickup' ? 'le ramassage' : 'la livraison'} de ${order.tracking_code}`"
         @change="change(assignStage, $event)"
       >

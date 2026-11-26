@@ -12,7 +12,7 @@
       <p v-if="gain" class="text-sm font-semibold text-emerald-700">💰 Votre gain prévu : + {{ money(gain) }}</p>
       <p class="text-xl font-bold">{{ shop.name }}</p>
       <p class="text-slate-700">📍 {{ shop.zone }}<span v-if="shop.address"> · {{ shop.address }}</span></p>
-      <p v-if="shop.landmark" class="text-slate-500">Repère : {{ shop.landmark }}</p>
+      <p v-if="shop.landmark" class="text-slate-600">Repère : {{ shop.landmark }}</p>
 
       <div class="grid grid-cols-3 gap-2 pt-2">
         <a :href="telLink(shop.phone)" class="tap rounded-2xl bg-slate-100 py-3 flex flex-col items-center gap-1 text-sm font-medium active:bg-slate-200">
@@ -48,7 +48,7 @@
         <span class="flex-1 min-w-0">
           <span class="block font-semibold truncate">{{ m.order.recipient.name || m.order.recipient.phone }}</span>
           <span v-if="m.order.department" class="block text-sm text-violet-800 truncate">🏢 {{ m.order.department.label }}<template v-if="m.order.to_department"> → {{ m.order.to_department.label }}</template></span>
-          <span class="block text-sm text-slate-500 truncate">🛵 vers {{ m.order.delivery.zone_name }} · {{ m.order.package.description || 'Colis' }}<template v-if="m.order.package.shipment_quantity > 1 || m.order.package.pli_kind"> · {{ shipmentLabel(m.order.package) }}</template></span>
+          <span class="block text-sm text-slate-600 truncate">🛵 vers {{ m.order.delivery.zone_name }} · {{ m.order.package.description || 'Colis' }}<template v-if="m.order.package.shipment_quantity > 1 || m.order.package.pli_kind"> · {{ shipmentLabel(m.order.package) }}</template></span>
           <span class="flex flex-wrap items-center gap-2 mt-1">
             <span v-if="m.status === 'assigned'" class="rounded-full bg-amber-100 text-amber-800 text-xs font-semibold px-2 py-0.5">À accepter</span>
             <StatusBadge v-else :status="m.order.status" :label="m.order.status_label" />
@@ -75,7 +75,7 @@
             ✓ J'ai tout récupéré ({{ pickedCount }}/{{ active.length }})
           </button>
         </template>
-        <p v-if="toAccept.length" class="text-center text-xs text-slate-500">Pour refuser un colis, ouvrez son détail.</p>
+        <p v-if="toAccept.length" class="text-center text-xs text-slate-600">Pour refuser un colis, ouvrez son détail.</p>
       </div>
     </div>
 

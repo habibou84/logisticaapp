@@ -5,7 +5,7 @@
       <div class="flex items-start gap-3">
         <span class="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-slate-100 text-2xl" aria-hidden="true">{{ repair.icon || '🛠️' }}</span>
         <div class="min-w-0 flex-1">
-          <p class="text-xs text-slate-500">Panne n° {{ repair.number }} · {{ dateTime(repair.created_at) }}</p>
+          <p class="text-xs text-slate-600">Panne n° {{ repair.number }} · {{ dateTime(repair.created_at) }}</p>
           <p class="text-lg font-semibold leading-snug">{{ repair.category_label ? `${repair.category_label}${repair.part ? ' · ' + repair.part : ''}` : repair.title }}</p>
         </div>
         <span :class="['shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold', REPAIR_STATUS_STYLES[repair.status]]">{{ repair.status_label }}</span>
@@ -51,7 +51,7 @@
       <li v-for="s in steps" :key="s.label" class="flex items-center gap-3 text-sm">
         <span :class="['grid h-6 w-6 shrink-0 place-items-center rounded-full text-xs text-white', s.at ? 'bg-emerald-600' : s.current ? 'bg-[var(--app-color)] ring-4 ring-orange-100' : 'bg-slate-300']">{{ s.at ? '✓' : '' }}</span>
         <span :class="['flex-1', s.at || s.current ? 'text-slate-900' : 'text-slate-400', s.current ? 'font-semibold' : '']">{{ s.label }}</span>
-        <span class="font-mono text-xs text-slate-500">{{ s.at ? time(s.at) : '—' }}</span>
+        <span class="font-mono text-xs text-slate-600">{{ s.at ? time(s.at) : '—' }}</span>
       </li>
       <li v-if="repair.status === 'cancelled'" class="text-sm text-slate-600">✖️ Annulée à {{ time(repair.cancelled_at) }}</li>
     </ol>
@@ -78,7 +78,7 @@
       <p class="font-semibold">Achats sur place</p>
       <div v-for="p in repair.purchases" :key="p.id" class="flex items-start gap-2 text-sm">
         <div class="min-w-0 flex-1">
-          <p>{{ p.quantity }} × {{ p.label }} <span class="text-slate-500">(~{{ money(p.estimated_amount) }})</span></p>
+          <p>{{ p.quantity }} × {{ p.label }} <span class="text-slate-600">(~{{ money(p.estimated_amount) }})</span></p>
           <p v-if="p.status === 'approved'" class="text-xs text-emerald-700">Accordé par {{ p.decided_by }} jusqu'à {{ money(p.max_amount) }}. Gardez la facture.</p>
           <p v-else-if="p.status === 'refused'" class="text-xs text-red-700">Refusé{{ p.decision_note ? ` : ${p.decision_note}` : '' }}</p>
           <p v-else class="text-xs text-amber-700">En attente de la réponse de l'administrateur</p>
@@ -91,7 +91,7 @@
     <div v-if="repair.status === 'done'" class="m-card space-y-1.5 p-4 text-sm">
       <p class="font-semibold">Intervention terminée à {{ time(repair.finished_at) }}</p>
       <p>Cause : {{ repair.cause_label }}</p>
-      <p v-for="(line, i) in repair.parts" :key="i">{{ line.quantity }} × {{ line.label }} <span class="text-slate-500">· {{ money(line.amount) }}</span></p>
+      <p v-for="(line, i) in repair.parts" :key="i">{{ line.quantity }} × {{ line.label }} <span class="text-slate-600">· {{ money(line.amount) }}</span></p>
       <p v-if="repair.garage">Garage : {{ repair.garage }} · {{ money(repair.garage_amount) }}</p>
       <p class="font-semibold">Total : {{ money(repair.total) }}</p>
       <p v-if="repair.remark" class="text-slate-600">À prévoir : {{ repair.remark }}</p>
@@ -101,11 +101,11 @@
     <!-- Échange avec le livreur -->
     <div v-if="repair.event && (canWork || repair.event.messages.length)" class="m-card space-y-3 p-4">
       <p class="font-semibold">Échange avec le livreur</p>
-      <p v-if="!repair.event.messages.length" class="text-sm text-slate-500">Prévenez le livreur, posez-lui une question : il reçoit votre message dans son application.</p>
+      <p v-if="!repair.event.messages.length" class="text-sm text-slate-600">Prévenez le livreur, posez-lui une question : il reçoit votre message dans son application.</p>
       <div v-for="m in repair.event.messages" :key="m.id" :class="['max-w-[85%] rounded-2xl px-3 py-2 text-sm', m.from_courier ? 'bg-slate-100' : 'ml-auto bg-[var(--app-color)] text-white']">
-        <p v-if="m.from_courier || m.sender !== auth.user?.name" :class="['text-xs font-semibold', m.from_courier ? 'text-slate-500' : 'text-white/80']">{{ m.sender }}</p>
+        <p v-if="m.from_courier || m.sender !== auth.user?.name" :class="['text-xs font-semibold', m.from_courier ? 'text-slate-600' : 'text-white/80']">{{ m.sender }}</p>
         <p class="whitespace-pre-line">{{ m.body }}</p>
-        <p :class="['text-right text-[11px]', m.from_courier ? 'text-slate-400' : 'text-white/70']">{{ time(m.created_at) }}</p>
+        <p :class="['text-right text-xs', m.from_courier ? 'text-slate-400' : 'text-white/70']">{{ time(m.created_at) }}</p>
       </div>
       <div v-if="canWork" class="flex gap-2">
         <input v-model="body" class="m-input flex-1" placeholder="Votre message" aria-label="Votre message au livreur" maxlength="1000" @keydown.enter="sendMessage">

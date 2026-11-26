@@ -75,7 +75,7 @@
           </template>
         </div>
       </section>
-      <p class="text-[11px] text-slate-600">Bordereau imprimé le {{ printedAt }}</p>
+      <p class="text-xs text-slate-600">Bordereau imprimé le {{ printedAt }}</p>
     </div>
 
     <!-- Faire signer sur le téléphone ou la tablette -->

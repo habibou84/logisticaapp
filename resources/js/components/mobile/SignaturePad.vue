@@ -10,7 +10,7 @@
       @pointercancel="end"
       @pointerleave="end"
     />
-    <div class="flex justify-between text-xs text-slate-500">
+    <div class="flex justify-between text-xs text-slate-600">
       <span>{{ empty ? 'Signez avec le doigt dans le cadre' : 'Signature enregistrée' }}</span>
       <button v-if="!empty" type="button" class="text-blue-600" @click="clear">Effacer</button>
     </div>

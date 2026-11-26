@@ -13,7 +13,7 @@
         <BarList :items="byDelivered" empty="Aucune livraison sur la période." />
       </section>
       <section class="card p-4 space-y-3">
-        <h2 class="font-semibold">Échecs par commune <span class="text-sm font-normal text-slate-500">· passages ratés</span></h2>
+        <h2 class="font-semibold">Échecs par commune <span class="text-sm font-normal text-slate-600">· passages ratés</span></h2>
         <BarList :items="byFailed" :color="SERIES[1]" empty="Aucun échec sur la période. 👏" />
       </section>
     </div>
@@ -28,7 +28,7 @@
         <span v-else>—</span>
       </template>
     </SortableTable>
-    <p class="text-xs text-slate-500">Les quartiers comptent dans leur commune. Réussite : livrées / (livrées + échecs). Délai : médiane entre le ramassage et la livraison. Frais moyen : à comparer avec votre grille de tarifs pour repérer les zones sous-payées.</p>
+    <p class="text-xs text-slate-600">Les quartiers comptent dans leur commune. Réussite : livrées / (livrées + échecs). Délai : médiane entre le ramassage et la livraison. Frais moyen : à comparer avec votre grille de tarifs pour repérer les zones sous-payées.</p>
   </div>
 </template>
 

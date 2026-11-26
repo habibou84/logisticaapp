@@ -4,7 +4,7 @@
     <div class="flex flex-wrap items-end justify-between gap-3">
       <div>
         <h1 class="text-xl font-bold">Véhicules</h1>
-        <p class="text-sm text-gray-600">Le parc, qui roule avec quoi, les papiers et l'entretien.</p>
+        <p class="text-sm text-slate-600">Le parc, qui roule avec quoi, les papiers et l'entretien.</p>
       </div>
       <div class="flex flex-wrap gap-2">
         <RouterLink to="/admin/vehicules/echeances" class="btn-secondary">📅 Échéances</RouterLink>
@@ -24,13 +24,13 @@
 
       <div class="card overflow-x-auto">
         <table class="w-full text-left text-sm min-w-[56rem]">
-          <thead class="text-xs uppercase text-gray-500">
+          <thead class="text-xs uppercase text-slate-600">
             <tr><th class="p-3" /><th class="p-3">Véhicule</th><th class="p-3">Livreur</th><th class="p-3">État</th><th class="p-3">Propriétaire</th><th class="p-3">Compteur</th><th class="p-3">À surveiller</th><th class="p-3">Coût / course</th></tr>
           </thead>
           <tbody>
             <tr v-for="v in data.data" :key="v.id" class="border-t border-slate-100 hover:bg-slate-50 cursor-pointer" @click="router.push(`/admin/vehicules/${v.id}`)">
               <td class="p-3 text-xl">{{ VEHICLE_TYPES[v.type]?.icon }}</td>
-              <td class="p-3"><p class="whitespace-nowrap font-mono font-semibold">{{ v.plate }}</p><p class="text-xs text-gray-500">{{ [v.brand, v.model, v.year].filter(Boolean).join(' ') }}</p></td>
+              <td class="p-3"><p class="whitespace-nowrap font-mono font-semibold">{{ v.plate }}</p><p class="text-xs text-slate-600">{{ [v.brand, v.model, v.year].filter(Boolean).join(' ') }}</p></td>
               <td class="p-3">{{ v.courier?.name || '—' }}</td>
               <td class="p-3"><span :class="['whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium', STATUS_STYLES[v.status]]">{{ v.status_label }}</span></td>
               <td class="p-3"><span :class="['whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium', OWNERSHIP_STYLES[v.ownership]]">{{ v.ownership_label }}</span></td>
@@ -41,7 +41,7 @@
               </td>
               <td class="p-3 font-medium">{{ v.cost_per_course ? money(v.cost_per_course) : '—' }}</td>
             </tr>
-            <tr v-if="!data.data.length"><td colspan="8" class="p-8 text-center text-gray-500">Aucun véhicule. Ajoutez le premier pour suivre ses papiers, son entretien et ses coûts.</td></tr>
+            <tr v-if="!data.data.length"><td colspan="8" class="p-8 text-center text-slate-600">Aucun véhicule. Ajoutez le premier pour suivre ses papiers, son entretien et ses coûts.</td></tr>
           </tbody>
         </table>
       </div>
@@ -57,7 +57,7 @@
         </ul>
       </div>
     </template>
-    <p v-else class="text-gray-500">Chargement…</p>
+    <p v-else class="text-slate-600">Chargement…</p>
 
     <VehicleFormModal v-if="catalog" :open="formOpen" :vehicle="editing" :couriers="data?.couriers || []" :catalog="catalog" @close="formOpen = false" @saved="(v) => router.push(`/admin/vehicules/${v.id}`)" />
   </div>

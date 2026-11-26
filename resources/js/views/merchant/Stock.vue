@@ -25,11 +25,11 @@
       <div class="flex justify-between gap-3">
         <div class="min-w-0">
           <p class="font-semibold truncate">{{ p.name }}</p>
-          <p class="text-xs text-slate-500">{{ p.sku || 'Sans référence' }} · {{ money(p.price) }}</p>
+          <p class="text-xs text-slate-600">{{ p.sku || 'Sans référence' }} · {{ money(p.price) }}</p>
         </div>
         <div class="text-right shrink-0">
           <p :class="['text-2xl font-bold leading-none', p.available <= 0 ? 'text-red-600' : p.is_low ? 'text-amber-600' : '']">{{ p.available }}</p>
-          <p class="text-xs text-slate-500">disponible{{ p.available > 1 ? 's' : '' }}</p>
+          <p class="text-xs text-slate-600">disponible{{ p.available > 1 ? 's' : '' }}</p>
         </div>
       </div>
       <div v-if="p.levels.length" class="flex flex-wrap gap-1.5">
@@ -53,9 +53,9 @@
         <div class="m-card divide-y">
           <div v-for="l in current.levels" :key="l.location_id" class="p-3 flex justify-between text-sm">
             <span>{{ l.hub_id ? `🏬 ${l.label}` : '🏠 Chez moi' }}</span>
-            <span><strong>{{ l.available }}</strong> dispo<span class="text-slate-500"> · {{ l.on_hand }} en stock</span></span>
+            <span><strong>{{ l.available }}</strong> dispo<span class="text-slate-600"> · {{ l.on_hand }} en stock</span></span>
           </div>
-          <p v-if="!current.levels.length" class="p-3 text-sm text-slate-500">Aucun stock enregistré.</p>
+          <p v-if="!current.levels.length" class="p-3 text-sm text-slate-600">Aucun stock enregistré.</p>
         </div>
 
         <div v-if="canManage" class="space-y-2">
@@ -69,9 +69,9 @@
             <input v-model.number="move.quantity" type="number" min="0" inputmode="numeric" class="m-input text-lg font-semibold" :aria-label="move.action === 'count' ? 'Quantité comptée' : 'Quantité'">
             <button class="m-btn-primary w-auto px-5" :disabled="move.saving" @click="saveMove">OK</button>
           </div>
-          <p class="text-xs text-slate-500">{{ actions.find((a) => a.value === move.action).help }}</p>
+          <p class="text-xs text-slate-600">{{ actions.find((a) => a.value === move.action).help }}</p>
           <p v-if="move.error" class="text-sm text-red-600">{{ move.error }}</p>
-          <p class="text-xs text-slate-500">Le stock à l'entrepôt est tenu par l'agence : déposez vos produits et elle les enregistre.</p>
+          <p class="text-xs text-slate-600">Le stock à l'entrepôt est tenu par l'agence : déposez vos produits et elle les enregistre.</p>
         </div>
 
         <div v-if="history.length" class="space-y-1">
@@ -80,9 +80,9 @@
             <div v-for="m in history" :key="m.id" class="p-3 flex justify-between gap-2">
               <div class="min-w-0">
                 <p>{{ m.type_label }} · {{ m.location?.hub_id ? m.location.label : 'Chez moi' }}</p>
-                <p class="text-xs text-slate-500 truncate">{{ dateTime(m.created_at) }}<span v-if="m.order"> · {{ m.order.tracking_code }}</span><span v-if="m.note"> · {{ m.note }}</span></p>
+                <p class="text-xs text-slate-600 truncate">{{ dateTime(m.created_at) }}<span v-if="m.order"> · {{ m.order.tracking_code }}</span><span v-if="m.note"> · {{ m.note }}</span></p>
               </div>
-              <p :class="['font-semibold whitespace-nowrap', m.on_hand_change > 0 ? 'text-emerald-700' : m.on_hand_change < 0 ? 'text-red-600' : 'text-slate-500']">
+              <p :class="['font-semibold whitespace-nowrap', m.on_hand_change > 0 ? 'text-emerald-700' : m.on_hand_change < 0 ? 'text-red-600' : 'text-slate-600']">
                 {{ m.on_hand_change ? (m.on_hand_change > 0 ? '+' : '') + m.on_hand_change : `${m.reserved_change > 0 ? '+' : ''}${m.reserved_change} rés.` }}
               </p>
             </div>

@@ -33,10 +33,10 @@
                 <span v-if="d.own_address" class="ml-1 whitespace-nowrap rounded-full bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-800">autre site</span>
                 <span v-if="!d.active" class="ml-1 rounded-full bg-slate-200 px-2 py-0.5 text-xs">désactivé</span>
               </p>
-              <p v-if="d.manager_name || d.phone" class="truncate text-sm text-gray-500">{{ [d.manager_name, d.phone && localPhone(d.phone)].filter(Boolean).join(' · ') }}</p>
+              <p v-if="d.manager_name || d.phone" class="truncate text-sm text-slate-600">{{ [d.manager_name, d.phone && localPhone(d.phone)].filter(Boolean).join(' · ') }}</p>
             </div>
             <div v-if="canManage || (settings.slips && d.active)" class="relative">
-              <button type="button" class="grid h-9 w-9 place-items-center rounded-xl border border-slate-200 text-gray-500 hover:bg-slate-50" :aria-label="`Actions pour ${d.name}`" :aria-expanded="menuFor === d.id" @click="menuFor = menuFor === d.id ? null : d.id">⋯</button>
+              <button type="button" class="grid h-9 w-9 place-items-center rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50" :aria-label="`Actions pour ${d.name}`" :aria-expanded="menuFor === d.id" @click="menuFor = menuFor === d.id ? null : d.id">⋯</button>
               <div v-if="menuFor === d.id" class="absolute right-0 top-10 z-20 w-56 overflow-hidden rounded-xl bg-white text-sm shadow-lg ring-1 ring-slate-200">
                 <button v-if="canManage" type="button" class="block w-full px-4 py-2.5 text-left hover:bg-slate-50" @click="menuFor = null; edit(d)">✏️ Modifier</button>
                 <RouterLink v-if="settings.slips && d.active" :to="`/bordereau/${d.id}`" class="block px-4 py-2.5 hover:bg-slate-50">🧾 Bordereau de livraison</RouterLink>
@@ -54,13 +54,13 @@
             <div v-if="d.usage.quota" class="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
               <div :class="['h-full', d.usage.percent >= 100 ? 'bg-red-500' : d.usage.percent >= 80 ? 'bg-amber-500' : 'bg-emerald-500']" :style="{ width: `${Math.min(100, d.usage.percent)}%` }" />
             </div>
-            <p class="mt-1 flex justify-between text-xs text-gray-500">
+            <p class="mt-1 flex justify-between text-xs text-slate-600">
               <span>{{ plural(d.usage.used, 'envoi', 'aucun envoi') }} ce mois-ci</span>
               <span v-if="d.usage.quota" :class="d.usage.percent >= 80 ? 'font-semibold text-amber-700' : ''">sur {{ d.usage.quota }}{{ d.usage.percent >= 100 ? ' · atteint' : d.usage.percent >= 80 ? ' · bientôt atteint' : '' }}</span>
             </p>
           </template>
         </article>
-        <div v-if="loaded && !departments.length" class="rounded-2xl bg-white p-6 text-center text-gray-500 ring-1 ring-slate-200 md:col-span-2 xl:col-span-3">
+        <div v-if="loaded && !departments.length" class="rounded-2xl bg-white p-6 text-center text-slate-600 ring-1 ring-slate-200 md:col-span-2 xl:col-span-3">
           {{ staff
             ? 'Aucun département. Ajoutez-en si ce client (une banque, une administration…) envoie ou reçoit pour plusieurs services.'
             : 'Aucun département. Ajoutez vos services (Finance, Ressources humaines…) si vous envoyez ou recevez pour plusieurs services.' }}
@@ -71,31 +71,31 @@
     <!-- Comptes du client et leurs départements -->
     <section v-if="tab === 'users'" class="card overflow-x-auto">
       <table class="w-full text-sm">
-        <thead class="bg-slate-50 text-left text-gray-600">
+        <thead class="bg-slate-50 text-left text-slate-600">
           <tr><th class="p-2">Compte</th><th v-for="d in activeDepartments" :key="d.id" class="p-2 text-center">{{ d.code || d.name }}</th></tr>
         </thead>
         <tbody class="divide-y">
           <tr v-for="u in users" :key="u.id">
             <td class="p-2">
-              <b>{{ u.name }}</b><span v-if="u.role_label" class="text-xs text-gray-500"> · {{ u.role_label }}</span>
-              <span class="block text-xs text-gray-500">{{ u.owner ? 'Voit tout le client et valide ses demandes' : u.department_ids.length ? (settings.staff_own_only ? 'Ne voit que ses départements' : 'Voit tout le client') : 'Sans département : voit tout' }}</span>
+              <b>{{ u.name }}</b><span v-if="u.role_label" class="text-xs text-slate-600"> · {{ u.role_label }}</span>
+              <span class="block text-xs text-slate-600">{{ u.owner ? 'Voit tout le client et valide ses demandes' : u.department_ids.length ? (settings.staff_own_only ? 'Ne voit que ses départements' : 'Voit tout le client') : 'Sans département : voit tout' }}</span>
             </td>
             <td v-for="d in activeDepartments" :key="d.id" class="p-2 text-center">
               <input type="checkbox" :checked="u.department_ids.includes(d.id)" :disabled="u.owner || !canManage" :aria-label="`${u.name} · ${d.name}`" @change="toggleUser(u, d.id, $event.target.checked)">
               <!-- Chef de service : valide les demandes des agents du département (réglage « validation par le chef ») -->
-              <label v-if="settings.head_approval && u.department_ids.includes(d.id) && !u.owner" class="mt-1 flex items-center justify-center gap-1 text-[11px] text-gray-600">
+              <label v-if="settings.head_approval && u.department_ids.includes(d.id) && !u.owner" class="mt-1 flex items-center justify-center gap-1 text-xs text-slate-600">
                 <input type="checkbox" :checked="(u.head_department_ids || []).includes(d.id)" :disabled="!canManage" @change="toggleHead(u, d.id, $event.target.checked)"> chef
               </label>
             </td>
           </tr>
-          <tr v-if="!users.length"><td :colspan="activeDepartments.length + 1" class="p-6 text-center text-gray-500">Aucun compte pour ce client.</td></tr>
+          <tr v-if="!users.length"><td :colspan="activeDepartments.length + 1" class="p-6 text-center text-slate-600">Aucun compte pour ce client.</td></tr>
         </tbody>
       </table>
     </section>
 
     <!-- Réglages propres au client -->
     <section v-if="tab === 'settings' && overrides" class="space-y-3">
-      <p class="text-sm text-gray-600">Vide : comme l'entreprise (Réglages › Départements).</p>
+      <p class="text-sm text-slate-600">Vide : comme l'entreprise (Réglages › Départements).</p>
       <div class="grid gap-4 lg:grid-cols-2">
         <div v-for="g in groups" :key="g" class="card p-4 space-y-3">
           <h3 class="font-semibold">{{ g }}</h3>
@@ -105,7 +105,7 @@
               <option value="">Comme l'entreprise ({{ optionText(o, defaults[o.key]).toLowerCase() }})</option>
               <option v-for="(label, value) in optionChoices(o)" :key="value" :value="value">{{ label }}</option>
             </select>
-            <p v-if="o.hint" class="mt-0.5 text-xs text-gray-500">{{ o.hint }}</p>
+            <p v-if="o.hint" class="mt-0.5 text-xs text-slate-600">{{ o.hint }}</p>
           </div>
         </div>
       </div>
@@ -128,13 +128,13 @@
 
     <!-- Supprimer ou désactiver : on dit ce qui se passe -->
     <BottomSheet :open="!!removing" :title="removing ? `${removing.orders_count ? 'Désactiver' : 'Supprimer'} ${removing.name} ?` : ''" @close="removing = null">
-      <p class="text-sm text-gray-600">
+      <p class="text-sm text-slate-600">
         {{ removing?.orders_count
           ? `Il a déjà ${plural(removing.orders_count, 'course')} : il reste sur ces courses et sur les factures, mais on ne peut plus le choisir pour de nouveaux envois. Vous pourrez le réactiver.`
           : 'Il n\'a aucune course : il sera supprimé.' }}
       </p>
       <button type="button" class="mt-4 w-full rounded-xl bg-red-600 py-3 font-semibold text-white disabled:opacity-60" :disabled="removeBusy" @click="remove">{{ removing?.orders_count ? 'Désactiver' : 'Supprimer' }}</button>
-      <button type="button" class="mt-2 w-full py-2 text-sm text-gray-600" @click="removing = null">Annuler</button>
+      <button type="button" class="mt-2 w-full py-2 text-sm text-slate-600" @click="removing = null">Annuler</button>
     </BottomSheet>
   </div>
 </template>

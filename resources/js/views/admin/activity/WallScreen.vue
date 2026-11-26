@@ -33,7 +33,7 @@
       </div>
       <p v-if="!shown.length" class="text-xl text-slate-400">Aucune livraison prévue aujourd'hui.</p>
     </div>
-    <p class="mt-8 text-sm text-slate-500">Se met à jour tout seul.</p>
+    <p class="mt-8 text-sm text-slate-600">Se met à jour tout seul.</p>
   </div>
 </template>
 

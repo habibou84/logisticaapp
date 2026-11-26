@@ -19,7 +19,7 @@
       <label class="block">
         <span :class="c.label">Heure de départ</span>
         <input v-model="form.starts_at" type="time" :class="c.input">
-        <span class="block text-xs text-slate-500">{{ plan.mad_from ? `Vide : ${plan.mad_from}, heure de début du contrat.` : 'Heure à laquelle le livreur doit pointer à la 1re étape.' }}</span>
+        <span class="block text-xs text-slate-600">{{ plan.mad_from ? `Vide : ${plan.mad_from}, heure de début du contrat.` : 'Heure à laquelle le livreur doit pointer à la 1re étape.' }}</span>
       </label>
       <label class="block">
         <span :class="c.label">Livreur</span>
@@ -31,16 +31,16 @@
     </div>
 
     <div class="space-y-3">
-      <p :class="c.label">Étapes, dans l'ordre <span class="font-normal text-slate-500">(le livreur pointe à la première)</span></p>
+      <p :class="c.label">Étapes, dans l'ordre <span class="font-normal text-slate-600">(le livreur pointe à la première)</span></p>
       <div v-for="(s, i) in form.stops" :key="s.key" class="space-y-2 rounded-xl p-3 ring-1 ring-slate-200">
         <div class="flex items-center gap-2">
           <span :class="['grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-bold text-white', i === 0 ? 'bg-emerald-600' : 'bg-slate-500']">{{ i + 1 }}</span>
           <select v-model="s.action" :class="[c.input, 'w-auto']" aria-label="Action">
             <option v-for="a in ACTIONS" :key="a.value" :value="a.value">{{ a.label }}</option>
           </select>
-          <span class="flex-1 text-xs text-slate-500">{{ i === 0 ? 'Lieu de pointage' : '' }}</span>
-          <button type="button" class="px-1 text-slate-500 disabled:opacity-30" :disabled="i === 0" aria-label="Monter" @click="move(i, -1)">↑</button>
-          <button type="button" class="px-1 text-slate-500 disabled:opacity-30" :disabled="i === form.stops.length - 1" aria-label="Descendre" @click="move(i, 1)">↓</button>
+          <span class="flex-1 text-xs text-slate-600">{{ i === 0 ? 'Lieu de pointage' : '' }}</span>
+          <button type="button" class="px-1 text-slate-600 disabled:opacity-30" :disabled="i === 0" aria-label="Monter" @click="move(i, -1)">↑</button>
+          <button type="button" class="px-1 text-slate-600 disabled:opacity-30" :disabled="i === form.stops.length - 1" aria-label="Descendre" @click="move(i, 1)">↓</button>
           <button type="button" class="px-1 text-red-600" aria-label="Retirer l'étape" @click="form.stops.splice(i, 1)">✕</button>
         </div>
 
@@ -54,7 +54,7 @@
 
         <template v-if="s.mode === 'search'">
           <div v-if="s.destination_id" class="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-sm">
-            <span class="min-w-0 flex-1"><strong>{{ s.label }}</strong><span v-if="s.address" class="block text-slate-500">{{ s.address }}</span>
+            <span class="min-w-0 flex-1"><strong>{{ s.label }}</strong><span v-if="s.address" class="block text-slate-600">{{ s.address }}</span>
               <span v-if="!s.located" class="block text-xs text-amber-700">Sans position sur la carte</span></span>
             <button type="button" class="font-semibold text-[var(--app-color,#1f2937)]" @click="s.destination_id = null">Changer</button>
           </div>
@@ -63,10 +63,10 @@
             <div v-if="s.results.length" class="max-h-48 divide-y overflow-y-auto rounded-lg ring-1 ring-slate-200">
               <button v-for="r in s.results" :key="r.id" type="button" class="block w-full px-3 py-2 text-left text-sm hover:bg-slate-50" @click="pick(s, r)">
                 <strong>{{ r.label }}</strong> <span v-if="!r.located" class="text-xs text-amber-700">(sans position)</span>
-                <span v-if="r.address" class="block text-slate-500">{{ r.address }}</span>
+                <span v-if="r.address" class="block text-slate-600">{{ r.address }}</span>
               </button>
             </div>
-            <p v-else-if="s.query.length >= 2 && !s.searching" class="text-xs text-slate-500">Rien trouvé : choisissez « Nouveau lieu ».</p>
+            <p v-else-if="s.query.length >= 2 && !s.searching" class="text-xs text-slate-600">Rien trouvé : choisissez « Nouveau lieu ».</p>
           </template>
         </template>
 

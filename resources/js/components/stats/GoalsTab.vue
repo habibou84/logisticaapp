@@ -5,7 +5,7 @@
       <div class="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 class="font-semibold">🎯 Objectifs de {{ data.current.label }}</h2>
-          <p class="text-sm text-slate-500">Jour {{ data.current.elapsed_days }} sur {{ data.current.days_in_month }} · la projection suit le rythme actuel jusqu'à la fin du mois.</p>
+          <p class="text-sm text-slate-600">Jour {{ data.current.elapsed_days }} sur {{ data.current.days_in_month }} · la projection suit le rythme actuel jusqu'à la fin du mois.</p>
         </div>
         <button v-if="canEdit" type="button" class="btn-secondary" @click="editing = !editing">{{ editing ? 'Fermer' : '✏️ Objectifs et seuils' }}</button>
       </div>
@@ -38,7 +38,7 @@
       </p>
       <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div v-for="g in shownGoals" :key="g.key" class="rounded-xl border border-slate-200 p-3">
-          <p class="text-sm text-slate-500">{{ g.label }}</p>
+          <p class="text-sm text-slate-600">{{ g.label }}</p>
           <p class="text-2xl font-bold">{{ fmt(g, g.goal.realized) }}</p>
           <template v-if="g.goal.target !== null">
             <div class="mt-2 h-2 rounded-full bg-slate-100" role="progressbar" :aria-valuenow="g.goal.percent" aria-valuemin="0" aria-valuemax="100">

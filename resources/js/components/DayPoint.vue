@@ -3,7 +3,7 @@
   <section v-if="report" class="card space-y-3 p-3 sm:p-4" aria-label="Point du jour">
     <div class="flex flex-wrap items-center justify-between gap-2">
       <h2 class="font-semibold">📊 Point {{ dayLabel }}</h2>
-      <div class="flex flex-wrap items-center gap-3 text-xs text-gray-500">
+      <div class="flex flex-wrap items-center gap-3 text-xs text-slate-600">
         <span v-if="detailed && c.created">🆕 {{ c.created }} nouvelle{{ c.created > 1 ? 's' : '' }} course{{ c.created > 1 ? 's' : '' }}<template v-if="c.created_later">, dont {{ c.created_later }} pour plus tard</template></span>
         <span>mis à jour à {{ updatedAt }}</span>
         <button type="button" class="font-medium text-blue-600 hover:underline" @click="share">Envoyer sur WhatsApp</button>

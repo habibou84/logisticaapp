@@ -96,7 +96,7 @@
         </div>
         <div class="space-y-2 text-sm md:text-right">
           <p>Application mobile : ouvrez ce site sur votre téléphone ; la page vous guide pour l'installer.</p>
-          <p class="text-slate-500">© {{ year }} {{ branding.name }}</p>
+          <p class="text-slate-600">© {{ year }} {{ branding.name }}</p>
         </div>
       </div>
     </footer>

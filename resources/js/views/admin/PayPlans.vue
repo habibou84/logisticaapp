@@ -15,13 +15,13 @@
       </div>
     </div>
 
-    <p class="text-sm text-gray-600">
+    <p class="text-sm text-slate-600">
       À chaque étape d'une course (ramassage, livraison, tentative ratée, retour, expédition), les règles du plan du livreur
       qui s'appliquent s'additionnent. Le plan par défaut s'applique aux livreurs sans plan attribué ; un plan personnel est une
       exception propre à un livreur. Modifier un plan ne change jamais les gains déjà acquis.
     </p>
 
-    <p v-if="!plan" class="text-gray-500">Chargement…</p>
+    <p v-if="!plan" class="text-slate-600">Chargement…</p>
 
     <template v-else>
       <div class="card p-4 space-y-3">
@@ -31,7 +31,7 @@
             <input id="plan-name" v-model="plan.name" class="input" maxlength="100">
             <p v-if="errors.name" class="field-error has-error">{{ errors.name[0] }}</p>
           </div>
-          <span class="text-sm text-gray-600 pb-2">
+          <span class="text-sm text-slate-600 pb-2">
             <template v-if="plan.is_default">Plan par défaut : livreurs sans plan attribué</template>
             <template v-else-if="plan.personal">Plan personnel de {{ plan.courier?.name }}</template>
             <template v-else>{{ plan.couriers_count ?? 0 }} livreur(s)</template>
@@ -46,7 +46,7 @@
 
       <div class="card p-4 space-y-3">
         <h2 class="font-semibold">Salaire et période de paie</h2>
-        <p class="text-sm text-gray-600">
+        <p class="text-sm text-slate-600">
           Avec une période, une fiche de paie est préparée automatiquement pour chaque livreur à la fin de la période
           (salaire de base, gains des courses, primes et retenues), prête à payer depuis la Caisse.
           « À la demande » : la caisse prépare la fiche quand elle veut.
@@ -63,22 +63,22 @@
           <div>
             <label class="label" for="salary">Salaire de base par période (F)</label>
             <input id="salary" v-model.number="plan.base_salary" type="number" min="0" class="input w-40">
-            <p class="text-xs text-gray-500 mt-1">0 : pas de salaire (payé à la course).</p>
+            <p class="text-xs text-slate-600 mt-1">0 : pas de salaire (payé à la course).</p>
             <p v-if="errors.base_salary" class="field-error has-error">{{ errors.base_salary[0] }}</p>
           </div>
           <div>
             <label class="label" for="cap">Plafond des retenues (%)</label>
             <input id="cap" v-model.number="plan.deduction_cap_percent" type="number" min="0" max="100" class="input w-28" placeholder="Aucun">
-            <p class="text-xs text-gray-500 mt-1 max-w-xs">Part maximale des gains d'une fiche que les retenues (manques, colis perdus…) peuvent prendre ; le reste passe sur la fiche suivante.</p>
+            <p class="text-xs text-slate-600 mt-1 max-w-xs">Part maximale des gains d'une fiche que les retenues (manques, colis perdus…) peuvent prendre ; le reste passe sur la fiche suivante.</p>
             <p v-if="errors.deduction_cap_percent" class="field-error has-error">{{ errors.deduction_cap_percent[0] }}</p>
           </div>
         </div>
-        <p v-if="plan.base_salary > 0" class="text-xs text-gray-500">Un livreur arrivé en cours de période touche le salaire au prorata des jours.</p>
+        <p v-if="plan.base_salary > 0" class="text-xs text-slate-600">Un livreur arrivé en cours de période touche le salaire au prorata des jours.</p>
         <!-- Mise à disposition (MAD) : un montant par jour passé chez le client -->
         <div>
           <label class="label" for="mad-rate">Par jour de mise à disposition (MAD), F</label>
           <input id="mad-rate" v-model.number="plan.mad_daily_rate" type="number" min="0" class="input w-40" placeholder="Aucun">
-          <p class="text-xs text-gray-500 mt-1 max-w-xl">
+          <p class="text-xs text-slate-600 mt-1 max-w-xl">
             Jours où le livreur est mis à disposition d'un client (jours du contrat, hors absences), ajoutés à la fiche de la période.
             Pour ne pas payer aussi ses courses MAD une à une, limitez les règles ci-dessous aux autres activités (Conditions › Activités).
           </p>
@@ -92,9 +92,9 @@
           <h2 class="font-semibold">{{ ev.label }}</h2>
           <button class="text-sm text-blue-600" @click="addRule(ev.value)">+ Ajouter une règle</button>
         </div>
-        <p v-if="ev.value === 'shipping' && !rulesOf('shipping').length" class="text-sm text-gray-500">Aucune règle : les règles de la livraison réussie s'appliquent.</p>
-        <p v-else-if="!rulesOf(ev.value).length" class="text-sm text-gray-500">Rien n'est payé à cette étape.</p>
-        <p v-if="ev.value === 'failed_attempt'" class="text-xs text-gray-500">Payée une seule fois par course et par jour.</p>
+        <p v-if="ev.value === 'shipping' && !rulesOf('shipping').length" class="text-sm text-slate-600">Aucune règle : les règles de la livraison réussie s'appliquent.</p>
+        <p v-else-if="!rulesOf(ev.value).length" class="text-sm text-slate-600">Rien n'est payé à cette étape.</p>
+        <p v-if="ev.value === 'failed_attempt'" class="text-xs text-slate-600">Payée une seule fois par course et par jour.</p>
 
         <div v-for="rule in rulesOf(ev.value)" :key="rule.key" :class="['rounded-lg border p-3 space-y-3', ruleErrors(rule).length ? 'border-red-400 bg-red-50/40 has-error' : '']">
           <ul v-if="ruleErrors(rule).length" class="field-error space-y-0.5">
@@ -124,7 +124,7 @@
 
           <!-- Grille par zone -->
           <div v-if="rule.calc === 'zone_grid'" class="space-y-2">
-            <p class="text-xs text-gray-500">
+            <p class="text-xs text-slate-600">
               Montant selon la zone {{ ev.value === 'pickup' ? 'de ramassage' : 'du destinataire' }} ; une commune vaut pour ses quartiers.
               Case vide : montant « Autres zones ».
             </p>
@@ -144,7 +144,7 @@
 
           <!-- Conditions -->
           <details class="text-sm" :open="hasConditions(rule)">
-            <summary class="cursor-pointer text-gray-700">Conditions{{ hasConditions(rule) ? ` : ${conditionsText(rule)}` : ' : toujours' }}</summary>
+            <summary class="cursor-pointer text-slate-700">Conditions{{ hasConditions(rule) ? ` : ${conditionsText(rule)}` : ' : toujours' }}</summary>
             <div class="mt-2 space-y-2">
               <div class="flex flex-wrap gap-4">
                 <label class="flex items-center gap-2"><input v-model="rule.conditions.express" type="checkbox"> Express seulement</label>
@@ -171,7 +171,7 @@
                 <div class="flex flex-wrap items-center gap-2">
                   de <input v-model="rule.conditions.time_from" type="time" class="input w-32 !py-1" aria-label="Heure de début">
                   à <input v-model="rule.conditions.time_to" type="time" class="input w-32 !py-1" aria-label="Heure de fin">
-                  <span class="text-xs text-gray-500">Heure de l'étape (ex. livraison) ; 22:00 → 06:00 passe minuit.</span>
+                  <span class="text-xs text-slate-600">Heure de l'étape (ex. livraison) ; 22:00 → 06:00 passe minuit.</span>
                 </div>
               </div>
               <div>
@@ -223,7 +223,7 @@
 
       <div class="card p-4 space-y-3">
         <h2 class="font-semibold">Bornes par étape</h2>
-        <p class="text-sm text-gray-600">Appliquées au total des règles d'une étape (ex. une livraison). Vide : pas de borne.</p>
+        <p class="text-sm text-slate-600">Appliquées au total des règles d'une étape (ex. une livraison). Vide : pas de borne.</p>
         <div class="flex flex-wrap gap-3">
           <div>
             <label class="label" for="min">Minimum (F)</label>
@@ -242,12 +242,12 @@
           <h2 class="font-semibold">Primes d'objectifs</h2>
           <button class="text-sm text-blue-600" @click="addBonus">+ Ajouter une prime</button>
         </div>
-        <p class="text-sm text-gray-600">
+        <p class="text-sm text-slate-600">
           Versées sur la fiche de fin de période quand l'objectif est atteint. Pour un même objectif, seul le palier le plus
           haut atteint est payé (ex. 150 livraisons → 10 000 F, 250 → 25 000 F) ; des objectifs différents s'additionnent.
           Le livreur suit sa progression dans son application.
         </p>
-        <p v-if="!plan.bonuses.length" class="text-sm text-gray-500">Aucune prime.</p>
+        <p v-if="!plan.bonuses.length" class="text-sm text-slate-600">Aucune prime.</p>
         <p v-else-if="!plan.pay_period" class="text-sm text-amber-700">Choisissez une période de paie : les primes se calculent sur chaque période.</p>
         <div
           v-for="(b, i) in plan.bonuses" :key="b.key"
@@ -297,7 +297,7 @@
         <p class="label">Partir de</p>
         <label v-for="t in meta.templates" :key="t.key" class="flex items-start gap-2 text-sm rounded-lg border p-2">
           <input v-model="creator.template" type="radio" :value="t.key" class="mt-1">
-          <span><strong>{{ t.name }}</strong><br><span class="text-gray-600">{{ t.description }}</span></span>
+          <span><strong>{{ t.name }}</strong><br><span class="text-slate-600">{{ t.description }}</span></span>
         </label>
         <p v-if="creator.error" class="field-error">{{ creator.error }}</p>
         <button class="btn-primary w-full">Créer le plan</button>

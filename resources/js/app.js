@@ -2,6 +2,8 @@ import { createApp, watch } from 'vue'
 import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
+// Police de la charte, livrée avec l'application (donc aussi hors connexion)
+import '@fontsource-variable/inter'
 import { applyAppTheme, setupPwa } from './composables/usePwa'
 import { branding } from './composables/useBranding'
 

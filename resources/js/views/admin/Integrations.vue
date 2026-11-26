@@ -7,7 +7,7 @@
         id="int-merchant" v-model="merchantId" placeholder="Tous (consultation)" :empty-value="null"
         :options="merchants.map((m) => ({ value: m.id, label: m.business_name, search: m.phone }))"
       />
-      <p class="text-xs text-gray-500 mt-1">Choisissez un client pour lui créer une clé API ou une adresse webhook.</p>
+      <p class="text-xs text-slate-600 mt-1">Choisissez un client pour lui créer une clé API ou une adresse webhook.</p>
     </div>
     <Integrations :merchant-id="merchantId" staff />
   </div>

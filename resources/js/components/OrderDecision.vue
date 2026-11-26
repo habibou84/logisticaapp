@@ -7,7 +7,7 @@
           <StatusBadge :status="order.status" :label="order.status_label" />
           <span v-if="order.last_incident" class="ml-2 text-red-700">{{ order.last_incident.label }}</span>
         </p>
-        <p class="text-gray-600">
+        <p class="text-slate-600">
           {{ order.recipient?.name || 'Destinataire' }} · {{ order.recipient?.phone }} · {{ order.delivery?.zone_name }}
           · tentative{{ order.attempts_count > 1 ? 's' : '' }} {{ order.attempts_count }} / {{ order.max_attempts }}
         </p>
@@ -24,7 +24,7 @@
           <input v-model="form.decision" type="radio" :value="c.value" :disabled="!!c.disabled" class="mt-1">
           <span>
             <span class="block font-medium">{{ c.icon }} {{ c.label }}</span>
-            <span class="block text-xs text-gray-600">{{ c.disabled || c.help }}</span>
+            <span class="block text-xs text-slate-600">{{ c.disabled || c.help }}</span>
           </span>
         </label>
       </div>
@@ -53,7 +53,7 @@
         <input id="dec-note" v-model="form.note" class="input" maxlength="500" placeholder="Ex. : le destinataire sera disponible samedi">
       </div>
 
-      <p class="text-xs text-gray-500">{{ merchantInfo }}</p>
+      <p class="text-xs text-slate-600">{{ merchantInfo }}</p>
       <p v-if="error" class="field-error">{{ error }}</p>
       <button class="btn-primary w-full" :disabled="busy || !form.decision">Valider la décision</button>
     </form>

@@ -4,21 +4,21 @@
       <div>
         <RouterLink to="/admin/courses" class="text-sm text-blue-600">‹ Courses</RouterLink>
         <h1 class="text-xl font-bold">⏰ À reporter</h1>
-        <p class="text-sm text-gray-600">Date de livraison passée, colis pas encore ramassés. Ils sont cachés chez les livreurs tant que la date n'est pas actualisée.</p>
+        <p class="text-sm text-slate-600">Date de livraison passée, colis pas encore ramassés. Ils sont cachés chez les livreurs tant que la date n'est pas actualisée.</p>
       </div>
       <RouterLink v-if="auth.can('settings.manage')" to="/admin/reglages/courses" class="text-sm text-blue-600">⚙️ Message du soir</RouterLink>
     </div>
 
     <p v-if="error" class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">{{ error }}</p>
-    <p v-if="!data && !error" class="card p-6 text-center text-gray-500">Chargement…</p>
+    <p v-if="!data && !error" class="card p-6 text-center text-slate-600">Chargement…</p>
 
     <template v-if="data">
       <!-- Point -->
       <div class="grid grid-cols-2 gap-2 lg:grid-cols-4">
         <div class="card px-3 py-2">
-          <p class="text-xs text-gray-500">À reporter</p>
+          <p class="text-xs text-slate-600">À reporter</p>
           <p class="text-lg font-bold">{{ data.summary.orders }} colis</p>
-          <p class="text-xs text-gray-500">{{ data.summary.merchants }} client{{ data.summary.merchants > 1 ? 's' : '' }}</p>
+          <p class="text-xs text-slate-600">{{ data.summary.merchants }} client{{ data.summary.merchants > 1 ? 's' : '' }}</p>
         </div>
         <div class="card border-amber-300 bg-amber-50 px-3 py-2">
           <p class="text-xs text-amber-800">Pas encore demandé</p>
@@ -37,7 +37,7 @@
         </div>
       </div>
 
-      <p v-if="!data.groups.length" class="card p-6 text-center text-gray-500">✅ Aucun colis à reporter : toutes les dates sont à jour.</p>
+      <p v-if="!data.groups.length" class="card p-6 text-center text-slate-600">✅ Aucun colis à reporter : toutes les dates sont à jour.</p>
 
       <!-- Une ligne par client -->
       <div v-else class="card divide-y">
@@ -49,18 +49,18 @@
             >
             <button type="button" class="min-w-[12rem] flex-1 text-left" :aria-expanded="open.includes(g.merchant?.id)" @click="toggle(g.merchant?.id)">
               <span class="font-semibold">{{ open.includes(g.merchant?.id) ? '▾' : '▸' }} {{ g.merchant?.business_name }}</span>
-              <span class="block text-xs text-gray-500">
+              <span class="block text-xs text-slate-600">
                 {{ g.merchant?.zone_name }}<template v-if="g.merchant?.address">, {{ g.merchant.address }}</template> ·
                 {{ g.merchant?.uses_app ? '📱 Jibiat Marchand' : '💬 WhatsApp' }}
               </span>
             </button>
-            <span class="w-24 text-sm"><b>{{ g.count }}</b> colis<span class="block text-xs text-gray-500">{{ money(g.cod_total) }}</span></span>
+            <span class="w-24 text-sm"><b>{{ g.count }}</b> colis<span class="block text-xs text-slate-600">{{ money(g.cod_total) }}</span></span>
             <span class="w-28 text-sm">{{ shortDay(g.missed_day) }}<span class="block text-xs text-red-700">{{ since(g.missed_day) }}</span></span>
             <span class="w-44 text-xs">
               <template v-if="g.request">
                 <span class="rounded-full bg-blue-100 px-2 py-0.5 font-semibold text-blue-900">⏳ Demandé {{ time(g.request.created_at) }}</span>
-                <span v-if="g.request.reminded_at" class="mt-0.5 block text-gray-500">relancé {{ time(g.request.reminded_at) }}</span>
-                <span v-else-if="!g.request.whatsapp_sent_at" class="mt-0.5 block text-gray-500">message WhatsApp pas encore parti</span>
+                <span v-if="g.request.reminded_at" class="mt-0.5 block text-slate-600">relancé {{ time(g.request.reminded_at) }}</span>
+                <span v-else-if="!g.request.whatsapp_sent_at" class="mt-0.5 block text-slate-600">message WhatsApp pas encore parti</span>
               </template>
               <span v-else class="rounded-full bg-amber-100 px-2 py-0.5 font-semibold text-amber-900">Pas encore demandé</span>
             </span>
@@ -83,7 +83,7 @@
             >
               <span class="w-28 font-mono text-xs font-semibold">{{ o.tracking_code }}</span>
               <span class="min-w-[10rem] flex-1">{{ o.recipient_name }} · {{ o.delivery_zone_name || '—' }}</span>
-              <span class="text-xs text-gray-500">{{ o.courier_name ? `chez ${o.courier_name} (pas commencé)` : 'sans livreur' }}</span>
+              <span class="text-xs text-slate-600">{{ o.courier_name ? `chez ${o.courier_name} (pas commencé)` : 'sans livreur' }}</span>
               <span class="w-20 text-xs text-red-700">{{ shortDay(o.delivery_day) }}</span>
               <span class="w-20 text-right tabular-nums">{{ money(o.cod_amount) }}</span>
             </RouterLink>
@@ -109,13 +109,13 @@
         </p>
         <div class="rounded-lg bg-slate-50 px-3 py-2 text-sm">
           <p class="font-semibold">Envoyé par</p>
-          <p v-for="g in ask.groups" :key="g.merchant?.id" class="text-gray-700">
+          <p v-for="g in ask.groups" :key="g.merchant?.id" class="text-slate-700">
             {{ g.merchant?.business_name }} :
             <template v-if="g.merchant?.uses_app && data.settings.channel === 'app_first'">📱 Jibiat Marchand, puis 💬 WhatsApp sans réponse en 30 min</template>
             <template v-else>💬 WhatsApp (lien vers la page de réponse)</template>
           </p>
         </div>
-        <p class="text-xs text-gray-500">Sans réponse : {{ data?.settings.no_answer === 'auto_next_day' ? 'livraison reportée toute seule le lendemain à 08:00' : 'rappel le lendemain à 08:00, puis à vous de trancher' }}.</p>
+        <p class="text-xs text-slate-600">Sans réponse : {{ data?.settings.no_answer === 'auto_next_day' ? 'livraison reportée toute seule le lendemain à 08:00' : 'rappel le lendemain à 08:00, puis à vous de trancher' }}.</p>
         <div>
           <label class="label" for="ask-note">Mot pour le client (facultatif)</label>
           <textarea id="ask-note" v-model="ask.note" class="input" rows="2" maxlength="300" placeholder="Désolé, le livreur n'a pas pu passer…" />
@@ -132,15 +132,15 @@
       <form class="space-y-3" @submit.prevent="sendDecide">
         <label :class="['flex cursor-pointer items-start gap-2 rounded-lg border px-3 py-2 text-sm', decide.mode === 'today' ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200']">
           <input v-model="decide.mode" type="radio" value="today" class="mt-1">
-          <span><b>Livrer aujourd'hui</b><span class="block text-xs text-gray-500">La date passe au {{ shortDay(data?.today) }} ; le client est prévenu.</span></span>
+          <span><b>Livrer aujourd'hui</b><span class="block text-xs text-slate-600">La date passe au {{ shortDay(data?.today) }} ; le client est prévenu.</span></span>
         </label>
         <label :class="['flex cursor-pointer items-start gap-2 rounded-lg border px-3 py-2 text-sm', decide.mode === 'date' ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200']">
           <input v-model="decide.mode" type="radio" value="date" class="mt-1">
-          <span class="flex-1"><b>Une autre date</b><span class="block text-xs text-gray-500">L'client est prévenu.</span>
+          <span class="flex-1"><b>Une autre date</b><span class="block text-xs text-slate-600">L'client est prévenu.</span>
             <input v-if="decide.mode === 'date'" v-model="decide.date" type="date" class="input mt-1" :min="data?.today" :max="data?.max_date" required aria-label="Nouvelle date">
           </span>
         </label>
-        <p class="text-xs text-gray-500">Pour annuler un colis, ouvrez sa fiche (le motif est obligatoire).</p>
+        <p class="text-xs text-slate-600">Pour annuler un colis, ouvrez sa fiche (le motif est obligatoire).</p>
         <div class="flex justify-end gap-2">
           <button type="button" class="btn-secondary" @click="decide.open = false">Fermer</button>
           <button class="btn-primary" :disabled="busy">Valider</button>

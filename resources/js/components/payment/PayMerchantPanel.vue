@@ -14,7 +14,7 @@
         <PaymentMethodIcon :type="main.type" />
         <div class="min-w-0 flex-1">
           <p class="font-semibold break-words">{{ main.type_label }}{{ main.bank_name ? ` · ${main.bank_name}` : '' }} · {{ main.display_number }}</p>
-          <p class="text-xs text-slate-500">{{ main.holder_name || '—' }} · <PaymentMethodStatus :status="main.status" /></p>
+          <p class="text-xs text-slate-600">{{ main.holder_name || '—' }} · <PaymentMethodStatus :status="main.status" /></p>
         </div>
         <button type="button" class="btn-secondary text-xs" @click="copy(main.type === 'bank' ? main.number : main.display_number.replace(/\s/g, ''), 'Numéro copié.')">📋 Copier</button>
       </div>
@@ -25,7 +25,7 @@
         <div class="min-w-[12rem] flex-1 space-y-2 text-sm">
           <a v-if="main.payment_link" :href="main.payment_link" target="_blank" rel="noopener noreferrer" class="block w-full rounded-lg bg-sky-500 py-2 text-center font-semibold text-white hover:bg-sky-600">🔗 Ouvrir le lien de paiement</a>
           <button v-if="main.qr_url" type="button" class="btn-secondary w-full" @click="bigQr = main.qr_url">🔍 QR code en grand</button>
-          <p class="text-xs text-slate-500">Montant : <b>{{ money(amount) }}</b> · <button type="button" class="underline" @click="copy(String(amount), 'Montant copié.')">copier</button></p>
+          <p class="text-xs text-slate-600">Montant : <b>{{ money(amount) }}</b> · <button type="button" class="underline" @click="copy(String(amount), 'Montant copié.')">copier</button></p>
         </div>
       </div>
     </template>

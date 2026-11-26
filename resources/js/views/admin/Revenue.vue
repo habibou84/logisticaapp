@@ -15,7 +15,7 @@
       </div>
     </div>
 
-    <p class="text-sm text-gray-600">
+    <p class="text-sm text-slate-600">
       Chaque activité a son chiffre d'affaires. <strong>E-commerce</strong> : frais de livraison, de retour et de stockage retenus
       aux clients (encaissés quand le reversement est payé). <strong>Distribution</strong> et <strong>MAD</strong> : factures du mois
       émises (facturé) et paiements reçus dans le mois (encaissé).
@@ -26,9 +26,9 @@
     <template v-if="report">
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <div v-for="a in report.activities" :key="a.value" class="card p-4">
-          <p class="text-sm text-gray-500">{{ a.label }}</p>
+          <p class="text-sm text-slate-600">{{ a.label }}</p>
           <p class="text-xl font-bold">{{ money(report.totals[a.value][mode]) }}</p>
-          <p class="text-xs text-gray-500">{{ share(a.value) }} % · {{ report.totals[a.value].orders }} course(s)</p>
+          <p class="text-xs text-slate-600">{{ share(a.value) }} % · {{ report.totals[a.value].orders }} course(s)</p>
         </div>
         <div v-if="report.activities.length > 1" class="card p-4 bg-slate-900 text-white">
           <p class="text-sm text-slate-300">Total</p>
@@ -39,7 +39,7 @@
 
       <div class="card overflow-x-auto">
         <table class="w-full text-sm">
-          <thead class="bg-slate-50 text-left text-gray-600">
+          <thead class="bg-slate-50 text-left text-slate-600">
             <tr>
               <th class="p-2">Mois</th>
               <th v-for="a in report.activities" :key="a.value" class="p-2 text-right">{{ a.label }}</th>
@@ -52,7 +52,7 @@
               <td class="p-2 font-medium whitespace-nowrap">{{ m.label }}</td>
               <td v-for="a in report.activities" :key="a.value" class="p-2 text-right whitespace-nowrap">
                 {{ money(m.activities[a.value][mode]) }}
-                <div class="text-xs text-gray-500">{{ m.activities[a.value].orders }} course(s)</div>
+                <div class="text-xs text-slate-600">{{ m.activities[a.value].orders }} course(s)</div>
               </td>
               <td v-if="report.activities.length > 1" class="p-2 text-right font-semibold whitespace-nowrap">{{ money(m.total[mode]) }}</td>
               <td class="p-2 hidden sm:table-cell">
@@ -76,11 +76,11 @@
           </tfoot>
         </table>
       </div>
-      <div class="flex flex-wrap gap-4 text-xs text-gray-600">
+      <div class="flex flex-wrap gap-4 text-xs text-slate-600">
         <span v-for="a in report.activities" :key="a.value" class="flex items-center gap-1"><span :class="['inline-block w-3 h-3 rounded', BAR[a.value]]" /> {{ a.label }}</span>
       </div>
     </template>
-    <p v-else-if="!error" class="text-gray-500">Chargement…</p>
+    <p v-else-if="!error" class="text-slate-600">Chargement…</p>
   </div>
 </template>
 

@@ -3,14 +3,14 @@
     <div>
       <RouterLink to="/admin/reglages" class="text-sm text-blue-600">‹ Réglages</RouterLink>
       <h1 class="text-xl font-bold">💬 Messages aux clients</h1>
-      <p class="text-sm text-gray-600">
+      <p class="text-sm text-slate-600">
         Pour chaque étape d'une course : la notification dans l'application est toujours envoyée (gratuite).
         Choisissez si le client reçoit aussi un message WhatsApp (ou une notification sur son téléphone quand il l'a activée).
       </p>
     </div>
 
     <p v-if="error" class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">{{ error }}</p>
-    <p v-if="!data && !error" class="card p-6 text-center text-gray-500">Chargement…</p>
+    <p v-if="!data && !error" class="card p-6 text-center text-slate-600">Chargement…</p>
 
     <template v-if="data">
       <div class="card overflow-x-auto">
@@ -27,7 +27,7 @@
             <tr v-for="e in data.events" :key="e.event">
               <td class="px-3 py-2.5">
                 <b>{{ e.label }}</b>
-                <span v-if="HINTS[e.event]" class="block text-xs text-gray-500">{{ HINTS[e.event] }}</span>
+                <span v-if="HINTS[e.event]" class="block text-xs text-slate-600">{{ HINTS[e.event] }}</span>
                 <span v-if="e.differs && !data.locked" class="mt-1 block text-xs text-amber-700">
                   {{ e.differs }} client{{ e.differs > 1 ? 's ont' : ' a' }} fait un autre choix.
                   <button type="button" class="font-semibold underline" :disabled="busy" @click="applyAll(e)">Appliquer à tous</button>
@@ -42,9 +42,9 @@
                 >
                   <span :class="['block h-5 w-5 rounded-full bg-white shadow transition', e.whatsapp ? 'translate-x-5' : '']" />
                 </button>
-                <span class="ml-1 text-xs text-gray-500">{{ e.whatsapp ? 'oui' : 'non' }}</span>
+                <span class="ml-1 text-xs text-slate-600">{{ e.whatsapp ? 'oui' : 'non' }}</span>
               </td>
-              <td class="hidden px-3 py-2.5 text-xs text-gray-600 md:table-cell">{{ e.example ? `« ${e.example} »` : '—' }}</td>
+              <td class="hidden px-3 py-2.5 text-xs text-slate-600 md:table-cell">{{ e.example ? `« ${e.example} »` : '—' }}</td>
             </tr>
           </tbody>
         </table>
@@ -55,7 +55,7 @@
           <input type="checkbox" class="mt-1" :checked="!data.locked" :disabled="busy" @change="save({ locked: !$event.target.checked })">
           <span>
             <b>Laisser chaque client changer ses messages</b> (Profil de son application)
-            <span class="block text-xs text-gray-500">Sinon, vos choix s'appliquent à tous les clients et leurs interrupteurs sont grisés.</span>
+            <span class="block text-xs text-slate-600">Sinon, vos choix s'appliquent à tous les clients et leurs interrupteurs sont grisés.</span>
           </span>
         </label>
         <div v-if="totalDiffers && !data.locked" class="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-amber-50 px-3 py-2 text-amber-900">
@@ -63,7 +63,7 @@
           <button type="button" class="rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-bold text-white" :disabled="busy" @click="applyAll(null)">Appliquer mes choix à tous</button>
         </div>
       </div>
-      <p class="text-xs text-gray-500">
+      <p class="text-xs text-slate-600">
         Les courses envoyées par Jibiat Marchand ne reçoivent rien d'ici : Jibiat Marchand prévient lui-même la boutique.
         Numéro WhatsApp, modèles et envois : <RouterLink to="/admin/whatsapp" class="text-blue-600">page WhatsApp</RouterLink>.
       </p>

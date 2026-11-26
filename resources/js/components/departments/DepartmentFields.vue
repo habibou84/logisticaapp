@@ -10,7 +10,7 @@
           <option v-else :value="null" disabled>Choisir…</option>
           <option v-for="d in senders" :key="d.id" :value="d.id">{{ d.label }}{{ quotaText(d) }}</option>
         </select>
-        <p v-if="sender?.location" class="mt-1 text-xs text-gray-500">🏢 {{ sender.location }}<template v-if="sender.own_address"> · collecte à son adresse ({{ sender.pickup_zone_name }})</template></p>
+        <p v-if="sender?.location" class="mt-1 text-xs text-slate-600">🏢 {{ sender.location }}<template v-if="sender.own_address"> · collecte à son adresse ({{ sender.pickup_zone_name }})</template></p>
         <p v-if="errors.department_id" class="field-error">{{ errors.department_id[0] }}</p>
       </div>
       <div v-if="settings.requested_by !== 'off'">
@@ -31,7 +31,7 @@
           <option :value="null" disabled>Choisir…</option>
           <option v-for="d in all.filter((x) => x.id !== form.department_id)" :key="d.id" :value="d.id">{{ d.label }}</option>
         </select>
-        <p v-if="target" class="mt-1 text-xs text-gray-500">
+        <p v-if="target" class="mt-1 text-xs text-slate-600">
           Remis à {{ target.manager_name || 'son responsable' }}<template v-if="target.location"> · {{ target.location }}</template><template v-if="target.own_address"> · {{ target.pickup_zone_name }}</template>
         </p>
         <p v-if="errors.to_department_id" class="field-error">{{ errors.to_department_id[0] }}</p>

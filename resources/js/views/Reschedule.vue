@@ -5,7 +5,7 @@
     </header>
 
     <main class="mx-auto max-w-md space-y-4 px-4 py-6">
-      <p v-if="loading" class="py-16 text-center text-slate-500">Chargement…</p>
+      <p v-if="loading" class="py-16 text-center text-slate-600">Chargement…</p>
       <p v-else-if="notFound" class="py-16 text-center text-slate-600">Ce lien n'existe pas. Contactez l'agence.</p>
 
       <template v-else-if="info">
@@ -15,7 +15,7 @@
           <p class="text-xl font-bold">C'est noté, merci !</p>
           <p v-for="r in result.rescheduled" :key="r.code" class="text-sm text-slate-700">{{ r.code }} : livraison le {{ longDay(r.date) }}</p>
           <p v-for="c in result.cancelled" :key="c" class="text-sm text-slate-700">{{ c }} : annulé</p>
-          <p v-for="s in result.skipped" :key="s.code" class="text-sm text-slate-500">{{ s.code }} : pas changé ({{ s.why }})</p>
+          <p v-for="s in result.skipped" :key="s.code" class="text-sm text-slate-600">{{ s.code }} : pas changé ({{ s.why }})</p>
         </div>
         <div v-else-if="!info.open" class="rounded-2xl bg-slate-100 p-6 text-center text-slate-600">
           {{ info.expired ? 'Ce lien n\'est plus valable (3 jours). Contactez l\'agence pour choisir une date.' : 'Ces colis ont déjà une nouvelle date. Merci !' }}
@@ -23,7 +23,7 @@
 
         <form v-else class="space-y-4" @submit.prevent="send">
           <div>
-            <p class="text-sm text-slate-500">{{ info.company.name }} · {{ info.merchant_name }}</p>
+            <p class="text-sm text-slate-600">{{ info.company.name }} · {{ info.merchant_name }}</p>
             <h1 class="text-2xl font-bold">📅 Colis à reporter</h1>
             <p class="mt-1 text-sm text-slate-600">
               Nous n'avons pas pu ramasser {{ info.orders.length > 1 ? 'ces colis' : 'ce colis' }} le {{ longDay(info.missed_day) }}.
@@ -67,7 +67,7 @@
           <button class="w-full rounded-xl bg-emerald-700 py-3.5 font-semibold text-white disabled:opacity-50" :disabled="!ready || sending">
             {{ sending ? 'Envoi…' : 'Envoyer mes choix' }}
           </button>
-          <p class="text-center text-xs text-slate-500">Lien personnel, valable 3 jours · aucune connexion nécessaire. Dates possibles jusqu'au {{ longDay(info.max_date) }}.</p>
+          <p class="text-center text-xs text-slate-600">Lien personnel, valable 3 jours · aucune connexion nécessaire. Dates possibles jusqu'au {{ longDay(info.max_date) }}.</p>
         </form>
       </template>
     </main>

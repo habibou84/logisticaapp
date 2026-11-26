@@ -2,7 +2,7 @@
   <div class="space-y-4 max-w-6xl">
     <div>
       <h1 v-if="!embedded" class="text-xl font-bold">Disponibilité des livreurs</h1>
-      <p class="text-sm text-gray-600">
+      <p class="text-sm text-slate-600">
         Qui a fini sa tournée (ou presque), où il se trouve, et les colis à ramasser près de lui.
         Une mission ramassage ne change pas la date de livraison : les colis seront prêts pour leur jour prévu.
       </p>
@@ -27,16 +27,16 @@
           <span :class="['ml-1 rounded-full px-2 py-0.5 text-xs font-medium', STATES[c.state].class]">{{ STATES[c.state].label }}</span>
           <FieldEventBadge :event="c.field_event" class="ml-1" />
         </p>
-        <p class="text-sm text-gray-600">
+        <p class="text-sm text-slate-600">
           <a v-if="c.phone" :href="telLink(c.phone)" class="text-blue-600">{{ c.phone }}</a>
           <span v-if="c.zones.length"> · Zones : {{ c.zones.join(', ') }}</span>
         </p>
         <p class="text-sm mt-1">
           <template v-if="c.arrival_zone">📍 Dernier arrêt à <strong>{{ c.arrival_zone.name }}</strong> à {{ time(c.last_stop_at) }}</template>
           <template v-else>📍 Pas encore d'arrêt aujourd'hui</template>
-          <span v-if="c.position" class="text-gray-500"> · position GPS il y a {{ ago(c.position.at) }}</span>
+          <span v-if="c.position" class="text-slate-600"> · position GPS il y a {{ ago(c.position.at) }}</span>
         </p>
-        <p class="text-sm text-gray-600">
+        <p class="text-sm text-slate-600">
           {{ c.remaining.total ? `${c.remaining.total} mission${c.remaining.total > 1 ? 's' : ''} en cours (${missionsDetail(c)})` : 'Aucune mission en cours' }}
           · {{ c.done_today }} arrêt{{ c.done_today > 1 ? 's' : '' }} fait{{ c.done_today > 1 ? 's' : '' }} aujourd'hui
         </p>
@@ -44,40 +44,40 @@
       <div class="text-right shrink-0">
         <p v-if="c.nearby.count" class="text-sm">
           <strong>{{ c.nearby.count }} colis</strong> à ramasser près de lui
-          <span class="text-gray-500">({{ c.nearby.stops }} boutique{{ c.nearby.stops > 1 ? 's' : '' }}<template v-if="c.nearby.for_tomorrow">, {{ c.nearby.for_tomorrow }} pour demain ou plus tard</template>)</span>
+          <span class="text-slate-600">({{ c.nearby.stops }} boutique{{ c.nearby.stops > 1 ? 's' : '' }}<template v-if="c.nearby.for_tomorrow">, {{ c.nearby.for_tomorrow }} pour demain ou plus tard</template>)</span>
         </p>
-        <p v-else class="text-sm text-gray-500">Rien à ramasser près de lui</p>
+        <p v-else class="text-sm text-slate-600">Rien à ramasser près de lui</p>
         <button v-if="c.nearby.count && c.state !== 'off'" type="button" class="btn-primary mt-2" @click="openMission(c)">📦 Mission ramassage</button>
       </div>
     </section>
 
-    <div v-if="loaded && !visible.length" class="card p-8 text-center text-gray-500">
+    <div v-if="loaded && !visible.length" class="card p-8 text-center text-slate-600">
       {{ filter === 'ready' ? 'Aucun livreur libre ou bientôt libre pour le moment.' : 'Aucun livreur actif.' }}
     </div>
 
     <!-- Mission ramassage : colis proposés, les plus proches d'abord -->
     <Modal :open="!!mission" :title="mission ? `Mission ramassage : ${mission.name}` : ''" @close="mission = null">
       <div v-if="mission" class="space-y-3">
-        <p class="text-sm text-gray-600">
+        <p class="text-sm text-slate-600">
           <template v-if="mission.arrival_zone">Dernier arrêt à <strong>{{ mission.arrival_zone.name }}</strong>. </template>
           Cochez les colis à lui confier. La date de livraison de chaque colis reste la même.
         </p>
-        <p v-if="!mission.stops" class="text-center text-gray-400 py-4">Chargement…</p>
+        <p v-if="!mission.stops" class="text-center text-slate-500 py-4">Chargement…</p>
         <div v-for="s in mission.stops || []" :key="s.key" class="rounded-lg border p-3">
           <label class="flex items-start gap-2">
             <input type="checkbox" class="mt-1" :checked="stopChecked(s)" :aria-label="`Tous les colis de ${s.merchant}`" @change="toggleStop(s)">
             <span class="min-w-0 flex-1">
               <strong>{{ s.merchant }}</strong> · {{ s.count }} colis
               <span class="ml-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-700">{{ reason(s) }}</span>
-              <span class="block text-xs text-gray-500">{{ [s.zone_name, s.address].filter(Boolean).join(' · ') }}</span>
+              <span class="block text-xs text-slate-600">{{ [s.zone_name, s.address].filter(Boolean).join(' · ') }}</span>
             </span>
           </label>
           <ul class="mt-2 ml-6 space-y-1">
             <li v-for="o in s.orders" :key="o.id" class="flex items-center gap-2 text-sm">
               <input v-model="picked" type="checkbox" :value="o.id" :aria-label="`Colis ${o.tracking_code}`">
               <span class="font-mono text-xs">{{ o.tracking_code }}</span>
-              <span class="text-gray-600 truncate">→ {{ o.delivery_zone_name || 'Destinataire' }}</span>
-              <span class="ml-auto text-xs text-gray-500 whitespace-nowrap">{{ o.delivery_date ? `livraison ${date(o.delivery_date)}` : 'dès que possible' }}</span>
+              <span class="text-slate-600 truncate">→ {{ o.delivery_zone_name || 'Destinataire' }}</span>
+              <span class="ml-auto text-xs text-slate-600 whitespace-nowrap">{{ o.delivery_date ? `livraison ${date(o.delivery_date)}` : 'dès que possible' }}</span>
             </li>
           </ul>
         </div>

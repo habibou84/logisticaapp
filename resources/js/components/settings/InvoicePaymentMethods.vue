@@ -8,8 +8,8 @@
         <label class="ml-auto flex items-center gap-2 text-sm">
           <input v-model="m.enabled" type="checkbox"> Proposé aux clients
         </label>
-        <button type="button" class="text-xs text-slate-500" :disabled="i === 0" title="Monter" aria-label="Monter" @click="move(i, -1)">▲</button>
-        <button type="button" class="text-xs text-slate-500" :disabled="i === model.length - 1" title="Descendre" aria-label="Descendre" @click="move(i, 1)">▼</button>
+        <button type="button" class="text-xs text-slate-600" :disabled="i === 0" title="Monter" aria-label="Monter" @click="move(i, -1)">▲</button>
+        <button type="button" class="text-xs text-slate-600" :disabled="i === model.length - 1" title="Descendre" aria-label="Descendre" @click="move(i, 1)">▼</button>
         <button type="button" class="text-xs text-red-600" @click="model.splice(i, 1)">Retirer</button>
       </div>
 
@@ -43,7 +43,7 @@
       </div>
     </div>
 
-    <p v-if="!model.length" class="text-sm text-gray-500">Aucun moyen de paiement : ajoutez ceux que vous acceptez.</p>
+    <p v-if="!model.length" class="text-sm text-slate-600">Aucun moyen de paiement : ajoutez ceux que vous acceptez.</p>
 
     <div class="flex flex-wrap gap-2">
       <button v-for="t in TYPES" :key="t.value" type="button" class="btn-secondary text-sm" @click="add(t.value)">+ {{ t.label }}</button>

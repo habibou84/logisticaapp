@@ -19,7 +19,7 @@
 
     <!-- Jour affiché : aujourd'hui par défaut (retards compris), gardé d'un onglet à l'autre -->
     <div v-if="isStaff" class="flex flex-wrap items-center gap-2 text-sm" role="group" aria-label="Jour affiché">
-      <span class="text-gray-600">📅 Jour :</span>
+      <span class="text-slate-600">📅 Jour :</span>
       <button
         v-for="d in DAY_CHOICES" :key="d.label" type="button"
         :class="['rounded-full px-3 py-1 ring-1', filters.day === d.value ? 'bg-slate-900 text-white ring-slate-900' : 'bg-white ring-slate-300']"
@@ -34,7 +34,7 @@
         aria-label="Autre jour" title="Autre jour"
         @change="$event.target.value && setDay($event.target.value)"
       >
-      <span v-if="filters.day" class="hidden sm:inline text-gray-500">· seulement les courses prévues ce jour (jours passés dans « Courses en retard »)</span>
+      <span v-if="filters.day" class="hidden sm:inline text-slate-600">· seulement les courses prévues ce jour (jours passés dans « Courses en retard »)</span>
     </div>
 
     <!-- Point du jour : livrées, argent (e-commerce), plis et accusés (distribution), MAD -->
@@ -55,7 +55,7 @@
 
     <!-- Activités côte à côte : toutes, ou une seule (e-commerce, distribution, MAD) -->
     <div v-if="activityChoices.length > 1" class="flex flex-wrap items-center gap-2 text-sm" role="group" aria-label="Activité">
-      <span class="text-gray-600">Activité :</span>
+      <span class="text-slate-600">Activité :</span>
       <button
         v-for="a in [{ value: '', label: 'Toutes' }, ...activityChoices]" :key="a.value" type="button"
         :class="['rounded-full px-3 py-1 ring-1', filters.activity === a.value ? 'bg-slate-900 text-white ring-slate-900' : 'bg-white ring-slate-300']"
@@ -117,7 +117,7 @@
 
     <!-- Sans livreur : ramassage, livraison ou les deux ; de la plus ancienne attente à la plus récente -->
     <div v-if="filters.queue === 'unassigned'" class="flex flex-wrap items-center gap-2 text-sm">
-      <span class="text-gray-600">Afficher :</span>
+      <span class="text-slate-600">Afficher :</span>
       <button
         v-for="a in AWAITING" :key="a.value" type="button"
         :class="['rounded-full px-3 py-1 ring-1', filters.awaiting === a.value ? 'bg-slate-900 text-white ring-slate-900' : 'bg-white ring-slate-300']"
@@ -125,7 +125,7 @@
       >
         {{ a.label }}
       </button>
-      <span class="text-gray-500">· de la plus ancienne attente à la plus récente</span>
+      <span class="text-slate-600">· de la plus ancienne attente à la plus récente</span>
     </div>
 
     <!-- Jour choisi : courses prévues plus tard hors de la file, à ajouter pour un ramassage en avance -->
@@ -139,7 +139,7 @@
         · <button type="button" class="font-medium underline" @click="toggleLater">Masquer</button>
       </template>
     </p>
-    <p v-else-if="filters.day && ALL_DATES_QUEUES.includes(filters.queue)" class="text-xs text-gray-500">
+    <p v-else-if="filters.day && ALL_DATES_QUEUES.includes(filters.queue)" class="text-xs text-slate-600">
       Cette file montre toutes les dates : chaque cas reste visible jusqu'à ce qu'il soit réglé.
     </p>
 
@@ -180,7 +180,7 @@
             />
           </div>
           <div>
-            <p class="label">Période <span class="font-normal text-gray-500">(remplace le jour)</span></p>
+            <p class="label">Période <span class="font-normal text-slate-600">(remplace le jour)</span></p>
             <select v-if="isStaff" v-model="filters.date_basis" class="input mb-2" aria-label="Dates selon" @change="filters.from || filters.to ? onPeriod() : null">
               <option value="delivery">📅 Selon la livraison</option>
               <option value="created">🆕 Selon la création</option>
@@ -257,8 +257,8 @@
 
       <!-- Téléphone : une carte par course -->
       <div class="md:hidden space-y-2">
-        <p v-if="loading" class="card p-6 text-center text-gray-500">Chargement…</p>
-        <p v-else-if="!orders.length" class="card p-6 text-center text-gray-500">Aucune course.</p>
+        <p v-if="loading" class="card p-6 text-center text-slate-600">Chargement…</p>
+        <p v-else-if="!orders.length" class="card p-6 text-center text-slate-600">Aucune course.</p>
         <article
           v-for="o in orders"
           v-else
@@ -270,30 +270,30 @@
             <label v-if="isStaff" class="flex items-center gap-2 min-w-0" @click.stop>
               <input v-model="selected" type="checkbox" :value="o.id" :aria-label="`Sélectionner ${o.tracking_code}`">
               <span class="font-mono text-xs truncate">{{ o.tracking_code }}</span>
-              <span v-if="activityChoices.length > 1" :class="['rounded-full px-1.5 text-[11px] font-medium', activityBadge(o.activity)]">{{ activityShort(o.activity) }}</span>
+              <span v-if="activityChoices.length > 1" :class="['rounded-full px-1.5 text-xs font-medium', activityBadge(o.activity)]">{{ activityShort(o.activity) }}</span>
             </label>
-            <span v-else class="font-mono text-xs">{{ o.tracking_code }}<span v-if="activityChoices.length > 1" :class="['ml-1 rounded-full px-1.5 text-[11px] font-medium font-sans', activityBadge(o.activity)]">{{ activityShort(o.activity) }}</span></span>
+            <span v-else class="font-mono text-xs">{{ o.tracking_code }}<span v-if="activityChoices.length > 1" :class="['ml-1 rounded-full px-1.5 text-xs font-medium font-sans', activityBadge(o.activity)]">{{ activityShort(o.activity) }}</span></span>
             <span v-if="o.billed_monthly" class="text-xs text-indigo-700 whitespace-nowrap">Facturé au mois</span>
             <span v-else class="font-semibold whitespace-nowrap">{{ money(o.amounts.cod_amount) }}</span>
           </div>
           <div class="flex items-center justify-between gap-2">
             <div class="min-w-0">
               <div class="font-medium truncate">{{ o.recipient.name || '—' }}</div>
-              <div class="text-xs text-gray-500">{{ o.recipient.phone }}</div>
+              <div class="text-xs text-slate-600">{{ o.recipient.phone }}</div>
             </div>
             <a v-if="o.recipient.phone" :href="`tel:${o.recipient.phone}`" class="tap shrink-0 grid h-10 w-10 place-items-center rounded-full bg-slate-100 text-lg" :aria-label="`Appeler ${o.recipient.name || 'le destinataire'}`" @click.stop>📞</a>
           </div>
-          <div class="text-xs text-gray-600">{{ o.pickup.zone_name }} → {{ o.delivery.zone_name }}<span v-if="isStaff && o.merchant"> · {{ o.merchant.business_name }}</span></div>
+          <div class="text-xs text-slate-600">{{ o.pickup.zone_name }} → {{ o.delivery.zone_name }}<span v-if="isStaff && o.merchant"> · {{ o.merchant.business_name }}</span></div>
           <OrderStatusCell :order="o" :late="isLate(o)" :carried="isCarried(o)" :late-day="deliveryDay(o)" @decide="deciding = $event" />
-          <CourierCell v-if="o.pickup_courier || o.delivery_courier || o.held_by || (isDispatch && o.awaiting_courier)" :order="o" :couriers="couriers" :can-dispatch="isDispatch" class="text-gray-700" @updated="replaceOrder" />
+          <CourierCell v-if="o.pickup_courier || o.delivery_courier || o.held_by || (isDispatch && o.awaiting_courier)" :order="o" :couriers="couriers" :can-dispatch="isDispatch" class="text-slate-700" @updated="replaceOrder" />
           <div v-if="o.internal_late || o.internal_risk" :class="['text-xs font-medium', o.internal_late ? 'text-red-600' : 'text-amber-700']">{{ o.internal_late ? '⏰ Délai interne dépassé' : '⚠️ Risque de retard' }} ({{ dateTime(o.internal_due_at) }})</div>
-          <div class="text-xs text-gray-400">Livraison {{ date(o.delivery.scheduled_date || o.created_at) }} · créée {{ dateTime(o.created_at) }}</div>
+          <div class="text-xs text-slate-500">Livraison {{ date(o.delivery.scheduled_date || o.created_at) }} · créée {{ dateTime(o.created_at) }}</div>
         </article>
       </div>
 
       <div class="card overflow-x-auto hidden md:block">
         <table class="w-full text-sm">
-          <thead class="bg-slate-50 text-left text-gray-600">
+          <thead class="bg-slate-50 text-left text-slate-600">
             <tr>
               <th v-if="isStaff" class="p-2 w-8"><input type="checkbox" :checked="allSelected" aria-label="Tout sélectionner" @change="toggleAll"></th>
               <th class="p-2">Code</th>
@@ -307,8 +307,8 @@
             </tr>
           </thead>
           <tbody class="divide-y">
-            <tr v-if="loading"><td colspan="9" class="p-6 text-center text-gray-500">Chargement…</td></tr>
-            <tr v-else-if="!orders.length"><td colspan="9" class="p-6 text-center text-gray-500">Aucune course.</td></tr>
+            <tr v-if="loading"><td colspan="9" class="p-6 text-center text-slate-600">Chargement…</td></tr>
+            <tr v-else-if="!orders.length"><td colspan="9" class="p-6 text-center text-slate-600">Aucune course.</td></tr>
             <tr
               v-for="o in orders"
               v-else
@@ -325,7 +325,7 @@
               <td v-if="isStaff" class="p-2">{{ o.merchant?.business_name }}</td>
               <td class="p-2">
                 <div>{{ o.recipient.name || '—' }}</div>
-                <div class="text-xs text-gray-500">{{ o.recipient.phone }}</div>
+                <div class="text-xs text-slate-600">{{ o.recipient.phone }}</div>
               </td>
               <td class="p-2 whitespace-nowrap">{{ o.pickup.zone_name }} → {{ o.delivery.zone_name }}</td>
               <td class="p-2">
@@ -341,8 +341,8 @@
               </td>
               <td class="p-2 text-xs whitespace-nowrap">
                 <!-- Jour de livraison : la date prévue, sinon le jour de création -->
-                <div class="font-medium text-gray-800">{{ date(o.delivery.scheduled_date || o.created_at) }}</div>
-                <div class="text-gray-500">créée {{ dateTime(o.created_at) }}</div>
+                <div class="font-medium text-slate-800">{{ date(o.delivery.scheduled_date || o.created_at) }}</div>
+                <div class="text-slate-600">créée {{ dateTime(o.created_at) }}</div>
               </td>
             </tr>
           </tbody>

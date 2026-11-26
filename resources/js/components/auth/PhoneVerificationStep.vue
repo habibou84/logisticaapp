@@ -27,10 +27,10 @@
         <a :href="state.whatsapp.link" target="_blank" rel="noopener" class="flex items-center justify-center gap-2 w-full rounded-xl bg-[#25D366] hover:bg-[#1ebe5b] py-3 font-semibold text-white shadow-sm">
           <span aria-hidden="true">💬</span> Envoyer le message WhatsApp
         </a>
-        <p class="flex items-center justify-center gap-2 text-sm text-slate-500" aria-live="polite">
+        <p class="flex items-center justify-center gap-2 text-sm text-slate-600" aria-live="polite">
           <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" aria-hidden="true"></span> En attente de votre message…
         </p>
-        <p class="text-xs text-slate-500 text-center">
+        <p class="text-xs text-slate-600 text-center">
           Le bouton ne marche pas ? Envoyez « {{ state.whatsapp.text }} » au {{ state.whatsapp.number }} sur WhatsApp.
         </p>
         <button v-if="state.sms.available" type="button" class="block mx-auto text-sm text-slate-600 underline" @click="smsMode = true">

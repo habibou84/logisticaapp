@@ -6,7 +6,7 @@
       <div>
         <p class="font-semibold">Ma note</p>
         <StarRating :model-value="data.score" readonly size="h-5 w-5" />
-        <p v-if="data.new" class="text-xs text-slate-500">Pas encore assez de courses notées</p>
+        <p v-if="data.new" class="text-xs text-slate-600">Pas encore assez de courses notées</p>
       </div>
     </div>
     <div v-if="strengths.length">
@@ -21,7 +21,7 @@
       <p class="text-sm font-medium text-slate-700">Ce que disent les clients</p>
       <div v-for="(c, i) in data.comments.slice(0, 5)" :key="i" class="rounded-xl bg-slate-50 p-2 text-sm">
         <StarRating :model-value="c.stars" readonly size="h-3.5 w-3.5" />
-        <p>« {{ c.comment }} »<span v-if="c.from" class="text-slate-500"> · {{ c.from }}</span></p>
+        <p>« {{ c.comment }} »<span v-if="c.from" class="text-slate-600"> · {{ c.from }}</span></p>
       </div>
     </div>
   </section>

@@ -217,13 +217,13 @@ const TierPicker = defineComponent({
         })
         : h('button', {
           type: 'button', 'aria-pressed': String(isOther),
-          class: ['border-l border-slate-200 font-semibold tabular-nums', size, isOther ? `bg-orange-50 text-orange-800 ${set === undefined ? 'opacity-60' : ''}` : 'bg-white text-slate-500 hover:bg-slate-50'],
+          class: ['border-l border-slate-200 font-semibold tabular-nums', size, isOther ? `bg-orange-50 text-orange-800 ${set === undefined ? 'opacity-60' : ''}` : 'bg-white text-slate-600 hover:bg-slate-50'],
           onClick: () => { editing.value = otherKey },
         }, isOther ? money(r.price) : 'Autre'))
       const text = hint(r, to)
       return h('div', { class: 'flex flex-col items-end gap-1' }, [
         h('div', { class: 'inline-flex overflow-hidden rounded-lg border border-slate-300' }, buttons),
-        text ? h('span', { class: 'text-xs text-slate-500' }, text) : null,
+        text ? h('span', { class: 'text-xs text-slate-600' }, text) : null,
       ])
     }
   },

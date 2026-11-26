@@ -9,7 +9,7 @@
           <div class="text-center space-y-1">
             <p class="text-3xl" aria-hidden="true">✅</p>
             <h1 class="text-xl font-bold">Numéro vérifié</h1>
-            <p class="text-sm text-slate-500">Choisissez votre nouveau mot de passe. Vos autres appareils seront déconnectés.</p>
+            <p class="text-sm text-slate-600">Choisissez votre nouveau mot de passe. Vos autres appareils seront déconnectés.</p>
           </div>
           <p v-if="error" class="rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm px-3 py-2" role="alert">{{ error }}</p>
           <label class="block">
@@ -32,7 +32,7 @@
         <form v-else class="space-y-4" @submit.prevent="start">
           <div class="text-center space-y-1">
             <h1 class="text-xl font-bold">Mot de passe oublié</h1>
-            <p class="text-sm text-slate-500">Indiquez le numéro de votre compte : vous le vérifierez par WhatsApp ou SMS, puis vous choisirez un nouveau mot de passe.</p>
+            <p class="text-sm text-slate-600">Indiquez le numéro de votre compte : vous le vérifierez par WhatsApp ou SMS, puis vous choisirez un nouveau mot de passe.</p>
           </div>
           <p v-if="error" class="rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm px-3 py-2" role="alert">{{ error }}</p>
           <label class="block">

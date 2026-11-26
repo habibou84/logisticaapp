@@ -10,23 +10,23 @@
         <div class="flex flex-wrap items-center gap-2">
           <StarRating :model-value="r.stars" readonly size="h-4 w-4" />
           <span class="text-xs rounded bg-slate-100 px-1.5">{{ SOURCES[r.source] }}</span>
-          <span class="text-xs text-gray-600">{{ r.courier.name }} · {{ r.author || r.merchant || '' }}</span>
-          <span v-if="r.neutralized_at" class="text-xs text-gray-500">neutralisée</span>
+          <span class="text-xs text-slate-600">{{ r.courier.name }} · {{ r.author || r.merchant || '' }}</span>
+          <span v-if="r.neutralized_at" class="text-xs text-slate-600">neutralisée</span>
         </div>
         <p v-if="r.reasons?.length" class="flex flex-wrap gap-1 pt-0.5">
           <span v-for="k in r.reasons" :key="k" class="rounded-full bg-red-50 px-2 text-xs text-red-700">{{ reasonLabel(k) }}</span>
         </p>
-        <p v-if="r.comment" class="text-gray-700">« {{ r.comment }} »</p>
+        <p v-if="r.comment" class="text-slate-700">« {{ r.comment }} »</p>
       </li>
     </ul>
-    <p v-else class="text-gray-500">Aucune note sur cette course.</p>
+    <p v-else class="text-slate-600">Aucune note sur cette course.</p>
 
     <form v-if="couriers.length" class="space-y-3 border-t pt-3" @submit.prevent="save">
       <div class="flex flex-wrap items-center gap-2">
         <select v-if="couriers.length > 1" v-model="form.courier_id" class="input w-auto" aria-label="Livreur">
           <option v-for="c in couriers" :key="c.id" :value="c.id">{{ c.name }}</option>
         </select>
-        <span v-else class="text-gray-600">Votre note pour <b>{{ couriers[0].name }}</b> :</span>
+        <span v-else class="text-slate-600">Votre note pour <b>{{ couriers[0].name }}</b> :</span>
         <StarRating v-model="form.stars" size="h-6 w-6" label="Note de l'équipe" />
         <b v-if="chosen" :class="form.stars <= reasonBelow ? 'text-red-700' : 'text-amber-700'">{{ form.stars }} · {{ chosen.label }}</b>
       </div>
@@ -37,14 +37,14 @@
           :class="['rounded-lg px-2 py-1.5 text-left text-xs ring-1', form.stars === m.value ? 'bg-amber-50 ring-2 ring-amber-400' : 'bg-white ring-slate-200']"
           :aria-pressed="form.stars === m.value" @click="form.stars = m.value"
         >
-          <b class="block">{{ m.value }} ★ {{ m.label }}</b><span class="text-gray-600">{{ m.description }}</span>
+          <b class="block">{{ m.value }} ★ {{ m.label }}</b><span class="text-slate-600">{{ m.description }}</span>
         </button>
       </div>
       <!-- Ce qui n'est pas allé : liste déroulante, chaque choix s'ajoute (obligatoire si la note est basse) -->
       <div v-if="form.stars">
         <label class="label" for="team-reason">
           Ce qui n'est pas allé
-          <span v-if="low">*</span><span v-else class="font-normal text-gray-500">(facultatif)</span>
+          <span v-if="low">*</span><span v-else class="font-normal text-slate-600">(facultatif)</span>
         </label>
         <select id="team-reason" class="input sm:w-80" :value="''" @change="addReason">
           <option value="">{{ form.reasons.length ? 'Ajouter un autre motif…' : 'Choisir un motif…' }}</option>

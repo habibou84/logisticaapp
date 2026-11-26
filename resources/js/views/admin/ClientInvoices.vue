@@ -30,7 +30,7 @@
       </div>
     </div>
 
-    <p class="text-sm text-gray-600">
+    <p class="text-sm text-slate-600">
       Clients sous formule (distribution, MAD) : chaque 1er du mois, la facture du mois écoulé est calculée en brouillon.
       Une facture par activité, avec sa propre série de numéros (DIS-…, MAD-…). Vérifiez-la, ajoutez une remise si besoin,
       puis « Émettre » : elle reçoit son numéro et le client la voit dans son application.
@@ -44,13 +44,13 @@
 
     <div class="card overflow-x-auto">
       <table class="w-full text-sm stack-table">
-        <thead class="bg-slate-50 text-left text-gray-600">
+        <thead class="bg-slate-50 text-left text-slate-600">
           <tr><th class="p-2">Numéro</th><th class="p-2">Client</th><th class="p-2">Activité</th><th class="p-2">Mois</th><th class="p-2 text-right">Total</th><th class="p-2 text-right">Reste</th><th class="p-2">État</th><th /></tr>
         </thead>
         <tbody class="divide-y">
           <tr v-for="i in invoices" :key="i.id">
             <td class="p-2 font-mono">{{ i.number || '—' }}</td>
-            <td data-label="Client" class="p-2 font-medium">{{ i.merchant?.business_name }}<span v-if="i.department" class="block text-xs font-normal text-gray-500">🏢 {{ i.department.label }}</span></td>
+            <td data-label="Client" class="p-2 font-medium">{{ i.merchant?.business_name }}<span v-if="i.department" class="block text-xs font-normal text-slate-600">🏢 {{ i.department.label }}</span></td>
             <td data-label="Activité" class="p-2"><span :class="['rounded-full px-2 py-0.5 text-xs font-medium', activityBadge(i.activity)]">{{ activityShort(i.activity) }}</span></td>
             <td data-label="Mois" class="p-2">{{ i.period_label }}</td>
             <td data-label="Total" class="p-2 text-right">{{ money(i.total) }}</td>
@@ -58,7 +58,7 @@
             <td data-label="État" class="p-2"><span :class="['rounded-full px-2 py-0.5 text-xs font-medium', badge(i)]">{{ i.status_label }}</span></td>
             <td class="p-2 text-right"><RouterLink :to="`/admin/factures/${i.id}`" class="text-blue-600">Ouvrir</RouterLink></td>
           </tr>
-          <tr v-if="!invoices.length"><td colspan="8" class="p-6 text-center text-gray-500">{{ loading ? 'Chargement…' : 'Aucune facture.' }}</td></tr>
+          <tr v-if="!invoices.length"><td colspan="8" class="p-6 text-center text-slate-600">{{ loading ? 'Chargement…' : 'Aucune facture.' }}</td></tr>
         </tbody>
       </table>
     </div>
@@ -97,7 +97,7 @@ const monthLabel = computed(() => {
   return new Date(Number(y), Number(m) - 1, 1).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
 })
 
-const BADGES = { draft: 'bg-slate-100 text-slate-700', issued: 'bg-amber-100 text-amber-800', paid: 'bg-emerald-100 text-emerald-800', void: 'bg-gray-100 text-gray-500' }
+const BADGES = { draft: 'bg-slate-100 text-slate-700', issued: 'bg-amber-100 text-amber-800', paid: 'bg-emerald-100 text-emerald-800', void: 'bg-gray-100 text-slate-600' }
 const badge = (i) => (i.is_overdue ? 'bg-red-100 text-red-700' : BADGES[i.status])
 
 async function load() {

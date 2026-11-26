@@ -7,7 +7,7 @@
             <div class="mx-auto mb-3 h-1.5 w-10 rounded-full bg-slate-300" />
             <div class="flex items-center justify-between gap-3">
               <h2 class="text-lg font-semibold">{{ title }}</h2>
-              <button class="h-9 w-9 grid place-items-center rounded-full bg-slate-100 text-slate-500" aria-label="Fermer" @click="$emit('close')">✕</button>
+              <button class="h-9 w-9 grid place-items-center rounded-full bg-slate-100 text-slate-600" aria-label="Fermer" @click="$emit('close')">✕</button>
             </div>
           </div>
           <div class="px-5 pb-6">

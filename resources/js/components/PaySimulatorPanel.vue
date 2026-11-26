@@ -3,10 +3,10 @@
     <div class="flex flex-wrap items-center justify-between gap-2">
       <h2 class="font-semibold">🧮 Simulateur</h2>
       <div class="flex rounded-lg bg-slate-100 p-1 text-sm">
-        <button v-for="m in MODES" :key="m.value" :class="['rounded-md px-3 py-1', mode === m.value ? 'bg-white shadow font-medium' : 'text-gray-600']" @click="mode = m.value">{{ m.label }}</button>
+        <button v-for="m in MODES" :key="m.value" :class="['rounded-md px-3 py-1', mode === m.value ? 'bg-white shadow font-medium' : 'text-slate-600']" @click="mode = m.value">{{ m.label }}</button>
       </div>
     </div>
-    <p class="text-sm text-gray-600">Calcule avec les réglages affichés ci-dessus, même non enregistrés. Rien n'est payé ni modifié.</p>
+    <p class="text-sm text-slate-600">Calcule avec les réglages affichés ci-dessus, même non enregistrés. Rien n'est payé ni modifié.</p>
 
     <!-- Une course fictive -->
     <form v-if="mode === 'scenario'" class="space-y-3" @submit.prevent="simulate">
@@ -58,9 +58,9 @@
       <button class="btn-secondary" :disabled="loading">{{ loading ? 'Calcul…' : 'Calculer' }}</button>
 
       <div v-if="result" class="rounded-lg border">
-        <p v-if="!result.lines.length" class="p-3 text-sm text-gray-500">Aucune règle ne s'applique : rien n'est payé pour cette étape.</p>
+        <p v-if="!result.lines.length" class="p-3 text-sm text-slate-600">Aucune règle ne s'applique : rien n'est payé pour cette étape.</p>
         <div v-for="(l, i) in result.lines" :key="i" class="flex justify-between gap-2 p-2 border-b text-sm">
-          <span>{{ l.label }} <span class="block text-xs text-gray-500">{{ l.detail }}</span></span>
+          <span>{{ l.label }} <span class="block text-xs text-slate-600">{{ l.detail }}</span></span>
           <span :class="['whitespace-nowrap', signedClass(l.amount)]">{{ money(l.amount) }}</span>
         </div>
         <p class="flex justify-between p-2 font-semibold"><span>Gain du livreur</span><span>{{ money(result.total) }}</span></p>
@@ -76,7 +76,7 @@
         </div>
         <button class="btn-secondary" :disabled="loading">{{ loading ? 'Calcul…' : 'Rejouer' }}</button>
       </div>
-      <p class="text-xs text-gray-500">
+      <p class="text-xs text-slate-600">
         Reprend les courses réellement faites par chaque livreur pendant la période de paie du plan (le mois si « à la demande »)
         et compare avec ce qu'il a réellement gagné. Salaire de base compté en entier ; primes calculées sur la période.
       </p>
@@ -84,7 +84,7 @@
       <div v-if="replay" class="overflow-x-auto">
         <p class="text-sm mb-2">Période du <strong>{{ date_(replay.period_start) }}</strong> au <strong>{{ date_(replay.period_end) }}</strong></p>
         <table class="w-full text-sm">
-          <thead class="bg-slate-50 text-left text-gray-600">
+          <thead class="bg-slate-50 text-left text-slate-600">
             <tr>
               <th class="p-2">Livreur</th><th class="p-2">Activité</th><th class="p-2 text-right">Courses</th><th class="p-2 text-right">Primes</th>
               <th class="p-2 text-right">Salaire</th><th class="p-2 text-right">Avec ce plan</th><th class="p-2 text-right">Réel</th><th class="p-2 text-right">Écart</th>
@@ -93,7 +93,7 @@
           <tbody class="divide-y">
             <tr v-for="c in replay.couriers" :key="c.courier_id">
               <td class="p-2 font-medium">{{ c.name }}</td>
-              <td class="p-2 text-xs text-gray-600">{{ activity(c) }}</td>
+              <td class="p-2 text-xs text-slate-600">{{ activity(c) }}</td>
               <td class="p-2 text-right">{{ money(c.courses) }}</td>
               <td class="p-2 text-right" :title="c.bonuses.map((b) => `${b.label} : ${money(b.amount)}`).join('\n')">{{ money(c.bonuses.reduce((s, b) => s + b.amount, 0)) }}</td>
               <td class="p-2 text-right">{{ money(c.salary) }}</td>
@@ -101,7 +101,7 @@
               <td class="p-2 text-right">{{ money(c.actual) }}</td>
               <td :class="['p-2 text-right font-medium', signedClass(c.simulated - c.actual)]">{{ c.simulated - c.actual > 0 ? '+' : '' }}{{ money(c.simulated - c.actual) }}</td>
             </tr>
-            <tr v-if="!replay.couriers.length"><td colspan="8" class="p-4 text-center text-gray-500">Aucun livreur actif.</td></tr>
+            <tr v-if="!replay.couriers.length"><td colspan="8" class="p-4 text-center text-slate-600">Aucun livreur actif.</td></tr>
           </tbody>
           <tfoot v-if="replay.couriers.length" class="font-semibold">
             <tr>

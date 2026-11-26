@@ -4,7 +4,7 @@
       <RouterLink to="/" class="flex justify-center"><BrandLogo size="md" dark /></RouterLink>
 
       <div class="mt-6 rounded-3xl bg-white text-slate-900 shadow-2xl p-6 md:p-8">
-        <div v-if="!options" class="py-10 text-center text-slate-500">Chargement…</div>
+        <div v-if="!options" class="py-10 text-center text-slate-600">Chargement…</div>
 
         <div v-else-if="!options.open" class="space-y-4 text-center">
           <h1 class="text-2xl font-bold">Ouverture de compte</h1>
@@ -19,7 +19,7 @@
         <form v-else class="space-y-4" novalidate @submit.prevent="submit">
           <div class="text-center space-y-1">
             <h1 class="text-2xl font-bold">Créer mon compte client</h1>
-            <p class="text-sm text-slate-500">Gratuit, en 2 minutes. Votre numéro sera vérifié par WhatsApp ou SMS.</p>
+            <p class="text-sm text-slate-600">Gratuit, en 2 minutes. Votre numéro sera vérifié par WhatsApp ou SMS.</p>
           </div>
 
           <p v-if="error" class="rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm px-3 py-2" role="alert">{{ error }}</p>
@@ -63,7 +63,7 @@
           <button type="submit" :disabled="busy" class="w-full rounded-xl bg-emerald-600 hover:bg-emerald-700 py-3 font-semibold text-white shadow-sm disabled:opacity-60">
             {{ busy ? 'Un instant…' : 'Continuer' }}
           </button>
-          <p class="text-center text-xs text-slate-500">
+          <p class="text-center text-xs text-slate-600">
             En continuant, vous acceptez les <a href="/conditions" target="_blank" rel="noopener" class="underline">conditions générales</a>
             et la <a href="/confidentialite" target="_blank" rel="noopener" class="underline">politique de confidentialité</a>.
           </p>

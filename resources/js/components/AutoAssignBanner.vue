@@ -20,7 +20,7 @@
 
     <ul v-if="expanded" class="mt-3 space-y-2">
       <li v-for="i in items" :key="i.key" class="flex flex-wrap items-center gap-2 rounded-lg bg-white px-3 py-2 text-sm ring-1 ring-orange-200">
-        <span class="min-w-[12rem] flex-1"><b class="text-orange-900">{{ i.text }}</b><span class="block text-gray-600">{{ i.why }}</span></span>
+        <span class="min-w-[12rem] flex-1"><b class="text-orange-900">{{ i.text }}</b><span class="block text-slate-600">{{ i.why }}</span></span>
         <RouterLink :to="i.to" class="rounded-lg border border-orange-300 px-3 py-1.5 font-medium text-orange-900 hover:bg-orange-100">{{ i.action }}</RouterLink>
       </li>
     </ul>

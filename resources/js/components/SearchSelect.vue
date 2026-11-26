@@ -26,8 +26,8 @@
       :aria-expanded="open"
       @click="toggle"
     >
-      <span :class="['min-w-0 truncate', selected ? '' : 'text-gray-500']">{{ selected ? selected.label : placeholder ?? 'Choisir…' }}</span>
-      <span class="shrink-0 text-xs text-gray-400" aria-hidden="true">▾</span>
+      <span :class="['min-w-0 truncate', selected ? '' : 'text-slate-600']">{{ selected ? selected.label : placeholder ?? 'Choisir…' }}</span>
+      <span class="shrink-0 text-xs text-slate-500" aria-hidden="true">▾</span>
     </button>
     <!-- Valeur obligatoire : le formulaire refuse l'envoi tant que rien n'est choisi -->
     <input v-if="required" :value="selected ? 'x' : ''" required tabindex="-1" aria-hidden="true" class="pointer-events-none absolute inset-x-0 bottom-0 h-px opacity-0">
@@ -50,7 +50,7 @@
       <ul class="max-h-72 overflow-y-auto py-1" role="listbox">
         <li
           v-if="placeholder !== null && allowEmpty && !query"
-          :class="['cursor-pointer px-3 py-2.5 text-sm text-gray-600 sm:py-2', active === -1 ? 'bg-slate-100' : 'hover:bg-slate-50']"
+          :class="['cursor-pointer px-3 py-2.5 text-sm text-slate-600 sm:py-2', active === -1 ? 'bg-slate-100' : 'hover:bg-slate-50']"
           role="option" :aria-selected="selected === null"
           @mousedown.prevent="choose(emptyValue)"
         >
@@ -58,13 +58,13 @@
         </li>
         <li
           v-for="(o, i) in matches" :key="keyOf(o.value)"
-          :class="['px-3 py-2.5 text-sm sm:py-2', o.disabled ? 'cursor-not-allowed text-gray-400' : 'cursor-pointer', i === active ? 'bg-slate-100' : 'hover:bg-slate-50', o === selected ? 'font-semibold' : '']"
+          :class="['px-3 py-2.5 text-sm sm:py-2', o.disabled ? 'cursor-not-allowed text-slate-500' : 'cursor-pointer', i === active ? 'bg-slate-100' : 'hover:bg-slate-50', o === selected ? 'font-semibold' : '']"
           role="option" :aria-selected="o === selected" :aria-disabled="o.disabled || undefined"
           @mousedown.prevent="pick(o)" @mouseenter="active = i"
         >
-          {{ o.label }}<span v-if="o.hint" class="block text-xs font-normal text-gray-500">{{ o.hint }}</span>
+          {{ o.label }}<span v-if="o.hint" class="block text-xs font-normal text-slate-600">{{ o.hint }}</span>
         </li>
-        <li v-if="!matches.length" class="px-3 py-3 text-sm text-gray-500">Aucun résultat pour « {{ query }} »</li>
+        <li v-if="!matches.length" class="px-3 py-3 text-sm text-slate-600">Aucun résultat pour « {{ query }} »</li>
       </ul>
     </div>
   </div>

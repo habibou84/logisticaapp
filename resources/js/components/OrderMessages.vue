@@ -7,9 +7,9 @@
           <span class="font-medium">{{ m.recipient_type === 'recipient' ? 'Destinataire' : 'Client' }} · {{ m.to }}</span>
           <MessageStatus :message="m" />
         </div>
-        <p class="text-gray-600">{{ m.body }}</p>
+        <p class="text-slate-600">{{ m.body }}</p>
         <p v-if="m.error" class="text-red-700 text-xs">{{ m.error }}</p>
-        <p class="text-gray-400 text-xs">{{ dateTime(m.created_at) }}</p>
+        <p class="text-slate-500 text-xs">{{ dateTime(m.created_at) }}</p>
       </li>
     </ul>
   </div>

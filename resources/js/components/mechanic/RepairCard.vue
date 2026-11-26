@@ -10,7 +10,7 @@
       </div>
       <span :class="['shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold', badge.class]">{{ badge.label }}</span>
     </div>
-    <div class="mt-2 flex items-center gap-2 text-xs text-slate-500">
+    <div class="mt-2 flex items-center gap-2 text-xs text-slate-600">
       <span v-if="repair.distance_km !== null">📍 {{ repair.distance_km }} km</span>
       <span v-else-if="repair.source === 'manual'">🏠 Créée par l'équipe</span>
       <span class="ml-auto font-mono">{{ footer }}</span>

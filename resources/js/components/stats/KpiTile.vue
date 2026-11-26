@@ -1,6 +1,6 @@
 <template>
   <div class="rounded-lg bg-white p-4 shadow">
-    <p class="text-sm text-slate-500">{{ title }}</p>
+    <p class="text-sm text-slate-600">{{ title }}</p>
     <p :class="['mt-1 font-bold text-slate-900', text ? 'text-lg' : 'text-2xl']">{{ display }}</p>
     <p v-if="delta !== null" class="mt-1 text-xs" :class="deltaClass">
       {{ delta > 0 ? '▲' : delta < 0 ? '▼' : '=' }} {{ deltaText }} <span class="text-slate-400">vs période précédente</span>
@@ -43,7 +43,7 @@ const delta = computed(() => {
 })
 const deltaText = computed(() => (props.kind === 'percent' ? `${Math.abs(delta.value)} pt` : `${Math.abs(delta.value)} %`))
 const deltaClass = computed(() => {
-  if (!delta.value) return 'text-slate-500'
+  if (!delta.value) return 'text-slate-600'
   return (delta.value > 0) === props.higherIsBetter ? 'text-emerald-700' : 'text-red-600'
 })
 </script>

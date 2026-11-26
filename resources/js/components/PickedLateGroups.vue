@@ -27,7 +27,7 @@
           <input type="checkbox" :checked="!unchecked[o.id]" :aria-label="`Inclure ${o.tracking_code}`" @change="unchecked[o.id] = !$event.target.checked">
           <span class="min-w-[12rem] flex-1">
             <RouterLink :to="`/admin/courses/${o.id}`" class="font-mono font-semibold text-blue-700 hover:underline">{{ o.tracking_code }}</RouterLink>
-            <span v-if="many" :class="['ml-1 rounded-full px-1.5 text-[11px] font-medium', activityBadge(o.activity)]">{{ activityShort(o.activity) }}</span>
+            <span v-if="many" :class="['ml-1 rounded-full px-1.5 text-xs font-medium', activityBadge(o.activity)]">{{ activityShort(o.activity) }}</span>
             <span class="ml-2 text-slate-600">{{ o.recipient?.name || o.recipient?.phone }}<template v-if="o.delivery?.zone_name"> · {{ o.delivery.zone_name }}</template></span>
           </span>
           <span :class="['min-w-[8rem] inline-flex items-center gap-1', o.held_by ? 'text-amber-800' : 'text-emerald-700']">

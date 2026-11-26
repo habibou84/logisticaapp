@@ -3,14 +3,14 @@
     <div class="flex flex-wrap items-start justify-between gap-2">
       <div>
         <h2 class="font-semibold">🎬 Bien démarrer</h2>
-        <p class="text-sm text-gray-600">
+        <p class="text-sm text-slate-600">
           Neuf courtes vidéos, des étapes essentielles au planning des livreurs : regardez, puis faites-le vous-même.
           <span v-if="guide.essentials">Étapes faites : {{ guide.essentials.done }} sur {{ guide.essentials.total }}.</span>
         </p>
       </div>
       <div class="flex gap-3 text-sm">
         <RouterLink to="/admin/mise-en-route" class="text-blue-600 underline">Mise en route</RouterLink>
-        <button type="button" class="text-gray-500 underline" :disabled="busy" @click="hideCard">Masquer</button>
+        <button type="button" class="text-slate-600 underline" :disabled="busy" @click="hideCard">Masquer</button>
       </div>
     </div>
     <ul class="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -24,7 +24,7 @@
             <span v-if="steps[c.key]?.status === 'done'" class="absolute right-1 top-1 rounded-full bg-emerald-600 px-1.5 text-xs text-white">✓ fait</span>
           </span>
           <span class="block text-sm font-medium">{{ i + 1 }}. {{ c.title }}</span>
-          <span v-if="videos.watched.includes(c.key)" class="block text-xs text-gray-500">Vidéo vue</span>
+          <span v-if="videos.watched.includes(c.key)" class="block text-xs text-slate-600">Vidéo vue</span>
         </button>
       </li>
     </ul>

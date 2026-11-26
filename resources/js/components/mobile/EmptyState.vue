@@ -3,7 +3,7 @@
     <!-- Nom d'icône (« package », « search »…) : icône au trait dans une pastille ; sinon le caractère donné -->
     <!-- Icône en couleur (espace client), en grand -->
     <div v-if="color" class="mx-auto mb-3 w-fit"><ColorIcon :name="color" :size="76" /></div>
-    <span v-else-if="/^[a-z-]+$/.test(icon)" class="mx-auto mb-3 grid h-16 w-16 place-items-center rounded-2xl bg-slate-100 text-slate-500" aria-hidden="true">
+    <span v-else-if="/^[a-z-]+$/.test(icon)" class="mx-auto mb-3 grid h-16 w-16 place-items-center rounded-2xl bg-slate-100 text-slate-600" aria-hidden="true">
       <StatusIcon :name="icon" class="h-8 w-8" />
     </span>
     <div v-else class="text-5xl mb-3">{{ icon }}</div>

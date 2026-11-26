@@ -3,7 +3,7 @@
     <div class="flex flex-wrap items-center justify-between gap-2">
       <div>
         <h2 class="font-semibold">Frais fixes de l'entreprise</h2>
-        <p class="text-sm text-slate-500">Loyer, salaires de l'équipe, téléphone… Comptés dans la marge nette, au prorata des jours de la période.</p>
+        <p class="text-sm text-slate-600">Loyer, salaires de l'équipe, téléphone… Comptés dans la marge nette, au prorata des jours de la période.</p>
       </div>
       <p class="text-sm">Par mois : <b>{{ money(monthlyTotal) }}</b></p>
     </div>
@@ -13,8 +13,8 @@
     <ul class="divide-y text-sm">
       <li v-for="c in costs" :key="c.id" class="flex flex-wrap items-center justify-between gap-2 py-2">
         <span class="min-w-[12rem] flex-1">
-          <b>{{ c.label }}</b> <span class="text-slate-500">· {{ c.category_label }}</span>
-          <span class="block text-xs text-slate-500">{{ c.frequency === 'once' ? `une fois, le ${date(c.starts_on)}` : `chaque mois depuis le ${date(c.starts_on)}${c.ends_on ? ` jusqu'au ${date(c.ends_on)}` : ''}` }}</span>
+          <b>{{ c.label }}</b> <span class="text-slate-600">· {{ c.category_label }}</span>
+          <span class="block text-xs text-slate-600">{{ c.frequency === 'once' ? `une fois, le ${date(c.starts_on)}` : `chaque mois depuis le ${date(c.starts_on)}${c.ends_on ? ` jusqu'au ${date(c.ends_on)}` : ''}` }}</span>
         </span>
         <span class="font-semibold">{{ money(c.amount) }}</span>
         <span v-if="canManage" class="flex gap-2">
@@ -22,7 +22,7 @@
           <button type="button" class="text-red-600" @click="remove(c)">Supprimer</button>
         </span>
       </li>
-      <li v-if="!costs.length" class="py-4 text-center text-slate-500">Aucun frais fixe saisi : la marge nette ne compte que les coûts des courses.</li>
+      <li v-if="!costs.length" class="py-4 text-center text-slate-600">Aucun frais fixe saisi : la marge nette ne compte que les coûts des courses.</li>
     </ul>
 
     <form v-if="canManage" class="grid gap-2 rounded-lg bg-slate-50 p-3 sm:grid-cols-6" @submit.prevent="save">

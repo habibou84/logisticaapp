@@ -23,13 +23,13 @@
           <div v-for="p in parcelsKept" :key="p.id" class="p-4 flex justify-between gap-3">
             <div class="min-w-0">
               <p class="font-medium truncate">{{ p.recipient_name || p.recipient_phone }}</p>
-              <p class="text-xs text-slate-500">{{ p.tracking_code }} · {{ p.merchant }}</p>
+              <p class="text-xs text-slate-600">{{ p.tracking_code }} · {{ p.merchant }}</p>
             </div>
             <p v-if="p.date_to_confirm" class="text-xs text-right text-amber-700">📅 Date à confirmer</p>
             <p v-else class="text-xs text-right text-indigo-700">Livraison {{ date(p.kept_for) }}</p>
           </div>
         </div>
-        <p class="text-sm text-slate-500 text-center">Gardez-les avec vous : la livraison vous sera confiée le jour prévu.<template v-if="parcelsKept.some((p) => p.date_to_confirm)"> « Date à confirmer » : l'agence vous dira quand le livrer ou le rapporter.</template></p>
+        <p class="text-sm text-slate-600 text-center">Gardez-les avec vous : la livraison vous sera confiée le jour prévu.<template v-if="parcelsKept.some((p) => p.date_to_confirm)"> « Date à confirmer » : l'agence vous dira quand le livrer ou le rapporter.</template></p>
       </template>
       <template v-if="parcelsToReturn.length">
         <h2 class="font-semibold">📦 Colis à rapporter au dépôt ({{ parcelsToReturn.length }})</h2>
@@ -37,22 +37,22 @@
           <div v-for="p in parcelsToReturn" :key="p.id" class="p-4 flex justify-between gap-3">
             <div class="min-w-0">
               <p class="font-medium truncate">{{ p.recipient_name || p.recipient_phone }}</p>
-              <p class="text-xs text-slate-500">{{ p.tracking_code }} · {{ p.merchant }}</p>
+              <p class="text-xs text-slate-600">{{ p.tracking_code }} · {{ p.merchant }}</p>
             </div>
             <p class="text-xs text-right text-slate-600">{{ p.rescheduled_to ? `Reporté au ${date(p.rescheduled_to)}` : (p.incident || p.status_label) }}</p>
           </div>
         </div>
-        <p class="text-sm text-slate-500 text-center">Remettez-les à la caisse ou au dépôt lors de votre point.</p>
+        <p class="text-sm text-slate-600 text-center">Remettez-les à la caisse ou au dépôt lors de votre point.</p>
       </template>
     </section>
 
     <section class="grid grid-cols-2 gap-2">
       <div class="m-card p-4">
-        <p class="text-sm text-slate-500">Gagné aujourd'hui</p>
+        <p class="text-sm text-slate-600">Gagné aujourd'hui</p>
         <p class="text-2xl font-bold text-emerald-700">{{ money(wallet.earned_today) }}</p>
       </div>
       <div class="m-card p-4">
-        <p class="text-sm text-slate-500">Gains à recevoir</p>
+        <p class="text-sm text-slate-600">Gains à recevoir</p>
         <p :class="['text-2xl font-bold', signedClass(wallet.unpaid)]">{{ money(wallet.unpaid) }}</p>
       </div>
     </section>
@@ -85,11 +85,11 @@
             <span :class="t.reached ? 'text-emerald-700 font-semibold' : ''">{{ t.reached ? '✓ ' : '' }}{{ t.threshold }}{{ o.metric === 'success_rate' ? ' %' : '' }} → {{ money(t.amount) }}</span><span v-if="i < o.tiers.length - 1"> · </span>
           </span>
         </p>
-        <p v-if="o.metric === 'success_rate' && o.min_count && o.attempts < o.min_count" class="text-xs text-slate-500">
+        <p v-if="o.metric === 'success_rate' && o.min_count && o.attempts < o.min_count" class="text-xs text-slate-600">
           Compte à partir de {{ o.min_count }} livraisons tentées ({{ o.attempts }} pour l'instant).
         </p>
       </div>
-      <p class="text-xs text-slate-500">Seul le palier le plus haut atteint est payé, sur la fiche de fin de période.</p>
+      <p class="text-xs text-slate-600">Seul le palier le plus haut atteint est payé, sur la fiche de fin de période.</p>
     </section>
 
     <details v-if="wallet.earnings?.length" class="m-card">
@@ -99,7 +99,7 @@
           <div class="min-w-0">
             <p class="font-medium truncate">{{ e.description }}</p>
             <p v-if="e.detail" class="text-xs text-slate-600">{{ e.detail }}</p>
-            <p class="text-xs text-slate-500">{{ dateTime(e.created_at) }}</p>
+            <p class="text-xs text-slate-600">{{ dateTime(e.created_at) }}</p>
           </div>
           <p :class="['font-semibold whitespace-nowrap', signedClass(e.amount)]">{{ e.amount > 0 ? '+ ' : '' }}{{ money(e.amount) }}</p>
         </div>
@@ -112,7 +112,7 @@
         <div v-for="a in cashAdvances" :key="a.id" class="p-4 flex justify-between gap-3">
           <div class="min-w-0">
             <p class="font-medium truncate">{{ a.reason }}</p>
-            <p class="text-xs text-slate-500">{{ dateTime(a.given_at) }}<span v-if="a.tracking_code"> · {{ a.tracking_code }}</span></p>
+            <p class="text-xs text-slate-600">{{ dateTime(a.given_at) }}<span v-if="a.tracking_code"> · {{ a.tracking_code }}</span></p>
           </div>
           <p class="font-semibold whitespace-nowrap">+ {{ money(a.amount) }}</p>
         </div>
@@ -125,12 +125,12 @@
         <div v-for="e in wallet.expenses" :key="e.id" class="p-4 flex justify-between gap-3">
           <div class="min-w-0">
             <p class="font-medium truncate">{{ e.description }}</p>
-            <p class="text-xs text-slate-500">{{ e.tracking_code }} · {{ dateTime(e.created_at) }}</p>
+            <p class="text-xs text-slate-600">{{ e.tracking_code }} · {{ dateTime(e.created_at) }}</p>
           </div>
           <p class="font-semibold whitespace-nowrap text-emerald-700">− {{ money(e.amount) }}</p>
         </div>
       </div>
-      <p class="text-sm text-slate-500 text-center">Déduits de ce que vous versez à la caisse.</p>
+      <p class="text-sm text-slate-600 text-center">Déduits de ce que vous versez à la caisse.</p>
     </section>
 
     <section v-if="wallet.collections.length" class="space-y-2">
@@ -139,12 +139,12 @@
         <div v-for="c in wallet.collections" :key="c.id" class="p-4 flex justify-between gap-3">
           <div class="min-w-0">
             <p class="font-medium truncate">{{ c.recipient_name || 'Client' }}</p>
-            <p class="text-xs text-slate-500">{{ c.tracking_code }} · {{ c.method_label }} · {{ dateTime(c.collected_at) }}</p>
+            <p class="text-xs text-slate-600">{{ c.tracking_code }} · {{ c.method_label }} · {{ dateTime(c.collected_at) }}</p>
           </div>
           <p class="font-semibold whitespace-nowrap">{{ money(c.amount_collected) }}</p>
         </div>
       </div>
-      <p class="text-sm text-slate-500 text-center">Remettez cet argent à la caisse de l'agence en fin de journée.</p>
+      <p class="text-sm text-slate-600 text-center">Remettez cet argent à la caisse de l'agence en fin de journée.</p>
     </section>
 
     <section v-if="wallet.recent_payouts.length" class="space-y-2">

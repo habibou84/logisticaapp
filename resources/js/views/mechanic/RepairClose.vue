@@ -16,14 +16,14 @@
         </div>
       </div>
       <button type="button" class="m-btn-secondary py-3" @click="form.parts.push({ label: '', quantity: 1, unit_price: null })">＋ Ajouter une pièce</button>
-      <p class="text-xs text-slate-500">Le magasin de pièces arrive bientôt : en attendant, indiquez le prix de chaque pièce.</p>
+      <p class="text-xs text-slate-600">Le magasin de pièces arrive bientôt : en attendant, indiquez le prix de chaque pièce.</p>
     </section>
 
     <!-- Achats sur place accordés -->
     <section v-if="approved.length" class="space-y-2">
       <p class="m-label">Achats sur place</p>
       <div v-for="p in approved" :key="p.id" class="m-card space-y-2 p-3">
-        <p class="text-sm font-semibold">{{ p.quantity }} × {{ p.label }} <span class="font-normal text-slate-500">· accordé jusqu'à {{ money(p.max_amount) }}</span></p>
+        <p class="text-sm font-semibold">{{ p.quantity }} × {{ p.label }} <span class="font-normal text-slate-600">· accordé jusqu'à {{ money(p.max_amount) }}</span></p>
         <input v-model.number="paid[p.id]" class="m-input py-2.5" type="number" min="0" inputmode="numeric" :aria-label="`Prix payé pour ${p.label}`" placeholder="Prix payé (F) ; vide si pas acheté">
         <p v-if="Number(paid[p.id]) > p.max_amount" class="text-sm text-red-700">Au-delà du montant accordé ({{ money(p.max_amount) }}) : demandez un nouvel accord pour la différence.</p>
         <PhotoCapture class="m-btn-secondary py-2.5 text-sm" @captured="receipts[p.id] = $event.file">

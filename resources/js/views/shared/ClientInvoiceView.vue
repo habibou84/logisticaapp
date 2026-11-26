@@ -30,18 +30,18 @@
       <div class="flex flex-wrap justify-between gap-4">
         <div>
           <p class="font-semibold">{{ invoice.issuer?.legal_name || company?.name }}</p>
-          <p v-if="company?.address" class="text-sm text-gray-600">{{ company.address }}</p>
-          <p v-if="issuerFiscal" class="text-xs text-gray-600">{{ issuerFiscal }}</p>
-          <p v-if="company?.phone || company?.email" class="text-sm text-gray-600">{{ [company.phone, company.email].filter(Boolean).join(' · ') }}</p>
+          <p v-if="company?.address" class="text-sm text-slate-600">{{ company.address }}</p>
+          <p v-if="issuerFiscal" class="text-xs text-slate-600">{{ issuerFiscal }}</p>
+          <p v-if="company?.phone || company?.email" class="text-sm text-slate-600">{{ [company.phone, company.email].filter(Boolean).join(' · ') }}</p>
           <h1 class="text-xl font-bold mt-3">Facture {{ invoice.number || '(brouillon)' }}</h1>
           <p class="text-sm">{{ invoice.activity_label }} · {{ invoice.period_label }}</p>
           <p v-if="invoice.department" class="text-sm font-medium">Département : {{ invoice.department.label }}<template v-if="invoice.department.cost_center"> · centre de coûts {{ invoice.department.cost_center }}</template></p>
         </div>
         <div class="text-right text-sm">
           <p class="font-semibold text-base">{{ invoice.client.legal_name || invoice.client.business_name }}</p>
-          <p v-if="invoice.client.legal_name && invoice.client.legal_name !== invoice.client.business_name" class="text-gray-600">{{ invoice.client.business_name }}</p>
+          <p v-if="invoice.client.legal_name && invoice.client.legal_name !== invoice.client.business_name" class="text-slate-600">{{ invoice.client.business_name }}</p>
           <p v-if="invoice.client.ncc || invoice.client.rccm" class="text-xs">{{ [invoice.client.ncc && `NCC ${invoice.client.ncc}`, invoice.client.rccm && `RCCM ${invoice.client.rccm}`].filter(Boolean).join(' · ') }}</p>
-          <p v-if="invoice.client.address" class="text-xs text-gray-600">{{ invoice.client.address }}</p>
+          <p v-if="invoice.client.address" class="text-xs text-slate-600">{{ invoice.client.address }}</p>
           <p v-if="invoice.client.contact_name">{{ invoice.client.contact_name }}</p>
           <p>{{ invoice.client.phone }}</p>
           <p v-if="invoice.client.email">{{ invoice.client.email }}</p>
@@ -53,16 +53,16 @@
       <FneSticker v-if="invoice.fne?.status === 'certified'" :fne="invoice.fne" />
 
       <table class="w-full text-sm">
-        <thead class="text-left text-gray-600 border-b">
+        <thead class="text-left text-slate-600 border-b">
           <tr><th class="py-2">Désignation</th><th class="py-2 text-right">Quantité</th><th class="py-2 text-right">Prix unitaire{{ basisLabel }}</th><th class="py-2 text-right">Montant{{ basisLabel }}</th><th class="no-print" /></tr>
         </thead>
         <!-- Facture ventilée : une section par département, avec son sous-total -->
         <tbody v-for="g in groups" :key="g.key" class="divide-y">
           <tr v-if="g.department" class="bg-slate-50">
-            <td class="py-2 font-semibold" colspan="3">🏢 {{ g.department.label }}<span v-if="g.department.cost_center" class="font-normal text-gray-600"> · centre de coûts {{ g.department.cost_center }}</span></td>
+            <td class="py-2 font-semibold" colspan="3">🏢 {{ g.department.label }}<span v-if="g.department.cost_center" class="font-normal text-slate-600"> · centre de coûts {{ g.department.cost_center }}</span></td>
             <td class="py-2 text-right font-semibold">{{ money(g.department.total) }}</td><td class="no-print" />
           </tr>
-          <tr v-for="l in g.lines" :key="l.id" :class="l.kind === 'included' ? 'text-gray-500' : ''">
+          <tr v-for="l in g.lines" :key="l.id" :class="l.kind === 'included' ? 'text-slate-600' : ''">
             <td :class="['py-2', g.department ? 'pl-4' : '']">{{ l.label }}</td>
             <td class="py-2 text-right">{{ l.quantity }}</td>
             <td class="py-2 text-right">{{ l.kind === 'included' ? '' : money(l.unit_price) }}</td>
@@ -78,7 +78,7 @@
             <tr><td class="py-1" colspan="3">TVA {{ rate(invoice.vat_rate) }}</td><td class="py-1 text-right">{{ money(invoice.vat_amount) }}</td><td class="no-print" /></tr>
           </template>
           <tr class="border-t font-bold"><td class="py-2" colspan="3">Total{{ hasVat ? ' TTC' : '' }}</td><td class="py-2 text-right">{{ money(invoice.total) }}</td><td class="no-print" /></tr>
-          <tr v-if="invoice.vat_exemption"><td class="py-1 text-xs text-gray-600" colspan="4">{{ invoice.vat_exemption }}</td><td class="no-print" /></tr>
+          <tr v-if="invoice.vat_exemption"><td class="py-1 text-xs text-slate-600" colspan="4">{{ invoice.vat_exemption }}</td><td class="no-print" /></tr>
           <tr v-if="invoice.credited_amount"><td class="py-1" colspan="3">Avoirs ({{ invoice.credit_notes.map((n) => n.number).join(', ') }})</td><td class="py-1 text-right">− {{ money(invoice.credited_amount) }}</td><td class="no-print" /></tr>
           <tr v-if="invoice.amount_paid"><td class="py-1" colspan="3">Déjà payé</td><td class="py-1 text-right">− {{ money(invoice.amount_paid) }}</td><td class="no-print" /></tr>
           <tr v-if="invoice.amount_paid || invoice.credited_amount" class="font-semibold"><td class="py-1" colspan="3">Reste à payer</td><td class="py-1 text-right">{{ money(invoice.balance) }}</td><td class="no-print" /></tr>
@@ -107,7 +107,7 @@
             <p class="font-medium">{{ ICONS[m.method] }} {{ m.title }}</p>
             <!-- Libellé au-dessus de la valeur : un IBAN tient sur une ligne, sans être coupé -->
             <div v-for="l in m.lines" :key="l.label" class="mt-1">
-              <p class="text-xs text-gray-500">{{ l.label }}</p>
+              <p class="text-xs text-slate-600">{{ l.label }}</p>
               <p class="flex items-baseline justify-between gap-2">
                 <span :class="l.copy ? 'font-mono tracking-tight' : ''">{{ l.value }}</span>
                 <button v-if="l.copy" type="button" class="no-print shrink-0 text-xs text-blue-600" @click="copy(l.value)">Copier</button>
@@ -115,8 +115,8 @@
             </div>
           </div>
         </div>
-        <p v-if="invoice.payment_info" class="whitespace-pre-line text-gray-700">{{ invoice.payment_info }}</p>
-        <p class="text-xs text-gray-500">Indiquez le numéro {{ invoice.number }} en référence du paiement.</p>
+        <p v-if="invoice.payment_info" class="whitespace-pre-line text-slate-700">{{ invoice.payment_info }}</p>
+        <p class="text-xs text-slate-600">Indiquez le numéro {{ invoice.number }} en référence du paiement.</p>
       </div>
 
       <div v-if="invoice.credit_notes?.length" class="text-sm space-y-1">
@@ -125,7 +125,7 @@
           <span class="font-mono">{{ n.number }}</span>
           <span>· {{ date(n.issued_at) }} · {{ money(n.total) }}{{ hasVat ? ' TTC' : '' }} · {{ n.reason }}</span>
           <span v-if="n.refund_due" class="text-amber-700">· {{ money(n.refund_due) }} à rembourser</span>
-          <span v-if="n.fne?.reference" class="text-gray-600">· FNE {{ n.fne.reference }}</span>
+          <span v-if="n.fne?.reference" class="text-slate-600">· FNE {{ n.fne.reference }}</span>
           <span v-else-if="n.fne" class="text-amber-700">· {{ n.fne.status === 'failed' ? 'refusé par la FNE' : 'à certifier' }}</span>
           <button type="button" class="no-print text-xs text-blue-600" @click="printNote(n)">🖨️ Imprimer l'avoir</button>
         </div>
@@ -142,14 +142,14 @@
         <summary class="font-semibold cursor-pointer">Détail des {{ invoice.orders.length }} course(s) du mois</summary>
         <div class="overflow-x-auto mt-2">
           <table class="w-full text-xs">
-            <thead class="text-left text-gray-600 border-b">
+            <thead class="text-left text-slate-600 border-b">
               <tr><th class="py-1">Date</th><th class="py-1">Code</th><th v-if="hasDepartments" class="py-1">Département</th><th class="py-1">Destinataire</th><th class="py-1">Destination</th><th class="py-1">Envoi</th><th class="py-1">Délai</th><th class="py-1">État</th><th class="py-1 text-right">Montant</th></tr>
             </thead>
             <tbody class="divide-y">
               <tr v-for="o in invoice.orders" :key="o.id">
                 <td class="py-1">{{ date(o.created_at) }}</td>
                 <td class="py-1 font-mono">{{ o.tracking_code }}</td>
-                <td v-if="hasDepartments" class="py-1">{{ o.department || '—' }}<span v-if="o.requested_by" class="block text-gray-500">{{ o.requested_by }}</span></td>
+                <td v-if="hasDepartments" class="py-1">{{ o.department || '—' }}<span v-if="o.requested_by" class="block text-slate-600">{{ o.requested_by }}</span></td>
                 <td class="py-1">{{ o.recipient_name || '—' }}</td>
                 <td class="py-1">{{ o.destination }}</td>
                 <td class="py-1">{{ o.units > 1 ? `${o.units} × ` : '' }}{{ o.shipment_type || '—' }}<template v-if="o.weight_kg"> · {{ o.weight_kg }} kg</template></td>
@@ -168,8 +168,8 @@
       <div class="flex flex-wrap justify-between gap-4">
         <div>
           <p class="font-semibold">{{ invoice.issuer?.legal_name || company?.name }}</p>
-          <p v-if="company?.address" class="text-gray-600">{{ company.address }}</p>
-          <p v-if="issuerFiscal" class="text-xs text-gray-600">{{ issuerFiscal }}</p>
+          <p v-if="company?.address" class="text-slate-600">{{ company.address }}</p>
+          <p v-if="issuerFiscal" class="text-xs text-slate-600">{{ issuerFiscal }}</p>
           <h1 class="text-xl font-bold mt-3">Avoir {{ printingNote.number }}</h1>
           <p>Sur la facture {{ invoice.number }} · {{ invoice.activity_label }} · {{ invoice.period_label }}</p>
           <p>Motif : {{ printingNote.reason }}</p>
@@ -177,13 +177,13 @@
         <div class="text-right">
           <p class="font-semibold text-base">{{ invoice.client.legal_name || invoice.client.business_name }}</p>
           <p v-if="invoice.client.ncc" class="text-xs">NCC {{ invoice.client.ncc }}</p>
-          <p v-if="invoice.client.address" class="text-xs text-gray-600">{{ invoice.client.address }}</p>
+          <p v-if="invoice.client.address" class="text-xs text-slate-600">{{ invoice.client.address }}</p>
           <p class="mt-2">Le {{ date(printingNote.issued_at) }}</p>
         </div>
       </div>
       <FneSticker v-if="printingNote.fne?.status === 'certified'" :fne="printingNote.fne" credit />
       <table class="w-full">
-        <thead class="text-left text-gray-600 border-b">
+        <thead class="text-left text-slate-600 border-b">
           <tr><th class="py-2">Désignation</th><th class="py-2 text-right">Quantité</th><th class="py-2 text-right">Prix unitaire{{ basisLabel }}</th><th class="py-2 text-right">Montant{{ basisLabel }}</th></tr>
         </thead>
         <tbody class="divide-y">
@@ -202,23 +202,23 @@
 
     <Modal :open="credit.open" title="Faire un avoir" wide @close="credit.open = false">
       <form class="space-y-3" @submit.prevent="createCredit">
-        <p class="text-sm text-gray-600">L'avoir réduit ce que le client doit ; si la facture est déjà payée, la différence est à lui rembourser. Reste sur la facture : <b>{{ money(remaining) }}</b>.</p>
+        <p class="text-sm text-slate-600">L'avoir réduit ce que le client doit ; si la facture est déjà payée, la différence est à lui rembourser. Reste sur la facture : <b>{{ money(remaining) }}</b>.</p>
         <div class="flex gap-4 text-sm">
           <label class="flex items-center gap-1.5"><input v-model="credit.full" type="radio" :value="true"> Avoir total (tout le reste)</label>
           <label class="flex items-center gap-1.5"><input v-model="credit.full" type="radio" :value="false"> Avoir partiel</label>
         </div>
         <template v-if="!credit.full">
           <table class="w-full text-sm">
-            <thead class="text-left text-gray-600 border-b"><tr><th class="py-1">Ligne</th><th class="py-1 text-right">Facturé</th><th class="py-1 text-right">À reprendre</th></tr></thead>
+            <thead class="text-left text-slate-600 border-b"><tr><th class="py-1">Ligne</th><th class="py-1 text-right">Facturé</th><th class="py-1 text-right">À reprendre</th></tr></thead>
             <tbody class="divide-y">
               <tr v-for="l in creditableLines" :key="l.id">
-                <td class="py-1">{{ l.label }} <span class="text-gray-500">· {{ money(l.unit_price) }}</span></td>
-                <td class="py-1 text-right">{{ l.quantity }}<span v-if="l.credited_quantity" class="text-gray-500"> ({{ l.credited_quantity }} déjà repris)</span></td>
+                <td class="py-1">{{ l.label }} <span class="text-slate-600">· {{ money(l.unit_price) }}</span></td>
+                <td class="py-1 text-right">{{ l.quantity }}<span v-if="l.credited_quantity" class="text-slate-600"> ({{ l.credited_quantity }} déjà repris)</span></td>
                 <td class="py-1 text-right"><input v-model.number="credit.quantities[l.id]" type="number" min="0" :max="l.quantity - l.credited_quantity" class="input w-20 text-right" :aria-label="`Quantité reprise : ${l.label}`"></td>
               </tr>
             </tbody>
           </table>
-          <p v-if="fneCertified" class="text-xs text-gray-500">Facture normalisée (FNE) : l'avoir reprend des lignes de la facture, en tout ou en partie.</p>
+          <p v-if="fneCertified" class="text-xs text-slate-600">Facture normalisée (FNE) : l'avoir reprend des lignes de la facture, en tout ou en partie.</p>
           <div v-else class="flex flex-wrap items-end gap-2">
             <div class="flex-1 min-w-48"><label class="label" for="cr-extra">Montant libre (geste commercial, erreur…)</label><input id="cr-extra" v-model="credit.extra_label" class="input" maxlength="255" placeholder="Libellé"></div>
             <div><label class="label" for="cr-amount">Montant{{ basisLabel }} (F)</label><input id="cr-amount" v-model.number="credit.extra_amount" type="number" min="0" class="input w-36"></div>
@@ -250,7 +250,7 @@
       </form>
     </div>
   </div>
-  <p v-else class="text-gray-500">Chargement…</p>
+  <p v-else class="text-slate-600">Chargement…</p>
 </template>
 
 <script setup>

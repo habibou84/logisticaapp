@@ -20,7 +20,7 @@
         </button>
         <button type="button" :class="mobile ? 'm-btn-secondary w-auto px-4' : 'btn-secondary'" @click="close">Fermer</button>
       </div>
-      <p class="text-xs text-gray-500">Les champs remplis sont marqués « à vérifier » : relisez-les avant d'enregistrer.</p>
+      <p class="text-xs text-slate-600">Les champs remplis sont marqués « à vérifier » : relisez-les avant d'enregistrer.</p>
     </template>
   </section>
 </template>

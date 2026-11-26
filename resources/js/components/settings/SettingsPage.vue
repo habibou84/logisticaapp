@@ -3,7 +3,7 @@
     <div>
       <RouterLink to="/admin/reglages" class="text-sm text-blue-600">← Réglages</RouterLink>
       <h1 class="text-xl font-bold mt-1">{{ icon }} {{ title }}</h1>
-      <p v-if="intro" class="text-sm text-gray-600">{{ intro }}</p>
+      <p v-if="intro" class="text-sm text-slate-600">{{ intro }}</p>
     </div>
     <slot />
   </div>

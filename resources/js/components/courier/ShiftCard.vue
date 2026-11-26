@@ -9,8 +9,8 @@
           <template v-if="state.place.stops.length">Étape 1 du parcours « {{ state.place.routine }} » : </template>
           <strong>{{ state.place.label }}</strong>
         </p>
-        <p v-if="state.place.address" class="text-sm text-slate-500">{{ state.place.address }}</p>
-        <p class="text-sm text-slate-500">
+        <p v-if="state.place.address" class="text-sm text-slate-600">{{ state.place.address }}</p>
+        <p class="text-sm text-slate-600">
           <template v-if="state.place.expected_at">Attendu à {{ hm(state.place.expected_at) }}</template>
           <template v-if="state.place.merchant"> · MAD chez {{ state.place.merchant }}</template>
         </p>
@@ -43,7 +43,7 @@
         <span class="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-emerald-600 text-xs font-bold text-white">{{ s.position }}</span>
         <span class="min-w-0 flex-1">
           <strong>{{ s.action_label }}</strong> · {{ s.label }}<template v-if="s.expected_time"> · vers {{ s.expected_time }}</template>
-          <span v-if="s.address" class="block text-slate-500">{{ s.address }}</span>
+          <span v-if="s.address" class="block text-slate-600">{{ s.address }}</span>
           <span v-if="s.instructions" class="block text-slate-600">« {{ s.instructions }} »</span>
         </span>
         <a v-if="s.lat" :href="directionsLink(s.lat, s.lng)" target="_blank" rel="noopener" class="self-center font-semibold text-[var(--app-color)]">Aller</a>

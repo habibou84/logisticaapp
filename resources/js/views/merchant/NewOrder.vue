@@ -37,7 +37,7 @@
     <section v-if="activityChoices.length > 1" class="m-card p-4 space-y-2" aria-labelledby="step-activity">
       <h2 id="step-activity" class="m-step"><ColorIcon name="colis" :size="34" />Pour quelle activité ?</h2>
       <ChoiceChips v-model="form.activity" :options="activityChoices" :columns="activityChoices.length === 2 ? 2 : 1" label="Activité de la course" />
-      <p v-if="!form.activity" class="text-sm text-slate-500">Choisissez l'activité pour remplir la course.</p>
+      <p v-if="!form.activity" class="text-sm text-slate-600">Choisissez l'activité pour remplir la course.</p>
     </section>
 
     <!-- Le reste de la course une fois l'activité connue -->
@@ -49,12 +49,12 @@
           <p class="m-label">Qui envoie ? <span v-if="departments.settings.value.required" class="text-red-600">*</span></p>
           <ChoiceChips v-model="form.department_id" :options="senderChoices" :columns="senderChoices.length > 3 ? 1 : 2" label="Département qui envoie" />
         </div>
-        <p v-else-if="sender" class="text-sm">🏢 <strong>{{ sender.label }}</strong><span v-if="sender.usage?.quota" class="text-slate-500"> · {{ sender.usage.used }}/{{ sender.usage.quota }} envois ce mois</span></p>
+        <p v-else-if="sender" class="text-sm">🏢 <strong>{{ sender.label }}</strong><span v-if="sender.usage?.quota" class="text-slate-600"> · {{ sender.usage.used }}/{{ sender.usage.quota }} envois ce mois</span></p>
         <p v-if="sender?.usage?.quota && sender.usage.percent >= 80" :class="['rounded-xl px-3 py-2 text-sm', sender.usage.percent >= 100 ? 'bg-red-50 text-red-800' : 'bg-amber-50 text-amber-900']">
           Quota du mois {{ sender.usage.percent >= 100 ? 'atteint' : `utilisé à ${sender.usage.percent} %` }} : {{ sender.usage.used }} envois sur {{ sender.usage.quota }}.
         </p>
         <div v-if="departments.settings.value.requested_by !== 'off'">
-          <label class="m-label" for="requested-by">Demandé par <span v-if="departments.settings.value.requested_by === 'required'" class="text-red-600">*</span><span v-else class="font-normal text-slate-500">(facultatif)</span></label>
+          <label class="m-label" for="requested-by">Demandé par <span v-if="departments.settings.value.requested_by === 'required'" class="text-red-600">*</span><span v-else class="font-normal text-slate-600">(facultatif)</span></label>
           <input id="requested-by" v-model="form.requested_by" class="m-input" maxlength="120" autocomplete="jibiat-off" placeholder="Nom de la personne">
         </div>
         <div v-if="departments.settings.value.internal_mail && departments.all.value.length > 1">
@@ -97,7 +97,7 @@
           <RouterLink v-for="d in duplicates" :key="d.id" :to="`/marchand/courses/${d.id}`" class="underline ml-1">{{ d.tracking_code }} ({{ d.status_label }})</RouterLink>
         </div>
         <div>
-          <label class="m-label" for="name">Nom <span class="font-normal text-slate-500">(facultatif)</span></label>
+          <label class="m-label" for="name">Nom <span class="font-normal text-slate-600">(facultatif)</span></label>
           <input id="name" v-model="form.recipient_name" class="m-input" autocomplete="jibiat-off" placeholder="Ex. : Jean Kouadio">
         </div>
       </section>
@@ -142,7 +142,7 @@
         </div>
         <!-- Pli : ce que c'est (liste de l'agence), « Autre » à préciser -->
         <div v-if="form.shipment_type === 'pli' && pliKinds.length">
-          <p class="m-label">Ce pli est <span class="font-normal text-slate-500">(facultatif)</span></p>
+          <p class="m-label">Ce pli est <span class="font-normal text-slate-600">(facultatif)</span></p>
           <div class="flex flex-wrap gap-2">
             <button
               v-for="k in pliKinds" :key="k" type="button"
@@ -164,9 +164,9 @@
           </div>
         </div>
         <div>
-          <label class="m-label" for="weight">Poids <span class="font-normal text-slate-500">(facultatif, kg)</span></label>
+          <label class="m-label" for="weight">Poids <span class="font-normal text-slate-600">(facultatif, kg)</span></label>
           <input id="weight" v-model.number="form.weight_kg" type="number" min="0" step="0.1" inputmode="decimal" class="m-input" placeholder="Ex. : 2,5">
-          <p class="text-xs text-slate-500 mt-1">Au-delà de 5 kg, chaque kilogramme en plus est facturé.</p>
+          <p class="text-xs text-slate-600 mt-1">Au-delà de 5 kg, chaque kilogramme en plus est facturé.</p>
         </div>
         <div v-if="plan && !plan.has_forfait">
           <p class="m-label">Délai de livraison</p>
@@ -196,7 +196,7 @@
               <div v-for="p in sourceProducts" :key="p.id" class="p-3 flex items-center gap-3">
                 <div class="min-w-0 flex-1">
                   <p class="font-medium truncate">{{ p.name }}</p>
-                  <p class="text-xs text-slate-500">{{ money(p.price) }} · {{ availableAt(p) }} dispo</p>
+                  <p class="text-xs text-slate-600">{{ money(p.price) }} · {{ availableAt(p) }} dispo</p>
                 </div>
                 <div class="flex items-center gap-2">
                   <button type="button" class="tap h-9 w-9 rounded-full bg-slate-100 text-lg font-bold disabled:opacity-40" :disabled="!picked[p.id]" :aria-label="`Retirer un ${p.name}`" @click="pick(p, -1)">−</button>
@@ -204,7 +204,7 @@
                   <button type="button" class="tap h-9 w-9 rounded-full text-white text-lg font-bold disabled:opacity-40" :style="{ backgroundColor: 'var(--app-color)' }" :disabled="(picked[p.id] || 0) >= availableAt(p)" :aria-label="`Ajouter un ${p.name}`" @click="pick(p, 1)">+</button>
                 </div>
               </div>
-              <p v-if="!sourceProducts.length" class="p-3 text-sm text-slate-500">Aucun produit disponible {{ source ? 'à cet entrepôt' : 'chez vous' }}.</p>
+              <p v-if="!sourceProducts.length" class="p-3 text-sm text-slate-600">Aucun produit disponible {{ source ? 'à cet entrepôt' : 'chez vous' }}.</p>
             </div>
           </div>
         </div>
@@ -215,7 +215,7 @@
             <input id="amount" autocomplete="jibiat-off" v-model.number="form.items_amount" type="number" min="0" step="50" inputmode="numeric" class="m-input text-2xl font-bold pr-12">
             <span class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-semibold">F</span>
           </div>
-          <p class="text-xs text-slate-500 mt-1">Prix des articles, sans la livraison. Mettez 0 si le destinataire a déjà payé.</p>
+          <p class="text-xs text-slate-600 mt-1">Prix des articles, sans la livraison. Mettez 0 si le destinataire a déjà payé.</p>
         </div>
         <div id="fee-payer" :class="['rounded-2xl', missing.feePayer ? 'ring-2 ring-red-500 p-2 -mx-2' : '']">
           <p class="m-label">Qui paie la livraison ? <span class="text-red-600">*</span></p>
@@ -237,7 +237,7 @@
         <h2 id="step-when" class="m-step"><ColorIcon name="calendrier" :size="34" /><span>Quand livrer <span class="text-red-600">*</span></span></h2>
         <div id="when-field" :class="['rounded-2xl', missing.date ? 'ring-2 ring-red-500 p-2 -mx-2' : '']">
           <ChoiceChips v-model="when" :options="deliveryOptions" :columns="3" label="Jour de livraison" />
-          <p v-if="closed" class="mt-2 text-xs text-slate-500">🌙 {{ closedReason }} : le ramassage peut quand même se faire aujourd'hui.</p>
+          <p v-if="closed" class="mt-2 text-xs text-slate-600">🌙 {{ closedReason }} : le ramassage peut quand même se faire aujourd'hui.</p>
           <input v-if="when === 'other'" id="date" autocomplete="jibiat-off" v-model="form.delivery_scheduled_date" type="date" :min="minDate" class="m-input mt-2" aria-label="Jour de livraison">
           <p v-if="dateSummary" class="mt-2 text-sm font-semibold text-slate-700">{{ dateSummary }}</p>
           <p v-if="missing.date" class="mt-2 text-sm font-medium text-red-600" role="alert">Choisissez quand livrer la course.</p>
@@ -248,7 +248,7 @@
       <section class="m-card px-4 py-1">
         <button type="button" class="tap w-full flex items-center justify-between rounded-xl py-3 text-[15px] font-semibold text-slate-800" :aria-expanded="showMore" @click="showMore = !showMore">
           <span>{{ showMore ? '−' : '＋' }} Contenu du colis, message au livreur…</span>
-          <span v-if="!showMore && extrasSummary" class="truncate pl-2 text-xs font-normal text-slate-500">{{ extrasSummary }}</span>
+          <span v-if="!showMore && extrasSummary" class="truncate pl-2 text-xs font-normal text-slate-600">{{ extrasSummary }}</span>
         </button>
         <div v-show="showMore" class="space-y-4 pt-1 pb-4">
           <div>
@@ -280,28 +280,28 @@
           <!-- Distribution, MAD : comment la course sera facturée, et le forfait du mois -->
           <div v-if="billed && quote?.billing" class="text-sm space-y-0.5">
             <div class="flex justify-between gap-3">
-              <span class="text-slate-500">{{ quote.billing.label }}<template v-if="quote.billing.units > 1"> · × {{ quote.billing.units }}</template></span>
+              <span class="text-slate-600">{{ quote.billing.label }}<template v-if="quote.billing.units > 1"> · × {{ quote.billing.units }}</template></span>
               <strong class="whitespace-nowrap">{{ quote.billing.basis === 'forfait' && !quote.billing.amount ? 'forfait' : money(quote.billing.amount) }}</strong>
             </div>
-            <div v-if="usage?.included" class="flex justify-between text-slate-500">
+            <div v-if="usage?.included" class="flex justify-between text-slate-600">
               <span>Forfait de {{ usage.month_label.toLowerCase() }}</span>
               <span>{{ usage.used }} / {{ usage.included }} utilisés</span>
             </div>
-            <p class="text-slate-500">Rien à encaisser · facture du mois</p>
+            <p class="text-slate-600">Rien à encaisser · facture du mois</p>
           </div>
           <div v-else-if="quote && !billed" class="text-sm space-y-0.5">
             <div class="flex justify-between">
-              <span class="text-slate-500">Livraison {{ zoneName }} ({{ form.fee_payer === 'merchant' ? 'à ma charge' : form.fee_payer === 'recipient' ? 'payée par le destinataire' : 'qui paie ?' }})</span>
+              <span class="text-slate-600">Livraison {{ zoneName }} ({{ form.fee_payer === 'merchant' ? 'à ma charge' : form.fee_payer === 'recipient' ? 'payée par le destinataire' : 'qui paie ?' }})</span>
               <strong>{{ money(quote.total) }}</strong>
             </div>
-            <div v-if="quote.is_shipping" class="flex justify-between"><span class="text-slate-500">🚌 Expédition (au réel)</span><strong>≈ {{ money(shippingEstimate) }}</strong></div>
-            <div class="flex justify-between"><span class="text-slate-500">Le livreur encaisse</span><strong>{{ money(codAmount) }}</strong></div>
+            <div v-if="quote.is_shipping" class="flex justify-between"><span class="text-slate-600">🚌 Expédition (au réel)</span><strong>≈ {{ money(shippingEstimate) }}</strong></div>
+            <div class="flex justify-between"><span class="text-slate-600">Le livreur encaisse</span><strong>{{ money(codAmount) }}</strong></div>
             <div :class="['flex justify-between font-semibold', merchantNet < 0 ? 'text-slate-700' : 'text-emerald-700']">
               <span>{{ merchantNet < 0 ? 'À votre charge' : 'Vous recevrez' }}</span><span>{{ quote.is_shipping ? '≈ ' : '' }}{{ money(Math.abs(merchantNet)) }}</span>
             </div>
           </div>
           <p v-else-if="quoteError" class="text-sm text-red-600">{{ quoteError }}</p>
-          <p v-else class="text-sm text-slate-500">{{ form.delivery_zone_id ? 'Calcul du prix…' : 'Choisissez la commune pour voir le prix de la livraison.' }}</p>
+          <p v-else class="text-sm text-slate-600">{{ form.delivery_zone_id ? 'Calcul du prix…' : 'Choisissez la commune pour voir le prix de la livraison.' }}</p>
           <button type="submit" class="m-btn-primary" :disabled="saving">{{ saving ? 'Envoi…' : 'Envoyer la course' }}</button>
         </div>
       </div>

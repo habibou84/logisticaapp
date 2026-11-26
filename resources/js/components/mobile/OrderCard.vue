@@ -7,7 +7,7 @@
         <p class="font-semibold truncate">{{ order.recipient.name || localPhone(order.recipient.phone) }}</p>
         <p class="text-sm text-slate-600 truncate">{{ place }}</p>
         <!-- Départements du client : qui envoie → vers qui -->
-        <p v-if="order.department || order.to_department" class="text-xs text-slate-500 truncate">🏢 {{ order.department?.code || order.department?.name || '—' }}<template v-if="order.to_department"> → {{ order.to_department.code || order.to_department.name }}</template></p>
+        <p v-if="order.department || order.to_department" class="text-xs text-slate-600 truncate">🏢 {{ order.department?.code || order.department?.name || '—' }}<template v-if="order.to_department"> → {{ order.to_department.code || order.to_department.name }}</template></p>
         <p :class="['text-sm font-medium flex items-center gap-1.5 min-w-0', state.color]">
           <StatusIcon :name="state.icon" class="h-3.5 w-3.5 shrink-0" /><span class="truncate">{{ state.text }}</span>
         </p>
@@ -18,7 +18,7 @@
         <!-- Distribution, MAD : rien à encaisser, l'activité à la place du montant -->
         <p v-if="order.activity && order.activity !== 'ecommerce' && !order.amounts.cod_amount" :class="['inline-block rounded-full px-2 py-0.5 text-xs font-semibold', order.activity === 'mad' ? 'bg-[#EDE7FF] text-[#5B3FC4]' : 'bg-[#E3EDFF] text-[#1D5BC7]']">{{ order.activity_label }}</p>
         <p v-else class="font-semibold">{{ money(order.amounts.cod_amount) }}</p>
-        <p class="font-mono text-[11px] text-slate-500">{{ order.tracking_code }}</p>
+        <p class="font-mono text-xs text-slate-600">{{ order.tracking_code }}</p>
       </div>
     </RouterLink>
     <!-- Actions directes (ex. appeler le client d'une course à régler) -->

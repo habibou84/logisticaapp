@@ -26,12 +26,12 @@
       </div>
       <div class="border-t pt-3">
         <p v-if="alertSound.desktop === 'granted'" class="text-emerald-700">✓ Notifications du bureau activées (onglet en arrière-plan).</p>
-        <p v-else-if="alertSound.desktop === 'denied'" class="text-gray-500">Notifications du bureau bloquées : autorisez-les dans les réglages du navigateur.</p>
+        <p v-else-if="alertSound.desktop === 'denied'" class="text-slate-600">Notifications du bureau bloquées : autorisez-les dans les réglages du navigateur.</p>
         <button v-else-if="alertSound.desktop !== 'unsupported'" type="button" class="btn-primary w-full text-xs" @click="enableDesktopNotifications">
           Afficher aussi les alertes quand l'onglet est caché
         </button>
       </div>
-      <p class="text-xs text-gray-500">Gardez cet onglet ouvert pendant le service pour entendre les alertes.</p>
+      <p class="text-xs text-slate-600">Gardez cet onglet ouvert pendant le service pour entendre les alertes.</p>
     </div>
   </div>
 </template>

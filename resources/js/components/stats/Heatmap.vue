@@ -5,7 +5,7 @@
       <span />
       <span v-for="h in 24" :key="`h${h}`" class="text-center text-slate-400">{{ (h - 1) % 6 === 0 ? `${h - 1}h` : '' }}</span>
       <template v-for="(row, d) in data" :key="d">
-        <span class="pr-2 text-right leading-5 text-slate-500">{{ DAYS[d] }}</span>
+        <span class="pr-2 text-right leading-5 text-slate-600">{{ DAYS[d] }}</span>
         <span
           v-for="(v, h) in row"
           :key="`${d}-${h}`"
@@ -18,7 +18,7 @@
         />
       </template>
     </div>
-    <div class="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
+    <div class="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600">
       <p class="min-h-4">
         <template v-if="hover">{{ DAYS_LONG[hover.d] }}, {{ hover.h }} h – {{ hover.h + 1 }} h : <strong class="text-slate-900">{{ hover.v }} course{{ hover.v > 1 ? 's' : '' }}</strong></template>
         <template v-else-if="peak">Pointe : {{ DAYS_LONG[peak.d].toLowerCase() }} {{ peak.h }} h – {{ peak.h + 1 }} h ({{ peak.v }} courses)</template>

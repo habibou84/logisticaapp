@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-3">
     <div class="flex flex-wrap items-center justify-between gap-2">
-      <p class="text-sm text-gray-600">Qui se connecte à l'espace du client, et ce que chacun peut faire.</p>
+      <p class="text-sm text-slate-600">Qui se connecte à l'espace du client, et ce que chacun peut faire.</p>
       <button v-if="assignable.length" type="button" class="btn-primary" @click="open()">+ Ajouter un compte</button>
     </div>
 
@@ -10,16 +10,16 @@
       <li v-for="u in accounts" :key="u.id" class="flex flex-wrap items-center justify-between gap-2 p-3">
         <div class="min-w-0">
           <p class="font-medium">{{ u.name }} <span v-if="u.status !== 'active'" class="text-xs text-red-600">· suspendu</span></p>
-          <p class="text-xs text-gray-500">{{ u.phone }} · {{ u.role_label }}</p>
+          <p class="text-xs text-slate-600">{{ u.phone }} · {{ u.role_label }}</p>
         </div>
         <button v-if="assignable.includes(u.role) && u.id !== auth.user?.id" type="button" class="text-sm text-blue-600" @click="open(u)">Modifier</button>
       </li>
-      <li v-if="loaded && !accounts.length" class="p-4 text-sm text-gray-500">Aucun compte.</li>
+      <li v-if="loaded && !accounts.length" class="p-4 text-sm text-slate-600">Aucun compte.</li>
     </ul>
 
     <!-- Rôles du client : ce que chacun peut faire -->
     <details class="text-sm">
-      <summary class="cursor-pointer text-gray-600">Les rôles</summary>
+      <summary class="cursor-pointer text-slate-600">Les rôles</summary>
       <ul class="mt-2 space-y-1">
         <li v-for="r in roles" :key="r.value"><b>{{ r.label }}</b> : {{ r.description }}</li>
       </ul>
@@ -40,7 +40,7 @@
           <select id="ma-role" v-model="form.role" class="input" required>
             <option v-for="r in roles.filter((x) => assignable.includes(x.value))" :key="r.value" :value="r.value">{{ r.label }}</option>
           </select>
-          <p class="text-xs text-gray-500 mt-1">{{ roles.find((r) => r.value === form.role)?.description }}</p>
+          <p class="text-xs text-slate-600 mt-1">{{ roles.find((r) => r.value === form.role)?.description }}</p>
         </div>
         <div v-if="form.id">
           <label class="label" for="ma-status">Statut</label>

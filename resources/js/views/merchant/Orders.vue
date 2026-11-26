@@ -62,7 +62,7 @@
             <span class="block text-sm text-slate-600 truncate">{{ o.delivery.zone_name }}<template v-if="o.department"> · 🏢 {{ o.department.code || o.department.name }}</template></span>
           </span>
           <span class="text-right">
-            <span class="block font-mono text-xs text-slate-500">{{ o.tracking_code }}</span>
+            <span class="block font-mono text-xs text-slate-600">{{ o.tracking_code }}</span>
             <span v-if="o.label?.printed_at" class="text-xs text-emerald-700">✓ imprimée</span>
           </span>
         </label>
@@ -79,7 +79,7 @@
     <EmptyState v-if="!loading && !orders.length" icon="search" :color="search ? 'recherche' : 'colis'" :title="search ? 'Aucune course trouvée' : emptyTitle" :text="search ? 'Essayez un autre nom, numéro ou n° de course.' : emptyText">
       <RouterLink v-if="!search && filter === 'all' && auth.can('orders.create')" to="/marchand/courses/nouvelle" class="m-btn-primary">+ Nouvelle course</RouterLink>
     </EmptyState>
-    <p v-if="loading && orders.length" class="text-center text-slate-500 py-6">Chargement…</p>
+    <p v-if="loading && orders.length" class="text-center text-slate-600 py-6">Chargement…</p>
     <button v-if="hasMore && !loading" class="m-btn-secondary" @click="load(page + 1)">Voir plus</button>
 
     <!-- Barre d'impression : tout, à ramasser, imprimer -->

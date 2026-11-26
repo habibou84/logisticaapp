@@ -15,7 +15,7 @@
 
     <p v-if="loading" class="py-8 text-center text-slate-400">Chargement…</p>
     <p v-else-if="error" class="py-8 text-center text-red-600">{{ error }}</p>
-    <p v-else-if="!route?.stops.length" class="m-card p-4 text-center text-slate-500">Aucun arrêt pour le moment.</p>
+    <p v-else-if="!route?.stops.length" class="m-card p-4 text-center text-slate-600">Aucun arrêt pour le moment.</p>
 
     <template v-else>
       <div ref="mapEl" class="h-64 overflow-hidden rounded-2xl ring-1 ring-slate-200" />
@@ -39,12 +39,12 @@
               <span v-if="s.precision === 'zone'" class="rounded-full bg-amber-100 px-2 py-0.5 text-amber-800">Position approximative (quartier)</span>
               <span v-if="s.precision === 'unknown'" class="rounded-full bg-slate-100 px-2 py-0.5 text-slate-600">Position inconnue</span>
               <span v-if="!s.placed" class="rounded-full bg-sky-100 px-2 py-0.5 text-sky-800">Nouvelle</span>
-              <span v-if="s.leg_meters !== null" class="text-slate-500">{{ meters(s.leg_meters) }}</span>
+              <span v-if="s.leg_meters !== null" class="text-slate-600">{{ meters(s.leg_meters) }}</span>
             </span>
           </RouterLink>
           <span class="flex flex-col">
-            <button type="button" class="px-2 py-1 text-lg text-slate-500 disabled:opacity-30" :disabled="busy || i === 0" :aria-label="`Monter l'arrêt ${i + 1}`" @click="move(i, -1)">↑</button>
-            <button type="button" class="px-2 py-1 text-lg text-slate-500 disabled:opacity-30" :disabled="busy || i === route.stops.length - 1" :aria-label="`Descendre l'arrêt ${i + 1}`" @click="move(i, 1)">↓</button>
+            <button type="button" class="px-2 py-1 text-lg text-slate-600 disabled:opacity-30" :disabled="busy || i === 0" :aria-label="`Monter l'arrêt ${i + 1}`" @click="move(i, -1)">↑</button>
+            <button type="button" class="px-2 py-1 text-lg text-slate-600 disabled:opacity-30" :disabled="busy || i === route.stops.length - 1" :aria-label="`Descendre l'arrêt ${i + 1}`" @click="move(i, 1)">↓</button>
           </span>
         </li>
       </ol>

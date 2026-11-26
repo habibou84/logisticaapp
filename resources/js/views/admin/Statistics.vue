@@ -23,7 +23,7 @@
       <div v-if="section.tabs.length > 1" ref="tabBar" class="flex gap-1 overflow-x-auto border-b" role="tablist">
         <button
           v-for="t in section.tabs" :key="t.key" :data-tab="t.key" type="button" role="tab" :aria-selected="tab === t.key"
-          :class="['-mb-px whitespace-nowrap border-b-2 px-4 py-2 text-sm font-medium', tab === t.key ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-800']"
+          :class="['-mb-px whitespace-nowrap border-b-2 px-4 py-2 text-sm font-medium', tab === t.key ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-600 hover:text-slate-800']"
           @click="selectTab(t.key)"
         >{{ t.label }}</button>
       </div>
@@ -55,7 +55,7 @@
     </div>
 
     <p v-if="error" class="rounded bg-red-50 px-3 py-2 text-sm text-red-700">{{ error }}</p>
-    <p v-if="loading && !data[tab]" class="text-slate-500">Chargement…</p>
+    <p v-if="loading && !data[tab]" class="text-slate-600">Chargement…</p>
 
     <!-- Vue d'ensemble -->
     <template v-if="tab === 'overview' && data.overview">
@@ -71,7 +71,7 @@
         </template>
         <KpiTile title="Retours et annulations" :value="ov.kpis.returned + ov.kpis.cancelled" :previous="ov.previous_kpis.returned + ov.previous_kpis.cancelled" :higher-is-better="false" />
       </div>
-      <p class="text-xs text-slate-500">Comparaison avec le {{ date(ov.previous_period.from) }} – {{ date(ov.previous_period.to) }}.</p>
+      <p class="text-xs text-slate-600">Comparaison avec le {{ date(ov.previous_period.from) }} – {{ date(ov.previous_period.to) }}.</p>
 
       <section class="card p-4 space-y-2">
         <div class="flex flex-wrap items-center justify-between gap-2">
@@ -106,7 +106,7 @@
           <ColumnChart :labels="ov.series.map((d) => d.date)" :values="ov.series.map((d) => d.revenue)" label="Chiffre d'affaires" :format="(v, full) => (full ? money(v) : compact(v))" aria-label="Chiffre d'affaires par jour" />
         </section>
         <section class="card p-4 space-y-2">
-          <h2 class="font-semibold">Heures de pointe <span class="text-sm font-normal text-slate-500">· courses créées</span></h2>
+          <h2 class="font-semibold">Heures de pointe <span class="text-sm font-normal text-slate-600">· courses créées</span></h2>
           <Heatmap :data="ov.heatmap" aria-label="Courses créées par jour de la semaine et par heure" />
         </section>
       </div>
@@ -128,13 +128,13 @@
         </section>
 
         <section class="card p-4 space-y-3">
-          <h2 class="font-semibold">Délais habituels <span class="text-sm font-normal text-slate-500">· médiane des courses livrées</span></h2>
+          <h2 class="font-semibold">Délais habituels <span class="text-sm font-normal text-slate-600">· médiane des courses livrées</span></h2>
           <dl class="grid grid-cols-3 gap-3 text-center">
-            <div class="rounded bg-slate-50 p-3"><dt class="text-xs text-slate-500">Création → ramassage</dt><dd class="text-lg font-bold">{{ duration(dl.delays.to_pickup) }}</dd></div>
-            <div class="rounded bg-slate-50 p-3"><dt class="text-xs text-slate-500">Ramassage → livraison</dt><dd class="text-lg font-bold">{{ duration(dl.delays.pickup_to_delivery) }}</dd></div>
-            <div class="rounded bg-slate-50 p-3"><dt class="text-xs text-slate-500">Délai total</dt><dd class="text-lg font-bold">{{ duration(dl.delays.total) }}</dd></div>
+            <div class="rounded bg-slate-50 p-3"><dt class="text-xs text-slate-600">Création → ramassage</dt><dd class="text-lg font-bold">{{ duration(dl.delays.to_pickup) }}</dd></div>
+            <div class="rounded bg-slate-50 p-3"><dt class="text-xs text-slate-600">Ramassage → livraison</dt><dd class="text-lg font-bold">{{ duration(dl.delays.pickup_to_delivery) }}</dd></div>
+            <div class="rounded bg-slate-50 p-3"><dt class="text-xs text-slate-600">Délai total</dt><dd class="text-lg font-bold">{{ duration(dl.delays.total) }}</dd></div>
           </dl>
-          <p class="text-xs text-slate-500">La médiane : la moitié des courses va plus vite, l'autre moitié plus lentement. Elle n'est pas faussée par quelques courses reportées.</p>
+          <p class="text-xs text-slate-600">La médiane : la moitié des courses va plus vite, l'autre moitié plus lentement. Elle n'est pas faussée par quelques courses reportées.</p>
 
           <h3 class="pt-2 text-sm font-semibold">Issues sur la période</h3>
           <ul class="grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
@@ -187,11 +187,11 @@
                 <td class="p-2 text-right">{{ money(r.earnings) }}</td>
               </template>
             </tr>
-            <tr v-if="!cr.couriers.length"><td :colspan="courierColumns.length" class="p-6 text-center text-slate-500">Aucun livreur.</td></tr>
+            <tr v-if="!cr.couriers.length"><td :colspan="courierColumns.length" class="p-6 text-center text-slate-600">Aucun livreur.</td></tr>
           </tbody>
         </table>
       </section>
-      <p class="text-xs text-slate-500">Délai : médiane entre le ramassage et la livraison. Écart de caisse : manques constatés aux versements de la période. Gains : paie enregistrée sur la période.</p>
+      <p class="text-xs text-slate-600">Délai : médiane entre le ramassage et la livraison. Écart de caisse : manques constatés aux versements de la période. Gains : paie enregistrée sur la période.</p>
     </template>
 
     <MerchantsTab v-if="tab === 'merchants' && data.merchants" :data="data.merchants" :with-amounts="withAmounts" exportable />

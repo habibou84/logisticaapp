@@ -5,7 +5,7 @@
       <div class="flex justify-center"><BrandLogo size="md" /></div>
 
       <div class="rounded-3xl bg-white shadow-xl ring-1 ring-slate-200 p-6 space-y-5">
-        <p v-if="loading" class="text-center text-slate-500">Chargement…</p>
+        <p v-if="loading" class="text-center text-slate-600">Chargement…</p>
 
         <template v-else-if="problem">
           <h1 class="text-xl font-bold text-center">Lien de connexion invalide</h1>
@@ -38,14 +38,14 @@
               <ul class="space-y-1.5 text-sm text-slate-700">
                 <li v-for="s in scopeLabels" :key="s" class="flex gap-2"><span class="text-[var(--app-color)]" aria-hidden="true">✓</span>{{ s }}</li>
               </ul>
-              <p class="mt-3 text-xs text-slate-500">Vous pourrez couper cet accès à tout moment dans Profil › Intégrations.</p>
+              <p class="mt-3 text-xs text-slate-600">Vous pourrez couper cet accès à tout moment dans Profil › Intégrations.</p>
             </div>
             <p v-if="error" class="text-sm text-red-600" role="alert">{{ error }}</p>
             <button class="w-full rounded-xl bg-[var(--app-color)] py-3 font-semibold text-white disabled:opacity-60" :disabled="busy" @click="allow">{{ busy ? 'Connexion…' : 'Autoriser' }}</button>
             <button class="w-full rounded-xl border border-slate-300 py-3 font-semibold text-slate-700" :disabled="busy" @click="back('access_denied')">Refuser</button>
           </div>
           <p v-else class="rounded-xl bg-amber-50 p-3 text-sm text-amber-800">Seul le gérant de la boutique peut connecter une application. Demandez-lui de le faire depuis son compte.</p>
-          <button class="block mx-auto text-sm text-slate-500 underline" @click="switchAccount">Ce n'est pas mon compte</button>
+          <button class="block mx-auto text-sm text-slate-600 underline" @click="switchAccount">Ce n'est pas mon compte</button>
         </template>
 
         <!-- Pas encore connecté : se connecter, ouvrir un compte ou demander à devenir client -->

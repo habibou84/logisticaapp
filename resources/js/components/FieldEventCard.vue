@@ -10,17 +10,17 @@
           <span :class="['rounded-full px-2 py-0.5 text-xs font-medium', STATUS_STYLES[event.status]]">{{ statusText }}</span>
           <span v-if="unread" class="rounded-full bg-sky-600 text-white px-2 py-0.5 text-xs">💬 {{ unread }}</span>
         </span>
-        <span class="block text-sm text-gray-700">
-          🛵 <strong>{{ event.courier?.name }}</strong> · {{ capacityText }} · <span class="text-gray-500">{{ dateTime(event.created_at) }}</span>
+        <span class="block text-sm text-slate-700">
+          🛵 <strong>{{ event.courier?.name }}</strong> · {{ capacityText }} · <span class="text-slate-600">{{ dateTime(event.created_at) }}</span>
         </span>
         <span v-if="event.note" class="block text-sm">« {{ event.note }} »</span>
-        <span class="block text-xs text-gray-500">
+        <span class="block text-xs text-slate-600">
           {{ event.orders.length }} course{{ event.orders.length > 1 ? 's' : '' }} touchée{{ event.orders.length > 1 ? 's' : '' }}
           <template v-if="event.files.length"> · {{ photoCount ? `📷 ${photoCount}` : '' }}{{ voiceCount ? ` 🎙️ ${voiceCount}` : '' }}</template>
           <template v-if="event.cost"> · 💸 {{ money(event.cost) }}</template>
         </span>
       </span>
-      <span class="text-gray-400">{{ expanded ? '▲' : '▼' }}</span>
+      <span class="text-slate-500">{{ expanded ? '▲' : '▼' }}</span>
     </button>
 
     <div v-if="expanded" class="border-t px-4 pb-4 pt-3 grid gap-4 lg:grid-cols-[1fr_18rem]">
@@ -40,7 +40,7 @@
             <a v-if="m.kind === 'photo'" :href="m.src" target="_blank" rel="noopener"><img :src="m.src" alt="Photo du livreur" class="h-36 w-36 rounded-lg object-cover ring-1 ring-slate-200"></a>
             <div v-else class="space-y-1">
               <audio :src="m.src" controls class="w-60" />
-              <p class="text-xs text-gray-500">Note vocale{{ m.duration ? ` · ${m.duration} s` : '' }}</p>
+              <p class="text-xs text-slate-600">Note vocale{{ m.duration ? ` · ${m.duration} s` : '' }}</p>
             </div>
           </template>
         </div>
@@ -54,8 +54,8 @@
           <label v-for="o in event.orders" :key="o.id" class="flex items-center gap-2 rounded border border-slate-200 px-2 py-1.5 text-sm">
             <input v-model="selected" type="checkbox" :value="o.id" :disabled="!o.courier_still_assigned" :aria-label="`Choisir ${o.tracking_code}`">
             <RouterLink :to="`/admin/courses/${o.id}`" class="font-mono text-blue-700 whitespace-nowrap">{{ o.tracking_code }}</RouterLink>
-            <span class="min-w-0 truncate text-gray-600">{{ o.merchant }} → {{ o.recipient_name || 'destinataire' }}{{ o.zone ? ` (${o.zone})` : '' }}</span>
-            <span class="ml-auto shrink-0 text-xs text-gray-500">{{ o.status_label }}{{ o.held_by_courier ? ' · colis chez lui' : '' }}{{ o.courier_still_assigned ? '' : ' · confiée à un autre' }}</span>
+            <span class="min-w-0 truncate text-slate-600">{{ o.merchant }} → {{ o.recipient_name || 'destinataire' }}{{ o.zone ? ` (${o.zone})` : '' }}</span>
+            <span class="ml-auto shrink-0 text-xs text-slate-600">{{ o.status_label }}{{ o.held_by_courier ? ' · colis chez lui' : '' }}{{ o.courier_still_assigned ? '' : ' · confiée à un autre' }}</span>
           </label>
         </div>
 
@@ -63,7 +63,7 @@
         <div class="space-y-2">
           <p class="text-sm font-semibold">Échange avec {{ event.courier?.name }}</p>
           <div v-for="m in event.messages" :key="m.id" :class="['max-w-[85%] rounded-lg px-3 py-2 text-sm', m.from_courier ? 'bg-slate-100' : 'ml-auto bg-sky-50']">
-            <p class="text-xs text-gray-500">{{ m.from_courier ? '🛵' : '💬' }} {{ m.sender }} · {{ time(m.created_at) }}</p>
+            <p class="text-xs text-slate-600">{{ m.from_courier ? '🛵' : '💬' }} {{ m.sender }} · {{ time(m.created_at) }}</p>
             <p class="whitespace-pre-line">{{ m.body }}</p>
           </div>
           <form v-if="event.status !== 'resolved'" class="flex gap-2" @submit.prevent="sendMessage">
@@ -94,15 +94,15 @@
 
     <!-- Choix du livreur qui reprend les courses -->
     <Modal :open="reassigning" :title="`Confier ${selectedMovable.length} course(s) à…`" @close="reassigning = false">
-      <p v-if="!candidates" class="text-sm text-gray-500">Recherche des livreurs en service…</p>
-      <p v-else-if="!candidates.length" class="text-sm text-gray-600">Aucun autre livreur en service pour le moment.</p>
+      <p v-if="!candidates" class="text-sm text-slate-600">Recherche des livreurs en service…</p>
+      <p v-else-if="!candidates.length" class="text-sm text-slate-600">Aucun autre livreur en service pour le moment.</p>
       <div v-else class="space-y-2">
-        <p class="text-xs text-gray-500">Livreurs en service, du plus proche au plus loin {{ event.lat !== null ? 'du lieu de l\'événement' : 'de la dernière position connue' }}.</p>
+        <p class="text-xs text-slate-600">Livreurs en service, du plus proche au plus loin {{ event.lat !== null ? 'du lieu de l\'événement' : 'de la dernière position connue' }}.</p>
         <label v-for="c in candidates" :key="c.id" :class="['flex items-center gap-3 rounded border px-3 py-2 cursor-pointer', target === c.id ? 'border-slate-900 bg-slate-50' : 'border-slate-200']">
           <input v-model="target" type="radio" :value="c.id">
           <span class="flex-1">
             <span class="block font-medium">{{ c.name }}</span>
-            <span class="block text-xs text-gray-500">{{ c.distance_km !== null ? `à ${c.distance_km} km` : 'position inconnue' }} · {{ c.active }} mission(s) en cours</span>
+            <span class="block text-xs text-slate-600">{{ c.distance_km !== null ? `à ${c.distance_km} km` : 'position inconnue' }} · {{ c.active }} mission(s) en cours</span>
           </span>
         </label>
         <p v-if="heldCount" class="text-sm rounded bg-amber-50 text-amber-900 px-3 py-2">

@@ -54,7 +54,7 @@ const Opt = defineComponent({
   emits: ['update:modelValue'],
   setup: (props, { emit }) => () => h('label', { class: 'flex items-start gap-2 text-sm' }, [
     h('input', { type: 'checkbox', class: 'mt-1', checked: props.modelValue, onChange: (e) => emit('update:modelValue', e.target.checked) }),
-    h('span', [props.label, props.hint ? h('span', { class: 'block text-xs text-gray-500' }, props.hint) : null]),
+    h('span', [props.label, props.hint ? h('span', { class: 'block text-xs text-slate-600' }, props.hint) : null]),
   ]),
 })
 const ACTIVITIES = [{ value: 'distribution', label: 'Distribution' }, { value: 'mad', label: 'MAD' }, { value: 'ecommerce', label: 'E-commerce' }]

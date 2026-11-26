@@ -3,7 +3,7 @@
     <CoursesTabs />
     <div>
       <h1 class="text-xl font-bold">Retours clients</h1>
-      <p class="text-sm text-gray-600">
+      <p class="text-sm text-slate-600">
         Regroupez les colis à rendre d'un client sur un bon de retour confié à un livreur. Le client est prévenu par
         WhatsApp ; à la remise, il signe dans l'application du livreur et toutes les courses passent « Retourné ».
       </p>
@@ -16,7 +16,7 @@
         <header class="flex flex-wrap items-center justify-between gap-2 p-4 border-b">
           <div>
             <p class="font-semibold">🏪 {{ g.merchant.business_name }}</p>
-            <p class="text-sm text-gray-600">{{ g.merchant.phone }} · {{ [g.merchant.zone, g.merchant.address].filter(Boolean).join(' · ') }}</p>
+            <p class="text-sm text-slate-600">{{ g.merchant.phone }} · {{ [g.merchant.zone, g.merchant.address].filter(Boolean).join(' · ') }}</p>
           </div>
           <div class="flex flex-wrap items-center gap-2">
             <SearchSelect
@@ -31,7 +31,7 @@
             <tr v-for="o in g.orders" :key="o.id">
               <td class="p-2 w-8"><input v-model="selected" type="checkbox" :value="o.id" :aria-label="`Colis ${o.tracking_code}`"></td>
               <td class="p-2"><RouterLink :to="`/admin/courses/${o.id}`" class="font-mono text-blue-700">{{ o.tracking_code }}</RouterLink></td>
-              <td class="p-2">{{ o.recipient_name || o.recipient_phone }} <span class="text-xs text-gray-500">{{ o.zone }}</span></td>
+              <td class="p-2">{{ o.recipient_name || o.recipient_phone }} <span class="text-xs text-slate-600">{{ o.zone }}</span></td>
               <td class="p-2 text-xs">{{ o.status_label }}<span v-if="o.incident"> · {{ o.incident }}</span></td>
               <td class="p-2 text-xs">
                 <span v-if="o.held_by" class="text-amber-700">🎒 chez {{ o.held_by.name }}</span>
@@ -42,32 +42,32 @@
           </tbody>
         </table>
       </div>
-      <p v-if="loaded && !candidates.length" class="card p-6 text-center text-gray-500">🎉 Aucun colis à rendre aux clients.</p>
+      <p v-if="loaded && !candidates.length" class="card p-6 text-center text-slate-600">🎉 Aucun colis à rendre aux clients.</p>
     </section>
 
     <!-- Bons -->
     <section class="card">
       <h2 class="font-semibold p-4 border-b">Bons de retour (30 derniers jours)</h2>
       <table class="w-full text-sm">
-        <thead class="bg-slate-50 text-left text-gray-600">
+        <thead class="bg-slate-50 text-left text-slate-600">
           <tr><th class="p-2">Bon</th><th class="p-2">Client</th><th class="p-2">Livreur</th><th class="p-2">Colis</th><th class="p-2">État</th><th /></tr>
         </thead>
         <tbody class="divide-y">
           <tr v-for="s in slips" :key="s.id">
-            <td class="p-2 font-mono text-xs">{{ s.reference }}<div class="text-gray-500">{{ dateTime(s.created_at) }}</div></td>
+            <td class="p-2 font-mono text-xs">{{ s.reference }}<div class="text-slate-600">{{ dateTime(s.created_at) }}</div></td>
             <td class="p-2">{{ s.merchant?.business_name }}</td>
             <td class="p-2">{{ s.courier?.name }}</td>
             <td class="p-2">{{ s.orders_count }}</td>
             <td class="p-2">
               <span :class="['rounded-full px-2 py-0.5 text-xs', s.status === 'handed' ? 'bg-emerald-100 text-emerald-800' : s.status === 'open' ? 'bg-amber-100 text-amber-900' : 'bg-slate-100 text-slate-600']">{{ s.status_label }}</span>
-              <div v-if="s.handed_at" class="text-xs text-gray-500">{{ dateTime(s.handed_at) }} · {{ s.received_by_name }}</div>
+              <div v-if="s.handed_at" class="text-xs text-slate-600">{{ dateTime(s.handed_at) }} · {{ s.received_by_name }}</div>
             </td>
             <td class="p-2 text-right whitespace-nowrap space-x-1">
               <RouterLink :to="`/bon-de-retour/${s.id}`" class="btn-secondary text-xs">🖨️ Voir / imprimer</RouterLink>
               <button v-if="s.status === 'open'" class="btn-secondary text-xs" @click="cancel(s)">Annuler</button>
             </td>
           </tr>
-          <tr v-if="!slips.length"><td colspan="6" class="p-4 text-center text-gray-500">Aucun bon de retour.</td></tr>
+          <tr v-if="!slips.length"><td colspan="6" class="p-4 text-center text-slate-600">Aucun bon de retour.</td></tr>
         </tbody>
       </table>
     </section>

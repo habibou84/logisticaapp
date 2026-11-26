@@ -4,20 +4,20 @@
     <!-- Notifications sur ce téléphone : remplacent WhatsApp quand elles sont activées -->
     <PushSettings v-if="settings.push_first" audience="merchant" />
 
-    <p v-if="onPhone || !settings.push_first" class="px-1 text-sm text-slate-500">{{ deliveryHint }}</p>
+    <p v-if="onPhone || !settings.push_first" class="px-1 text-sm text-slate-600">{{ deliveryHint }}</p>
 
     <div class="m-card divide-y">
       <button type="button" class="tap w-full p-4 flex items-center gap-3 text-left active:bg-slate-50" @click="openPhone">
         <span class="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-emerald-50 text-emerald-700" aria-hidden="true"><StatusIcon name="message" class="h-5 w-5" /></span>
         <span class="flex-1">
-          <span class="block text-sm text-slate-500">{{ onPhone ? 'WhatsApp de secours' : 'Messages WhatsApp envoyés au' }}</span>
+          <span class="block text-sm text-slate-600">{{ onPhone ? 'WhatsApp de secours' : 'Messages WhatsApp envoyés au' }}</span>
           <span class="block font-medium">{{ localPhone(settings.messaging_phone) || 'Aucun numéro' }}</span>
         </span>
         <span class="text-sm font-medium text-[var(--app-color)]">Modifier</span>
       </button>
     </div>
 
-    <p class="px-1 text-sm text-slate-500">
+    <p class="px-1 text-sm text-slate-600">
       Les notifications de l'application arrivent toujours. Choisissez les étapes que vous voulez aussi recevoir en message.
       <template v-if="settings.locked"><br>🔒 Réglé par {{ settings.company_name || 'votre agence' }}.</template>
     </p>
@@ -33,7 +33,7 @@
       />
     </div>
 
-    <h2 class="px-1 pt-2 text-sm font-semibold text-slate-500 uppercase tracking-wide">Point d'activité</h2>
+    <h2 class="px-1 pt-2 text-sm font-semibold text-slate-600 uppercase tracking-wide">Point d'activité</h2>
     <div class="m-card divide-y">
       <template v-for="(r, frequency) in settings.reports" :key="frequency">
         <ToggleRow
@@ -60,7 +60,7 @@
         <div>
           <label class="m-label" for="wa-number">Numéro qui reçoit les messages</label>
           <input id="wa-number" v-model="phone" class="m-input" type="tel" inputmode="tel" placeholder="07 00 00 00 00">
-          <p class="text-sm text-slate-500 mt-1">Laissez vide pour utiliser le numéro principal de la boutique.</p>
+          <p class="text-sm text-slate-600 mt-1">Laissez vide pour utiliser le numéro principal de la boutique.</p>
         </div>
         <p v-if="phoneError" class="text-sm text-red-600">{{ phoneError }}</p>
         <button class="m-btn-primary" :disabled="saving">Enregistrer</button>

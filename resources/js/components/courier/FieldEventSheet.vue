@@ -14,7 +14,7 @@
       >
         <span class="block text-3xl leading-none">{{ t.icon }}</span>
         <span class="block font-semibold mt-1.5">{{ t.label }}</span>
-        <span v-if="t.hint" class="block text-xs text-slate-500 leading-snug">{{ t.hint }}</span>
+        <span v-if="t.hint" class="block text-xs text-slate-600 leading-snug">{{ t.hint }}</span>
       </button>
     </div>
 
@@ -48,7 +48,7 @@
         </span>
         <span v-if="voice" class="flex items-center gap-2 rounded-xl bg-slate-100 px-2 py-1">
           <audio :src="voiceUrl" controls class="h-9 w-44" />
-          <button type="button" class="text-slate-500" aria-label="Supprimer la note vocale" @click="clearVoice">✕</button>
+          <button type="button" class="text-slate-600" aria-label="Supprimer la note vocale" @click="clearVoice">✕</button>
         </span>
       </div>
 
@@ -70,13 +70,13 @@
             <input v-model="form.order_ids" type="checkbox" :value="o.id" class="h-5 w-5">
             <span class="min-w-0 text-sm">
               <span class="block truncate">{{ o.label }}</span>
-              <span class="block font-mono text-xs text-slate-500">{{ o.tracking_code }}</span>
+              <span class="block font-mono text-xs text-slate-600">{{ o.tracking_code }}</span>
             </span>
           </label>
         </div>
       </div>
 
-      <p v-if="type.gps" class="text-xs text-slate-500">📍 Votre position est jointe pour que l'agence sache où vous êtes.</p>
+      <p v-if="type.gps" class="text-xs text-slate-600">📍 Votre position est jointe pour que l'agence sache où vous êtes.</p>
       <p v-if="error" class="text-red-600 text-sm">{{ error }}</p>
       <button type="button" :class="type.severity === 'urgent' || type.severity === 'blocking' ? 'm-btn-danger' : 'm-btn-primary'" :disabled="busy || recording || (type.photo && !photos.length)" @click="send">
         {{ busy ? 'Envoi…' : 'Envoyer à l\'agence' }}

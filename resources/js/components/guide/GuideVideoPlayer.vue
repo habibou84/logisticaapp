@@ -4,7 +4,7 @@
       <div class="w-full max-w-5xl max-h-full overflow-y-auto bg-white sm:rounded-xl shadow-xl" role="dialog" aria-modal="true" :aria-label="`Bien démarrer : ${chapter.title}`">
         <div class="flex items-center justify-between gap-2 border-b px-4 py-3">
           <h2 class="font-semibold">🎬 Bien démarrer · {{ index + 1 }}. {{ chapter.title }}</h2>
-          <button type="button" class="text-gray-400 hover:text-gray-700 text-xl leading-none" aria-label="Fermer" @click="$emit('close')">×</button>
+          <button type="button" class="text-slate-500 hover:text-slate-700 text-xl leading-none" aria-label="Fermer" @click="$emit('close')">×</button>
         </div>
         <div class="grid lg:grid-cols-[1fr_15rem]">
           <div class="bg-black">
@@ -26,13 +26,13 @@
               >
                 <span class="w-5 text-center" aria-hidden="true">{{ statusIcon(c.key) }}</span>
                 <span class="flex-1">{{ i + 1 }}. {{ c.title }}</span>
-                <span v-if="watched.includes(c.key)" class="text-xs text-gray-500">vue</span>
+                <span v-if="watched.includes(c.key)" class="text-xs text-slate-600">vue</span>
               </button>
             </li>
           </ol>
         </div>
         <div class="flex flex-wrap items-center justify-between gap-2 border-t px-4 py-3">
-          <p class="text-sm text-gray-600">
+          <p class="text-sm text-slate-600">
             <span v-if="steps[chapter.key]?.status === 'done'">✅ Cette étape est déjà faite.</span>
             <span v-else>Regardez, puis faites-le vous-même.</span>
           </p>

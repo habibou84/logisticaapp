@@ -30,7 +30,7 @@
     <div v-if="hidden || toasts.items.length > 1" class="pointer-events-auto flex items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white/95 px-3 py-1.5 text-xs text-slate-700 shadow">
       <button v-if="hidden" type="button" class="font-semibold text-blue-700" @click="showAll">+ {{ hidden }} autre{{ hidden > 1 ? 's' : '' }} alerte{{ hidden > 1 ? 's' : '' }}</button>
       <span v-else />
-      <button type="button" class="font-medium text-slate-500 hover:text-slate-800" @click="toasts.clear()">Tout fermer</button>
+      <button type="button" class="font-medium text-slate-600 hover:text-slate-800" @click="toasts.clear()">Tout fermer</button>
     </div>
   </div>
 </template>

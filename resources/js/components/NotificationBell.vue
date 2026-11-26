@@ -23,11 +23,11 @@
         <span class="font-semibold text-sm">Notifications</span>
         <span class="flex items-center gap-3">
           <button v-if="store.unread" class="text-xs text-blue-600" @click="store.markAllRead()">Tout marquer comme lu</button>
-          <button class="p-1 text-lg leading-none text-slate-500 sm:hidden" aria-label="Fermer les notifications" @click="open = false">×</button>
+          <button class="p-1 text-lg leading-none text-slate-600 sm:hidden" aria-label="Fermer les notifications" @click="open = false">×</button>
         </span>
       </div>
       <ul class="max-h-[70vh] overflow-y-auto divide-y sm:max-h-96">
-        <li v-if="!store.items.length" class="p-4 text-sm text-gray-500">Aucune notification.</li>
+        <li v-if="!store.items.length" class="p-4 text-sm text-slate-600">Aucune notification.</li>
         <li
           v-for="n in store.items"
           :key="n.id"
@@ -35,8 +35,8 @@
           @click="go(n)"
         >
           <p class="font-medium">{{ n.title }}</p>
-          <p class="text-gray-600">{{ n.body }}</p>
-          <p class="text-xs text-gray-400 mt-1">{{ dateTime(n.created_at) }}</p>
+          <p class="text-slate-600">{{ n.body }}</p>
+          <p class="text-xs text-slate-500 mt-1">{{ dateTime(n.created_at) }}</p>
         </li>
       </ul>
     </div>

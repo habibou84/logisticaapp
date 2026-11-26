@@ -13,7 +13,7 @@
       <input v-model="period.from" type="date" class="input w-auto py-1" aria-label="Du" @change="$emit('changed')">
       <input v-model="period.to" type="date" class="input w-auto py-1" :min="period.from" aria-label="Au" @change="$emit('changed')">
     </template>
-    <span class="ml-auto text-xs text-gray-500">{{ summary }}</span>
+    <span class="ml-auto text-xs text-slate-600">{{ summary }}</span>
   </div>
 </template>
 

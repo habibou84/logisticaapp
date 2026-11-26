@@ -11,7 +11,7 @@
         <button type="button" class="tap rounded-full px-4 py-2 font-semibold text-white" :style="{ backgroundColor: 'var(--app-color)' }" :disabled="push.busy" @click="activate">
           {{ push.busy ? 'Activation…' : 'Activer' }}
         </button>
-        <button type="button" class="tap px-2 text-slate-500" @click="dismiss">Plus tard</button>
+        <button type="button" class="tap px-2 text-slate-600" @click="dismiss">Plus tard</button>
       </div>
     </div>
   </div>

@@ -13,7 +13,7 @@ export const STATUS_STYLES = {
   maintenance: 'bg-sky-100 text-sky-800',
   immobilized: 'bg-orange-100 text-orange-800',
   out: 'bg-slate-200 text-slate-700',
-  sold: 'bg-slate-100 text-slate-500',
+  sold: 'bg-slate-100 text-slate-600',
 }
 
 export const OWNERSHIP_STYLES = {

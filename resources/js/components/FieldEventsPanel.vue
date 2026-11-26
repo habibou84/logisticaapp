@@ -31,12 +31,12 @@
       @updated="updated"
     />
 
-    <div v-if="loaded && !events.length" class="card p-8 text-center text-gray-500">
+    <div v-if="loaded && !events.length" class="card p-8 text-center text-slate-600">
       {{ filters.state === 'open' ? '🎉 Aucun événement en cours sur le terrain.' : 'Aucun événement pour ces critères.' }}
     </div>
 
     <div v-if="meta && meta.last_page > 1" class="flex items-center justify-between text-sm">
-      <span class="text-gray-500">Page {{ meta.current_page }} / {{ meta.last_page }} · {{ meta.total }} événement(s)</span>
+      <span class="text-slate-600">Page {{ meta.current_page }} / {{ meta.last_page }} · {{ meta.total }} événement(s)</span>
       <div class="flex gap-2">
         <button class="btn-secondary" :disabled="meta.current_page <= 1" @click="load(meta.current_page - 1)">Précédent</button>
         <button class="btn-secondary" :disabled="meta.current_page >= meta.last_page" @click="load(meta.current_page + 1)">Suivant</button>

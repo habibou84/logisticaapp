@@ -14,9 +14,9 @@
       <span :class="['grid h-9 w-9 shrink-0 place-items-center rounded-full text-sm font-bold', sidebar ? 'bg-white text-slate-900' : 'bg-[var(--admin-color,#0f172a)] text-white']" aria-hidden="true">{{ initials }}</span>
       <span :class="['min-w-0', sidebar ? 'flex-1' : 'hidden lg:block text-left']">
         <span class="block truncate text-sm font-semibold">{{ auth.user?.name }}</span>
-        <span :class="['block truncate text-xs', sidebar ? 'text-white/70' : 'text-slate-500']">{{ auth.user?.role_label }}</span>
+        <span :class="['block truncate text-xs', sidebar ? 'text-white/70' : 'text-slate-600']">{{ auth.user?.role_label }}</span>
       </span>
-      <span aria-hidden="true" :class="sidebar ? 'text-white/70' : 'text-slate-500'">▾</span>
+      <span aria-hidden="true" :class="sidebar ? 'text-white/70' : 'text-slate-600'">▾</span>
     </button>
 
     <div

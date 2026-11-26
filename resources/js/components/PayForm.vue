@@ -13,7 +13,7 @@
         <input id="pay-ref" v-model="reference" class="input" placeholder="N° de transaction">
       </div>
     </div>
-    <p v-if="method === 'compensation'" class="text-xs text-gray-600">
+    <p v-if="method === 'compensation'" class="text-xs text-slate-600">
       Le livreur garde ce montant sur l'argent des clients qu'il a en main : il le versera en moins lors de son prochain point.
     </p>
     <div class="flex gap-2">

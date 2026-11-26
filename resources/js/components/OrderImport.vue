@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-4">
     <section class="card p-4 space-y-3">
-      <p class="text-sm text-gray-600">
+      <p class="text-sm text-slate-600">
         Une ligne par course : téléphone et commune obligatoires ; nom, quartier, adresse, repère, montant, qui paie la livraison
         (« destinataire » ou « moi »), description, référence, date et note facultatifs. Fichier CSV ou Excel (.xlsx), 500 lignes au plus.
         Distribution et MAD : colonnes « Activité », « Type d'envoi » (pli, colis, chèque), « Poids » et « Délai » (24h, 48h, 72h),
@@ -31,7 +31,7 @@
         <input id="imp-file" ref="fileInput" type="file" accept=".csv,.xlsx,text/csv" class="input" @change="pick">
       </div>
       <p v-if="error" class="field-error">{{ error }}</p>
-      <p v-if="busy" class="text-sm text-gray-500">Analyse en cours…</p>
+      <p v-if="busy" class="text-sm text-slate-600">Analyse en cours…</p>
     </section>
 
     <!-- Aperçu -->
@@ -44,18 +44,18 @@
       </div>
       <div class="overflow-x-auto">
         <table class="w-full text-sm">
-          <thead class="bg-slate-50 text-left text-gray-600">
+          <thead class="bg-slate-50 text-left text-slate-600">
             <tr><th class="p-2">Ligne</th><th class="p-2">Destinataire</th><th class="p-2">Commune</th><th class="p-2 text-right">Articles</th><th class="p-2 text-right">Livraison</th><th class="p-2 text-right">À encaisser</th><th class="p-2">Contrôle</th></tr>
           </thead>
           <tbody class="divide-y">
             <tr v-for="r in preview.rows" :key="r.line" :class="r.errors.length ? 'bg-red-50' : ''">
               <td class="p-2">{{ r.line }}</td>
-              <td class="p-2">{{ r.data.recipient_name || '—' }}<div class="text-xs text-gray-500">{{ r.data.recipient_phone }}</div></td>
+              <td class="p-2">{{ r.data.recipient_name || '—' }}<div class="text-xs text-slate-600">{{ r.data.recipient_phone }}</div></td>
               <td class="p-2">{{ r.zone_name || '—' }}</td>
               <td class="p-2 text-right">{{ money(r.data.items_amount || 0) }}</td>
               <!-- Distribution, MAD : comment la course sera facturée (facture du mois) -->
-              <td v-if="r.billing_label" class="p-2 text-right text-xs">{{ r.billing_label }}<div class="text-gray-500">facture du mois</div></td>
-              <td v-else class="p-2 text-right">{{ r.errors.length ? '—' : money(r.delivery_fee) }}<div v-if="!r.errors.length" class="text-xs text-gray-500">{{ r.data.fee_payer === 'recipient' ? 'destinataire' : 'client' }}</div></td>
+              <td v-if="r.billing_label" class="p-2 text-right text-xs">{{ r.billing_label }}<div class="text-slate-600">facture du mois</div></td>
+              <td v-else class="p-2 text-right">{{ r.errors.length ? '—' : money(r.delivery_fee) }}<div v-if="!r.errors.length" class="text-xs text-slate-600">{{ r.data.fee_payer === 'recipient' ? 'destinataire' : 'client' }}</div></td>
               <td class="p-2 text-right font-semibold">{{ r.errors.length ? '—' : money(r.cod_amount) }}</td>
               <td class="p-2">
                 <span v-if="!r.errors.length" class="text-emerald-700">✓</span>

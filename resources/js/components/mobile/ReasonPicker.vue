@@ -4,7 +4,7 @@
 
     <!-- Recherche : tous les motifs qui correspondent -->
     <ChoiceChips v-if="search.trim()" :model-value="modelValue" :options="options(matches)" label="Motif" @update:model-value="pick" />
-    <p v-if="search.trim() && !matches.length" class="text-sm text-slate-500">Aucun motif. Choisissez « Autres » et précisez.</p>
+    <p v-if="search.trim() && !matches.length" class="text-sm text-slate-600">Aucun motif. Choisissez « Autres » et précisez.</p>
 
     <template v-else-if="!search.trim()">
       <!-- Peu de motifs : directement -->

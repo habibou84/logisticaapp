@@ -2,33 +2,33 @@
   <!-- inline : affiché dans la fiche du client (onglet Contrat), sans fenêtre -->
   <component :is="inline ? 'div' : Modal" v-bind="inline ? {} : { open, title: `Contrat · ${merchant?.business_name || ''}` }" @close="$emit('close')">
     <div class="space-y-4">
-      <p class="text-sm text-gray-600">
+      <p class="text-sm text-slate-600">
         Sans formule, le client paie ses courses une à une (frais déduits de ses reversements). Avec une formule, ses courses
         passent sur sa <strong>facture du mois</strong>, payée à part.
       </p>
 
-      <p v-if="loading" class="text-gray-500 text-sm">Chargement…</p>
+      <p v-if="loading" class="text-slate-600 text-sm">Chargement…</p>
 
       <ul v-else-if="plans.length" class="divide-y rounded border text-sm">
         <li v-for="p in plans" :key="p.id" class="p-3 space-y-1">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <span class="font-medium">{{ p.formula_label }}</span>
-            <span :class="isCurrent(p) ? 'text-emerald-700' : 'text-gray-500'">
+            <span :class="isCurrent(p) ? 'text-emerald-700' : 'text-slate-600'">
               {{ isCurrent(p) ? 'En cours' : p.starts_on > today() ? 'À venir' : 'Terminée' }} · du {{ date(p.starts_on) }}{{ p.ends_on ? ` au ${date(p.ends_on)}` : '' }}
             </span>
           </div>
-          <p class="text-gray-600">{{ p.summary }}</p>
-          <p v-if="p.cheque_price || p.extra_kg_price" class="text-gray-600">
+          <p class="text-slate-600">{{ p.summary }}</p>
+          <p v-if="p.cheque_price || p.extra_kg_price" class="text-slate-600">
             <template v-if="p.cheque_price">Chèque : {{ money(p.cheque_price) }}</template>
             <template v-if="p.cheque_price && p.extra_kg_price"> · </template>
             <template v-if="p.extra_kg_price">kg au-delà de 5 kg : {{ money(p.extra_kg_price) }}</template>
           </p>
-          <p v-if="p.has_forfait" class="text-gray-600">
+          <p v-if="p.has_forfait" class="text-slate-600">
             Zones du forfait : {{ p.zones?.length ? zoneNames(p.zones) : 'communes « Forfait » (Réglages › Zones)' }}
           </p>
-          <p v-if="p.internal_delay_hours" class="text-gray-600">Délai interne : {{ p.internal_delay_hours }} h (équipe)</p>
-          <p v-if="p.couriers?.length" class="text-gray-600">Livreurs mis à disposition : {{ p.couriers.map((c) => c.name).join(', ') }}</p>
-          <p v-if="p.effective_options" class="text-gray-600">{{ describeOptions(p) }}</p>
+          <p v-if="p.internal_delay_hours" class="text-slate-600">Délai interne : {{ p.internal_delay_hours }} h (équipe)</p>
+          <p v-if="p.couriers?.length" class="text-slate-600">Livreurs mis à disposition : {{ p.couriers.map((c) => c.name).join(', ') }}</p>
+          <p v-if="p.effective_options" class="text-slate-600">{{ describeOptions(p) }}</p>
           <div v-if="canManage && !p.ends_on" class="flex flex-wrap gap-3 pt-1">
             <button type="button" class="text-blue-600" @click="endPlan(p)">Terminer…</button>
             <button v-if="p.has_forfait" type="button" class="text-blue-600" @click="editZones(p)">Changer les zones</button>
@@ -38,7 +38,7 @@
           </div>
         </li>
       </ul>
-      <p v-else class="text-sm text-gray-500">Aucune formule : courses ordinaires.</p>
+      <p v-else class="text-sm text-slate-600">Aucune formule : courses ordinaires.</p>
 
       <form v-if="canManage" class="space-y-3 border-t pt-3" @submit.prevent="save">
         <h3 class="font-semibold">{{ editing ? EDIT_TITLES[editMode] : 'Nouveau contrat' }}</h3>
@@ -65,7 +65,7 @@
               </div>
               <div v-if="lotPriced"><label class="label" for="bp-lot-price">Prix du lot (F) *</label><input id="bp-lot-price" v-model.number="form.lot_price" type="number" min="0" class="input" required></div>
               <div><label class="label" for="bp-lot-due">À distribuer avant le</label><input id="bp-lot-due" v-model="form.lot_due_on" type="date" class="input" :min="form.starts_on"></div>
-              <p class="col-span-2 text-xs text-gray-500">
+              <p class="col-span-2 text-xs text-slate-600">
                 {{ lotPriced ? 'Le prix du lot est facturé le mois où il commence.' : 'Chaque colis au prix unitaire de la grille (commune ou négociée), selon sa destination et son délai.' }}
                 Au-delà du nombre de colis prévu, chaque colis en plus au prix unitaire. Plusieurs lots peuvent courir en même temps,
                 à côté du contrat du mois ; le tout passe sur la facture du mois.
@@ -105,7 +105,7 @@
             <div><label class="label" for="bp-start">À partir du</label><input id="bp-start" v-model="form.starts_on" type="date" class="input" required></div>
             <div><label class="label" for="bp-end">Jusqu'au (facultatif)</label><input id="bp-end" v-model="form.ends_on" type="date" class="input" :min="form.starts_on"></div>
           </div>
-          <p class="text-xs text-gray-500">
+          <p class="text-xs text-slate-600">
             <template v-if="!hasForfait">Prix à l'unité par délai et type d'envoi : Distribution › Tarifs (grille commune ou prix négociés du client) ; </template>
             Un nouveau contrat arrête le précédent la veille de son début.
           </p>
@@ -114,7 +114,7 @@
         <!-- Zones du forfait : courses incluses ; au-delà, prix de la destination. Ailleurs : facturé à part -->
         <fieldset v-if="(hasForfait && !editing) || editMode === 'zones'" class="border rounded p-3 space-y-2">
           <legend class="text-sm font-medium px-1">Zones couvertes par le forfait</legend>
-          <p class="text-xs text-gray-500">
+          <p class="text-xs text-slate-600">
             Les courses vers ces zones comptent dans les courses incluses ; au-delà, chacune au prix de sa destination
             (prix du contrat à Abidjan, tarif de la ville à l'intérieur). Vers les autres zones : facturées à part dès la première
             (tarif de la ville à l'intérieur, tarif ordinaire ailleurs).
@@ -124,17 +124,17 @@
 
         <!-- Réglages propres au contrat : preuve de remise, messages, réservation MAD (vide : ceux de l'entreprise) -->
         <fieldset v-if="editMode === 'options'" class="border rounded p-3 space-y-2">
-          <p class="text-xs text-gray-500">Vide (« comme l'entreprise ») : le réglage de Réglages › Courses s'applique.</p>
+          <p class="text-xs text-slate-600">Vide (« comme l'entreprise ») : le réglage de Réglages › Courses s'applique.</p>
           <ActivityOptionsFields v-model="form.options" :activity="editing.activity" :inherit="editing.default_options" />
         </fieldset>
 
         <fieldset v-if="(form.formula === 'mad_contract' && !editing) || editMode === 'couriers'" class="border rounded p-3 space-y-2">
           <legend class="text-sm font-medium px-1">Livreurs mis à disposition</legend>
-          <p class="text-xs text-gray-500">Les courses du client leur sont confiées (ramassage et livraison), au moins chargé des disponibles.</p>
+          <p class="text-xs text-slate-600">Les courses du client leur sont confiées (ramassage et livraison), au moins chargé des disponibles.</p>
           <label v-for="c in couriers" :key="c.id" class="flex items-center gap-2 text-sm">
             <input v-model="form.courier_ids" type="checkbox" :value="c.id"> {{ c.user?.name || c.name }}
           </label>
-          <p v-if="!couriers.length" class="text-sm text-gray-500">Aucun livreur.</p>
+          <p v-if="!couriers.length" class="text-sm text-slate-600">Aucun livreur.</p>
         </fieldset>
 
         <div v-if="!editing"><label class="label" for="bp-notes">Notes (référence du contrat…)</label><input id="bp-notes" v-model="form.notes" class="input" maxlength="1000"></div>

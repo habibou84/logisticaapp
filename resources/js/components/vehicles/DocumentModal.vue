@@ -14,7 +14,7 @@
         <div><label class="label" for="d-start">Début</label><input id="d-start" v-model="form.starts_on" type="date" class="input"></div>
         <div>
           <label class="label" for="d-end">Fin</label><input id="d-end" v-model="form.ends_on" type="date" class="input">
-          <p class="text-xs text-gray-500 mt-1">Vide : sans fin (carte grise).</p>
+          <p class="text-xs text-slate-600 mt-1">Vide : sans fin (carte grise).</p>
         </div>
         <div><label class="label" for="d-cost">Coût (F)</label><input id="d-cost" v-model.number="form.cost" type="number" min="0" class="input"></div>
         <div>

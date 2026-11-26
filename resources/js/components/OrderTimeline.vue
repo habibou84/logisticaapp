@@ -5,19 +5,19 @@
       <div class="flex flex-wrap items-baseline gap-x-2">
         <span class="font-medium text-sm">{{ title(event) }}</span>
         <StatusBadge v-if="event.to_status && event.type !== 'created'" :status="event.to_status" :label="event.to_status_label" />
-        <span v-if="!event.visible_to_merchant" class="text-xs rounded bg-slate-100 px-1.5 text-slate-500">interne</span>
+        <span v-if="!event.visible_to_merchant" class="text-xs rounded bg-slate-100 px-1.5 text-slate-600">interne</span>
       </div>
-      <p class="text-xs text-gray-500">
+      <p class="text-xs text-slate-600">
         {{ dateTime(event.created_at) }} · {{ event.actor_name || 'Système' }}<span v-if="event.actor_role"> ({{ ROLE_LABELS[event.actor_role] || event.actor_role }})</span><span v-if="event.meta?.channel" class="text-indigo-700"> · via {{ event.meta.channel }}</span>
         <a v-if="event.lat && event.lng" :href="mapsLink(event.lat, event.lng)" target="_blank" class="ml-1 text-blue-600">📍 position</a>
       </p>
       <p v-if="event.incident_reason" class="text-sm text-red-700">Motif : {{ event.incident_reason.label }}</p>
       <p v-if="event.rescheduled_to" class="text-sm text-orange-700">Reporté au {{ date(event.rescheduled_to) }}</p>
-      <p v-if="event.meta?.courier_name" class="text-sm text-gray-700">{{ event.meta.type_label }} → {{ event.meta.courier_name }}</p>
-      <p v-if="event.meta?.collected_amount !== undefined" class="text-sm text-gray-700">Encaissé : {{ money(event.meta.collected_amount) }}</p>
-      <p v-if="event.meta?.pickup_check" class="text-xs text-gray-600">{{ event.meta.pickup_check === 'scan' ? '📷 Étiquette scannée à la collecte' : '⌨️ Code du colis tapé à la main à la collecte' }}</p>
+      <p v-if="event.meta?.courier_name" class="text-sm text-slate-700">{{ event.meta.type_label }} → {{ event.meta.courier_name }}</p>
+      <p v-if="event.meta?.collected_amount !== undefined" class="text-sm text-slate-700">Encaissé : {{ money(event.meta.collected_amount) }}</p>
+      <p v-if="event.meta?.pickup_check" class="text-xs text-slate-600">{{ event.meta.pickup_check === 'scan' ? '📷 Étiquette scannée à la collecte' : '⌨️ Code du colis tapé à la main à la collecte' }}</p>
       <p v-if="event.meta?.offline" class="text-xs text-sky-700">📵 Fait hors connexion, envoyé au retour du réseau</p>
-      <ul v-if="event.meta?.changes" class="text-xs text-gray-600 list-disc ml-4">
+      <ul v-if="event.meta?.changes" class="text-xs text-slate-600 list-disc ml-4">
         <li v-for="(change, field) in event.meta.changes" :key="field">{{ field }} : {{ change.from ?? '—' }} → {{ change.to ?? '—' }}</li>
       </ul>
       <p v-if="event.note" class="text-sm bg-slate-50 rounded px-2 py-1 mt-1 whitespace-pre-line">{{ event.note }}</p>
@@ -25,8 +25,8 @@
         <template v-for="a in event.attachments" :key="a.id">
           <button class="text-sm text-blue-600 underline" @click="openAttachment(a.url)">{{ a.type?.startsWith('signature') ? '✍️ Voir la signature' : a.scan?.scanned ? '📄 Voir le document' : '📷 Voir la photo' }}</button>
           <!-- Photo d'origine, avant le scanner (équipe) -->
-          <button v-if="a.original_url" class="text-sm text-gray-600 underline" @click="openAttachment(a.original_url)">Voir l'original</button>
-          <a v-if="a.taken_where" :href="`https://www.google.com/maps?q=${a.taken_where.lat},${a.taken_where.lng}`" target="_blank" rel="noopener" class="text-sm text-gray-600 underline">
+          <button v-if="a.original_url" class="text-sm text-slate-600 underline" @click="openAttachment(a.original_url)">Voir l'original</button>
+          <a v-if="a.taken_where" :href="`https://www.google.com/maps?q=${a.taken_where.lat},${a.taken_where.lng}`" target="_blank" rel="noopener" class="text-sm text-slate-600 underline">
             📍 Lieu de la photo<template v-if="a.taken_where.accuracy"> (à {{ a.taken_where.accuracy }} m près)</template>
           </a>
           <span v-if="a.scan?.overridden" class="text-xs text-amber-700">⚠️ envoyée malgré le contrôle de qualité</span>

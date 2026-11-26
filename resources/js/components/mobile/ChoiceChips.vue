@@ -19,7 +19,7 @@
         <span v-if="option.icon" class="text-xl">{{ option.icon }}</span>
         <span class="font-medium">{{ option.label }}</span>
       </span>
-      <span v-if="option.description" class="block text-sm text-slate-500 mt-0.5">{{ option.description }}</span>
+      <span v-if="option.description" class="block text-sm text-slate-600 mt-0.5">{{ option.description }}</span>
     </button>
   </div>
 </template>

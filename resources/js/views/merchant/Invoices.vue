@@ -16,23 +16,23 @@
         <h2 class="font-semibold">Suppléments de {{ supplementsMonth.toLowerCase() }}</h2>
         <strong>{{ money(supplementsTotal) }}</strong>
       </div>
-      <p class="text-xs text-slate-500">Demandes exceptionnelles, ajoutées à part sur votre prochaine facture.</p>
+      <p class="text-xs text-slate-600">Demandes exceptionnelles, ajoutées à part sur votre prochaine facture.</p>
       <div v-for="s in supplements" :key="s.id" class="flex justify-between gap-3 text-sm border-t pt-2">
         <span class="min-w-0">
           <span class="block">{{ s.label }}</span>
-          <span class="text-xs text-slate-500">{{ date(s.performed_on) }} · {{ s.activity_label }}<template v-if="s.quantity > 1"> · {{ s.quantity }} × {{ money(s.unit_price) }}</template><template v-if="s.order"> · {{ s.order.tracking_code }}</template></span>
+          <span class="text-xs text-slate-600">{{ date(s.performed_on) }} · {{ s.activity_label }}<template v-if="s.quantity > 1"> · {{ s.quantity }} × {{ money(s.unit_price) }}</template><template v-if="s.order"> · {{ s.order.tracking_code }}</template></span>
         </span>
         <span class="whitespace-nowrap font-medium">{{ money(s.amount) }}</span>
       </div>
     </section>
 
-    <p class="px-1 text-sm text-slate-500">Vos courses de distribution et de MAD sont facturées chaque mois, une facture par activité. Touchez une facture pour la voir ou l'enregistrer en PDF.</p>
+    <p class="px-1 text-sm text-slate-600">Vos courses de distribution et de MAD sont facturées chaque mois, une facture par activité. Touchez une facture pour la voir ou l'enregistrer en PDF.</p>
     <RouterLink v-for="i in shown" :key="i.id" :to="`/marchand/factures/${i.id}`" class="tap m-card p-4 flex justify-between items-center gap-3 active:scale-[.99] transition">
       <ColorIcon name="facture" :size="44" />
       <span class="min-w-0 flex-1">
-        <span class="font-medium">{{ i.period_label }}</span> <span class="text-sm text-slate-500">· {{ i.activity_label }}<template v-if="i.department"> · {{ i.department.label }}</template></span>
-        <span class="block text-sm text-slate-500">{{ i.number }} · {{ money(i.total) }}</span>
-        <span v-if="i.status === 'issued' && i.due_at" :class="['block text-xs', i.is_overdue ? 'text-red-600 font-medium' : 'text-slate-500']">
+        <span class="font-medium">{{ i.period_label }}</span> <span class="text-sm text-slate-600">· {{ i.activity_label }}<template v-if="i.department"> · {{ i.department.label }}</template></span>
+        <span class="block text-sm text-slate-600">{{ i.number }} · {{ money(i.total) }}</span>
+        <span v-if="i.status === 'issued' && i.due_at" :class="['block text-xs', i.is_overdue ? 'text-red-600 font-medium' : 'text-slate-600']">
           {{ i.is_overdue ? 'Était à payer le' : 'À payer avant le' }} {{ date(i.due_at) }}
         </span>
       </span>

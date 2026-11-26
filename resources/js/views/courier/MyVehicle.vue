@@ -5,7 +5,7 @@
         <span class="grid h-14 w-14 place-items-center rounded-2xl bg-slate-100 text-3xl">{{ VEHICLE_TYPES[info.vehicle.type]?.icon }}</span>
         <div class="min-w-0 flex-1">
           <p class="font-mono text-lg font-bold">{{ info.vehicle.plate }}</p>
-          <p class="text-sm text-slate-500">{{ [info.vehicle.brand, info.vehicle.model].filter(Boolean).join(' ') }} · {{ km(info.vehicle.odometer) }}</p>
+          <p class="text-sm text-slate-600">{{ [info.vehicle.brand, info.vehicle.model].filter(Boolean).join(' ') }} · {{ km(info.vehicle.odometer) }}</p>
         </div>
         <span :class="['rounded-full px-2 py-0.5 text-xs font-semibold', OWNERSHIP_STYLES[info.vehicle.ownership]]">{{ info.vehicle.ownership_label }}</span>
       </div>
@@ -19,7 +19,7 @@
           <div class="mt-2 flex justify-between text-sm text-slate-600"><span>Payé {{ money(info.lease.paid) }}</span><span>Reste {{ money(info.lease.remaining) }}</span></div>
         </template>
         <p v-else class="font-semibold">Location : {{ money(info.lease.amount) }} par {{ PERIODS[info.lease.period] }}</p>
-        <p class="mt-1 text-xs text-slate-500">{{ info.lease.payment === 'payroll' ? 'Retenu sur votre paie.' : 'À payer en caisse.' }}</p>
+        <p class="mt-1 text-xs text-slate-600">{{ info.lease.payment === 'payroll' ? 'Retenu sur votre paie.' : 'À payer en caisse.' }}</p>
         <p v-if="info.lease.late" class="mt-2 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-800">
           {{ info.lease.late_periods }} versement{{ info.lease.late_periods > 1 ? 's' : '' }} en retard ({{ money(info.lease.late) }}){{ info.lease.payment === 'payroll' ? ' : retenu sur votre prochaine paie.' : ' : passez à la caisse.' }}
         </p>
@@ -33,9 +33,9 @@
             <button type="button" class="text-left" :disabled="!d.has_file" @click="openDoc(d)">{{ d.icon }} {{ d.label }}<span v-if="d.has_file" class="ml-1 text-[var(--app-color)]">· voir</span></button>
             <span :class="['rounded-full px-2 text-xs', STATE_STYLES[d.state]]">{{ d.state === 'permanent' ? 'permanent' : d.state === 'ok' ? 'à jour' : d.state === 'expired' ? `dépassé le ${shortDate(d.ends_on)}` : `fin le ${shortDate(d.ends_on)}` }}</span>
           </li>
-          <li v-if="!info.documents.length" class="text-slate-500">Aucun papier enregistré par l'agence.</li>
+          <li v-if="!info.documents.length" class="text-slate-600">Aucun papier enregistré par l'agence.</li>
         </ul>
-        <p class="mt-2 text-xs text-slate-500">Les documents sont dans l'application : montrez-les en cas de contrôle.</p>
+        <p class="mt-2 text-xs text-slate-600">Les documents sont dans l'application : montrez-les en cas de contrôle.</p>
       </div>
 
       <!-- Entretien et carburant -->

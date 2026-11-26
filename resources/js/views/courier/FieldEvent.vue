@@ -5,7 +5,7 @@
         <span class="h-12 w-12 shrink-0 rounded-2xl grid place-items-center text-2xl bg-slate-100">{{ event.icon }}</span>
         <div class="min-w-0 flex-1">
           <p class="font-semibold text-lg">{{ event.type_label }}</p>
-          <p class="text-sm text-slate-500">{{ dateTime(event.created_at) }} · {{ capacityText }}</p>
+          <p class="text-sm text-slate-600">{{ dateTime(event.created_at) }} · {{ capacityText }}</p>
         </div>
         <span :class="['rounded-full px-2 py-0.5 text-xs font-semibold', SEVERITY_STYLES[event.severity]]">{{ event.severity_label }}</span>
       </div>
@@ -43,11 +43,11 @@
     <!-- Échange avec l'agence -->
     <div class="m-card p-4 space-y-3">
       <p class="font-semibold">Échange avec l'agence</p>
-      <p v-if="!event.messages.length" class="text-sm text-slate-500">L'agence peut vous écrire ici. Vous pouvez aussi lui donner des nouvelles.</p>
+      <p v-if="!event.messages.length" class="text-sm text-slate-600">L'agence peut vous écrire ici. Vous pouvez aussi lui donner des nouvelles.</p>
       <div v-for="m in event.messages" :key="m.id" :class="['max-w-[85%] rounded-2xl px-3 py-2 text-sm', m.from_courier ? 'ml-auto bg-[var(--app-color)] text-white' : 'bg-slate-100']">
-        <p v-if="!m.from_courier" class="text-xs font-semibold text-slate-500">{{ m.sender }}</p>
+        <p v-if="!m.from_courier" class="text-xs font-semibold text-slate-600">{{ m.sender }}</p>
         <p class="whitespace-pre-line">{{ m.body }}</p>
-        <p :class="['text-[11px] text-right', m.from_courier ? 'text-white/70' : 'text-slate-400']">{{ time(m.created_at) }}</p>
+        <p :class="['text-xs text-right', m.from_courier ? 'text-white/70' : 'text-slate-400']">{{ time(m.created_at) }}</p>
       </div>
       <div v-if="event.status !== 'resolved'" class="flex gap-2">
         <input v-model="body" class="m-input flex-1" placeholder="Votre message" aria-label="Votre message" @keydown.enter="sendMessage">

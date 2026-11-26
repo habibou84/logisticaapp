@@ -20,7 +20,7 @@
       <p v-if="mission.gain" class="text-sm font-semibold text-emerald-700">💰 Votre gain prévu : + {{ money(mission.gain) }}</p>
       <p class="text-xl font-bold">{{ target.name }}</p>
       <p class="text-slate-700">📍 {{ target.zone }}<span v-if="target.address"> · {{ target.address }}</span></p>
-      <p v-if="target.landmark" class="text-slate-500">Repère : {{ target.landmark }}</p>
+      <p v-if="target.landmark" class="text-slate-600">Repère : {{ target.landmark }}</p>
       <!-- Annuaire : position de l'adresse confirmée sur place (ou à enregistrer) -->
       <div v-if="canLocate" class="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-slate-50 p-3 text-sm">
         <span v-if="order.destination?.has_location" class="text-emerald-700">📍 Position confirmée{{ order.destination.located_at ? ` le ${date(order.destination.located_at)}` : '' }} : suivez l'itinéraire</span>
@@ -33,7 +33,7 @@
         <span v-if="targetDepartment.manager_name" class="block text-sm">👤 {{ targetDepartment.manager_name }}</span>
         <span v-if="mission.type === 'pickup' && order.to_department" class="block text-sm">Courrier interne vers {{ order.to_department.label }}</span>
       </p>
-      <p v-if="mission.type === 'delivery' && order.delivery.scheduled_date" class="text-sm text-slate-500">Prévue le {{ date(order.delivery.scheduled_date) }} {{ order.delivery.time_slot ? `(${order.delivery.time_slot}h)` : '' }}</p>
+      <p v-if="mission.type === 'delivery' && order.delivery.scheduled_date" class="text-sm text-slate-600">Prévue le {{ date(order.delivery.scheduled_date) }} {{ order.delivery.time_slot ? `(${order.delivery.time_slot}h)` : '' }}</p>
 
       <div class="grid grid-cols-3 gap-2 pt-2">
         <a :href="telLink(target.phone)" class="tap rounded-2xl bg-slate-100 py-3 flex flex-col items-center gap-1 text-sm font-medium active:bg-slate-200">
@@ -84,7 +84,7 @@
         <span class="text-slate-600">{{ e.description }}</span>
         <span class="font-semibold whitespace-nowrap">{{ money(e.amount) }}</span>
       </div>
-      <p class="text-xs text-slate-500">Remboursés sur votre prochain versement à la caisse.</p>
+      <p class="text-xs text-slate-600">Remboursés sur votre prochain versement à la caisse.</p>
     </section>
 
     <!-- Actions -->
@@ -109,7 +109,7 @@
             <PhotoCapture class="m-btn-secondary py-3 px-1 text-sm" @captured="uploadPhoto">📷 Photo</PhotoCapture>
           </div>
           <!-- Mission confiée d'office, pas encore commencée : le livreur peut la rendre -->
-          <button v-if="mission.can_report_impediment" class="w-full text-center text-sm text-slate-500 underline py-1" @click="sheet = 'refuse'">
+          <button v-if="mission.can_report_impediment" class="w-full text-center text-sm text-slate-600 underline py-1" @click="sheet = 'refuse'">
             Je ne peux pas faire cette mission
           </button>
         </template>
@@ -131,7 +131,7 @@
               <input id="shipfee" v-model.number="delivery.shipping_fee" type="number" min="0" inputmode="numeric" class="m-input text-2xl font-bold pr-12">
               <span class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-semibold">F</span>
             </div>
-            <p class="text-sm text-slate-500 mt-1">Facturés au client et déduits de ce que vous versez à la caisse.</p>
+            <p class="text-sm text-slate-600 mt-1">Facturés au client et déduits de ce que vous versez à la caisse.</p>
           </div>
           <div>
             <label class="m-label" for="ticket">Numéro du ticket</label>
@@ -142,7 +142,7 @@
         <!-- Annuaire : position de l'adresse enregistrée avec la livraison -->
         <label v-if="locateAsk" class="flex items-start gap-2 rounded-xl bg-slate-50 p-3 text-sm">
           <input v-model="delivery.locate" type="checkbox" class="mt-1 h-5 w-5" :disabled="locateRequired">
-          <span>📍 Enregistrer ma position comme celle de cette adresse<span class="block text-xs text-slate-500">{{ locateRequired ? 'Obligatoire : l\'adresse n\'a pas encore de position.' : 'Le prochain livreur ira droit à la porte.' }}</span></span>
+          <span>📍 Enregistrer ma position comme celle de cette adresse<span class="block text-xs text-slate-600">{{ locateRequired ? 'Obligatoire : l\'adresse n\'a pas encore de position.' : 'Le prochain livreur ira droit à la porte.' }}</span></span>
         </label>
         <!-- Distribution, MAD : pas d'encaissement, la preuve de remise demandée par les réglages -->
         <template v-if="billed">
@@ -188,12 +188,12 @@
             label="Paiement reçu"
           />
           <input v-model="delivery.transaction_ref" class="m-input" :placeholder="delivery.received_by_company ? 'Référence de la transaction (obligatoire)' : 'Référence de la transaction (facultatif)'">
-          <p v-if="delivery.received_by_company" class="text-xs text-slate-500">Tant que la caisse ne l'a pas retrouvé sur le relevé, ce montant reste à votre charge.</p>
+          <p v-if="delivery.received_by_company" class="text-xs text-slate-600">Tant que la caisse ne l'a pas retrouvé sur le relevé, ce montant reste à votre charge.</p>
         </template>
         <div v-if="auth.user?.company?.require_delivery_code && !shipping">
           <label class="m-label" for="code">Code donné par le client</label>
           <input id="code" v-model="delivery.delivery_code" class="m-input text-center text-3xl font-bold tracking-[0.5em]" inputmode="numeric" maxlength="4" autocomplete="one-time-code" placeholder="••••">
-          <p v-if="offlineEnabled && !pwa.online" class="text-xs text-slate-500 mt-1">Hors connexion : le code sera vérifié au retour du réseau. S'il est faux, l'agence vérifiera la livraison auprès du client.</p>
+          <p v-if="offlineEnabled && !pwa.online" class="text-xs text-slate-600 mt-1">Hors connexion : le code sera vérifié au retour du réseau. S'il est faux, l'agence vérifiera la livraison auprès du client.</p>
         </div>
         <p v-if="sheetError" class="text-red-600 text-sm">{{ sheetError }}</p>
         <button class="m-btn-success text-lg py-5" :disabled="busy" @click="confirmDelivered">{{ shipping ? '✓ Confirmer l\'expédition' : '✓ Confirmer la livraison' }}</button>
@@ -223,7 +223,7 @@
         <PhotoCapture v-if="selectedReason && selectedReason.photo !== 'off'" :class="['m-btn-secondary', selectedReason.photo === 'required' && !incidentPhoto ? 'ring-2 ring-amber-400' : '']" @captured="uploadIncidentPhoto">
           📷 {{ incidentPhoto ? 'Photo envoyée ✓' : `Prendre une photo${selectedReason.photo === 'required' ? ' *' : ' (conseillée)'}` }}
         </PhotoCapture>
-        <p class="text-xs text-slate-500">L'agence et le client sont prévenus immédiatement.</p>
+        <p class="text-xs text-slate-600">L'agence et le client sont prévenus immédiatement.</p>
         <p v-if="sheetError" class="text-red-600 text-sm">{{ sheetError }}</p>
         <button class="m-btn-danger" :disabled="busy || !incident.reason" @click="confirmIncident">Envoyer</button>
       </div>
@@ -241,7 +241,7 @@
             <span class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-semibold">F</span>
           </div>
         </div>
-        <p class="text-sm text-slate-500">Payé de votre poche ou avec une avance de la caisse : le montant est déduit de votre prochain versement et facturé au client.</p>
+        <p class="text-sm text-slate-600">Payé de votre poche ou avec une avance de la caisse : le montant est déduit de votre prochain versement et facturé au client.</p>
         <PhotoCapture class="m-btn-secondary" scan="receipts" @captured="uploadPhoto($event, false)">📷 Photographier le reçu</PhotoCapture>
         <p v-if="sheetError" class="text-red-600 text-sm">{{ sheetError }}</p>
         <button class="m-btn-primary" :disabled="busy || !expense.type || !(expense.amount > 0)" @click="saveExpense">Enregistrer les frais</button>

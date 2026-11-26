@@ -2,11 +2,11 @@
   <SettingsPage icon="📝" title="Motifs et notes de suivi" intro="Ce que le livreur choisit quand il ne livre pas ou ne ramasse pas, et les notes de suivi de l'équipe. Les motifs communs se règlent ou se désactivent ; ajoutez les vôtres.">
     <div class="flex flex-wrap gap-2">
       <button v-for="t in TABS" :key="t.key" type="button" class="px-3 py-1.5 rounded-full text-sm border"
-        :class="tab === t.key ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700'" @click="tab = t.key; editing = null">
+        :class="tab === t.key ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-700'" @click="tab = t.key; editing = null">
         {{ t.label }} <span class="opacity-70">{{ countFor(t.key) }}</span>
       </button>
     </div>
-    <p class="text-sm text-gray-600">{{ currentTab.help }}</p>
+    <p class="text-sm text-slate-600">{{ currentTab.help }}</p>
 
     <div class="flex flex-wrap gap-2 items-center">
       <select v-if="tab !== 'follow_up'" v-model="activity" class="input w-auto" aria-label="Activité">
@@ -28,10 +28,10 @@
           <div class="flex-1 min-w-0">
             <p class="font-medium">{{ r.label }} <span v-if="r.company_id" class="text-xs text-blue-600">· le vôtre</span></p>
             <p class="flex flex-wrap gap-1 mt-0.5">
-              <span v-for="t in tags(r)" :key="t" class="text-[11px] rounded bg-gray-100 text-gray-700 px-1.5">{{ t }}</span>
+              <span v-for="t in tags(r)" :key="t" class="text-xs rounded bg-gray-100 text-slate-700 px-1.5">{{ t }}</span>
             </p>
           </div>
-          <label class="flex items-center gap-1 text-xs text-gray-600" @click.stop>
+          <label class="flex items-center gap-1 text-xs text-slate-600" @click.stop>
             <input type="checkbox" :checked="r.is_active" @change="toggle(r)"> Actif
           </label>
         </div>
@@ -39,7 +39,7 @@
           class="border-t bg-gray-50" @save="save" @cancel="editing = null" @delete="remove(r)" />
       </div>
     </section>
-    <p v-if="!groups.length && !loadError" class="text-sm text-gray-500">Aucun motif.</p>
+    <p v-if="!groups.length && !loadError" class="text-sm text-slate-600">Aucun motif.</p>
   </SettingsPage>
 </template>
 

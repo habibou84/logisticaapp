@@ -8,7 +8,7 @@
       </div>
     </div>
 
-    <p class="text-sm text-gray-600">
+    <p class="text-sm text-slate-600">
       Chaque client sous contrat paie un forfait par mois pour un nombre de courses. Au-delà, chaque course est facturée au
       prix de sa destination : prix du contrat à Abidjan, tarif de la ville à l'intérieur (Distribution › Tarifs).
       La facture du mois se calcule le 1er (Distribution › Factures).
@@ -40,7 +40,7 @@
 
     <div class="card overflow-x-auto">
       <table class="w-full text-sm stack-table">
-        <thead class="bg-slate-50 text-left text-gray-600">
+        <thead class="bg-slate-50 text-left text-slate-600">
           <tr><th class="p-2">Client</th><th class="p-2">Contrat</th><th class="p-2">Période</th><th class="p-2">Avancement</th><th class="p-2 text-right">Facture estimée</th><th /></tr>
         </thead>
         <tbody class="divide-y">
@@ -51,36 +51,36 @@
             </td>
             <td data-label="Contrat" class="p-2 max-w-sm">
               <div class="font-medium">{{ p.formula === 'distribution_lot' ? `📦 ${p.lot_name}` : p.formula_label }}</div>
-              <div class="text-xs text-gray-500">{{ p.summary }}</div>
-              <div v-if="p.has_forfait" class="text-xs text-gray-500">Zones : {{ p.zones?.length ? (p.zones.length > 5 ? `${p.zones.slice(0, 5).map((z) => z.name).join(', ')}… (${p.zones.length})` : p.zones.map((z) => z.name).join(', ')) : 'communes « Forfait »' }}</div>
-              <div v-if="p.couriers?.length" class="text-xs text-gray-500">Livreurs : {{ p.couriers.map((c) => c.name).join(', ') }}</div>
+              <div class="text-xs text-slate-600">{{ p.summary }}</div>
+              <div v-if="p.has_forfait" class="text-xs text-slate-600">Zones : {{ p.zones?.length ? (p.zones.length > 5 ? `${p.zones.slice(0, 5).map((z) => z.name).join(', ')}… (${p.zones.length})` : p.zones.map((z) => z.name).join(', ')) : 'communes « Forfait »' }}</div>
+              <div v-if="p.couriers?.length" class="text-xs text-slate-600">Livreurs : {{ p.couriers.map((c) => c.name).join(', ') }}</div>
               <button v-if="p.formula === 'mad_contract'" type="button" class="mt-1 text-xs font-semibold text-blue-700" @click="routinesOf = p">🧭 Parcours et lieu de pointage</button>
             </td>
             <td data-label="Période" class="p-2 whitespace-nowrap">
               du {{ date(p.starts_on) }}<template v-if="p.ends_on"><br>au {{ date(p.ends_on) }}</template>
-              <div v-if="p.state !== 'current'" class="text-xs text-gray-500">{{ p.state === 'upcoming' ? 'À venir' : 'Terminé' }}</div>
+              <div v-if="p.state !== 'current'" class="text-xs text-slate-600">{{ p.state === 'upcoming' ? 'À venir' : 'Terminé' }}</div>
             </td>
             <td data-label="Avancement" class="p-2 min-w-40">
               <template v-if="p.usage && p.usage.included !== null">
                 <div class="flex justify-between text-xs">
                   <span><strong>{{ p.usage.used }}</strong> / {{ p.usage.included }} {{ p.formula === 'distribution_lot' ? 'colis' : 'courses' }}</span>
-                  <span :class="p.usage.percent >= 100 ? 'text-red-600 font-semibold' : p.usage.percent >= 80 ? 'text-amber-700' : 'text-gray-500'">{{ p.usage.percent }} %</span>
+                  <span :class="p.usage.percent >= 100 ? 'text-red-600 font-semibold' : p.usage.percent >= 80 ? 'text-amber-700' : 'text-slate-600'">{{ p.usage.percent }} %</span>
                 </div>
                 <div class="mt-1 h-2 rounded bg-slate-100 overflow-hidden">
                   <div class="h-2" :class="p.usage.percent >= 100 ? 'bg-red-500' : p.usage.percent >= 80 ? 'bg-amber-500' : 'bg-emerald-500'" :style="{ width: `${Math.min(100, p.usage.percent)}%` }" />
                 </div>
-                <div v-if="p.usage.over" class="text-xs text-gray-600 mt-0.5">{{ p.usage.over }} en plus {{ p.formula === 'distribution_lot' ? 'du lot' : 'du forfait' }}</div>
+                <div v-if="p.usage.over" class="text-xs text-slate-600 mt-0.5">{{ p.usage.over }} en plus {{ p.formula === 'distribution_lot' ? 'du lot' : 'du forfait' }}</div>
                 <!-- Lot : avancement de la distribution -->
-                <div v-if="p.formula === 'distribution_lot'" class="text-xs text-gray-600">
+                <div v-if="p.formula === 'distribution_lot'" class="text-xs text-slate-600">
                   {{ p.usage.delivered }} livré(s) · {{ p.usage.in_progress }} en cours<template v-if="p.usage.remaining"> · {{ p.usage.remaining }} à créer</template>
                   <span v-if="p.usage.late" class="text-red-600 font-medium"> · {{ p.usage.late }} en retard</span>
                   <span v-if="p.usage.done" class="text-emerald-700 font-medium"> · terminé ✓</span>
                   <a v-if="p.usage.used" :href="`/etiquettes?lot=${p.id}`" target="_blank" class="ml-1 text-blue-600">🏷️ Étiquettes du lot</a>
                 </div>
-                <div v-if="p.usage.supplements" class="text-xs text-gray-600">Suppléments : {{ money(p.usage.supplements) }}</div>
+                <div v-if="p.usage.supplements" class="text-xs text-slate-600">Suppléments : {{ money(p.usage.supplements) }}</div>
               </template>
               <span v-else-if="p.usage" class="text-xs">{{ p.usage.orders }} course(s)</span>
-              <span v-else class="text-gray-400">—</span>
+              <span v-else class="text-slate-500">—</span>
             </td>
             <td data-label="Facture estimée" class="p-2 text-right font-semibold">{{ p.usage?.estimate !== null && p.usage?.estimate !== undefined ? money(p.usage.estimate) : '—' }}</td>
             <td class="p-2 text-right whitespace-nowrap">
@@ -92,7 +92,7 @@
             </td>
           </tr>
           <tr v-if="!plans.length">
-            <td colspan="6" class="p-6 text-center text-gray-500">
+            <td colspan="6" class="p-6 text-center text-slate-600">
               {{ loading ? 'Chargement…' : state === 'current' ? 'Aucun contrat en cours.' : 'Aucun contrat.' }}
               <button v-if="!loading && canManage && state === 'current'" class="text-blue-600 ml-1" @click="startPicking(null)">Créer le premier contrat</button>
             </td>
@@ -109,11 +109,11 @@
           <li v-for="m in clients" :key="m.id">
             <button type="button" class="w-full text-left p-2 hover:bg-slate-50" @click="choose(m)">
               <span class="font-medium">{{ m.business_name }}</span>
-              <span class="text-xs text-gray-500 ml-1">{{ m.phone }}</span>
+              <span class="text-xs text-slate-600 ml-1">{{ m.phone }}</span>
               <span v-for="b in m.billing_plans || []" :key="b.id" class="ml-1 rounded-full bg-indigo-50 px-2 py-0.5 text-xs text-indigo-700">{{ b.formula_label }}</span>
             </button>
           </li>
-          <li v-if="!clients.length" class="p-3 text-sm text-gray-500">Aucun client trouvé. Créez-le d'abord dans Clients.</li>
+          <li v-if="!clients.length" class="p-3 text-sm text-slate-600">Aucun client trouvé. Créez-le d'abord dans Clients.</li>
         </ul>
       </div>
     </Modal>

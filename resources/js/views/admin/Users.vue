@@ -4,7 +4,7 @@
     <div class="flex flex-wrap items-center justify-between gap-2">
       <div>
         <h1 class="text-xl font-bold">Utilisateurs</h1>
-        <p class="text-sm text-gray-500">Les comptes de l'équipe, des livreurs et des clients : qui accède à quoi, et qui n'utilise plus son accès.</p>
+        <p class="text-sm text-slate-600">Les comptes de l'équipe, des livreurs et des clients : qui accède à quoi, et qui n'utilise plus son accès.</p>
       </div>
       <div class="flex flex-wrap gap-2">
         <RouterLink to="/admin/roles" class="btn-secondary">🔐 Rôles et droits</RouterLink>
@@ -15,9 +15,9 @@
     <!-- Compteurs : un clic ouvre l'onglet -->
     <div v-if="summary" class="grid grid-cols-2 gap-3 lg:grid-cols-5">
       <button v-for="c in counters" :key="c.key" type="button" :class="['card p-3 text-left hover:shadow', c.warn ? 'border-amber-300 bg-amber-50' : '']" @click="setTab(c.key)">
-        <p :class="['text-xs', c.warn ? 'text-amber-800' : 'text-gray-500']">{{ c.label }}</p>
+        <p :class="['text-xs', c.warn ? 'text-amber-800' : 'text-slate-600']">{{ c.label }}</p>
         <p :class="['text-2xl font-bold', c.warn ? 'text-amber-800' : '']">{{ c.value }}</p>
-        <p class="text-xs text-gray-500">{{ c.hint }}</p>
+        <p class="text-xs text-slate-600">{{ c.hint }}</p>
       </button>
     </div>
 
@@ -53,7 +53,7 @@
 
     <div v-else class="card">
       <table class="w-full text-sm">
-        <thead class="bg-slate-50 text-left text-xs text-gray-500">
+        <thead class="bg-slate-50 text-left text-xs text-slate-600">
           <tr>
             <th class="p-3">Nom</th>
             <th class="hidden p-3 md:table-cell">Téléphone</th>
@@ -65,37 +65,37 @@
           </tr>
         </thead>
         <tbody class="divide-y">
-          <tr v-for="u in users" :key="u.id" :class="u.status === 'suspended' ? 'bg-slate-50 text-gray-500' : ''">
+          <tr v-for="u in users" :key="u.id" :class="u.status === 'suspended' ? 'bg-slate-50 text-slate-600' : ''">
             <td class="p-3">
-              <p class="font-medium">{{ u.name }}<span v-if="u.id === auth.user.id" class="text-xs text-gray-400"> (vous)</span></p>
-              <p class="text-xs text-gray-500 sm:hidden">{{ u.merchant_name ? `${u.merchant_name} · ` : '' }}{{ u.role_label }}</p>
-              <p class="text-xs text-gray-500 md:hidden">{{ u.phone }}</p>
+              <p class="font-medium">{{ u.name }}<span v-if="u.id === auth.user.id" class="text-xs text-slate-500"> (vous)</span></p>
+              <p class="text-xs text-slate-600 sm:hidden">{{ u.merchant_name ? `${u.merchant_name} · ` : '' }}{{ u.role_label }}</p>
+              <p class="text-xs text-slate-600 md:hidden">{{ u.phone }}</p>
               <p class="flex flex-wrap gap-1 md:hidden"><span v-for="b in badges(u)" :key="b.text" :class="['rounded px-1.5 py-0.5 text-xs', b.cls]">{{ b.text }}</span></p>
             </td>
-            <td class="hidden p-3 md:table-cell">{{ u.phone }}<p v-if="u.email" class="text-xs text-gray-500">{{ u.email }}</p></td>
+            <td class="hidden p-3 md:table-cell">{{ u.phone }}<p v-if="u.email" class="text-xs text-slate-600">{{ u.email }}</p></td>
             <td class="hidden p-3 sm:table-cell">
               <p v-if="u.merchant_name" class="font-medium">{{ u.merchant_name }}</p>
               {{ u.role_label }}
-              <span v-if="u.role_custom" class="ml-1 rounded-full bg-indigo-50 px-1.5 text-[10px] text-indigo-700">sur mesure</span>
-              <p v-if="u.extra_permissions?.length || u.denied_permissions?.length" class="text-xs text-gray-500">
+              <span v-if="u.role_custom" class="ml-1 rounded-full bg-indigo-50 px-1.5 text-xs text-indigo-700">sur mesure</span>
+              <p v-if="u.extra_permissions?.length || u.denied_permissions?.length" class="text-xs text-slate-600">
                 Droits ajustés<template v-if="u.extra_permissions?.length"> · +{{ u.extra_permissions.length }}</template><template v-if="u.denied_permissions?.length"> · −{{ u.denied_permissions.length }}</template>
               </p>
             </td>
             <td class="hidden p-3 lg:table-cell">
               <template v-if="u.merchant_id">
-                <span v-if="!u.departments?.length" class="text-gray-400">—</span>
+                <span v-if="!u.departments?.length" class="text-slate-500">—</span>
                 <span v-for="d in u.departments" :key="d.id" class="mr-1 inline-block rounded-full bg-indigo-50 px-2 py-0.5 text-xs text-indigo-700">{{ d.name }}<template v-if="d.is_head"> · chef de service</template></span>
               </template>
               <template v-else-if="isStaffRole(u.role)">
-                <span v-if="u.role === 'admin' || !scopeParts(u).length" class="text-gray-500">Tout</span>
+                <span v-if="u.role === 'admin' || !scopeParts(u).length" class="text-slate-600">Tout</span>
                 <span v-for="p in scopeParts(u)" v-else :key="p" class="mr-1 inline-block rounded-full bg-indigo-50 px-2 py-0.5 text-xs text-indigo-700">{{ p }}</span>
               </template>
-              <span v-else class="text-gray-400">—</span>
+              <span v-else class="text-slate-500">—</span>
             </td>
             <td class="hidden p-3 md:table-cell">
               <span class="flex flex-wrap gap-1"><span v-for="b in badges(u)" :key="b.text" :class="['rounded px-1.5 py-0.5 text-xs', b.cls]">{{ b.text }}</span></span>
             </td>
-            <td class="hidden p-3 text-xs text-gray-500 lg:table-cell">{{ u.last_login_at ? ago(u.last_login_at) : `créé le ${date(u.created_at)}` }}</td>
+            <td class="hidden p-3 text-xs text-slate-600 lg:table-cell">{{ u.last_login_at ? ago(u.last_login_at) : `créé le ${date(u.created_at)}` }}</td>
             <td class="whitespace-nowrap p-3 text-right">
               <button v-if="u.status === 'suspended' && canEdit(u)" type="button" class="mr-2 rounded-lg border border-emerald-500 px-2 py-1 text-emerald-700" @click="ask('reactivate', u)">Réactiver</button>
               <span v-if="actions(u).length" class="relative inline-block">
@@ -109,19 +109,19 @@
               </span>
             </td>
           </tr>
-          <tr v-if="!users.length && !loading"><td colspan="7" class="p-6 text-center text-gray-500">{{ search ? 'Personne ne correspond à cette recherche.' : 'Personne dans cet onglet.' }}</td></tr>
-          <tr v-if="loading && !users.length"><td colspan="7" class="p-6 text-center text-gray-500">Chargement…</td></tr>
+          <tr v-if="!users.length && !loading"><td colspan="7" class="p-6 text-center text-slate-600">{{ search ? 'Personne ne correspond à cette recherche.' : 'Personne dans cet onglet.' }}</td></tr>
+          <tr v-if="loading && !users.length"><td colspan="7" class="p-6 text-center text-slate-600">Chargement…</td></tr>
         </tbody>
       </table>
-      <div v-if="meta && meta.total > meta.per_page" class="flex items-center justify-between border-t p-3 text-sm text-gray-500">
+      <div v-if="meta && meta.total > meta.per_page" class="flex items-center justify-between border-t p-3 text-sm text-slate-600">
         <span>{{ meta.from }} à {{ meta.to }} sur {{ meta.total }}</span>
         <span class="flex gap-1">
           <button type="button" class="rounded border px-2 py-0.5 disabled:opacity-40" :disabled="meta.current_page <= 1" aria-label="Page précédente" @click="go(-1)">‹</button>
           <button type="button" class="rounded border px-2 py-0.5 disabled:opacity-40" :disabled="meta.current_page >= meta.last_page" aria-label="Page suivante" @click="go(1)">›</button>
         </span>
       </div>
-      <p v-else-if="meta && meta.total" class="border-t p-3 text-sm text-gray-500">{{ meta.total }} compte{{ meta.total > 1 ? 's' : '' }}</p>
-      <p v-if="tab === 'merchants'" class="border-t p-3 text-xs text-gray-500">Les rôles chez le client (propriétaire, gestionnaire, agent, lecteur) et les chefs de service se règlent dans la fiche du client, rubrique Comptes.</p>
+      <p v-else-if="meta && meta.total" class="border-t p-3 text-sm text-slate-600">{{ meta.total }} compte{{ meta.total > 1 ? 's' : '' }}</p>
+      <p v-if="tab === 'merchants'" class="border-t p-3 text-xs text-slate-600">Les rôles chez le client (propriétaire, gestionnaire, agent, lecteur) et les chefs de service se règlent dans la fiche du client, rubrique Comptes.</p>
     </div>
 
     <!-- Créer / modifier -->
@@ -142,8 +142,8 @@
             >
               <input v-model="form.data.role" type="radio" name="role" :value="r.value" class="mt-1" @change="resetTuning">
               <span>
-                <b>{{ r.label }}</b><span v-if="r.custom" class="ml-1 rounded-full bg-indigo-50 px-1.5 text-[10px] text-indigo-700">sur mesure</span>
-                <span class="block text-xs text-gray-500">{{ roleHelp(r) }}</span>
+                <b>{{ r.label }}</b><span v-if="r.custom" class="ml-1 rounded-full bg-indigo-50 px-1.5 text-xs text-indigo-700">sur mesure</span>
+                <span class="block text-xs text-slate-600">{{ roleHelp(r) }}</span>
               </span>
             </label>
           </div>
@@ -152,12 +152,12 @@
         <template v-if="isStaffRole(form.data.role) && form.data.role !== 'admin'">
           <details class="rounded border p-3" :open="hasOwnScope">
             <summary class="cursor-pointer text-sm font-medium">
-              Périmètre <span class="font-normal text-gray-500">({{ hasOwnScope ? 'propre à ce compte' : roleScopeText || 'tout' }})</span>
+              Périmètre <span class="font-normal text-slate-600">({{ hasOwnScope ? 'propre à ce compte' : roleScopeText || 'tout' }})</span>
             </summary>
             <ScopeFields v-model="form.data.scope" class="mt-2" hint="Rien de coché : le périmètre du rôle s'applique." />
           </details>
           <details class="rounded border p-3" :open="form.tuned">
-            <summary class="cursor-pointer text-sm font-medium">Droits <span class="font-normal text-gray-500">(ceux du rôle, ajustables un à un)</span></summary>
+            <summary class="cursor-pointer text-sm font-medium">Droits <span class="font-normal text-slate-600">(ceux du rôle, ajustables un à un)</span></summary>
             <PermissionPicker v-model="form.data.permissions" :base="rolePermissions" class="mt-2" />
           </details>
         </template>
@@ -167,19 +167,19 @@
             <input id="u-password" v-model="form.data.password" :type="showPassword ? 'text' : 'password'" class="input rounded-r-none" autocomplete="new-password" :placeholder="form.id ? '' : 'Vide : un lien de connexion à envoyer par WhatsApp'">
             <button type="button" class="rounded-r-lg border border-l-0 border-slate-300 px-3" :aria-label="showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'" @click="showPassword = !showPassword">{{ showPassword ? '🙈' : '👁️' }}</button>
           </div>
-          <p class="mt-1 text-xs text-gray-500">
+          <p class="mt-1 text-xs text-slate-600">
             {{ form.id ? 'Changer le mot de passe déconnecte le compte de tous ses appareils.' : 'Sans mot de passe, vous obtenez un lien personnel à envoyer par WhatsApp : la personne arrive connectée et choisit son mot de passe si elle veut.' }}
           </p>
         </div>
         <button class="btn-primary w-full" :disabled="form.saving">{{ form.id ? 'Enregistrer' : (form.data.password ? 'Créer le compte' : 'Créer et préparer le lien WhatsApp') }}</button>
-        <p v-if="form.id" class="text-center text-xs text-gray-500">Suspendre ou réactiver : menu ⋯ de la liste.</p>
+        <p v-if="form.id" class="text-center text-xs text-slate-600">Suspendre ou réactiver : menu ⋯ de la liste.</p>
       </form>
     </Modal>
 
     <!-- Confirmation : suspendre, réactiver, déconnecter -->
     <Modal :open="!!confirm" :title="confirm?.title || ''" @close="confirm = null">
       <div v-if="confirm" class="space-y-3 text-sm">
-        <p class="text-gray-600">{{ confirm.text }}</p>
+        <p class="text-slate-600">{{ confirm.text }}</p>
         <div class="flex gap-2">
           <button type="button" :class="['flex-1', confirm.danger ? 'btn-danger' : 'btn-primary']" :disabled="busy" @click="confirm.run()">{{ confirm.button }}</button>
           <button type="button" class="btn-secondary flex-1" @click="confirm = null">Annuler</button>
@@ -190,14 +190,14 @@
     <!-- Historique du compte -->
     <Modal :open="!!history" :title="history ? `Historique : ${history.user.name}` : ''" @close="history = null">
       <div v-if="history" class="text-sm">
-        <p v-if="history.loading" class="text-gray-500">Chargement…</p>
+        <p v-if="history.loading" class="text-slate-600">Chargement…</p>
         <ul v-else-if="history.events.length" class="divide-y">
           <li v-for="e in history.events" :key="e.id" class="flex gap-3 py-2">
-            <span class="w-28 shrink-0 text-xs text-gray-400">{{ dateTime(e.at) }}</span>
+            <span class="w-28 shrink-0 text-xs text-slate-500">{{ dateTime(e.at) }}</span>
             <span>{{ e.text }}<template v-if="e.by">, par <b>{{ e.by }}</b></template></span>
           </li>
         </ul>
-        <p v-else class="text-gray-500">Rien d'enregistré pour ce compte (l'historique commence avec cette version de la page).</p>
+        <p v-else class="text-slate-600">Rien d'enregistré pour ce compte (l'historique commence avec cette version de la page).</p>
       </div>
     </Modal>
 
@@ -210,7 +210,7 @@
           <input :value="invitation.url" readonly class="input flex-1 text-xs" aria-label="Lien de connexion" @focus="$event.target.select()">
           <button type="button" class="btn-secondary" @click="copy(invitation.url)">Copier</button>
         </div>
-        <p class="text-xs text-gray-500">Pas de WhatsApp ? Donnez-lui le lien autrement, ou choisissez un mot de passe dans « Modifier ».</p>
+        <p class="text-xs text-slate-600">Pas de WhatsApp ? Donnez-lui le lien autrement, ou choisissez un mot de passe dans « Modifier ».</p>
       </div>
     </Modal>
 

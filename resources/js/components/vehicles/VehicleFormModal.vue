@@ -18,8 +18,8 @@
 
       <fieldset class="grid grid-cols-3 gap-3 items-end">
         <legend class="label">Capacité</legend>
-        <div><label class="text-xs text-gray-500" for="v-parcels">Colis</label><input id="v-parcels" v-model.number="form.capacity_parcels" type="number" min="1" class="input"></div>
-        <div><label class="text-xs text-gray-500" for="v-kg">Poids (kg)</label><input id="v-kg" v-model.number="form.capacity_kg" type="number" min="1" class="input"></div>
+        <div><label class="text-xs text-slate-600" for="v-parcels">Colis</label><input id="v-parcels" v-model.number="form.capacity_parcels" type="number" min="1" class="input"></div>
+        <div><label class="text-xs text-slate-600" for="v-kg">Poids (kg)</label><input id="v-kg" v-model.number="form.capacity_kg" type="number" min="1" class="input"></div>
         <label class="flex items-center gap-2 text-sm pb-2"><input v-model="form.has_box" type="checkbox"> Coffre</label>
       </fieldset>
 
@@ -29,7 +29,7 @@
           <select id="v-own" v-model="form.ownership" class="input">
             <option v-for="o in catalog.ownerships" :key="o.value" :value="o.value">{{ o.label }}</option>
           </select>
-          <p v-if="form.ownership === 'lease'" class="text-xs text-gray-500 mt-1">Le contrat se crée ensuite sur la fiche (onglet Location).</p>
+          <p v-if="form.ownership === 'lease'" class="text-xs text-slate-600 mt-1">Le contrat se crée ensuite sur la fiche (onglet Location).</p>
         </div>
         <div v-if="form.ownership === 'courier'">
           <label class="label" for="v-owner">Livreur propriétaire</label>

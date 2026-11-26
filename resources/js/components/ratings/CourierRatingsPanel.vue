@@ -1,13 +1,13 @@
 <template>
   <!-- Note d'un livreur : détail, évolution, évaluation de l'équipe, dernières notes (fiche du livreur, onglet Notes) -->
-  <p v-if="!detail" class="card p-6 text-center text-gray-500">{{ error || 'Chargement…' }}</p>
+  <p v-if="!detail" class="card p-6 text-center text-slate-600">{{ error || 'Chargement…' }}</p>
   <div v-else class="card p-4">
     <div class="space-y-4 text-sm">
       <div class="flex flex-wrap items-center gap-3">
         <strong :class="['text-4xl', scoreClass(detail.score)]">{{ detail.score?.toFixed(1) ?? '—' }}</strong>
         <div>
           <StarRating :model-value="detail.score" readonly size="h-6 w-6" />
-          <p class="text-xs text-gray-500">{{ detail.new ? 'Pas encore assez de données' : `du ${date(detail.from)} au ${date(detail.to)}` }}</p>
+          <p class="text-xs text-slate-600">{{ detail.new ? 'Pas encore assez de données' : `du ${date(detail.from)} au ${date(detail.to)}` }}</p>
         </div>
         <div class="ml-auto flex gap-2 text-xs">
           <span v-for="t in detail.trend" :key="t.month" class="rounded bg-slate-100 px-2 py-1">{{ monthLabel(t.month) }} : <strong>{{ t.score ?? '—' }}</strong></span>
@@ -15,8 +15,8 @@
       </div>
   
       <div class="grid sm:grid-cols-3 gap-2">
-        <div v-for="s in sources" :key="s.key" :class="['rounded-lg border p-2', detail.weights[s.key]?.used ? 'border-slate-200' : 'border-dashed border-slate-200 text-gray-400']">
-          <p class="text-xs text-gray-500">{{ s.label }} · {{ detail.weights[s.key]?.weight }} %</p>
+        <div v-for="s in sources" :key="s.key" :class="['rounded-lg border p-2', detail.weights[s.key]?.used ? 'border-slate-200' : 'border-dashed border-slate-200 text-slate-500']">
+          <p class="text-xs text-slate-600">{{ s.label }} · {{ detail.weights[s.key]?.weight }} %</p>
           <p class="text-lg font-semibold">{{ s.value ?? '—' }}</p>
           <p class="text-xs">{{ s.hint }}</p>
         </div>
@@ -29,7 +29,7 @@
             <span class="w-56 shrink-0">{{ i.label }}</span>
             <span class="h-2 flex-1 rounded bg-slate-100 overflow-hidden"><span class="block h-2" :class="i.value >= 90 ? 'bg-emerald-500' : i.value >= 70 ? 'bg-amber-500' : 'bg-red-500'" :style="{ width: `${i.value ?? 0}%` }" /></span>
             <span class="w-12 text-right font-medium">{{ i.value === null ? '—' : `${i.value} %` }}</span>
-            <span class="hidden md:inline w-48 text-xs text-gray-500 truncate">{{ i.detail }}</span>
+            <span class="hidden md:inline w-48 text-xs text-slate-600 truncate">{{ i.detail }}</span>
           </li>
         </ul>
       </div>
@@ -70,21 +70,21 @@
             <div class="flex flex-wrap items-center gap-2">
               <StarRating :model-value="r.stars" readonly size="h-4 w-4" />
               <span class="text-xs rounded bg-slate-100 px-1.5">{{ SOURCES[r.source] }}{{ r.scope === 'period' ? ' · période' : '' }}</span>
-              <span class="text-xs text-gray-600">{{ r.merchant || r.author || '' }}</span>
+              <span class="text-xs text-slate-600">{{ r.merchant || r.author || '' }}</span>
               <RouterLink v-if="r.order" :to="`/admin/courses/${r.order.id}`" class="text-xs font-mono text-blue-600">{{ r.order.tracking_code }}</RouterLink>
-              <span class="text-xs text-gray-500 ml-auto">{{ dateTime(r.created_at) }}<template v-if="r.weight < 1"> · compte {{ r.weight * 100 }} %</template></span>
+              <span class="text-xs text-slate-600 ml-auto">{{ dateTime(r.created_at) }}<template v-if="r.weight < 1"> · compte {{ r.weight * 100 }} %</template></span>
             </div>
             <p v-if="r.reasons.length || r.criteria.length" class="flex flex-wrap gap-1">
               <span v-for="k in r.reasons" :key="k" class="rounded-full bg-red-50 px-2 text-xs text-red-700">{{ label('reasons', k) }}</span>
               <span v-for="k in (Array.isArray(r.criteria) ? r.criteria : [])" :key="k" class="rounded-full bg-emerald-50 px-2 text-xs text-emerald-800">{{ label('client', k) }}</span>
             </p>
             <p v-if="r.comment">« {{ r.comment }} »</p>
-            <p v-if="r.neutralized_at" class="text-xs text-gray-600">Neutralisée : {{ r.neutralized_reason }}
+            <p v-if="r.neutralized_at" class="text-xs text-slate-600">Neutralisée : {{ r.neutralized_reason }}
               <button v-if="auth.can('ratings.manage')" type="button" class="text-blue-600 ml-1" @click="restore(r)">Rétablir</button>
             </p>
             <button v-else-if="auth.can('ratings.manage') && r.source !== 'team'" type="button" class="text-xs text-red-700" @click="neutralize(r)">Neutraliser…</button>
           </li>
-          <li v-if="!detail.ratings.length" class="p-3 text-gray-500">Aucune note pour le moment.</li>
+          <li v-if="!detail.ratings.length" class="p-3 text-slate-600">Aucune note pour le moment.</li>
         </ul>
       </div>
     </div>
@@ -112,7 +112,7 @@ const criteria = ref({ client: [], reasons: [], team: [], indicators: [] })
 const evaluation = reactive({ stars: null, criteria: {}, comment: '', saving: false, error: '' })
 const SOURCES = { client: 'Client', team: 'Équipe', recipient: 'Destinataire' }
 
-const scoreClass = (s) => (s === null || s === undefined ? 'text-gray-400' : s >= 4 ? 'text-emerald-700' : s >= 3 ? 'text-amber-700' : 'text-red-700')
+const scoreClass = (s) => (s === null || s === undefined ? 'text-slate-500' : s >= 4 ? 'text-emerald-700' : s >= 3 ? 'text-amber-700' : 'text-red-700')
 // Motifs : ceux des clients, puis ceux de l'équipe (décharge sale, cachet illisible…)
 const label = (group, key) => criteria.value[group]?.find((c) => c.value === key)?.label
   || (group === 'reasons' ? criteria.value.team_reasons?.find((c) => c.value === key)?.label : null) || key

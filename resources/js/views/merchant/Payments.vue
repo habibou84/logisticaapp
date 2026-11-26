@@ -21,13 +21,13 @@
     <!-- Comment être payé : rappel tant qu'aucun moyen n'est donné -->
     <RouterLink to="/marchand/moyens-de-paiement" class="tap flex items-center justify-between gap-3 rounded-2xl bg-white px-4 py-3 ring-1 ring-slate-200 active:bg-slate-50">
       <span class="text-sm font-medium">💳 Comment être payé
-        <span :class="['block text-[12.5px] font-normal', methodsCount === 0 ? 'text-amber-700' : 'text-slate-500']">{{ methodsCount === 0 ? 'Indiquez votre Wave, Orange Money, MTN, Moov ou banque' : `${methodsCount} moyen${methodsCount > 1 ? 's' : ''} de paiement` }}</span>
+        <span :class="['block text-[12.5px] font-normal', methodsCount === 0 ? 'text-amber-700' : 'text-slate-600']">{{ methodsCount === 0 ? 'Indiquez votre Wave, Orange Money, MTN, Moov ou banque' : `${methodsCount} moyen${methodsCount > 1 ? 's' : ''} de paiement` }}</span>
       </span><span class="text-slate-400">›</span>
     </RouterLink>
 
     <!-- Client aussi en distribution ou MAD : ses factures du mois sont à part -->
     <RouterLink v-if="space.hasBilled" to="/marchand/factures" class="tap m-card p-4 flex items-center justify-between text-sm active:bg-slate-50">
-      <span class="flex items-center gap-3"><ColorIcon name="facture" :size="40" /><span><strong>Mes factures</strong> <span class="text-slate-500">· distribution, MAD</span></span></span><span class="text-slate-400">›</span>
+      <span class="flex items-center gap-3"><ColorIcon name="facture" :size="40" /><span><strong>Mes factures</strong> <span class="text-slate-600">· distribution, MAD</span></span></span><span class="text-slate-400">›</span>
     </RouterLink>
 
     <div class="flex rounded-xl bg-slate-200 p-1">
@@ -42,8 +42,8 @@
           <p :class="['text-lg font-bold', signedClass(p.net_amount)]">{{ money(p.net_amount) }}</p>
           <PayoutBadge :status="p.status" :label="p.status_label" />
         </div>
-        <p class="text-sm text-slate-500">{{ date(p.period_start) }} → {{ date(p.period_end) }}</p>
-        <p v-if="p.paid_at" class="text-sm text-slate-500">Payé le {{ date(p.paid_at) }} · {{ p.method_label }}</p>
+        <p class="text-sm text-slate-600">{{ date(p.period_start) }} → {{ date(p.period_end) }}</p>
+        <p v-if="p.paid_at" class="text-sm text-slate-600">Payé le {{ date(p.paid_at) }} · {{ p.method_label }}</p>
       </RouterLink>
       <EmptyState v-if="loaded && !payouts.length" icon="💸" color="billets" title="Aucun paiement pour le moment" text="Vos paiements apparaîtront ici dès que l'agence vous reversera l'argent encaissé." />
     </template>
@@ -53,7 +53,7 @@
         <div v-for="e in entries" :key="e.id" class="p-4 flex justify-between gap-3">
           <div class="min-w-0">
             <p class="font-medium">{{ e.type_label }}</p>
-            <p class="text-xs text-slate-500 truncate">{{ e.order?.tracking_code || e.description }} · {{ dateTime(e.created_at) }}</p>
+            <p class="text-xs text-slate-600 truncate">{{ e.order?.tracking_code || e.description }} · {{ dateTime(e.created_at) }}</p>
           </div>
           <p :class="['font-semibold whitespace-nowrap', signedClass(e.amount)]">{{ e.amount > 0 ? '+' : '' }}{{ money(e.amount) }}</p>
         </div>

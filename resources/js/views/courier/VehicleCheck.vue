@@ -6,7 +6,7 @@
       <div v-else class="m-card p-4 space-y-2">
         <p class="font-semibold">Quel véhicule prenez-vous aujourd'hui ?</p>
         <ChoiceChips v-model="form.vehicle_id" :options="info.free_vehicles.map((v) => ({ value: v.id, icon: VEHICLE_TYPES[v.type]?.icon, label: v.plate, description: [v.name, km(v.odometer)].filter(Boolean).join(' · ') }))" label="Véhicule" />
-        <p class="text-xs text-slate-500">Il vous est confié pour la journée et rendu à votre retour.</p>
+        <p class="text-xs text-slate-600">Il vous est confié pour la journée et rendu à votre retour.</p>
       </div>
     </template>
     <p v-else class="text-sm text-slate-600">{{ VEHICLE_TYPES[info.vehicle.type]?.icon }} <b>{{ info.vehicle.plate }}</b> · {{ moment === 'end' ? 'au retour' : 'avant de partir' }}</p>
@@ -22,7 +22,7 @@
           </label>
           <div class="flex-1">
             <input v-model.number="form.odometer" type="number" inputmode="numeric" min="0" class="m-input text-2xl font-bold" aria-label="Kilométrage du compteur" :placeholder="String(lastKm)">
-            <p class="mt-1 text-xs text-slate-500">{{ form.odometer && form.odometer >= lastKm ? `+${(form.odometer - lastKm).toLocaleString('fr-FR')} km depuis le dernier relevé` : `Dernier relevé : ${km(lastKm)}` }}</p>
+            <p class="mt-1 text-xs text-slate-600">{{ form.odometer && form.odometer >= lastKm ? `+${(form.odometer - lastKm).toLocaleString('fr-FR')} km depuis le dernier relevé` : `Dernier relevé : ${km(lastKm)}` }}</p>
           </div>
         </div>
       </div>

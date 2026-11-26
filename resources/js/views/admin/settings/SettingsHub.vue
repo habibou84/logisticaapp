@@ -3,7 +3,7 @@
     <div class="flex flex-wrap items-end justify-between gap-3">
       <div>
         <h1 class="text-xl font-bold">⚙️ Réglages</h1>
-        <p class="text-sm text-gray-600">Tous les réglages de l'entreprise, rangés par thème.</p>
+        <p class="text-sm text-slate-600">Tous les réglages de l'entreprise, rangés par thème.</p>
       </div>
       <input v-model="query" type="search" class="input sm:w-72" placeholder="Chercher un réglage (heure limite, logo…)" aria-label="Chercher un réglage">
     </div>
@@ -13,7 +13,7 @@
       <span class="text-2xl leading-none" aria-hidden="true">🧭</span>
       <span class="min-w-0 flex-1">
         <span class="block font-semibold">Mise en route</span>
-        <span class="block text-sm text-gray-600">
+        <span class="block text-sm text-slate-600">
           {{ setup.ready ? 'Étapes essentielles faites' : `Étapes essentielles : ${setup.essentials.done} sur ${setup.essentials.total}` }}
           · conseillées : {{ setup.recommended.done }} sur {{ setup.recommended.total }}
         </span>
@@ -22,7 +22,7 @@
       <span class="text-sm font-medium text-blue-600 whitespace-nowrap">{{ setup.ready ? 'Revoir' : 'Continuer' }} →</span>
     </RouterLink>
 
-    <p v-if="!cards.length" class="card p-6 text-center text-gray-500">Aucun réglage ne correspond à « {{ query }} ».</p>
+    <p v-if="!cards.length" class="card p-6 text-center text-slate-600">Aucun réglage ne correspond à « {{ query }} ».</p>
 
     <div class="grid gap-3 sm:grid-cols-2">
       <component
@@ -35,7 +35,7 @@
         <span class="text-2xl leading-none" aria-hidden="true">{{ card.icon }}</span>
         <span class="min-w-0 flex-1 space-y-1">
           <span class="block font-semibold">{{ card.title }}</span>
-          <span class="block text-sm text-gray-600">{{ card.description }}</span>
+          <span class="block text-sm text-slate-600">{{ card.description }}</span>
           <span v-if="card.summary" class="block text-xs font-medium text-slate-700">{{ card.summary }}</span>
           <span v-if="card.links" class="flex flex-wrap gap-x-3 gap-y-1 pt-1">
             <RouterLink v-for="l in card.links" :key="l.to" :to="l.to" class="text-sm font-medium text-blue-600">{{ l.label }} →</RouterLink>

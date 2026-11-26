@@ -4,7 +4,7 @@
       <img v-if="p.src" :src="p.src" :alt="`Photo ${kind === 'before' ? 'avant' : 'après'} réparation`" class="h-full w-full object-cover">
       <button v-if="editable" type="button" class="absolute right-1 top-1 grid h-6 w-6 place-items-center rounded-full bg-black/60 text-xs text-white" aria-label="Retirer la photo" @click="remove(p)">✕</button>
     </div>
-    <PhotoCapture v-if="editable" class="grid h-20 w-20 place-items-center rounded-xl border-2 border-dashed border-slate-300 bg-white text-2xl text-slate-500" @captured="upload">
+    <PhotoCapture v-if="editable" class="grid h-20 w-20 place-items-center rounded-xl border-2 border-dashed border-slate-300 bg-white text-2xl text-slate-600" @captured="upload">
       <template #default="{ busy }">
         <span v-if="busy || uploading" class="text-sm">…</span>
         <span v-else aria-label="Prendre une photo">📷</span>

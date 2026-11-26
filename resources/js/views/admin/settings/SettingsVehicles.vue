@@ -9,7 +9,7 @@
             <div class="flex flex-wrap gap-2">
               <button v-for="m in CHECK_MODES" :key="m.value" type="button" :class="['rounded-md px-3 py-1.5 text-sm', s.check_mode === m.value ? 'bg-slate-900 text-white' : 'border border-slate-300']" @click="s.check_mode = m.value">{{ m.label }}</button>
             </div>
-            <p class="mt-1 text-xs text-gray-500">Compteur, essence, contrôle rapide ; un problème prévient l'équipe sans empêcher de partir.</p>
+            <p class="mt-1 text-xs text-slate-600">Compteur, essence, contrôle rapide ; un problème prévient l'équipe sans empêcher de partir.</p>
           </div>
           <template v-if="s.check_mode !== 'never'">
             <Opt v-model="s.check_before_service" label="Obligatoire avant de se mettre en service" hint="Le livreur ne peut pas passer « en service » sans l'avoir fait." />
@@ -62,7 +62,7 @@
           <div class="flex flex-wrap gap-2">
             <button v-for="m in FUEL_MODES" :key="m.value" type="button" :class="['rounded-md px-3 py-1.5 text-sm text-left', s.fuel_mode === m.value ? 'bg-slate-900 text-white' : 'border border-slate-300']" @click="s.fuel_mode = m.value">{{ m.label }}</button>
           </div>
-          <p class="text-xs text-gray-500">{{ FUEL_MODES.find((m) => m.value === s.fuel_mode)?.hint }}</p>
+          <p class="text-xs text-slate-600">{{ FUEL_MODES.find((m) => m.value === s.fuel_mode)?.hint }}</p>
           <template v-if="s.fuel_mode === 'allowance'">
             <p class="text-sm">Dotation : <input v-model.number="s.fuel_allowance" type="number" min="0" step="100" class="input px-1 text-center" style="display:inline-block;width:6.5rem" aria-label="Dotation par jour"> F par jour travaillé, ajoutée à la paie</p>
             <Opt v-model="s.fuel_allowance_excess_refund" label="Rembourser ce qui dépasse la dotation du jour" hint="Sur les pleins déclarés avec un reçu." />
@@ -76,7 +76,7 @@
           <h2 class="font-semibold">Argent et paie</h2>
           <Opt v-model="s.leases" label="Location-vente et location des véhicules" hint="Versements par jour, semaine ou mois, retenus sur la paie ou payés en caisse." />
           <p v-if="s.leases" class="text-sm pl-6">Retard : rappel au livreur après <input v-model.number="s.lease_late_courier_days" type="number" min="0" class="input px-1 text-center" style="display:inline-block;width:4.0rem" aria-label="Jours avant le rappel au livreur"> jours, au responsable après <input v-model.number="s.lease_late_manager_days" type="number" min="0" class="input px-1 text-center" style="display:inline-block;width:4.0rem" aria-label="Jours avant l'alerte au responsable"> jours</p>
-          <p class="text-sm">Indemnité véhicule personnel : <input v-model.number="s.personal_allowance" type="number" min="0" step="100" class="input px-1 text-center" style="display:inline-block;width:6.5rem" aria-label="Indemnité par jour"> F par jour travaillé <span class="text-xs text-gray-500">(0 : aucune)</span></p>
+          <p class="text-sm">Indemnité véhicule personnel : <input v-model.number="s.personal_allowance" type="number" min="0" step="100" class="input px-1 text-center" style="display:inline-block;width:6.5rem" aria-label="Indemnité par jour"> F par jour travaillé <span class="text-xs text-slate-600">(0 : aucune)</span></p>
           <Opt v-model="s.fines_charge_courier" label="Amendes retenues au livreur qui avait le véhicule" hint="Retrouvé par l'historique des remises ; décochable amende par amende." />
           <Opt v-model="s.damage_charge_courier" label="Part des dégâts d'un sinistre retenue au livreur responsable" />
           <p v-if="s.damage_charge_courier" class="text-sm pl-6">Plafond : <input v-model.number="s.damage_cap_month" type="number" min="0" step="1000" class="input px-1 text-center" style="display:inline-block;width:7.5rem" aria-label="Plafond par mois"> F par mois</p>
@@ -103,7 +103,7 @@ const Opt = defineComponent({
   emits: ['update:modelValue'],
   setup: (props, { emit }) => () => h('label', { class: 'flex items-start gap-2 text-sm' }, [
     h('input', { type: 'checkbox', class: 'mt-1', checked: props.modelValue, onChange: (e) => emit('update:modelValue', e.target.checked) }),
-    h('span', [props.label, props.hint ? h('span', { class: 'block text-xs text-gray-500' }, props.hint) : null]),
+    h('span', [props.label, props.hint ? h('span', { class: 'block text-xs text-slate-600' }, props.hint) : null]),
   ]),
 })
 

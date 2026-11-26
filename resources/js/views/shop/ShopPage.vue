@@ -5,7 +5,7 @@
       <p class="text-lg font-semibold">{{ error }}</p>
     </div>
 
-    <p v-else-if="!shop" class="py-24 text-center text-slate-500">Chargement…</p>
+    <p v-else-if="!shop" class="py-24 text-center text-slate-600">Chargement…</p>
 
     <!-- Commande envoyée -->
     <div v-else-if="done" class="max-w-md mx-auto px-4 py-10 space-y-5 text-center">
@@ -15,11 +15,11 @@
         {{ shop.name }} a bien reçu votre commande. Un livreur vous appellera au moment de la livraison.
       </p>
       <div class="m-card p-4 space-y-1 text-left">
-        <p class="text-sm text-slate-500">Articles</p>
+        <p class="text-sm text-slate-600">Articles</p>
         <p class="font-medium">{{ done.description }}</p>
-        <p class="text-sm text-slate-500 pt-2">À payer au livreur</p>
+        <p class="text-sm text-slate-600 pt-2">À payer au livreur</p>
         <p class="text-2xl font-bold">{{ money(done.total) }}</p>
-        <p class="text-sm text-slate-500 pt-2">Code de suivi</p>
+        <p class="text-sm text-slate-600 pt-2">Code de suivi</p>
         <p class="font-mono font-semibold">{{ done.tracking_code }}</p>
       </div>
       <RouterLink :to="`/suivi/${done.tracking_code}`" class="m-btn-primary">📍 Suivre ma commande</RouterLink>
@@ -41,7 +41,7 @@
 
       <!-- Catalogue -->
       <main class="max-w-3xl mx-auto px-4 py-5">
-        <p v-if="!shop.products.length" class="py-16 text-center text-slate-500">Aucun article pour le moment.</p>
+        <p v-if="!shop.products.length" class="py-16 text-center text-slate-600">Aucun article pour le moment.</p>
         <ul class="grid grid-cols-2 md:grid-cols-3 gap-3">
           <li v-for="p in shop.products" :key="p.id" class="m-card overflow-hidden flex flex-col">
             <div class="aspect-square bg-slate-100 grid place-items-center">
@@ -50,7 +50,7 @@
             </div>
             <div class="p-3 flex flex-col gap-1 flex-1">
               <p class="font-medium leading-snug">{{ p.name }}</p>
-              <p v-if="p.description" class="text-xs text-slate-500 line-clamp-2">{{ p.description }}</p>
+              <p v-if="p.description" class="text-xs text-slate-600 line-clamp-2">{{ p.description }}</p>
               <p class="font-bold mt-auto pt-1">{{ money(p.price) }}</p>
               <p v-if="p.available === 0" class="text-sm font-medium text-red-600">Épuisé</p>
               <div v-else-if="cart[p.id]" class="flex items-center justify-between rounded-xl bg-emerald-50 p-1">
@@ -62,7 +62,7 @@
             </div>
           </li>
         </ul>
-        <p class="mt-8 text-center text-xs text-slate-500">
+        <p class="mt-8 text-center text-xs text-slate-600">
           Livraison assurée par <strong>{{ shop.delivery_company.name }}</strong>
         </p>
       </main>
@@ -71,7 +71,7 @@
       <div v-if="count" class="fixed inset-x-0 bottom-0 z-20 bg-white/95 backdrop-blur border-t border-slate-200 pb-safe">
         <div class="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
           <div class="flex-1">
-            <p class="text-sm text-slate-500">{{ count }} article{{ count > 1 ? 's' : '' }}</p>
+            <p class="text-sm text-slate-600">{{ count }} article{{ count > 1 ? 's' : '' }}</p>
             <p class="text-lg font-bold">{{ money(itemsTotal) }}</p>
           </div>
           <button type="button" class="tap rounded-2xl bg-emerald-600 px-6 py-3.5 font-semibold text-white shadow-sm" @click="checkout = true">Commander</button>
@@ -132,7 +132,7 @@
 
           <p v-if="formError" class="rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm px-3 py-2" role="alert">{{ formError }}</p>
           <button type="submit" class="m-btn-primary" :disabled="sending || !count">{{ sending ? 'Envoi…' : 'Confirmer la commande' }}</button>
-          <p class="text-center text-xs text-slate-500">Vous payez à la livraison, en espèces ou par Mobile Money.</p>
+          <p class="text-center text-xs text-slate-600">Vous payez à la livraison, en espèces ou par Mobile Money.</p>
         </form>
       </BottomSheet>
     </template>

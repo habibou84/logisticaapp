@@ -3,7 +3,7 @@
     <div class="flex flex-wrap items-center justify-between gap-2">
       <div>
         <h1 v-if="!embedded" class="text-xl font-bold">Remontées terrain</h1>
-        <p class="text-sm text-gray-600">Événements sur la route (panne, accident…) et notes ou problèmes enregistrés sur les courses. Prenez-les en charge pour que l'équipe sache qui s'en occupe.</p>
+        <p class="text-sm text-slate-600">Événements sur la route (panne, accident…) et notes ou problèmes enregistrés sur les courses. Prenez-les en charge pour que l'équipe sache qui s'en occupe.</p>
       </div>
       <!-- Place réservée : la page ne bouge pas quand le son s'active au premier clic -->
       <p :class="['text-xs rounded bg-amber-50 text-amber-900 px-2 py-1', alertSound.unlocked || !alertSound.enabled ? 'invisible' : '']" :aria-hidden="alertSound.unlocked">
@@ -19,7 +19,7 @@
         type="button"
         role="tab"
         :aria-selected="tab === t.value"
-        :class="['px-4 py-2 -mb-px border-b-2 text-sm font-medium', tab === t.value ? 'border-slate-900 text-slate-900' : 'border-transparent text-gray-500 hover:text-gray-800']"
+        :class="['px-4 py-2 -mb-px border-b-2 text-sm font-medium', tab === t.value ? 'border-slate-900 text-slate-900' : 'border-transparent text-slate-600 hover:text-slate-800']"
         @click="setTab(t.value)"
       >
         {{ t.label }}
@@ -83,23 +83,23 @@
           <div class="min-w-0 space-y-1">
             <p class="text-sm">
               <span :class="['rounded-full px-2 py-0.5 text-xs font-medium', KINDS[r.kind].badge]">{{ KINDS[r.kind].icon }} {{ title(r) }}</span>
-              <span class="ml-2 text-gray-500">{{ dateTime(r.created_at) }}</span>
-              <span v-if="!r.visible_to_merchant && r.kind === 'note'" class="ml-2 text-xs text-gray-500">· note interne</span>
+              <span class="ml-2 text-slate-600">{{ dateTime(r.created_at) }}</span>
+              <span v-if="!r.visible_to_merchant && r.kind === 'note'" class="ml-2 text-xs text-slate-600">· note interne</span>
             </p>
             <p v-if="r.note" class="font-medium">« {{ r.note }} »</p>
             <p v-if="r.rescheduled_to" class="text-sm">📅 Reportée au {{ date(r.rescheduled_to) }}</p>
             <p v-if="r.expense" class="text-sm">💸 {{ money(r.expense) }}</p>
-            <p class="text-sm text-gray-600">
+            <p class="text-sm text-slate-600">
               🛵 <strong>{{ r.courier.name }}</strong>
               <a v-if="r.courier.phone" :href="telLink(r.courier.phone)" class="text-blue-600"> · {{ r.courier.phone }}</a>
             </p>
-            <p v-if="r.order" class="text-sm text-gray-600">
+            <p v-if="r.order" class="text-sm text-slate-600">
               📦 <RouterLink :to="`/admin/courses/${r.order.id}`" class="font-mono text-blue-700">{{ r.order.tracking_code }}</RouterLink>
               · {{ r.order.merchant }} → {{ r.order.zone }} · {{ r.order.recipient_name || 'Destinataire' }}
               <a :href="telLink(r.order.recipient_phone)" class="text-blue-600">{{ r.order.recipient_phone }}</a>
-              · <span class="text-gray-500">{{ r.order.status_label }}</span>
+              · <span class="text-slate-600">{{ r.order.status_label }}</span>
             </p>
-            <p v-if="r.photos" class="text-xs text-gray-500">📷 {{ r.photos }} photo(s) sur la fiche de la course</p>
+            <p v-if="r.photos" class="text-xs text-slate-600">📷 {{ r.photos }} photo(s) sur la fiche de la course</p>
             <CourierMessageThread
               v-if="r.replies?.length || replying === r.id"
               class="pt-1"
@@ -129,13 +129,13 @@
         </div>
       </article>
 
-      <div v-if="loaded && !reports.length" class="card p-8 text-center text-gray-500">
+      <div v-if="loaded && !reports.length" class="card p-8 text-center text-slate-600">
         {{ filters.state === 'open' ? '🎉 Rien à traiter pour le moment.' : 'Aucune remontée pour ces critères.' }}
       </div>
     </div>
 
     <div v-if="meta && meta.last_page > 1" class="flex items-center justify-between text-sm">
-      <span class="text-gray-500">Page {{ meta.current_page }} / {{ meta.last_page }} · {{ meta.total }} remontée(s)</span>
+      <span class="text-slate-600">Page {{ meta.current_page }} / {{ meta.last_page }} · {{ meta.total }} remontée(s)</span>
       <div class="flex gap-2">
         <button class="btn-secondary" :disabled="meta.current_page <= 1" @click="load(meta.current_page - 1)">Précédent</button>
         <button class="btn-secondary" :disabled="meta.current_page >= meta.last_page" @click="load(meta.current_page + 1)">Suivant</button>

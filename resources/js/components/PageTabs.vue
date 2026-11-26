@@ -3,7 +3,7 @@
   <nav v-if="visible.length > 1" class="flex gap-1 overflow-x-auto border-b" aria-label="Onglets">
     <RouterLink
       v-for="t in visible" :key="t.to" :to="t.to"
-      :class="['-mb-px whitespace-nowrap border-b-2 px-4 py-2 text-sm font-medium', active(t) ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-800']"
+      :class="['-mb-px whitespace-nowrap border-b-2 px-4 py-2 text-sm font-medium', active(t) ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-600 hover:text-slate-800']"
       :aria-current="active(t) ? 'page' : undefined"
     >
       {{ t.label }}

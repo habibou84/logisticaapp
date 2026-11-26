@@ -25,11 +25,11 @@
         </div>
         <div v-if="form.kind === 'claim' && settings.damage_charge_courier">
           <label class="label" for="l-share">Part retenue au livreur (F)</label><input id="l-share" v-model.number="form.courier_share" type="number" min="0" class="input">
-          <p class="text-xs text-gray-500 mt-1">Dans la limite de {{ money(settings.damage_cap_month) }} par mois.</p>
+          <p class="text-xs text-slate-600 mt-1">Dans la limite de {{ money(settings.damage_cap_month) }} par mois.</p>
         </div>
       </div>
       <label v-if="form.kind === 'fine' && settings.fines_charge_courier" class="flex items-center gap-2 text-sm"><input v-model="form.charge_courier" type="checkbox"> Retenir l'amende sur la paie du livreur</label>
-      <p v-if="form.kind === 'fuel' && form.paid_by === 'courier'" class="text-xs text-gray-500">{{ FUEL_NOTE[settings.fuel_mode] }}</p>
+      <p v-if="form.kind === 'fuel' && form.paid_by === 'courier'" class="text-xs text-slate-600">{{ FUEL_NOTE[settings.fuel_mode] }}</p>
 
       <div v-if="form.kind === 'maintenance' && plan.length">
         <p class="label">Entretien du plan fait</p>

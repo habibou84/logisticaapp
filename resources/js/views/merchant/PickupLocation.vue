@@ -5,7 +5,7 @@
       <p class="text-sm opacity-90 mt-1">Nos livreurs trouvent votre boutique du premier coup, et le bon livreur, le plus proche, est envoyé plus vite.</p>
     </section>
 
-    <p v-if="!loaded" class="text-slate-500">Chargement…</p>
+    <p v-if="!loaded" class="text-slate-600">Chargement…</p>
 
     <template v-else>
       <section class="m-card p-4 space-y-3">
@@ -35,7 +35,7 @@
         </div>
         <p v-if="error" class="field-error">{{ error }}</p>
         <button type="button" class="m-btn-primary" :disabled="!point || saving" @click="save">{{ saving ? 'Enregistrement…' : 'Enregistrer ce lieu' }}</button>
-        <RouterLink v-if="welcome" to="/marchand" class="block text-center text-sm text-slate-500 underline">Plus tard</RouterLink>
+        <RouterLink v-if="welcome" to="/marchand" class="block text-center text-sm text-slate-600 underline">Plus tard</RouterLink>
       </section>
     </template>
   </div>

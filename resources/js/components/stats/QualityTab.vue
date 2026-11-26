@@ -5,7 +5,7 @@
       <KpiTile title="Livrées à l'heure" kind="percent" :value="data.delays.rate" :hint="`${data.delays.on_time} sur ${data.delays.total} livrées`" />
       <KpiTile v-for="a in data.delays.by_activity" :key="a.key" :title="`À l'heure · ${a.label}`" kind="percent" :value="a.rate" :hint="`${a.late} en retard sur ${a.total}`" />
     </div>
-    <p class="text-xs text-slate-500">
+    <p class="text-xs text-slate-600">
       À l'heure : e-commerce livré au plus tard le jour prévu ; distribution et MAD livrées avant leur délai interne (sans délai : le jour prévu).
     </p>
 
@@ -25,7 +25,7 @@
         <h2 class="font-semibold">📦 Lots arrivés à échéance</h2>
         <ul class="divide-y text-sm">
           <li v-for="l in data.lots" :key="l.id" class="flex flex-wrap items-center justify-between gap-2 py-1.5">
-            <span>{{ l.merchant }} · {{ l.name }} <span class="text-xs text-slate-500">échéance {{ date(l.due_on) }}</span></span>
+            <span>{{ l.merchant }} · {{ l.name }} <span class="text-xs text-slate-600">échéance {{ date(l.due_on) }}</span></span>
             <span :class="['rounded-full px-2 py-0.5 text-xs font-semibold', LOT[l.status].class]">{{ LOT[l.status].label }}<template v-if="l.finished_on"> le {{ date(l.finished_on) }}</template> · {{ l.delivered }}/{{ l.quantity }}</span>
           </li>
         </ul>
@@ -34,7 +34,7 @@
         <h2 class="font-semibold">🤝 MAD : jours de présence</h2>
         <ul class="divide-y text-sm">
           <li v-for="m in data.mad" :key="m.id" class="flex flex-wrap items-center justify-between gap-2 py-1.5">
-            <span>{{ m.merchant }} <span class="text-xs text-slate-500">{{ m.couriers.join(', ') || 'aucun livreur' }}</span></span>
+            <span>{{ m.merchant }} <span class="text-xs text-slate-600">{{ m.couriers.join(', ') || 'aucun livreur' }}</span></span>
             <span :class="['font-semibold', m.rate !== null && m.rate < 100 ? 'text-amber-700' : 'text-emerald-700']">{{ m.done_days }} / {{ m.planned_days }} jours<template v-if="m.rate !== null"> ({{ m.rate }} %)</template></span>
           </li>
         </ul>
@@ -42,7 +42,7 @@
     </div>
 
     <!-- Échecs -->
-    <h2 class="pt-2 text-lg font-semibold">❌ Échecs de livraison <span class="text-sm font-normal text-slate-500">· {{ data.failures.total }} sur la période</span></h2>
+    <h2 class="pt-2 text-lg font-semibold">❌ Échecs de livraison <span class="text-sm font-normal text-slate-600">· {{ data.failures.total }} sur la période</span></h2>
     <div class="grid gap-4 lg:grid-cols-2">
       <section class="card space-y-2 p-4">
         <h3 class="font-semibold">Motifs</h3>
@@ -106,7 +106,7 @@
             ]"
             :height="180" :aria-label="`Avancement du lot ${l.name}`"
           />
-          <p class="text-xs text-slate-500">Échéance le {{ date(l.due_on) }}</p>
+          <p class="text-xs text-slate-600">Échéance le {{ date(l.due_on) }}</p>
         </section>
       </div>
     </template>
@@ -124,7 +124,7 @@
         ]"
         aria-label="Courses non traitées chaque soir"
       />
-      <p v-else class="text-sm text-slate-500">Relevé chaque soir à 23 h 50 : la courbe apparaît dès le deuxième soir.<template v-if="data.history.length"> Dernier relevé ({{ date(data.history[0].date) }}) : {{ data.history[0].untreated }} course(s) non traitée(s).</template></p>
+      <p v-else class="text-sm text-slate-600">Relevé chaque soir à 23 h 50 : la courbe apparaît dès le deuxième soir.<template v-if="data.history.length"> Dernier relevé ({{ date(data.history[0].date) }}) : {{ data.history[0].untreated }} course(s) non traitée(s).</template></p>
     </section>
   </div>
 </template>

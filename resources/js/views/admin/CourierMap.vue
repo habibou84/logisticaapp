@@ -43,17 +43,17 @@
           </div>
         </div>
         <div v-if="track.summary" class="p-3 grid grid-cols-2 gap-2 text-sm border-b">
-          <div><p class="text-gray-500 text-xs">Distance</p><p class="font-semibold text-lg">{{ track.summary.distance_km }} km</p></div>
-          <div><p class="text-gray-500 text-xs">En service</p><p class="font-semibold">{{ track.summary.first_at ? `${hour(track.summary.first_at)} → ${hour(track.summary.last_at)}` : '—' }}</p></div>
-          <div><p class="text-gray-500 text-xs">Livrés</p><p class="font-semibold">✅ {{ track.summary.delivered }}</p></div>
-          <div><p class="text-gray-500 text-xs">Récupérés · échecs</p><p class="font-semibold">📦 {{ track.summary.picked_up }} · ⚠️ {{ track.summary.failed }}</p></div>
+          <div><p class="text-slate-600 text-xs">Distance</p><p class="font-semibold text-lg">{{ track.summary.distance_km }} km</p></div>
+          <div><p class="text-slate-600 text-xs">En service</p><p class="font-semibold">{{ track.summary.first_at ? `${hour(track.summary.first_at)} → ${hour(track.summary.last_at)}` : '—' }}</p></div>
+          <div><p class="text-slate-600 text-xs">Livrés</p><p class="font-semibold">✅ {{ track.summary.delivered }}</p></div>
+          <div><p class="text-slate-600 text-xs">Récupérés · échecs</p><p class="font-semibold">📦 {{ track.summary.picked_up }} · ⚠️ {{ track.summary.failed }}</p></div>
         </div>
         <div class="divide-y">
           <button v-for="(stop, i) in track.stops" :key="i" type="button" class="w-full text-left p-3 text-sm hover:bg-slate-50" @click="focusStop(stop)">
-            <span class="text-gray-500">{{ hour(stop.at) }}</span> · {{ stopIcon(stop.status) }} {{ stop.label }}
+            <span class="text-slate-600">{{ hour(stop.at) }}</span> · {{ stopIcon(stop.status) }} {{ stop.label }}
             <span class="block text-xs"><span class="font-mono">{{ stop.tracking_code }}</span><span v-if="stop.recipient"> · {{ stop.recipient }}</span><span v-if="stop.incident" class="text-red-600"> · {{ stop.incident }}</span></span>
           </button>
-          <p v-if="!track.stops.length" class="p-3 text-sm text-gray-500">Aucune étape de course localisée ce jour-là.</p>
+          <p v-if="!track.stops.length" class="p-3 text-sm text-slate-600">Aucune étape de course localisée ce jour-là.</p>
         </div>
       </aside>
 
@@ -66,13 +66,13 @@
             <button type="button" class="w-full text-left" @click="focusPickup(p)">
               <span class="flex items-center justify-between gap-2 text-sm">
                 <span class="font-medium truncate">{{ p.merchant || 'Client' }}</span>
-                <span :class="['text-xs whitespace-nowrap', p.late ? 'text-red-700 font-semibold' : 'text-gray-500']">{{ p.late ? '⏰ ' : '' }}{{ waitDuration(p.minutes) }}</span>
+                <span :class="['text-xs whitespace-nowrap', p.late ? 'text-red-700 font-semibold' : 'text-slate-600']">{{ p.late ? '⏰ ' : '' }}{{ waitDuration(p.minutes) }}</span>
               </span>
-              <span class="block text-xs text-gray-600 truncate"><span class="font-mono">{{ p.tracking_code }}</span> · {{ p.zone_name }}<span v-if="p.address"> · {{ p.address }}</span></span>
+              <span class="block text-xs text-slate-600 truncate"><span class="font-mono">{{ p.tracking_code }}</span> · {{ p.zone_name }}<span v-if="p.address"> · {{ p.address }}</span></span>
               <span v-if="p.after_cutoff" class="text-xs text-red-700">🕒 Heure limite du jour passée</span>
             </button>
             <p v-if="p.lat === null" class="text-xs text-amber-700 mt-1">Position du client inconnue : pas de livreur proche calculé.</p>
-            <p v-else-if="!p.nearest.length" class="text-xs text-gray-500 mt-1">Aucun livreur en service localisé.</p>
+            <p v-else-if="!p.nearest.length" class="text-xs text-slate-600 mt-1">Aucun livreur en service localisé.</p>
             <div v-else class="mt-1 flex flex-wrap gap-1">
               <button
                 v-for="n in p.nearest" :key="n.id" type="button"
@@ -81,7 +81,7 @@
                 :title="`Assigner le ramassage à ${n.name}`"
                 @click="assign(p, n)"
               >
-                🛵 {{ n.name }} · {{ formatKm(n.km) }}<span v-if="n.missions" class="text-gray-500"> · {{ n.missions }} mission{{ n.missions > 1 ? 's' : '' }}</span>
+                🛵 {{ n.name }} · {{ formatKm(n.km) }}<span v-if="n.missions" class="text-slate-600"> · {{ n.missions }} mission{{ n.missions > 1 ? 's' : '' }}</span>
                 <span v-if="isStale(n)" class="text-amber-700" :title="`Position ${ago(n.last_location_at)} : le livreur a pu bouger depuis`"> · position ancienne</span>
               </button>
             </div>
@@ -93,9 +93,9 @@
               <span class="font-medium flex items-center gap-2">
                 <i :class="['legend', dotClass(c)]" />{{ c.name }} <MadBadge :mad="c.mad" /> <FieldEventBadge :event="c.field_event" />
               </span>
-              <span :class="['text-xs', isStale(c) ? 'text-amber-700' : 'text-gray-500']">{{ c.lat === null ? 'position inconnue' : ago(c.last_location_at) }}</span>
+              <span :class="['text-xs', isStale(c) ? 'text-amber-700' : 'text-slate-600']">{{ c.lat === null ? 'position inconnue' : ago(c.last_location_at) }}</span>
             </div>
-            <p class="text-xs text-gray-500">{{ c.is_available ? 'En service' : 'Hors service' }} · {{ c.phone }}</p>
+            <p class="text-xs text-slate-600">{{ c.is_available ? 'En service' : 'Hors service' }} · {{ c.phone }}</p>
             <ul v-if="c.missions.length" class="mt-1 space-y-0.5 text-xs">
               <li v-for="m in c.missions" :key="`${m.order_id}-${m.type}`">
                 {{ m.type_label }} · <span class="font-mono">{{ m.tracking_code }}</span> · {{ m.zone_name }}
@@ -104,7 +104,7 @@
           </button>
           <button type="button" class="mt-1 text-xs font-medium text-blue-600" @click="openTrack(c)">🛣️ Trajet du jour</button>
         </div>
-        <p v-if="loaded && !listed.length" class="p-4 text-sm text-gray-500">Aucun livreur en service.</p>
+        <p v-if="loaded && !listed.length" class="p-4 text-sm text-slate-600">Aucun livreur en service.</p>
       </aside>
     </div>
   </div>

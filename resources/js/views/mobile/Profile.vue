@@ -71,7 +71,7 @@
     </div>
 
     <button class="m-btn-secondary text-red-700" @click="logout"><StatusIcon name="logout" class="h-5 w-5" />Se déconnecter</button>
-    <p class="text-center text-xs text-slate-500">Version {{ installedLabel }}</p>
+    <p class="text-center text-xs text-slate-600">Version {{ installedLabel }}</p>
   </div>
 </template>
 

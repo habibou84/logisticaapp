@@ -25,12 +25,12 @@
         <div>
           <label class="label" for="hold-alert">Colis non livré resté chez un livreur depuis plus de (heures)</label>
           <input id="hold-alert" v-model.number="form.parcel_hold_alert_hours" type="number" min="0" max="168" class="input w-24">
-          <p class="text-xs text-gray-500 mt-1">Alerte sonore au dispatch, une fois par colis, et colis en rouge dans « Colis chez les livreurs ».</p>
+          <p class="text-xs text-slate-600 mt-1">Alerte sonore au dispatch, une fois par colis, et colis en rouge dans « Colis chez les livreurs ».</p>
         </div>
         <div>
           <label class="label" for="reminder">Relancer un problème signalé par un livreur et resté sans suite après (minutes)</label>
           <input id="reminder" v-model.number="form.field_alert_reminder_minutes" type="number" min="0" max="240" class="input w-24">
-          <p class="text-xs text-gray-500 mt-1">Relance au dispatch, puis aux administrateurs après trois fois ce délai. Répondre au livreur arrête les relances.</p>
+          <p class="text-xs text-slate-600 mt-1">Relance au dispatch, puis aux administrateurs après trois fois ce délai. Répondre au livreur arrête les relances.</p>
         </div>
       </section>
 
@@ -38,7 +38,7 @@
         <h2 class="font-semibold">Point de la semaine</h2>
         <label class="flex items-start gap-2 text-sm">
           <input v-model="form.weekly_report" type="checkbox" class="mt-1">
-          <span>Envoyer le point de la semaine aux administrateurs<span class="block text-gray-500">Chaque lundi vers 7 h 30, par WhatsApp et dans la cloche : courses, taux de livraison, chiffre d'affaires, clients à relancer.</span></span>
+          <span>Envoyer le point de la semaine aux administrateurs<span class="block text-slate-600">Chaque lundi vers 7 h 30, par WhatsApp et dans la cloche : courses, taux de livraison, chiffre d'affaires, clients à relancer.</span></span>
         </label>
       </section>
       <section class="card p-4 space-y-3">
@@ -54,7 +54,7 @@
           </div>
         </div>
         <label class="flex items-center gap-2 text-sm"><input v-model="form.cash_alert_courier" type="checkbox"> Rappel au livreur par WhatsApp</label>
-        <p class="text-xs text-gray-500">
+        <p class="text-xs text-slate-600">
           Alerte aux administrateurs et caissiers dans l'application, une fois par livreur et par jour ; le livreur apparaît
           « à surveiller » dans la caisse. 0 heure et plafond vide = pas d'alerte.
         </p>
@@ -64,7 +64,7 @@
           <input id="cash-close" v-model="form.cash_close_reminder_at" type="time" class="input w-32">
         </div>
         <label class="flex items-center gap-2 text-sm"><input v-model="form.cash_close_summary" type="checkbox"> Envoyer le résumé de la clôture aux administrateurs par WhatsApp</label>
-        <p class="text-xs text-gray-500">
+        <p class="text-xs text-slate-600">
           Rappel dans l'application aux administrateurs et caissiers si la journée n'est pas clôturée (une fois par jour).
           Heure vide = pas de rappel. Le résumé arrive aussi dans la cloche.
         </p>

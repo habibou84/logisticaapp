@@ -3,7 +3,7 @@
     <ul v-if="messages.length" class="space-y-1.5">
       <li v-for="m in messages" :key="m.id" class="rounded bg-sky-50 px-3 py-2 text-sm">
         <p class="font-medium">💬 {{ m.body }}</p>
-        <p class="text-xs text-gray-500">
+        <p class="text-xs text-slate-600">
           {{ m.sender || 'Agence' }} · {{ time(m.created_at) }} ·
           <span v-if="m.acknowledged_at" class="text-emerald-700 font-medium">✓ Compris à {{ time(m.acknowledged_at) }}</span>
           <span v-else-if="m.read_at" class="text-sky-700">Lu à {{ time(m.read_at) }}</span>

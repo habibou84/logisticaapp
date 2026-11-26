@@ -78,7 +78,7 @@
         <details :open="!s.embedded_signup" class="group">
           <summary v-if="s.embedded_signup" class="cursor-pointer text-sm text-slate-600 hover:text-slate-900">Saisie manuelle (avancé)</summary>
           <form class="mt-3 space-y-4" @submit.prevent="saveAccount">
-            <p class="text-sm text-gray-500">
+            <p class="text-sm text-slate-600">
               Ces informations se trouvent dans Meta for Developers, rubrique WhatsApp &gt; Configuration de l'API.
               Utilisez un jeton d'accès permanent (utilisateur système), pas le jeton temporaire de 24 h.
               À l'enregistrement, nous vérifions le numéro auprès de Meta et branchons les messages reçus.
@@ -104,7 +104,7 @@
       <!-- Test -->
       <form class="card p-4 space-y-3" @submit.prevent="sendTest">
         <h2 class="font-semibold">Message de test</h2>
-        <p class="text-sm text-gray-500">Envoie le modèle « hello_world » de Meta, disponible sans approbation.</p>
+        <p class="text-sm text-slate-600">Envoie le modèle « hello_world » de Meta, disponible sans approbation.</p>
         <div class="flex flex-wrap gap-2">
           <input v-model="testPhone" class="input w-56" placeholder="07 00 00 00 00" aria-label="Numéro de test" required>
           <button class="btn-secondary" :disabled="testing">Envoyer</button>
@@ -118,7 +118,7 @@
       <!-- Webhook -->
       <div class="card p-4 space-y-2 text-sm">
         <h2 class="font-semibold">Accusés de réception (webhook)</h2>
-        <p class="text-gray-500">Dans l'application Meta, rubrique WhatsApp &gt; Configuration, abonnez ce lien au champ <code>messages</code> :</p>
+        <p class="text-slate-600">Dans l'application Meta, rubrique WhatsApp &gt; Configuration, abonnez ce lien au champ <code>messages</code> :</p>
         <div class="flex gap-2">
           <input :value="s.webhook_url" readonly class="input font-mono text-xs" aria-label="Adresse du webhook">
           <button type="button" class="btn-secondary" @click="copy(s.webhook_url)">Copier</button>
@@ -139,7 +139,7 @@
             <button class="btn-secondary" :disabled="syncing" @click="sync">Vérifier l'approbation chez Meta</button>
           </div>
         </div>
-        <p class="text-sm text-gray-500">
+        <p class="text-sm text-slate-600">
           Hors conversation ouverte par le client, WhatsApp n'accepte que des modèles approuvés par Meta.
           Une fois le numéro connecté, « Soumettre les modèles à Meta » les crée tous pour vous (catégorie Utilitaire, Français).
           L'approbation prend de quelques minutes à 48 h ; revenez ensuite vérifier leur état.
@@ -152,12 +152,12 @@
                 {{ TEMPLATE_STATUS[t.status]?.[0] || t.status }}<template v-if="s.mode !== 'live' && t.status !== 'unknown'"> (simulation)</template>
               </span>
             </div>
-            <p class="text-gray-500">{{ t.description }}</p>
+            <p class="text-slate-600">{{ t.description }}</p>
             <div class="flex gap-2 items-start">
               <p class="flex-1 rounded bg-slate-50 p-2 font-mono text-xs">{{ t.body }}</p>
               <button type="button" class="btn-secondary text-xs" @click="copy(t.body)">Copier</button>
             </div>
-            <p class="text-xs text-gray-500">Exemples : {{ t.example.join(' · ') }}</p>
+            <p class="text-xs text-slate-600">Exemples : {{ t.example.join(' · ') }}</p>
             <p v-if="t.rejected_reason" class="text-xs text-red-700">Motif du refus : {{ t.rejected_reason }}</p>
           </li>
         </ul>

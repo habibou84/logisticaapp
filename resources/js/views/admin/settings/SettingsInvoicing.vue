@@ -16,7 +16,7 @@
       <h2 class="font-semibold">TVA</h2>
       <label class="flex items-start gap-2 text-sm">
         <input v-model="vat.form.value.vat_settings.enabled" type="checkbox" class="mt-1">
-        <span>Facturer la TVA<span class="block text-gray-500">Sur les factures calculées ou émises à partir de maintenant ; les factures déjà émises ne changent pas.</span></span>
+        <span>Facturer la TVA<span class="block text-slate-600">Sur les factures calculées ou émises à partir de maintenant ; les factures déjà émises ne changent pas.</span></span>
       </label>
       <template v-if="vat.form.value.vat_settings.enabled">
         <div class="grid sm:grid-cols-2 gap-3">
@@ -34,7 +34,7 @@
         <div>
           <label class="label" for="vat-mention">Mention sur la facture d'un client exonéré</label>
           <input id="vat-mention" v-model="vat.form.value.vat_settings.exemption_mention" class="input" maxlength="160">
-          <p class="text-xs text-gray-500 mt-1">Suivie de la référence de son attestation. L'exonération se règle sur la fiche du client (Clients › Modifier › Facturation).</p>
+          <p class="text-xs text-slate-600 mt-1">Suivie de la référence de son attestation. L'exonération se règle sur la fiche du client (Clients › Modifier › Facturation).</p>
         </div>
       </template>
       <SaveBar :dirty="vat.dirty.value" :saving="vat.saving.value" :error="vat.error.value" @save="vat.save" @reset="vat.reset" />
@@ -44,7 +44,7 @@
     <section v-if="fne.form.value" class="card p-4 space-y-3">
       <div>
         <h2 class="font-semibold">Facture normalisée électronique (FNE)</h2>
-        <p class="text-sm text-gray-600">Chaque facture du mois est certifiée par la DGI à l'émission, chaque avoir aussi : la référence FNE et le QR code de vérification sont imprimés dessus.</p>
+        <p class="text-sm text-slate-600">Chaque facture du mois est certifiée par la DGI à l'émission, chaque avoir aussi : la référence FNE et le QR code de vérification sont imprimés dessus.</p>
       </div>
       <label class="flex items-center gap-2 text-sm"><input v-model="fne.form.value.fne_settings.enabled" type="checkbox"> Certifier les factures et les avoirs</label>
       <div class="grid sm:grid-cols-2 gap-3">
@@ -85,7 +85,7 @@
           <input id="fne-key" v-model="apiKey" type="password" class="input" autocomplete="off" :placeholder="fne.company.value?.fne_api_key_set ? 'Clé enregistrée : saisissez-en une autre pour la remplacer' : 'Collez la clé API'">
           <button type="button" class="btn-secondary whitespace-nowrap" :disabled="!apiKey || savingKey" @click="saveKey">Enregistrer la clé</button>
         </div>
-        <p class="text-sm" :class="fne.company.value?.fne_enabled ? 'text-emerald-700' : 'text-gray-500'">
+        <p class="text-sm" :class="fne.company.value?.fne_enabled ? 'text-emerald-700' : 'text-slate-600'">
           {{ fne.company.value?.fne_enabled ? `✓ Certification active (${fne.company.value.fne_settings.mode === 'production' ? 'production' : 'test'})` : 'Certification inactive : cochez la case, enregistrez la clé et l\'URL.' }}
           <template v-if="fne.company.value?.fne_balance_sticker != null"> · Stickers restants : <b :class="fne.company.value.fne_warning ? 'text-red-600' : ''">{{ fne.company.value.fne_balance_sticker }}</b></template>
         </p>

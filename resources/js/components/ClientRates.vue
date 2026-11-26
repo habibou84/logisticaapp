@@ -29,14 +29,14 @@
     <section class="card p-4 space-y-3">
       <div>
         <h2 class="font-semibold">Distribution à l'unité (Abidjan)</h2>
-        <p class="text-sm text-gray-600">
+        <p class="text-sm text-slate-600">
           Clients de distribution sans contrat : prix de chaque envoi selon le délai choisi. Case vide = pas proposé.
           Au-delà de 5 kg, le kilogramme est facturé au prix de la formule du client.
         </p>
       </div>
       <div class="overflow-x-auto">
         <table class="text-sm">
-          <thead class="text-left text-gray-600">
+          <thead class="text-left text-slate-600">
             <tr><th class="p-2">Délai</th><th class="p-2">Pli (0-500 g)</th><th class="p-2">Colis (0-5 kg)</th><th class="p-2">Chèque</th></tr>
           </thead>
           <tbody>
@@ -57,7 +57,7 @@
       <div class="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h2 class="font-semibold">Villes de l'intérieur</h2>
-          <p class="text-sm text-gray-600">
+          <p class="text-sm text-slate-600">
             Clients sous formule (distribution, MAD) : prix d'un pli (0-500 g), d'un colis (0-5 kg) et de chaque kilogramme
             au-delà de 5 kg, pour chaque délai. Chaque ville reçoit sa zone de livraison, à choisir sur la course.
           </p>
@@ -85,7 +85,7 @@
 
       <div class="overflow-x-auto">
         <table class="w-full text-sm stack-table">
-          <thead class="bg-slate-50 text-left text-gray-600">
+          <thead class="bg-slate-50 text-left text-slate-600">
             <tr><th class="p-2">Ville</th><th class="p-2">Délai</th><th class="p-2">Pli</th><th class="p-2">Colis</th><th class="p-2">Kg en plus</th><th /></tr>
           </thead>
           <tbody class="divide-y">
@@ -97,7 +97,7 @@
               </td>
               <td class="p-2 text-right"><button class="text-red-600" @click="removeRate(r)">Retirer</button></td>
             </tr>
-            <tr v-if="!interior.length"><td colspan="6" class="p-4 text-center text-gray-500">{{ merchant ? 'Aucun prix négocié : ce client suit la grille commune. Ajoutez une ville ou importez un fichier.' : 'Aucune ville : ajoutez-en une ou importez un fichier.' }}</td></tr>
+            <tr v-if="!interior.length"><td colspan="6" class="p-4 text-center text-slate-600">{{ merchant ? 'Aucun prix négocié : ce client suit la grille commune. Ajoutez une ville ou importez un fichier.' : 'Aucune ville : ajoutez-en une ou importez un fichier.' }}</td></tr>
           </tbody>
         </table>
       </div>

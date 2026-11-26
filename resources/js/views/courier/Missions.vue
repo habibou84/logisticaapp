@@ -13,7 +13,7 @@
         <span :class="['block h-5 w-5 rounded-full bg-white shadow transition', available ? 'translate-x-5' : '']" />
       </span>
       <span class="flex-1 whitespace-nowrap font-semibold">{{ available ? 'En service' : 'Hors service' }}</span>
-      <span :class="['truncate text-xs', available ? 'text-white/80' : 'text-slate-500']">{{ available ? 'Vous recevez des missions' : 'Touchez pour commencer' }}</span>
+      <span :class="['truncate text-xs', available ? 'text-white/80' : 'text-slate-600']">{{ available ? 'Vous recevez des missions' : 'Touchez pour commencer' }}</span>
     </button>
 
     <!-- Véhicule du jour : état des lieux à faire, entretien à prévoir -->
@@ -107,7 +107,7 @@
       >
         <span class="text-4xl leading-none" aria-hidden="true">{{ t.icon }}</span>
         <span :class="['whitespace-nowrap text-[15px] leading-tight', tab === t.value ? 'font-bold text-[var(--app-color)]' : 'font-semibold text-slate-900']">{{ t.label }}</span>
-        <span :class="['text-[13px]', count(t.value) ? 'font-semibold text-slate-700' : 'text-slate-500']">{{ count(t.value) }} à faire</span>
+        <span :class="['text-[13px]', count(t.value) ? 'font-semibold text-slate-700' : 'text-slate-600']">{{ count(t.value) }} à faire</span>
       </button>
     </div>
 
@@ -115,7 +115,7 @@
       Hors ligne : voici vos missions telles qu'elles étaient à la dernière connexion.
     </p>
 
-    <p v-if="tab === 'pickup' && !error && !loading" class="px-1 text-xs text-slate-500">
+    <p v-if="tab === 'pickup' && !error && !loading" class="px-1 text-xs text-slate-600">
       Ramassages du jour et en avance. Un colis en retard revient ici quand sa nouvelle date est fixée.
     </p>
     <p v-if="loading" class="text-center text-slate-400 py-8">Chargement…</p>
@@ -138,7 +138,7 @@
           <span class="h-11 w-11 shrink-0 rounded-xl grid place-items-center text-xl bg-indigo-100">🏪</span>
           <div class="flex-1 min-w-0">
             <p class="font-semibold truncate">{{ c.first.order.merchant?.business_name || c.first.order.pickup.contact_name }} : {{ c.missions.length }} colis</p>
-            <p class="text-sm text-slate-500 truncate">📍 {{ c.first.order.pickup.zone_name }} · {{ c.first.order.pickup.address }}</p>
+            <p class="text-sm text-slate-600 truncate">📍 {{ c.first.order.pickup.zone_name }} · {{ c.first.order.pickup.address }}</p>
             <div class="flex flex-wrap items-center gap-2 mt-2">
               <span v-if="c.toAccept" class="rounded-full bg-amber-100 text-amber-800 text-xs font-semibold px-2 py-0.5">{{ c.toAccept }} à accepter</span>
               <span v-if="c.started" class="rounded-full bg-indigo-100 text-indigo-800 text-xs font-semibold px-2 py-0.5">En route</span>
@@ -160,7 +160,7 @@
               {{ c.first.type === 'pickup' ? c.first.order.merchant?.business_name : (c.first.order.recipient.name || c.first.order.recipient.phone) }}
               <span v-if="c.first.unread_messages" class="ml-1 rounded-full bg-sky-600 px-2 py-0.5 text-xs text-white">💬 {{ c.first.unread_messages }}</span>
             </p>
-            <p class="text-sm text-slate-500 truncate">
+            <p class="text-sm text-slate-600 truncate">
               📍 {{ c.first.type === 'pickup' ? c.first.order.pickup.zone_name : c.first.order.delivery.zone_name }}
               · {{ c.first.type === 'pickup' ? c.first.order.pickup.address : c.first.order.delivery.address }}
             </p>
@@ -183,11 +183,11 @@
     <div class="grid grid-cols-2 gap-2 pt-2">
       <RouterLink v-if="vehicle?.vehicle && !vehicle.check_needed" to="/livreur/vehicule" class="tap rounded-2xl bg-white p-3 ring-1 ring-slate-200 active:bg-slate-50">
         <span class="block font-semibold">{{ VEHICLE_TYPES[vehicle.vehicle.type]?.icon }} {{ vehicle.vehicle.plate }}</span>
-        <span class="block text-sm text-slate-500">Mon véhicule</span>
+        <span class="block text-sm text-slate-600">Mon véhicule</span>
       </RouterLink>
       <button type="button" :class="['tap rounded-2xl bg-white p-3 text-left ring-1 ring-slate-200 active:bg-slate-50', vehicle?.vehicle && !vehicle.check_needed ? '' : 'col-span-2']" @click="reporting = true">
         <span class="block font-semibold text-slate-800">⚠️ Signaler un problème</span>
-        <span class="block text-sm text-slate-500">Panne, accident, contrôle…</span>
+        <span class="block text-sm text-slate-600">Panne, accident, contrôle…</span>
       </button>
     </div>
   </div>

@@ -4,10 +4,10 @@
     <div class="flex justify-between items-start gap-2">
       <div>
         <img v-if="logo" :src="logo" alt="" class="max-h-[0.9cm] max-w-[3.5cm] object-contain">
-        <p v-else class="text-[11px]">{{ company?.name }}</p>
+        <p v-else class="text-xs">{{ company?.name }}</p>
         <p class="font-mono text-[17px] font-bold leading-tight">{{ order.tracking_code }}</p>
-        <p class="text-[11px]">{{ dateTime(order.created_at) }}</p>
-        <p class="text-[11px] mt-1">
+        <p class="text-xs">{{ dateTime(order.created_at) }}</p>
+        <p class="text-xs mt-1">
           <b class="uppercase">{{ order.activity_label }}</b><template v-if="quantity"> · {{ quantity }}</template>
           <span v-if="order.package.is_express" class="tag">EXPRESS</span>
           <span v-if="order.package.is_fragile" class="tag">FRAGILE</span>
@@ -18,7 +18,7 @@
     <div class="sec">
       <p class="k">Expéditeur</p>
       <p class="font-bold text-[13px] leading-tight">{{ order.merchant?.business_name }}<template v-if="order.department"> · {{ order.department.name }}</template></p>
-      <p class="text-[11px]">{{ order.pickup.zone_name }}<template v-if="order.pickup.phone"> · {{ localPhone(order.pickup.phone) }}</template></p>
+      <p class="text-xs">{{ order.pickup.zone_name }}<template v-if="order.pickup.phone"> · {{ localPhone(order.pickup.phone) }}</template></p>
     </div>
     <div class="sec">
       <p class="k">Destinataire</p>
@@ -27,7 +27,7 @@
         <template v-if="handTo">À remettre à : <b>{{ handTo }}</b><template v-if="show('recipient_phone')"> · </template></template><template v-if="show('recipient_phone')"><b>{{ localPhone(order.recipient.phone) }}</b><template v-if="order.recipient.phone2"> / {{ localPhone(order.recipient.phone2) }}</template></template>
       </p>
       <p class="text-[21px] font-extrabold uppercase leading-tight">{{ order.delivery.zone_name }}</p>
-      <p class="text-[11px]">{{ order.delivery.address }}<template v-if="order.delivery.landmark && show('landmark')"> · {{ order.delivery.landmark }}</template></p>
+      <p class="text-xs">{{ order.delivery.address }}<template v-if="order.delivery.landmark && show('landmark')"> · {{ order.delivery.landmark }}</template></p>
     </div>
     <div class="accuse">
       <p class="text-[12px] font-bold uppercase tracking-wider">Accusé de réception</p>

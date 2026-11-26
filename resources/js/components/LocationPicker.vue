@@ -17,7 +17,7 @@
         Touchez la carte à l'emplacement exact, ou utilisez votre position.
       </p>
     </div>
-    <p v-if="hasPoint" class="text-xs text-slate-500">Déplacez le repère ou touchez la carte pour corriger.</p>
+    <p v-if="hasPoint" class="text-xs text-slate-600">Déplacez le repère ou touchez la carte pour corriger.</p>
   </div>
 </template>
 

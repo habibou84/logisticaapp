@@ -26,7 +26,7 @@
         <div class="space-y-2" role="radiogroup" aria-label="Validation des nouvelles courses">
           <label v-for="m in VALIDATION_MODES" :key="m.value" :class="['flex items-start gap-2 rounded-lg border p-3 text-sm cursor-pointer', form.validation_mode === m.value ? 'border-blue-500 bg-blue-50' : 'border-slate-200']">
             <input v-model="form.validation_mode" type="radio" :value="m.value" class="mt-1">
-            <span><strong>{{ m.label }}</strong><span class="block text-gray-500">{{ m.help }}</span></span>
+            <span><strong>{{ m.label }}</strong><span class="block text-slate-600">{{ m.help }}</span></span>
           </label>
           <p v-if="form.validation_mode === 'rules' && !form.daily_cutoff_time" class="text-xs text-amber-700">
             Choisissez l'heure limite du jour ci-dessous : sans elle, seule la fermeture de la journée par le dispatch décale les courses.
@@ -39,7 +39,7 @@
         <div>
           <label class="label" for="cutoff">Heure limite du jour</label>
           <input id="cutoff" v-model="form.daily_cutoff_time" type="time" class="input w-32">
-          <p class="text-xs text-gray-500 mt-1">Passé cette heure, les courses du jour encore sans livreur sont signalées et le dispatch est alerté. Vide = pas d'heure limite.</p>
+          <p class="text-xs text-slate-600 mt-1">Passé cette heure, les courses du jour encore sans livreur sont signalées et le dispatch est alerté. Vide = pas d'heure limite.</p>
           <MoreHelp>
             Les courses concernées sont signalées dans la liste et le tableau de bord, et les administrateurs et le dispatch reçoivent
             une alerte (une fois par jour). En validation avec règles, les nouvelles courses du jour arrivées après cette heure
@@ -53,7 +53,7 @@
                 <input :id="`cutoff-${i + 1}`" v-model="form.cutoff_by_day[i + 1]" type="time" class="input w-full">
               </div>
             </div>
-            <p class="text-xs text-gray-500 mt-1">Un jour laissé vide suit l'heure limite commune.</p>
+            <p class="text-xs text-slate-600 mt-1">Un jour laissé vide suit l'heure limite commune.</p>
           </details>
           <!-- Conseil du poste de pilotage : rouvrir ou fermer la journée selon les livreurs libres -->
           <div v-if="form.day_advice" class="mt-3 text-sm">
@@ -61,24 +61,24 @@
               <input v-model="form.day_advice.enabled" type="checkbox" class="mt-1">
               <span>
                 <span class="font-medium">Conseiller d'ouvrir ou de fermer la journée</span>
-                <span class="block text-xs text-gray-500">Sur le poste de pilotage : rouvrir quand des livreurs libres peuvent encore livrer, fermer quand trop de courses du jour attendent un livreur. Rien ne se fait sans votre clic.</span>
+                <span class="block text-xs text-slate-600">Sur le poste de pilotage : rouvrir quand des livreurs libres peuvent encore livrer, fermer quand trop de courses du jour attendent un livreur. Rien ne se fait sans votre clic.</span>
               </span>
             </label>
             <div v-if="form.day_advice.enabled" class="grid gap-3 mt-3 sm:grid-cols-3">
               <div>
                 <label class="label" for="advice-couriers">Livreurs libres au minimum</label>
                 <input id="advice-couriers" v-model.number="form.day_advice.min_couriers" type="number" min="1" max="50" class="input w-24">
-                <p class="text-xs text-gray-500 mt-1">pour conseiller de rouvrir</p>
+                <p class="text-xs text-slate-600 mt-1">pour conseiller de rouvrir</p>
               </div>
               <div>
                 <label class="label" for="advice-seen">Vu dans l'application depuis</label>
                 <div class="flex items-center gap-2"><input id="advice-seen" v-model.number="form.day_advice.seen_minutes" type="number" min="5" max="240" class="input w-24"> <span>min</span></div>
-                <p class="text-xs text-gray-500 mt-1">au plus, pour compter un livreur comme libre</p>
+                <p class="text-xs text-slate-600 mt-1">au plus, pour compter un livreur comme libre</p>
               </div>
               <div>
                 <label class="label" for="advice-margin">Marge avant la fermeture du dépôt</label>
                 <div class="flex items-center gap-2"><input id="advice-margin" v-model.number="form.day_advice.margin_minutes" type="number" min="30" max="300" class="input w-24"> <span>min</span></div>
-                <p class="text-xs text-gray-500 mt-1">on rouvre jusqu'à cette heure-là au plus tard</p>
+                <p class="text-xs text-slate-600 mt-1">on rouvre jusqu'à cette heure-là au plus tard</p>
               </div>
             </div>
           </div>
@@ -91,7 +91,7 @@
 
       <section v-if="!automation" id="a-reporter" class="card p-4 space-y-3 scroll-mt-20">
         <h2 class="font-semibold">Colis à reporter</h2>
-        <p class="text-sm text-gray-600">
+        <p class="text-sm text-slate-600">
           Ramassage pas commencé et date de livraison passée : le colis est caché chez les livreurs et attend une nouvelle date
           (Courses › À reporter).
         </p>
@@ -115,12 +115,12 @@
         <h2 class="font-semibold">Livreurs</h2>
         <label class="flex items-start gap-2 text-sm">
           <input v-model="form.require_delivery_code" type="checkbox" class="mt-1">
-          <span>Exiger le code de livraison du destinataire<span class="block text-gray-500">Le destinataire reçoit son code sur WhatsApp quand le livreur part livrer, ou par le client.</span></span>
+          <span>Exiger le code de livraison du destinataire<span class="block text-slate-600">Le destinataire reçoit son code sur WhatsApp quand le livreur part livrer, ou par le client.</span></span>
         </label>
         <label class="flex items-start gap-2 text-sm">
           <input v-model="form.offline_courier_actions" type="checkbox" class="mt-1">
           <span>Mode hors connexion des livreurs
-            <span class="block text-gray-500">Sans réseau, le livreur enregistre quand même ses étapes ; l'application les envoie au retour du réseau.</span>
+            <span class="block text-slate-600">Sans réseau, le livreur enregistre quand même ses étapes ; l'application les envoie au retour du réseau.</span>
           </span>
         </label>
         <MoreHelp>
@@ -134,20 +134,20 @@
             <label v-for="m in CUSTODY_MODES" :key="m.value" :class="['rounded-lg border p-3 text-sm cursor-pointer', form.pickup_mission_custody === m.value ? 'border-slate-900 ring-1 ring-slate-900' : 'border-slate-200']">
               <input v-model="form.pickup_mission_custody" type="radio" :value="m.value" class="mr-1">
               <strong>{{ m.label }}</strong>
-              <span class="block text-xs text-gray-500 mt-1">{{ m.help }}</span>
+              <span class="block text-xs text-slate-600 mt-1">{{ m.help }}</span>
             </label>
           </div>
         </div>
         <div v-if="form.pickup_mission_custody !== 'keep'">
           <label class="label" for="depot-closes">Heure de fermeture du dépôt</label>
           <input id="depot-closes" v-model="form.depot_closes_at" type="time" class="input w-32">
-          <p class="text-xs text-gray-500 mt-1">Passé cette heure, le livreur garde les colis d'une mission ramassage jusqu'à leur livraison. Vide = dépôt toujours ouvert.</p>
+          <p class="text-xs text-slate-600 mt-1">Passé cette heure, le livreur garde les colis d'une mission ramassage jusqu'à leur livraison. Vide = dépôt toujours ouvert.</p>
         </div>
       </section>
 
       <section v-if="automation" id="ramassage-auto" class="card p-4 space-y-3 scroll-mt-20">
         <h2 class="font-semibold">Ramassage automatique</h2>
-        <p class="text-sm text-gray-600">
+        <p class="text-sm text-slate-600">
           Les ramassages des courses validées vont au livreur prévu par le
           <RouterLink to="/admin/activite/planning" class="text-blue-600 underline">planning des livreurs</RouterLink>
           (ou à son remplaçant). Sans règle pour la course, rien ne change : l'équipe la confie.
@@ -156,14 +156,14 @@
           <label v-for="m in AUTO_MODES" :key="m.value" :class="['rounded-lg border p-3 text-sm cursor-pointer', form.auto_pickup === m.value ? 'border-slate-900 ring-1 ring-slate-900' : 'border-slate-200']">
             <input v-model="form.auto_pickup" type="radio" :value="m.value" class="mr-1">
             <strong>{{ m.label }}</strong>
-            <span class="block text-xs text-gray-500 mt-1">{{ m.help }}</span>
+            <span class="block text-xs text-slate-600 mt-1">{{ m.help }}</span>
           </label>
         </div>
       </section>
 
       <section v-if="automation" id="livraison-auto" class="card p-4 space-y-3 scroll-mt-20">
         <h2 class="font-semibold">Livraison du jour même automatique</h2>
-        <p class="text-sm text-gray-600">
+        <p class="text-sm text-slate-600">
           Un colis récupéré ou au dépôt, à livrer aujourd'hui avant l'heure limite, part seul au livreur qui convient :
           celui qui a déjà le colis, puis le planning des livraisons, puis la zone principale avant la zone de secours,
           celui qui livre déjà dans le secteur, le moins chargé. Zones, capacité et fin de service se règlent sur la fiche de chaque livreur.
@@ -172,20 +172,20 @@
           <label v-for="m in DELIVERY_MODES" :key="m.value" :class="['rounded-lg border p-3 text-sm cursor-pointer', form.auto_delivery === m.value ? 'border-slate-900 ring-1 ring-slate-900' : 'border-slate-200']">
             <input v-model="form.auto_delivery" type="radio" :value="m.value" class="mr-1">
             <strong>{{ m.label }}</strong>
-            <span class="block text-xs text-gray-500 mt-1">{{ m.help }}</span>
+            <span class="block text-xs text-slate-600 mt-1">{{ m.help }}</span>
           </label>
         </div>
         <div v-if="form.auto_delivery !== 'off'" class="space-y-3">
           <div>
             <label class="label" for="max-cod">Montant à encaisser au plus</label>
             <input id="max-cod" v-model.number="form.auto_delivery_max_cod" type="number" min="0" step="500" class="input w-40" placeholder="Sans plafond">
-            <p class="text-xs text-gray-500 mt-1">Au-dessus, l'équipe choisit elle-même le livreur. Vide = sans plafond.</p>
+            <p class="text-xs text-slate-600 mt-1">Au-dessus, l'équipe choisit elle-même le livreur. Vide = sans plafond.</p>
           </div>
           <label class="flex items-start gap-2 text-sm">
             <input v-model="form.same_courier_delivery" type="checkbox" class="mt-1">
             <span>Le livreur qui a fait le ramassage livre aussi, s'il dessert la zone et a de la place.</span>
           </label>
-          <p class="text-xs text-gray-500">
+          <p class="text-xs text-slate-600">
             Pas de livraison automatique pour une expédition, un téléphone à vérifier, un retour demandé ou des tentatives épuisées.
           </p>
         </div>
@@ -193,7 +193,7 @@
 
       <section v-if="automation" class="card p-4 space-y-3">
         <h2 class="font-semibold">Acceptation des missions</h2>
-        <p class="text-sm text-gray-600">
+        <p class="text-sm text-slate-600">
           Faut-il que le livreur accepte chaque mission ? Les missions du planning sont toujours acceptées d'office.
           Une règle différente peut être donnée à un livreur depuis sa fiche.
         </p>
@@ -201,19 +201,19 @@
           <label v-for="m in ACCEPT_MODES" :key="m.value" :class="['rounded-lg border p-3 text-sm cursor-pointer', form.mission_acceptance === m.value ? 'border-slate-900 ring-1 ring-slate-900' : 'border-slate-200']">
             <input v-model="form.mission_acceptance" type="radio" :value="m.value" class="mr-1">
             <strong>{{ m.label }}</strong>
-            <span class="block text-xs text-gray-500 mt-1">{{ m.help }}</span>
+            <span class="block text-xs text-slate-600 mt-1">{{ m.help }}</span>
           </label>
         </div>
         <div class="grid sm:grid-cols-2 gap-3">
           <div>
             <label class="label" for="unreachable">Livreur injoignable après (minutes)</label>
             <input id="unreachable" v-model.number="form.unreachable_minutes" type="number" min="0" max="240" class="input w-32">
-            <p class="text-xs text-gray-500 mt-1">Sans aucun signe de son application, ses ramassages du planning pas encore commencés passent à son remplaçant, et l'équipe est prévenue. 0 = jamais.</p>
+            <p class="text-xs text-slate-600 mt-1">Sans aucun signe de son application, ses ramassages du planning pas encore commencés passent à son remplaçant, et l'équipe est prévenue. 0 = jamais.</p>
           </div>
           <div>
             <label class="label" for="late-pickup">Ramassage pas commencé : alerte (minutes avant l'heure limite)</label>
             <input id="late-pickup" v-model.number="form.late_pickup_alert_minutes" type="number" min="0" max="600" class="input w-32">
-            <p class="text-xs text-gray-500 mt-1">
+            <p class="text-xs text-slate-600 mt-1">
               L'équipe est prévenue des ramassages du jour pas encore commencés ; rien n'est retiré au livreur. 0 = jamais.
               <span v-if="!form.daily_cutoff_time" class="text-amber-700">Indiquez d'abord l'heure limite du jour.</span>
             </p>
@@ -223,7 +223,7 @@
           <input v-model="form.courier_available_alert" type="checkbox" class="mt-1">
           <span>
             Prévenir l'équipe quand un livreur est libre avec des ramassages près de lui
-            <span class="block text-xs text-gray-500">Une alerte par livreur et par jour, pour lui confier une mission ramassage.</span>
+            <span class="block text-xs text-slate-600">Une alerte par livreur et par jour, pour lui confier une mission ramassage.</span>
           </span>
         </label>
       </section>
@@ -231,7 +231,7 @@
       <!-- Délai interne : pour l'équipe, jamais montré au client -->
       <section v-if="!automation" class="card p-4 space-y-3">
         <h2 class="font-semibold">Délai interne de distribution</h2>
-        <p class="text-sm text-gray-600">
+        <p class="text-sm text-slate-600">
           Délai que l'entreprise se donne pour distribuer une course, à partir de sa création. À 80 % du délai, l'équipe reçoit
           « risque de retard » ; au-delà, « en retard » (dispatch et responsables de l'activité). Les courses concernées sont
           dans la file « ⏰ Délai interne dépassé ». Un contrat peut avoir son propre délai. Vide : pas de délai interne.
@@ -262,19 +262,19 @@
             <option value="a6">A6</option>
             <option value="a4">A4 · 4 par page</option>
           </select>
-          <p class="text-xs text-gray-500 mt-1">Chacun peut en choisir un autre au moment d'imprimer : l'appareil le garde.</p>
+          <p class="text-xs text-slate-600 mt-1">Chacun peut en choisir un autre au moment d'imprimer : l'appareil le garde.</p>
         </div>
         <fieldset class="grid sm:grid-cols-2 gap-2 text-sm">
           <legend class="label">Imprimé sur l'étiquette</legend>
           <label v-for="(f, key) in LABEL_FIELDS" :key="key" class="flex items-center gap-2"><input v-model="form.label_settings.fields[key]" type="checkbox"> {{ f }}</label>
         </fieldset>
-        <p class="text-xs text-gray-500">Un client peut avoir son propre choix (Clients › Modifier › Étiquettes).</p>
+        <p class="text-xs text-slate-600">Un client peut avoir son propre choix (Clients › Modifier › Étiquettes).</p>
       </section>
 
       <!-- Jour où le livreur peut livrer, par activité -->
       <section v-if="!automation && form.delivery_day_rules" class="card p-4 space-y-3">
         <h2 class="font-semibold">Livraisons du jour dans l'application livreur</h2>
-        <p class="text-sm text-gray-600">
+        <p class="text-sm text-slate-600">
           Le livreur ne voit et ne fait que les livraisons permises ici. Les retards et les jours à venir se règlent à
           l'agence (nouvelle date ou annulation). Une action faite hors connexion est jugée au jour où elle a été faite.
           La même règle range les retards dans « Courses non traitées » : dès le lendemain au jour même, après l'échéance
@@ -306,13 +306,13 @@
             <label class="label" for="lot-due-hours">Signaler un lot de distribution quand son échéance arrive dans</label>
             <div class="flex items-center gap-2">
               <input id="lot-due-hours" v-model.number="form.dashboard_settings.lot_due_hours" type="number" min="0" max="720" class="input w-28">
-              <span class="text-sm text-gray-600">heures</span>
+              <span class="text-sm text-slate-600">heures</span>
             </div>
           </div>
           <label class="flex items-start gap-2 text-sm sm:pt-6">
             <input v-model="form.dashboard_settings.share_amounts" type="checkbox" class="mt-1">
             <span>Mettre les montants (recette, encaissé, à reverser) dans le point envoyé sur WhatsApp
-              <span class="block text-xs text-gray-500">Seulement pour les personnes qui ont accès à la caisse.</span></span>
+              <span class="block text-xs text-slate-600">Seulement pour les personnes qui ont accès à la caisse.</span></span>
           </label>
         </div>
       </section>
@@ -320,7 +320,7 @@
       <!-- Photos de documents : scanner de l'application livreur (recadrage, redressement, nettoyage, contrôle) -->
       <section v-if="!automation && form.photo_settings" class="card p-4 space-y-3">
         <h2 class="font-semibold">Photos de documents</h2>
-        <p class="text-sm text-gray-600">
+        <p class="text-sm text-slate-600">
           Le livreur photographie le document : l'application trouve la feuille, la redresse, efface les ombres, rend le fond
           blanc et l'écriture nette, puis vérifie que la photo est lisible avant l'envoi.
         </p>
@@ -336,7 +336,7 @@
               <option value="gray">Niveaux de gris</option>
               <option value="bw">Noir et blanc</option>
             </select>
-            <p class="text-xs text-gray-500 mt-1">Le livreur peut en choisir un autre pour chaque photo.</p>
+            <p class="text-xs text-slate-600 mt-1">Le livreur peut en choisir un autre pour chaque photo.</p>
           </div>
           <div>
             <label class="label" for="photo-check">Contrôle de qualité</label>
@@ -345,7 +345,7 @@
               <option value="warn">Avertissement seulement</option>
               <option value="off">Aucun contrôle</option>
             </select>
-            <p class="text-xs text-gray-500 mt-1">Bloquant : après trois essais, le livreur peut l'envoyer quand même ; c'est signalé sur la course.</p>
+            <p class="text-xs text-slate-600 mt-1">Bloquant : après trois essais, le livreur peut l'envoyer quand même ; c'est signalé sur la course.</p>
           </div>
           <div>
             <label class="label" for="photo-resolution">Résolution</label>
@@ -357,7 +357,7 @@
         </div>
         <label class="flex items-start gap-2 text-sm">
           <input v-model="form.photo_settings.keep_original" type="checkbox" class="mt-1">
-          <span>Garder aussi la photo d'origine<span class="block text-xs text-gray-500">Valeur de preuve : l'équipe peut la voir (« Voir l'original ») ; le client et Jibiat Marchand reçoivent la version nette.</span></span>
+          <span>Garder aussi la photo d'origine<span class="block text-xs text-slate-600">Valeur de preuve : l'équipe peut la voir (« Voir l'original ») ; le client et Jibiat Marchand reçoivent la version nette.</span></span>
         </label>
       </section>
 
@@ -365,7 +365,7 @@
       <section v-if="!automation && form.activity_options" class="card p-4 space-y-4">
         <div>
           <h2 class="font-semibold">Distribution et MAD</h2>
-          <p class="text-sm text-gray-600">
+          <p class="text-sm text-slate-600">
             Ce que le livreur doit relever à la remise, les messages aux destinataires et la réservation des livreurs en
             mise à disposition. Un contrat peut changer chacun de ces choix (Contrats › Modifier).
           </p>
@@ -380,25 +380,25 @@
       <section v-if="!automation && form.shipment_settings" id="envoi" class="card p-4 space-y-3 scroll-mt-20">
         <div>
           <h2 class="font-semibold">L'envoi des clients (distribution et MAD)</h2>
-          <p class="text-sm text-gray-600">Quand le client envoie un pli, il peut dire ce que c'est. Il choisit dans cette liste ; « Autre » lui demande de préciser.</p>
+          <p class="text-sm text-slate-600">Quand le client envoie un pli, il peut dire ce que c'est. Il choisit dans cette liste ; « Autre » lui demande de préciser.</p>
         </div>
         <div>
           <p class="label">Types de pli proposés</p>
           <div class="flex flex-wrap gap-2">
             <span v-for="(k, i) in form.shipment_settings.pli_kinds" :key="`${k}-${i}`" class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-sm">
               {{ k }}
-              <button type="button" class="text-gray-500 hover:text-red-600" :aria-label="`Retirer ${k}`" @click="form.shipment_settings.pli_kinds.splice(i, 1)">✕</button>
+              <button type="button" class="text-slate-600 hover:text-red-600" :aria-label="`Retirer ${k}`" @click="form.shipment_settings.pli_kinds.splice(i, 1)">✕</button>
             </span>
           </div>
           <form class="mt-2 flex gap-2" @submit.prevent="addPliKind">
             <input v-model="newPliKind" maxlength="60" class="input flex-1" placeholder="Ex. : Faire-part, Devis, Badge" aria-label="Nouveau type de pli">
             <button type="submit" class="btn-secondary" :disabled="!newPliKind.trim()">Ajouter</button>
           </form>
-          <p class="text-xs text-gray-500 mt-1">Liste vide : la liste par défaut revient (Facture, Courrier, Carte d'invitation…).</p>
+          <p class="text-xs text-slate-600 mt-1">Liste vide : la liste par défaut revient (Facture, Courrier, Carte d'invitation…).</p>
         </div>
         <label class="flex items-start gap-2 text-sm">
           <input v-model="form.shipment_settings.forfait_usage" type="checkbox" class="mt-1">
-          <span>Montrer au client le décompte de son forfait<span class="block text-gray-500">Courses utilisées sur les courses incluses (ex. « 12 / 50 »), sur son accueil et quand il crée une course, et alertes à 80 % et 100 %. Décoché : il voit seulement le nombre d'envois du mois.</span></span>
+          <span>Montrer au client le décompte de son forfait<span class="block text-slate-600">Courses utilisées sur les courses incluses (ex. « 12 / 50 »), sur son accueil et quand il crée une course, et alertes à 80 % et 100 %. Décoché : il voit seulement le nombre d'envois du mois.</span></span>
         </label>
       </section>
 
