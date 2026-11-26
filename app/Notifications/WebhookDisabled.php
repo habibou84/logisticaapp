@@ -33,7 +33,7 @@ class WebhookDisabled extends Notification implements ShouldQueue
     {
         return [
             'kind' => 'webhook_disabled',
-            'title' => '🔌 Liaison avec votre application interrompue',
+            'title' => 'Liaison avec votre application interrompue',
             'body' => ($this->subscription->description ?: $this->subscription->url).' ne répond plus : les mises à jour de vos courses ne lui sont plus envoyées. Reconnectez votre application de livraison.',
             'severity' => 'alert',
             'href' => '/marchand/integrations',

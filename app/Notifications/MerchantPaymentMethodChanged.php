@@ -35,7 +35,7 @@ class MerchantPaymentMethodChanged extends Notification implements ShouldQueue
 
         return [
             'kind' => 'merchant_payment_method',
-            'title' => ($removed ? '💳 ' : '🔒 ').$this->merchant->business_name.' : moyen de paiement '.match ($this->action) {
+            'title' => $this->merchant->business_name.' : moyen de paiement '.match ($this->action) {
                 'added' => 'ajouté',
                 'removed' => 'retiré',
                 default => 'modifié',

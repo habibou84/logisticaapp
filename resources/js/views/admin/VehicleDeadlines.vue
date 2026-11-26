@@ -16,20 +16,20 @@
         <thead class="text-xs uppercase text-slate-600"><tr><th class="p-3" /><th class="p-3">Échéance</th><th class="p-3">Pour</th><th class="p-3">Date</th><th class="p-3">Reste</th><th class="p-3">Effet</th></tr></thead>
         <tbody>
           <tr v-for="(a, i) in shown" :key="i" class="border-t border-slate-100">
-            <td class="p-3 text-xl">{{ a.icon }}</td>
+            <td class="p-3 text-xl"><Icone v-if="a.icon" :nom="a.icon" /></td>
             <td class="p-3 font-medium">{{ a.label }}<span v-if="a.courier" class="font-normal text-slate-600"> · {{ a.courier }}</span></td>
             <td class="p-3"><RouterLink v-if="a.vehicle_id" :to="`/admin/vehicules/${a.vehicle_id}?onglet=${TAB[a.kind] || 'resume'}`" class="whitespace-nowrap font-mono text-blue-700">{{ a.title }}</RouterLink><span v-else>{{ a.title }}</span></td>
             <td class="p-3">{{ a.date ? date(a.date) : '—' }}</td>
             <td class="p-3"><span :class="['whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium', STATE_STYLES[a.state]]">{{ when(a) }}</span></td>
             <td class="p-3 text-slate-600">{{ effect(a) }}</td>
           </tr>
-          <tr v-if="!shown.length"><td colspan="6" class="p-8 text-center text-slate-600">Rien à surveiller ici. 👍</td></tr>
+          <tr v-if="!shown.length"><td colspan="6" class="p-8 text-center text-slate-600">Rien à surveiller ici. <Icone nom="pouce" taille="petite" class="inline" /></td></tr>
         </tbody>
       </table>
     </div>
 
     <section class="card p-4 space-y-2">
-      <div class="flex items-center justify-between"><h2 class="font-semibold">🪪 Permis des livreurs</h2><button type="button" class="btn-secondary text-sm" @click="licenseOpen = true">+ Ajouter un permis</button></div>
+      <div class="flex items-center justify-between"><h2 class="flex items-center gap-1.5 font-semibold"><Icone nom="permis" taille="petite" /> Permis des livreurs</h2><button type="button" class="btn-secondary text-sm" @click="licenseOpen = true">+ Ajouter un permis</button></div>
       <table class="w-full text-sm">
         <tr v-for="d in licenses" :key="d.id" class="border-t border-slate-100"><td class="py-2">{{ d.courier }}</td><td>{{ d.reference || '' }}</td><td>{{ d.ends_on ? `jusqu'au ${date(d.ends_on)}` : '' }}</td>
           <td><span :class="['rounded-full px-2 py-0.5 text-xs font-medium', STATE_STYLES[d.state]]">{{ d.state === 'permanent' ? 'sans fin' : daysText(d.days) }}</span></td></tr>
@@ -46,6 +46,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import { computed, onMounted, ref } from 'vue'
 import http from '../../bootstrap/axios'
 import DocumentModal from '../../components/vehicles/DocumentModal.vue'

@@ -45,7 +45,7 @@ class CourierAvailableAlert extends Notification implements ShouldQueue
 
         return [
             'kind' => 'courier_available',
-            'title' => ($free ? '🟢 ' : '🟡 ').$this->row['name'].($free ? ' est libre' : ' est bientôt libre').($where ? " à {$where}" : ''),
+            'title' => $this->row['name'].($free ? ' est libre' : ' est bientôt libre').($where ? " à {$where}" : ''),
             'body' => ($free ? 'Toutes ses missions sont terminées. ' : "Plus que {$left} mission".($left > 1 ? 's' : '').' en cours. ')
                 ."{$count} colis à ramasser près de lui"
                 .($stops > 1 ? " ({$stops} boutiques)" : '')

@@ -7,7 +7,7 @@
         <!-- Étape 3 : nouveau mot de passe -->
         <form v-if="pending && verified" class="space-y-4" @submit.prevent="reset">
           <div class="text-center space-y-1">
-            <p class="text-3xl" aria-hidden="true">✅</p>
+            <span class="mx-auto grid h-12 w-12 place-items-center rounded-full bg-succes-fond text-succes" aria-hidden="true"><Icone nom="livre" taille="grande" /></span>
             <h1 class="text-xl font-bold">Numéro vérifié</h1>
             <p class="text-sm text-slate-600">Choisissez votre nouveau mot de passe. Vos autres appareils seront déconnectés.</p>
           </div>
@@ -51,6 +51,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'

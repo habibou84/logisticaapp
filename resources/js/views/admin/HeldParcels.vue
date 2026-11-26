@@ -10,15 +10,15 @@
 
 
     <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-      <StatCard title="Colis chez les livreurs" :value="store.counts.total" icon="📦" />
-      <StatCard :title="alertHours ? `Depuis plus de ${alertHours} h` : 'En retard'" :value="store.counts.overdue" icon="⏰" />
-      <StatCard title="Livreurs concernés" :value="couriers.length" icon="🛵" />
+      <StatCard title="Colis chez les livreurs" :value="store.counts.total" icon="course" />
+      <StatCard :title="alertHours ? `Depuis plus de ${alertHours} h` : 'En retard'" :value="store.counts.overdue" icon="retard" />
+      <StatCard title="Livreurs concernés" :value="couriers.length" icon="livreur" />
     </div>
 
 
     <div class="flex flex-wrap gap-2 items-center">
       <button v-for="f in filters" :key="f.value" :class="['btn whitespace-nowrap', overdueOnly === f.value ? 'bg-slate-900 text-white' : 'bg-white border border-slate-300']" @click="overdueOnly = f.value; reload()">
-        {{ f.label }}
+        <Icone v-if="f.icon" :nom="f.icon" taille="petite" />{{ f.label }}
       </button>
       <input v-model="search" type="search" class="input sm:w-64 ml-auto" placeholder="Livreur, code, destinataire, client…" aria-label="Rechercher">
     </div>
@@ -30,7 +30,7 @@
           <span class="text-lg text-slate-600" aria-hidden="true">{{ open[c.courier_id] ? '▾' : '▸' }}</span>
           <span class="min-w-0">
             <span class="block font-semibold">
-              🛵 {{ c.name }}
+              <Icone nom="livreur" taille="petite" class="inline" /> {{ c.name }}
               <span :class="['ml-1 rounded-full px-2 py-0.5 text-xs', c.is_available ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600']">{{ c.is_available ? 'en service' : 'hors service' }}</span>
             </span>
             <span class="block text-sm text-slate-600">
@@ -42,7 +42,7 @@
         <a v-if="c.phone" :href="telLink(c.phone)" class="text-sm text-blue-600">{{ c.phone }}</a>
         <div v-if="canReceive && open[c.courier_id]" class="flex gap-2">
           <button type="button" class="btn-secondary text-xs" @click="toggleAll(c)">{{ allSelected(c) ? 'Tout décocher' : 'Tout cocher' }}</button>
-          <button type="button" class="btn-success" :disabled="!selectedOf(c).length" @click="receive(c)">✓ Rendus au dépôt ({{ selectedOf(c).length }})</button>
+          <button type="button" class="btn-success" :disabled="!selectedOf(c).length" @click="receive(c)"><Icone nom="valider" /> Rendus au dépôt ({{ selectedOf(c).length }})</button>
         </div>
       </header>
       <template v-if="open[c.courier_id]">
@@ -65,16 +65,16 @@
                 <td class="p-2">
                   <span :class="['rounded-full px-2 py-0.5 text-xs font-medium', p.on_the_road ? 'bg-sky-100 text-sky-800' : 'bg-amber-100 text-amber-900']">{{ p.status_label }}</span>
                   <div v-if="p.incident" class="text-xs text-slate-600 mt-0.5">{{ p.incident }}</div>
-                  <div v-if="p.rescheduled_to" class="text-xs text-slate-600">📅 {{ date(p.rescheduled_to) }}</div>
-                  <div v-if="p.return_requested" class="text-xs text-rose-700 font-medium">↩️ {{ p.return_cause_label || 'Retour au client à organiser' }}</div>
-                  <div v-if="p.kept_for" class="text-xs text-indigo-700 font-medium">🌙 Gardé pour sa livraison du {{ date(p.kept_for) }}</div>
-                  <div v-else-if="p.custody_plan === 'depot' && p.status === 'picked_up'" class="text-xs text-slate-700 font-medium">🏢 À rapporter au dépôt (mission ramassage)</div>
+                  <div v-if="p.rescheduled_to" class="flex items-center gap-1 text-xs text-slate-600"><Icone nom="date" taille="petite" /> {{ date(p.rescheduled_to) }}</div>
+                  <div v-if="p.return_requested" class="flex items-center gap-1 text-xs text-rose-700 font-medium"><Icone nom="retour" taille="petite" /> {{ p.return_cause_label || 'Retour au client à organiser' }}</div>
+                  <div v-if="p.kept_for" class="flex items-center gap-1 text-xs text-indigo-700 font-medium"><Icone nom="jour-ferme" taille="petite" /> Gardé pour sa livraison du {{ date(p.kept_for) }}</div>
+                  <div v-else-if="p.custody_plan === 'depot' && p.status === 'picked_up'" class="flex items-center gap-1 text-xs text-slate-700 font-medium"><Icone nom="depot" taille="petite" /> À rapporter au dépôt (mission ramassage)</div>
                 </td>
                 <td class="p-2 text-right">{{ p.cod_amount ? money(p.cod_amount) : '—' }}</td>
                 <td :class="['p-2 whitespace-nowrap', isOverdue(p) ? 'text-red-700 font-semibold' : 'text-slate-600']">
                   {{ heldFor(p.held_since) }}
                   <div class="text-xs font-normal text-slate-600">{{ dateTime(p.held_since) }}</div>
-                  <RouterLink v-if="maybeLost(p)" :to="`/admin/courses/${p.id}`" class="text-xs font-semibold text-red-700 underline">🚨 Peut-être perdu : vérifier</RouterLink>
+                  <RouterLink v-if="maybeLost(p)" :to="`/admin/courses/${p.id}`" class="inline-flex items-center gap-1 text-xs font-semibold text-red-700 underline"><Icone nom="urgent" taille="petite" /> Peut-être perdu : vérifier</RouterLink>
                 </td>
               </tr>
             </tbody>
@@ -89,12 +89,13 @@
     </section>
 
     <div v-if="loaded && !couriers.length" class="card p-8 text-center text-slate-600">
-      {{ search.trim() ? 'Aucun colis ne correspond à la recherche.' : overdueOnly ? '🎉 Aucun colis en retard.' : '🎉 Aucun colis chez les livreurs : tout est livré ou au dépôt.' }}
+      <Icone v-if="!search.trim()" nom="bravo" class="mr-1 inline" />{{ search.trim() ? 'Aucun colis ne correspond à la recherche.' : overdueOnly ? 'Aucun colis en retard.' : 'Aucun colis chez les livreurs : tout est livré ou au dépôt.' }}
     </div>
   </div>
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 // Onglet de « Activité des livreurs » : le titre de la page n'est pas répété
 defineProps({ embedded: { type: Boolean, default: false } })
 import { computed, onMounted, reactive, ref, watch } from 'vue'
@@ -115,7 +116,7 @@ const loaded = ref(false)
 const overdueOnly = ref(false)
 const search = ref('')
 const selected = ref([])
-const filters = [{ value: false, label: 'Tous les colis' }, { value: true, label: '⏰ En retard' }]
+const filters = [{ value: false, label: 'Tous les colis' }, { value: true, icon: 'retard', label: 'En retard' }]
 const canReceive = computed(() => auth.can('orders.dispatch') || auth.can('finance.manage'))
 
 // Livreurs ouverts : leurs colis déjà chargés, page par page

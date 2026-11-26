@@ -1,7 +1,7 @@
 <template>
   <div class="max-w-3xl space-y-4">
     <div>
-      <h1 class="text-xl font-bold">🧭 Mise en route</h1>
+      <h1 class="flex items-center gap-1.5 text-xl font-bold"><Icone nom="mise-en-route" /> Mise en route</h1>
       <p class="text-sm text-slate-600">Étape par étape, ce qu'il faut régler pour que l'application travaille bien. Chaque étape se coche toute seule quand c'est fait.</p>
     </div>
 
@@ -11,7 +11,7 @@
       <!-- Progression -->
       <section :class="['card p-4 space-y-3', guide.ready ? 'bg-emerald-50' : '']">
         <p class="font-semibold">
-          {{ guide.ready ? '✅ Les étapes essentielles sont faites : l\'application est prête à travailler.' : `Étapes essentielles : ${guide.essentials.done} sur ${guide.essentials.total}` }}
+          <Icone v-if="guide.ready" nom="livre" taille="petite" class="inline text-succes" /> {{ guide.ready ? 'Les étapes essentielles sont faites : l\'application est prête à travailler.' : `Étapes essentielles : ${guide.essentials.done} sur ${guide.essentials.total}` }}
         </p>
         <div class="h-2 rounded-full bg-slate-200 overflow-hidden" role="progressbar" :aria-valuenow="guide.essentials.done" :aria-valuemax="guide.essentials.total" aria-label="Étapes essentielles faites">
           <div class="h-full bg-emerald-600 transition-all" :style="{ width: `${percent(guide.essentials)}%` }" />
@@ -26,11 +26,11 @@
       <!-- Guide vidéo : un chapitre par étape essentielle -->
       <section class="card p-4 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 class="font-semibold">🎬 Bien démarrer en vidéo</h2>
+          <h2 class="flex items-center gap-1.5 font-semibold"><Icone nom="video" taille="petite" /> Bien démarrer en vidéo</h2>
           <p class="text-sm text-slate-600">Neuf courtes vidéos avec voix off et sous-titres : les étapes essentielles et le planning des livreurs.</p>
         </div>
         <div class="flex flex-wrap items-center gap-3">
-          <button type="button" class="btn-primary" @click="video.open(firstVideo)">▶ Regarder</button>
+          <button type="button" class="btn-primary" @click="video.open(firstVideo)"><Icone nom="lecture" /> Regarder</button>
           <button v-if="video.videos.value.enabled && video.videos.value.hidden" type="button" class="text-sm text-blue-600 underline" @click="video.hide(false)">
             Réafficher sur le tableau de bord
           </button>
@@ -39,11 +39,11 @@
 
       <!-- Bilan de santé : ce qui se dérègle après la mise en route -->
       <section class="card p-4 space-y-2">
-        <h2 class="font-semibold">🩺 Bilan de santé</h2>
+        <h2 class="flex items-center gap-1.5 font-semibold"><Icone nom="sante" taille="petite" /> Bilan de santé</h2>
         <p v-if="!guide.health.length" class="text-sm text-emerald-800">Rien à signaler pour le moment.</p>
         <ul v-else class="space-y-1">
           <li v-for="h in guide.health" :key="h.text" class="flex flex-wrap items-start justify-between gap-2 text-sm">
-            <span :class="h.level === 'alert' ? 'text-red-700' : 'text-amber-800'">{{ h.level === 'alert' ? '🔴' : '🟠' }} {{ h.text }}</span>
+            <span :class="h.level === 'alert' ? 'text-red-700' : 'text-amber-800'"><Icone :nom="h.level === 'alert' ? 'erreur' : 'alerte'" taille="petite" class="inline" /> {{ h.text }}</span>
             <RouterLink :to="{ path: h.to, query: { depuis: 'mise-en-route' } }" class="text-blue-600 underline whitespace-nowrap">Corriger</RouterLink>
           </li>
         </ul>
@@ -55,7 +55,7 @@
         <ol class="space-y-2">
           <li v-for="(s, i) in group.steps" :key="s.key" :class="['card p-4 space-y-2', s.skipped ? 'opacity-60' : '']">
             <div class="flex items-start gap-3">
-              <span class="text-xl leading-none" :title="STATUS[s.status].label" aria-hidden="true">{{ STATUS[s.status].icon }}</span>
+              <span :class="['leading-none', STATUS[s.status].tone]" :title="STATUS[s.status].label" aria-hidden="true"><Icone :nom="STATUS[s.status].icon" taille="grande" /></span>
               <div class="min-w-0 flex-1 space-y-1">
                 <p class="font-semibold">
                   {{ group.essential ? `${i + 1}. ` : '' }}{{ s.title }}
@@ -69,7 +69,7 @@
                 <template v-if="s.test">
                   <ol class="mt-2 space-y-1 text-sm">
                     <li v-for="c in s.test.checkpoints" :key="c.label" :class="c.done ? 'text-emerald-800' : 'text-slate-600'">
-                      {{ c.done ? '✅' : '⬜' }} {{ c.label }}
+                      <Icone :nom="c.done ? 'livre' : 'a-faire'" taille="petite" class="inline" /> {{ c.label }}
                     </li>
                   </ol>
                   <p class="text-xs text-amber-800 bg-amber-50 rounded px-2 py-1">
@@ -86,7 +86,7 @@
               </template>
               <RouterLink v-else :to="link(s)" :class="s.status === 'done' && !s.test ? 'btn-secondary' : 'btn-primary'">{{ s.status === 'done' && !s.test ? 'Revoir' : s.action.label }}</RouterLink>
               <button v-if="hasGuideVideo(s.key)" type="button" class="btn-secondary" @click="video.open(s.key)">
-                ▶ Voir comment faire<span v-if="video.videos.value.watched.includes(s.key)" class="ml-1 text-xs text-slate-600">(vue)</span>
+                <Icone nom="lecture" /> Voir comment faire<span v-if="video.videos.value.watched.includes(s.key)" class="ml-1 text-xs text-slate-600">(vue)</span>
               </button>
               <button v-if="s.test" type="button" class="btn-secondary text-red-700" :disabled="busy" @click="cleanTest">Effacer la course d'essai</button>
               <button v-if="!s.essential && s.status !== 'done'" type="button" class="btn-secondary" :disabled="busy" @click="skip(s, !s.skipped)">
@@ -108,6 +108,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
@@ -120,9 +121,9 @@ import { confirmDialog } from '../../composables/useDialog'
  * Parcours de mise en route : étapes essentielles puis conseillées, vérifiées par le serveur sur les vraies données.
  */
 const STATUS = {
-  done: { icon: '✅', label: 'Fait', cls: 'bg-emerald-100 text-emerald-800' },
-  partial: { icon: '🟠', label: 'À compléter', cls: 'bg-amber-100 text-amber-800' },
-  todo: { icon: '⭕', label: 'À faire', cls: 'bg-slate-100 text-slate-700' },
+  done: { icon: 'livre', tone: 'text-succes', label: 'Fait', cls: 'bg-emerald-100 text-emerald-800' },
+  partial: { icon: 'en-cours', tone: 'text-attention', label: 'À compléter', cls: 'bg-amber-100 text-amber-800' },
+  todo: { icon: 'a-faire', tone: 'text-slate-400', label: 'À faire', cls: 'bg-slate-100 text-slate-700' },
 }
 
 const router = useRouter()

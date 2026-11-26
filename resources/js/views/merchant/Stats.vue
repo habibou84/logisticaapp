@@ -78,7 +78,7 @@
 
       <section class="m-card p-4 space-y-3">
         <h2 class="font-semibold">Pourquoi des livraisons échouent</h2>
-        <BarList :items="data.failure_reasons" :color="SERIES[1]" empty="Aucun échec sur la période. 👏" />
+        <BarList :items="data.failure_reasons" :color="SERIES[1]" empty="Aucun échec sur la période." />
         <p v-if="data.failure_reasons.length" class="text-xs text-slate-600">
           Astuce : un destinataire injoignable ou absent revient souvent à un numéro mal noté. Vérifiez-le avant de créer la course.
         </p>

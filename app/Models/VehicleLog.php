@@ -15,7 +15,7 @@ class VehicleLog extends Model
 
     public const KINDS = ['maintenance' => 'Entretien', 'repair' => 'Réparation', 'claim' => 'Sinistre', 'fine' => 'Amende', 'fuel' => 'Carburant', 'other' => 'Autre'];
 
-    public const ICONS = ['maintenance' => '🔧', 'repair' => '🛠️', 'claim' => '💥', 'fine' => '👮', 'fuel' => '⛽', 'other' => '📝'];
+    public const ICONS = ['maintenance' => 'atelier', 'repair' => 'reparation', 'claim' => 'sinistre', 'fine' => 'amende', 'fuel' => 'carburant', 'other' => 'note'];
 
     protected $fillable = [
         'company_id', 'vehicle_id', 'courier_id', 'kind', 'done_on', 'odometer', 'label', 'garage', 'amount', 'liters', 'paid_by',

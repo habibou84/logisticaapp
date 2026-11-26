@@ -15,7 +15,7 @@
         <!-- Demande envoyée : l'entreprise doit la valider -->
         <template v-else-if="sent">
           <div class="text-center space-y-3">
-            <p class="text-4xl" aria-hidden="true">📨</p>
+            <span class="mx-auto grid h-12 w-12 place-items-center rounded-full bg-slate-100 text-slate-600" aria-hidden="true"><Icone nom="mail" taille="grande" /></span>
             <h1 class="text-xl font-bold">Demande envoyée à {{ info.company.name }}</h1>
             <p class="text-slate-600">L'équipe vous contacte au {{ request.phone }}. Une fois votre compte ouvert, revenez dans {{ info.client.name }} et touchez de nouveau « Connecter ».</p>
             <button class="w-full rounded-xl bg-[var(--app-color)] py-3 font-semibold text-white" @click="back('request_pending')">Revenir à {{ info.client.name }}</button>
@@ -25,7 +25,7 @@
         <!-- Connecté : le gérant autorise l'application -->
         <template v-else-if="auth.user">
           <div class="text-center space-y-2">
-            <p class="text-4xl" aria-hidden="true">🔗</p>
+            <span class="mx-auto grid h-12 w-12 place-items-center rounded-full bg-slate-100 text-slate-600" aria-hidden="true"><Icone nom="lien" taille="grande" /></span>
             <h1 class="text-xl font-bold">Connecter {{ info.client.name }}</h1>
             <p class="text-slate-600">
               <strong>{{ info.client.name }}</strong> demande l'accès à votre compte <strong>{{ auth.user.merchant?.business_name || auth.user.name }}</strong>
@@ -36,7 +36,7 @@
             <div class="rounded-2xl bg-slate-50 p-4">
               <p class="text-sm font-semibold mb-2">L'application pourra :</p>
               <ul class="space-y-1.5 text-sm text-slate-700">
-                <li v-for="s in scopeLabels" :key="s" class="flex gap-2"><span class="text-[var(--app-color)]" aria-hidden="true">✓</span>{{ s }}</li>
+                <li v-for="s in scopeLabels" :key="s" class="flex gap-2"><span class="text-[var(--app-color)]" aria-hidden="true"><Icone nom="valider" taille="petite" class="mt-0.5" /></span>{{ s }}</li>
               </ul>
               <p class="mt-3 text-xs text-slate-600">Vous pourrez couper cet accès à tout moment dans Profil › Intégrations.</p>
             </div>
@@ -82,6 +82,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import SearchSelect from '../../components/SearchSelect.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'

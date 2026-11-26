@@ -167,7 +167,7 @@ class AwaitingCourierTest extends TestCase
         $this->travel(60)->minutes();
         $this->artisan('orders:unassigned')->assertSuccessful();
         $this->assertSame(3, $alerts());
-        Notification::assertSentTo($this->admin, OrderAlert::class, fn (OrderAlert $n) => str_starts_with($n->title, '🚨') && str_contains($n->body, $other->tracking_code));
+        Notification::assertSentTo($this->admin, OrderAlert::class, fn (OrderAlert $n) => ($n->extra['escalation'] ?? false) === true && str_contains($n->body, $other->tracking_code));
     }
 
     public function test_alerts_can_be_turned_off_and_counts_are_reserved_to_dispatch(): void
@@ -213,7 +213,7 @@ class AwaitingCourierTest extends TestCase
         $cutoffAlerts = fn () => Notification::sent($this->dispatcher, OrderAlert::class, fn (OrderAlert $n) => $n->kind === 'unassigned_cutoff')->count();
         $this->assertSame(1, $cutoffAlerts());
         Notification::assertSentTo($this->admin, OrderAlert::class, fn (OrderAlert $n) => $n->kind === 'unassigned_cutoff'
-            && $n->title === '⏰ 15:00 passées : 1 course du jour toujours sans livreur'
+            && $n->title === '15:00 passées : 1 course du jour toujours sans livreur'
             && str_contains($n->body, '1 à ramasser') && str_contains($n->body, $order->tracking_code));
 
         // Une seule fois par jour

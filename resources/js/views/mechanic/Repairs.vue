@@ -22,7 +22,7 @@
     <SkeletonList v-else-if="!board.data" :rows="3" />
     <template v-else>
       <RepairCard v-for="r in lists[tab]" :key="r.id" :repair="r" />
-      <EmptyState v-if="!lists[tab].length" :icon="tab === 'done' ? 'check' : '🛠️'" :title="EMPTY[tab].title" :text="EMPTY[tab].text" />
+      <EmptyState v-if="!lists[tab].length" :icon="tab === 'done' ? 'check' : 'atelier'" :title="EMPTY[tab].title" :text="EMPTY[tab].text" />
     </template>
   </div>
 </template>

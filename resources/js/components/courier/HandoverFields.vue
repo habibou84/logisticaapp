@@ -1,7 +1,7 @@
 <template>
   <!-- Département du client au ramassage : qui remet la course au livreur (nom, fonction, signature) -->
   <div class="space-y-3">
-    <p v-if="department" class="rounded-xl bg-violet-50 p-3 text-sm text-violet-900">🏢 <strong>{{ department.label }}</strong><template v-if="department.location"> · {{ department.location }}</template></p>
+    <p v-if="department" class="rounded-xl bg-violet-50 p-3 text-sm text-violet-900"><Icone nom="entreprise" taille="petite" class="inline" /> <strong>{{ department.label }}</strong><template v-if="department.location"> · {{ department.location }}</template></p>
     <div v-if="proof.handover_name !== 'off'" class="grid grid-cols-2 gap-2">
       <div>
         <label class="m-label" for="handed-by">Qui vous remet ?{{ proof.handover_name === 'required' ? ' *' : '' }}</label>
@@ -21,6 +21,7 @@
 </template>
 
 <script setup>
+import Icone from '../ui/Icone.vue'
 import SignaturePad from '../mobile/SignaturePad.vue'
 
 // model : { handed_by_name, handed_by_role, signature } (signature null : pas demandée)

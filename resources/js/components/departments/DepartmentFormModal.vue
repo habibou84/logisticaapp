@@ -33,7 +33,7 @@
           >
             <span class="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-800">{{ initials(u.name) }}</span>
             <span class="min-w-0 flex-1"><b class="block truncate text-sm">{{ u.name }}</b><span class="text-xs text-slate-600">{{ u.owner ? 'propriétaire du compte' : (u.role_label || 'compte de votre équipe') }}</span></span>
-            <span :class="['grid h-6 w-6 place-items-center rounded-lg border-2 text-sm', managerId === u.id ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-slate-300']">{{ managerId === u.id ? '✓' : '' }}</span>
+            <span :class="['grid h-6 w-6 place-items-center rounded-lg border-2 text-sm', managerId === u.id ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-slate-300']"><Icone v-if="managerId === u.id" nom="valider" taille="petite" /></span>
           </button>
           <p class="text-xs text-slate-600">
             <button v-if="accounts.length > 4 && !showAllAccounts" type="button" class="font-semibold text-blue-600" @click="showAllAccounts = true">Voir les {{ accounts.length }} comptes</button>
@@ -58,10 +58,10 @@
         <p class="label">Où se trouve-t-il ?</p>
         <div class="grid grid-cols-2 gap-2">
           <button type="button" :class="choiceClass(!ownAddress)" :aria-pressed="!ownAddress" @click="ownAddress = false">
-            <b class="block text-sm">🏢 Dans nos locaux</b><span class="text-xs text-slate-600">même adresse que {{ staff ? 'le client' : 'vous' }}</span>
+            <b class="flex items-center gap-1 text-sm"><Icone nom="entreprise" taille="petite" />Dans nos locaux</b><span class="text-xs text-slate-600">même adresse que {{ staff ? 'le client' : 'vous' }}</span>
           </button>
           <button type="button" :class="choiceClass(ownAddress)" :aria-pressed="ownAddress" @click="ownAddress = true">
-            <b class="block text-sm">📍 Sur un autre site</b><span class="text-xs text-slate-600">collecte et remise sur place</span>
+            <b class="flex items-center gap-1 text-sm"><Icone nom="adresse" taille="petite" />Sur un autre site</b><span class="text-xs text-slate-600">collecte et remise sur place</span>
           </button>
         </div>
       </div>
@@ -79,7 +79,7 @@
         <div><label class="label" for="d-landmark">Repère <span class="font-normal text-slate-500">(facultatif)</span></label><input id="d-landmark" v-model="form.pickup_landmark" class="input rounded-xl py-2.5" maxlength="255" placeholder="ex. en face de la pharmacie"></div>
         <div>
           <p class="label">Position <span class="font-normal text-slate-500">(conseillée)</span></p>
-          <LocationPicker v-model="point" height="h-48" gps-label="📍 Je suis sur place : utiliser ma position" />
+          <LocationPicker v-model="point" height="h-48" gps-label="Je suis sur place : utiliser ma position" />
         </div>
       </template>
       <div>
@@ -130,7 +130,7 @@
     <!-- Étape 2 : qui travaille dans ce département -->
     <div v-else class="space-y-3">
       <p class="flex items-center gap-2 rounded-2xl bg-emerald-50 px-3 py-2.5 text-sm text-emerald-900">
-        ✅ <span><b>Département ajouté.</b> Choisissez maintenant qui envoie pour lui.</span>
+        <Icone nom="livre" /> <span><b>Département ajouté.</b> Choisissez maintenant qui envoie pour lui.</span>
       </p>
       <div v-for="u in people" :key="u.id" :class="['rounded-2xl border-2 px-3 py-2', members[u.id] ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200']">
         <label class="flex items-center gap-3">
@@ -156,6 +156,7 @@
 </template>
 
 <script setup>
+import Icone from '../ui/Icone.vue'
 import { computed, ref, watch } from 'vue'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import BottomSheet from '../mobile/BottomSheet.vue'

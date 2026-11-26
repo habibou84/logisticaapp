@@ -3,13 +3,13 @@
   <div class="space-y-3">
     <div v-for="(m, i) in model" :key="i" :class="['rounded border p-3 space-y-2', m.enabled ? 'border-slate-300' : 'border-dashed border-slate-300 bg-slate-50']">
       <div class="flex flex-wrap items-center gap-2">
-        <span class="text-lg">{{ ICONS[m.method] }}</span>
+        <Icone :nom="ICONS[m.method] || 'carte-bancaire'" />
         <span class="font-medium">{{ title(m) }}</span>
         <label class="ml-auto flex items-center gap-2 text-sm">
           <input v-model="m.enabled" type="checkbox"> Proposé aux clients
         </label>
-        <button type="button" class="text-xs text-slate-600" :disabled="i === 0" title="Monter" aria-label="Monter" @click="move(i, -1)">▲</button>
-        <button type="button" class="text-xs text-slate-600" :disabled="i === model.length - 1" title="Descendre" aria-label="Descendre" @click="move(i, 1)">▼</button>
+        <button type="button" class="text-xs text-slate-600" :disabled="i === 0" title="Monter" aria-label="Monter" @click="move(i, -1)"><Icone nom="monter" taille="petite" /></button>
+        <button type="button" class="text-xs text-slate-600" :disabled="i === model.length - 1" title="Descendre" aria-label="Descendre" @click="move(i, 1)"><Icone nom="descendre" taille="petite" /></button>
         <button type="button" class="text-xs text-red-600" @click="model.splice(i, 1)">Retirer</button>
       </div>
 
@@ -52,6 +52,7 @@
 </template>
 
 <script setup>
+import Icone from '../ui/Icone.vue'
 const model = defineModel({ type: Array, required: true })
 
 const TYPES = [
@@ -61,7 +62,7 @@ const TYPES = [
   { value: 'cash', label: 'Espèces' },
   { value: 'other', label: 'Autre' },
 ]
-const ICONS = { bank_transfer: '🏦', mobile_money: '📱', cheque: '🧾', cash: '💵', other: '💳' }
+const ICONS = { bank_transfer: 'banque', mobile_money: 'mobile', cheque: 'facture', cash: 'argent', other: 'carte-bancaire' }
 const OPERATORS = ['Orange Money', 'MTN MoMo', 'Moov Money', 'Wave']
 
 function title(m) {

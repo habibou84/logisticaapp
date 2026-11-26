@@ -66,7 +66,7 @@
       <p v-if="show('recipient_phone')" class="font-semibold">{{ localPhone(order.recipient.phone) }}<span v-if="order.recipient.phone2"> / {{ localPhone(order.recipient.phone2) }}</span></p>
       <p class="text-2xl font-bold uppercase leading-tight">{{ order.delivery.zone_name }}</p>
       <p class="text-sm">{{ order.delivery.address }}</p>
-      <p v-if="order.package.description && show('description') && !order.billed_monthly && show('cod')" class="text-sm">📦 {{ order.package.description }}</p>
+      <p v-if="order.package.description && show('description') && !order.billed_monthly && show('cod')" class="text-sm"><Icone nom="course" taille="petite" class="inline align-text-bottom" /> {{ order.package.description }}</p>
       <p v-if="order.delivery.landmark && show('landmark')" class="text-sm">Repère : {{ order.delivery.landmark }}</p>
     </div>
     <div class="border-t border-black pt-2 flex justify-between items-end gap-2">
@@ -85,6 +85,7 @@
 </template>
 
 <script setup>
+import Icone from '../ui/Icone.vue'
 import { computed, ref, watchEffect } from 'vue'
 import QRCode from 'qrcode'
 import { useAuthStore } from '../../stores/auth'

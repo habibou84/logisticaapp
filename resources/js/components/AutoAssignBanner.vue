@@ -2,7 +2,7 @@
   <!-- Réglages qui manquent pour que les courses soient assignées automatiquement : bandeau qui appelle à l'action -->
   <section v-if="items.length && !hidden" class="card border-l-4 border-orange-300 border-l-orange-500 bg-orange-50 p-3 sm:p-4" role="region" aria-label="Réglages à faire">
     <div class="flex flex-wrap items-start gap-3">
-      <span class="text-2xl" aria-hidden="true">⚠️</span>
+      <Icone nom="alerte" taille="grande" class="text-orange-600" />
       <div class="min-w-[14rem] flex-1">
         <p class="font-semibold text-orange-900">
           {{ items.length }} réglage{{ items.length > 1 ? 's' : '' }} à faire pour que les courses soient assignées automatiquement aux livreurs
@@ -14,7 +14,7 @@
         <button v-if="items.length > 1" type="button" class="rounded-lg border border-orange-300 bg-white px-3 py-2 text-sm text-orange-900" :aria-expanded="expanded" @click="expanded = !expanded">
           {{ expanded ? 'Masquer' : `Voir les ${items.length} réglages` }}
         </button>
-        <button type="button" class="px-1 text-sm text-orange-500 hover:text-orange-700" title="Cacher jusqu'à demain" @click="later">Plus tard ✕</button>
+        <button type="button" class="px-1 text-sm text-orange-500 hover:text-orange-700" title="Cacher jusqu'à demain" @click="later">Plus tard <Icone nom="fermer" taille="petite" class="inline align-text-bottom" /></button>
       </div>
     </div>
 
@@ -28,6 +28,7 @@
 </template>
 
 <script setup>
+import Icone from './ui/Icone.vue'
 import { computed, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import http from '../bootstrap/axios'

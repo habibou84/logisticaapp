@@ -1,5 +1,5 @@
 <template>
-  <SettingsPage icon="🏪" title="Clients" intro="Comment les clients rejoignent votre entreprise.">
+  <SettingsPage icon="clients" title="Clients" intro="Comment les clients rejoignent votre entreprise.">
     <template v-if="form">
       <section class="card p-4 space-y-3">
         <label class="flex items-start gap-2 text-sm">
@@ -34,7 +34,7 @@
         <p v-if="!form.directory_listed" class="text-sm text-amber-700">Le mois en plus n'est offert que si votre entreprise figure dans l'annuaire.</p>
         <div class="flex flex-wrap items-center gap-2">
           <input :value="inviteUrl" class="input flex-1 min-w-0 text-sm" readonly aria-label="Lien d'invitation" @focus="$event.target.select()">
-          <button type="button" class="btn-secondary" @click="copy">{{ copied ? 'Copié ✓' : 'Copier' }}</button>
+          <button type="button" class="btn-secondary" @click="copy"><template v-if="copied">Copié <Icone nom="valider" taille="petite" /></template><template v-else>Copier</template></button>
           <a :href="whatsappUrl" target="_blank" rel="noopener" class="btn-primary">Envoyer par WhatsApp</a>
         </div>
       </section>
@@ -44,6 +44,7 @@
 </template>
 
 <script setup>
+import Icone from '../../../components/ui/Icone.vue'
 import SettingsPage from '../../../components/settings/SettingsPage.vue'
 import SaveBar from '../../../components/settings/SaveBar.vue'
 import { useCompanySettings } from '../../../composables/useCompanySettings'

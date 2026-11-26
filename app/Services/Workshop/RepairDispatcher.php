@@ -81,7 +81,7 @@ class RepairDispatcher
             'courier_id' => $vehicle?->courier_id,
             'source' => 'manual',
             'title' => trim((string) $data['title']),
-            'icon' => '🛠️',
+            'icon' => 'reparation',
             'severity' => $data['severity'] ?? 'blocking',
             'note' => isset($data['note']) ? trim((string) $data['note']) ?: null : null,
             'lat' => $data['lat'] ?? null,
@@ -358,7 +358,7 @@ class RepairDispatcher
         Notification::send($this->workshopTeam($repair->company_id), new RepairAlert(
             $repair,
             'repair_unassigned',
-            "⚠️ Panne sans mécanicien : {$repair->title}",
+            "Panne sans mécanicien : {$repair->title}",
             ($anyone ? 'Aucun mécanicien en service n\'a accepté. ' : 'Aucun mécanicien en service. ').$this->summary($repair).' Confiez-la depuis l\'Atelier.',
             'alert',
         ));

@@ -74,7 +74,7 @@ class VehicleChecks
             'check_needed' => $this->needed($courier),
             'blocks_service' => $this->blocksService($courier),
             'check_end' => (bool) $s['check_end'],
-            'maintenance' => $next ? ['label' => $next['label'], 'icon' => $next['icon'] ?? '🔧', 'state' => $next['state'], 'remaining_km' => $next['remaining_km'], 'remaining_days' => $next['remaining_days']] : null,
+            'maintenance' => $next ? ['label' => $next['label'], 'icon' => $next['icon'] ?? 'atelier', 'state' => $next['state'], 'remaining_km' => $next['remaining_km'], 'remaining_days' => $next['remaining_days']] : null,
         ];
     }
 
@@ -160,7 +160,7 @@ class VehicleChecks
             $labels = collect($items)->filter(fn ($v) => $v === 'problem')->keys()->map(fn ($k) => VehicleCatalog::CHECK_ITEMS[$k]['label'] ?? $k)->implode(', ');
             $users = User::forCompany($courier->company_id)->where('status', 'active')->role([Role::Admin->value, Role::ActivityManager->value, Role::Dispatcher->value])->get();
             $courier->loadMissing('user');
-            Notification::send($users, new VehicleAlert('check_problem', "🔧 {$vehicle->plate} : {$labels}",
+            Notification::send($users, new VehicleAlert('check_problem', "{$vehicle->plate} : {$labels}",
                 "Signalé par {$courier->user?->name} à l'état des lieux".($check->note ? " : « {$check->note} »" : '.'), "/admin/vehicules/{$vehicle->id}?onglet=historique"));
         }
 

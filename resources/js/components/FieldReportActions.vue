@@ -19,7 +19,7 @@
           :class="['flex items-start gap-2.5 rounded-lg px-3 py-2 text-left text-sm ring-1 transition', i === 0 ? 'bg-emerald-700 text-white ring-emerald-700 hover:bg-emerald-800' : 'bg-white ring-emerald-200 hover:ring-emerald-400']"
           @click="click(a)"
         >
-          <span class="mt-0.5 shrink-0" aria-hidden="true">{{ ICONS[a.icon] || '•' }}</span>
+          <span class="mt-0.5 shrink-0" aria-hidden="true"><Icone v-if="ICONS[a.icon]" :nom="ICONS[a.icon]" taille="petite" /><template v-else>•</template></span>
           <span class="min-w-0">
             <span class="block font-semibold">{{ a.label }}</span>
             <span :class="['block text-xs', i === 0 ? 'text-emerald-50' : 'text-slate-600']">{{ a.sub }}</span>
@@ -31,6 +31,7 @@
 </template>
 
 <script setup>
+import Icone from './ui/Icone.vue'
 import { computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import http, { apiErrorMessage } from '../bootstrap/axios'
@@ -54,8 +55,8 @@ const tomorrow = () => {
   return d.toISOString().slice(0, 10)
 }
 const day = ref(tomorrow())
-// Emojis, en attendant la charte graphique
-const ICONS = { retour: '↩️', date: '📅', marchand: '🏪', appeler: '📞', whatsapp: '💬', position: '📍', ouvrir: '📦' }
+// Icônes de la charte (utils/icones.js)
+const ICONS = { retour: 'retour', date: 'date', marchand: 'marchand', appeler: 'appeler', whatsapp: 'message', position: 'adresse', ouvrir: 'course' }
 
 const wa = (text) => {
   const phone = String(props.report.order?.recipient_phone || '').replace(/\D/g, '')

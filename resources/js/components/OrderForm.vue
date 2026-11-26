@@ -60,7 +60,7 @@
           <input id="name" v-model="form.recipient_name" :class="['input', mark('recipient_name')]" @input="touched('recipient_name')">
         </div>
         <div v-if="duplicates.length" class="sm:col-span-2 rounded bg-amber-50 border border-amber-200 text-amber-900 text-sm px-3 py-2">
-          ⚠️ Déjà {{ duplicates.length }} course(s) pour ce destinataire chez ce client ces dernières 24 h :
+          <Icone nom="alerte" taille="petite" class="inline align-text-bottom" /> Déjà {{ duplicates.length }} course(s) pour ce destinataire chez ce client ces dernières 24 h :
           <RouterLink v-for="d in duplicates" :key="d.id" :to="`${auth.homeRoute}/courses/${d.id}`" target="_blank" class="underline ml-1">
             {{ d.tracking_code }} ({{ d.status_label }}, {{ d.delivery_zone_name }}, {{ money(d.cod_amount) }})
           </RouterLink>
@@ -103,8 +103,8 @@
               <option value="16-20">Soir (16h-20h)</option>
             </select>
           </div>
-          <p v-if="closed" class="text-xs text-slate-600 mt-1">🌙 {{ closedReason }} : le ramassage peut quand même se faire aujourd'hui.</p>
-          <p v-if="dateSummary" class="text-sm font-medium mt-1">{{ dateSummary }}</p>
+          <p v-if="closed" class="text-xs text-slate-600 mt-1"><Icone nom="jour-ferme" taille="petite" class="inline align-text-bottom" /> {{ closedReason }} : le ramassage peut quand même se faire aujourd'hui.</p>
+          <p v-if="dateSummary" class="text-sm font-medium mt-1"><Icone v-if="form.delivery_scheduled_date" nom="date" taille="petite" class="inline align-text-bottom" /> {{ dateSummary }}</p>
           <p v-if="errors.when" class="field-error">{{ errors.when[0] }}</p>
           <p v-if="errors.delivery_scheduled_date" class="field-error">{{ errors.delivery_scheduled_date[0] }}</p>
         </div>
@@ -132,7 +132,7 @@
         <label class="label" for="lot">Lot</label>
         <select id="lot" v-model="form.billing_plan_id" class="input">
           <option v-if="contractPlan" :value="null">{{ contractPlan.formula_label }} (contrat du mois)</option>
-          <option v-for="l in lots" :key="l.id" :value="l.id">📦 {{ l.lot_name }} · {{ l.lot_quantity }} colis</option>
+          <option v-for="l in lots" :key="l.id" :value="l.id">{{ l.lot_name }} · {{ l.lot_quantity }} colis</option>
         </select>
         <p v-if="errors.billing_plan_id" class="field-error">{{ errors.billing_plan_id[0] }}</p>
       </div>
@@ -197,11 +197,11 @@
         <div class="grid sm:grid-cols-2 gap-2">
           <label :class="['flex items-start gap-2 rounded-lg p-2.5 text-sm ring-1 cursor-pointer', form.is_express ? 'ring-2 ring-red-500 bg-red-50' : 'ring-slate-300']">
             <input v-model="form.is_express" type="checkbox" class="mt-1">
-            <span><b class="block">⚡ Express</b><span class="text-xs text-slate-600">Livré en priorité, supplément selon le contrat</span></span>
+            <span><b class="flex items-center gap-1"><Icone nom="rapide" taille="petite" />Express</b><span class="text-xs text-slate-600">Livré en priorité, supplément selon le contrat</span></span>
           </label>
           <label :class="['flex items-start gap-2 rounded-lg p-2.5 text-sm ring-1 cursor-pointer', form.is_fragile ? 'ring-2 ring-red-500 bg-red-50' : 'ring-slate-300']">
             <input v-model="form.is_fragile" type="checkbox" class="mt-1">
-            <span><b class="block">🥚 Fragile</b><span class="text-xs text-slate-600">À manipuler avec soin, signalé au livreur et sur l'étiquette</span></span>
+            <span><b class="flex items-center gap-1"><Icone nom="fragile" taille="petite" />Fragile</b><span class="text-xs text-slate-600">À manipuler avec soin, signalé au livreur et sur l'étiquette</span></span>
           </label>
         </div>
       </div>
@@ -249,8 +249,8 @@
             <input id="desc" v-model="form.description" :class="['input', mark('description')]" placeholder="Ex. : 2 robes, 1 sac" @input="touched('description')">
           </div>
           <template v-if="!billingPlan">
-            <label class="flex items-center gap-2 text-sm"><input v-model="form.is_express" type="checkbox"> ⚡ Express</label>
-            <label class="flex items-center gap-2 text-sm"><input v-model="form.is_fragile" type="checkbox"> 🥚 Fragile</label>
+            <label class="flex items-center gap-2 text-sm"><input v-model="form.is_express" type="checkbox"> <span class="inline-flex items-center gap-1"><Icone nom="rapide" taille="petite" />Express</span></label>
+            <label class="flex items-center gap-2 text-sm"><input v-model="form.is_fragile" type="checkbox"> <span class="inline-flex items-center gap-1"><Icone nom="fragile" taille="petite" />Fragile</span></label>
           </template>
         </div>
 
@@ -259,7 +259,7 @@
             <h4 class="font-semibold">Articles du stock</h4>
             <select v-model="form.pickup_hub_id" class="input w-auto" aria-label="Provenance des articles">
               <option :value="null">Chez le client (ramassage)</option>
-              <option v-for="h in hubs" :key="h.id" :value="h.id">🏬 {{ h.name }} (préparée à l'entrepôt)</option>
+              <option v-for="h in hubs" :key="h.id" :value="h.id">{{ h.name }} (préparée à l'entrepôt)</option>
             </select>
           </div>
           <p v-if="form.pickup_hub_id" class="text-sm rounded bg-sky-50 text-sky-900 p-2">
@@ -275,7 +275,7 @@
             <input v-else v-model="item.label" class="input" placeholder="Article libre (hors stock)" :aria-label="`Article ${i + 1}`">
             <input v-model.number="item.quantity" type="number" min="1" class="input" :aria-label="`Quantité ${i + 1}`">
             <input v-model.number="item.unit_price" type="number" min="0" step="50" class="input" placeholder="Prix" :aria-label="`Prix unitaire ${i + 1}`">
-            <button type="button" class="btn-secondary px-2" :aria-label="`Retirer l'article ${i + 1}`" @click="items.splice(i, 1)">✕</button>
+            <button type="button" class="btn-secondary px-2" :aria-label="`Retirer l'article ${i + 1}`" @click="items.splice(i, 1)"><Icone nom="fermer" taille="petite" /></button>
           </div>
           <p v-if="errors.items || errors.pickup_hub_id" class="field-error">{{ (errors.items || errors.pickup_hub_id)[0] }}</p>
           <div class="flex flex-wrap gap-2">
@@ -324,6 +324,7 @@
 </template>
 
 <script setup>
+import Icone from './ui/Icone.vue'
 import SearchSelect from './SearchSelect.vue'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import http, { apiErrorMessage } from '../bootstrap/axios'

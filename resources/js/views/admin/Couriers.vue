@@ -6,7 +6,7 @@
         <p class="text-sm text-slate-600">Cliquez sur un livreur pour voir sa fiche : chiffres, note, véhicule, événements terrain.</p>
       </div>
       <div class="flex flex-wrap gap-2">
-        <RouterLink v-if="auth.can('ratings.manage')" to="/admin/reglages/notation" class="btn-secondary">⭐ Réglages des notes</RouterLink>
+        <RouterLink v-if="auth.can('ratings.manage')" to="/admin/reglages/notation" class="btn-secondary"><Icone nom="prioritaire" /> Réglages des notes</RouterLink>
         <button v-if="auth.can('users.manage')" type="button" class="btn-primary" @click="creating = true">+ Nouveau livreur</button>
       </div>
     </div>
@@ -121,7 +121,7 @@
               <td class="max-w-[12rem] px-3 py-2.5 text-xs text-slate-600"><span class="line-clamp-2">{{ c.zones.join(', ') || '—' }}</span></td>
               <td class="whitespace-nowrap px-3 py-2.5 text-xs text-slate-600">
                 {{ c.vehicle?.label || [VEHICLES[c.vehicle_type], c.vehicle_plate].filter(Boolean).join(' · ') || '—' }}
-                <span v-if="c.vehicle_warnings.length" :class="['block font-semibold', c.vehicle_warnings.some((w) => w.level === 'alert') ? 'text-red-700' : 'text-amber-700']" :title="c.vehicle_warnings.map((w) => w.text).join(' · ')">⚠ {{ c.vehicle_warnings.length }} alerte{{ c.vehicle_warnings.length > 1 ? 's' : '' }}</span>
+                <span v-if="c.vehicle_warnings.length" :class="['flex items-center gap-1 font-semibold', c.vehicle_warnings.some((w) => w.level === 'alert') ? 'text-red-700' : 'text-amber-700']" :title="c.vehicle_warnings.map((w) => w.text).join(' · ')"><Icone nom="alerte" taille="petite" /> {{ c.vehicle_warnings.length }} alerte{{ c.vehicle_warnings.length > 1 ? 's' : '' }}</span>
               </td>
               <td class="px-3 py-2.5 text-right font-semibold">{{ c.missions || '—' }}</td>
               <td class="px-3 py-2.5 text-right"><b>{{ c.delivered }}</b><span v-if="c.per_day" class="block text-xs text-slate-500">{{ String(c.per_day).replace('.', ',') }}/jour</span></td>
@@ -129,7 +129,7 @@
               <td class="whitespace-nowrap px-3 py-2.5 text-right">{{ c.delivery_minutes === null ? '—' : duration(c.delivery_minutes) }}</td>
               <td class="px-3 py-2.5 text-right">{{ c.failed || '—' }}</td>
               <td class="whitespace-nowrap px-3 py-2.5 text-xs font-semibold text-orange-700">
-                <span v-if="c.below_threshold" class="block">⚠ à suivre</span>
+                <span v-if="c.below_threshold" class="flex items-center gap-1"><Icone nom="alerte" taille="petite" /> à suivre</span>
                 <span v-if="c.bad_last_7_days" class="block">{{ c.bad_last_7_days }} mauvaise{{ c.bad_last_7_days > 1 ? 's' : '' }} note{{ c.bad_last_7_days > 1 ? 's' : '' }} en 7 j</span>
               </td>
               <td class="whitespace-nowrap px-3 py-2.5 text-right" @click.stop>
@@ -152,7 +152,7 @@
                 {{ c.is_available ? 'Disponible' : 'Indisponible' }} · {{ c.delivered }} livrée{{ c.delivered > 1 ? 's' : '' }}<template v-if="c.success_rate !== null"> · {{ c.success_rate }} %</template>
               </span>
               <span v-if="c.mad || c.field_event" class="mt-0.5 flex flex-wrap gap-1"><MadBadge :mad="c.mad" /><FieldEventBadge :event="c.field_event" /></span>
-              <span v-if="c.below_threshold || c.vehicle_warnings.length" class="block text-xs font-semibold text-orange-700">⚠ {{ [c.below_threshold ? 'note à suivre' : '', c.vehicle_warnings.length ? 'véhicule' : ''].filter(Boolean).join(' · ') }}</span>
+              <span v-if="c.below_threshold || c.vehicle_warnings.length" class="flex items-center gap-1 text-xs font-semibold text-orange-700"><Icone nom="alerte" taille="petite" /> {{ [c.below_threshold ? 'note à suivre' : '', c.vehicle_warnings.length ? 'véhicule' : ''].filter(Boolean).join(' · ') }}</span>
             </span>
             <span class="text-slate-500" aria-hidden="true">›</span>
           </RouterLink>
@@ -179,6 +179,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'

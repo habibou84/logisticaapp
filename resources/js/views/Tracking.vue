@@ -2,7 +2,7 @@
   <div class="min-h-screen bg-slate-100 px-4 py-8">
     <div class="max-w-md mx-auto space-y-4">
       <div class="text-center">
-        <div class="text-4xl">🚚</div>
+        <span class="mx-auto grid h-12 w-12 place-items-center rounded-full bg-slate-100 text-slate-600" aria-hidden="true"><Icone nom="livraison" taille="grande" /></span>
         <h1 class="text-xl font-bold mt-2">Suivi de colis</h1>
       </div>
 
@@ -28,10 +28,10 @@
         <!-- Le destinataire envoie sa position GPS pour guider le livreur -->
         <div v-if="tracking.can_share_location" class="rounded-xl bg-emerald-50 p-4 ring-1 ring-emerald-200 space-y-2.5">
           <template v-if="!tracking.location_shared">
-            <p class="font-semibold text-emerald-900">📍 Aidez le livreur à vous trouver</p>
+            <p class="font-semibold text-emerald-900"><Icone nom="adresse" taille="petite" class="inline align-[-0.15em]" /> Aidez le livreur à vous trouver</p>
             <p class="text-sm text-emerald-900/90">Placez-vous à l'endroit où vous voulez être livré, puis touchez le bouton.</p>
           </template>
-          <p v-else class="text-sm font-semibold text-emerald-900">✅ Votre position est enregistrée : le livreur la voit sur sa carte.</p>
+          <p v-else class="text-sm font-semibold text-emerald-900"><Icone nom="livre" taille="petite" class="inline align-[-0.15em]" /> Votre position est enregistrée : le livreur la voit sur sa carte.</p>
           <button
             type="button"
             :class="[tracking.location_shared ? 'btn-secondary' : 'btn-success', 'w-full']"
@@ -72,6 +72,7 @@
 </template>
 
 <script setup>
+import Icone from '../components/ui/Icone.vue'
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'

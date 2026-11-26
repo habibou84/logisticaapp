@@ -19,7 +19,7 @@
         </div>
         <!-- Numéros d'origine douteux : gardés tels quels, une correction seulement proposée -->
         <div v-if="destination?.phone_check" class="rounded bg-amber-50 p-2 text-sm text-amber-900 space-y-1">
-          <p>⚠️ Numéros d'origine à vérifier : <b>{{ destination.phones_raw }}</b></p>
+          <p><Icone nom="alerte" taille="petite" class="inline align-text-bottom" /> Numéros d'origine à vérifier : <b>{{ destination.phones_raw }}</b></p>
           <p v-for="d in destination.doubtful" :key="d.raw" class="flex flex-wrap items-center gap-2">
             <span class="font-mono">{{ d.raw }}</span>
             <template v-if="d.suggestion">→ peut-être <span class="font-mono">{{ d.suggestion }}</span>
@@ -38,7 +38,7 @@
 
       <!-- Position : confirmée sur place, historique, écart à trancher -->
       <section v-if="destination" class="rounded-lg border border-slate-200 p-3 space-y-2 text-sm">
-        <p class="font-medium">📍 Position</p>
+        <p class="flex items-center gap-1 font-medium"><Icone nom="adresse" taille="petite" />Position</p>
         <p v-if="destination.lat">
           <a :href="mapsLink(destination.lat, destination.lng)" target="_blank" class="text-blue-700">{{ destination.lat }}, {{ destination.lng }}</a>
           <span class="text-slate-600"> · {{ SOURCES[destination.location_source] || '' }}<template v-if="destination.located_by"> ({{ destination.located_by }})</template><template v-if="destination.located_at"> le {{ dateTime(destination.located_at) }}</template><template v-if="destination.location_accuracy"> · ± {{ destination.location_accuracy }} m</template></span>
@@ -78,6 +78,7 @@
 </template>
 
 <script setup>
+import Icone from '../ui/Icone.vue'
 import { ref, watch } from 'vue'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import Modal from '../Modal.vue'

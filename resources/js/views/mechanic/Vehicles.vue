@@ -5,7 +5,7 @@
     <p v-else-if="error" class="rounded-xl bg-red-50 p-3 text-sm text-red-800">{{ error }}</p>
     <div v-else-if="vehicles.length" class="m-card divide-y">
       <RouterLink v-for="v in vehicles" :key="v.id" :to="`/mecanicien/vehicules/${v.id}`" class="flex items-center gap-3 p-3.5 active:bg-slate-50">
-        <span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-slate-100" aria-hidden="true">{{ v.type === 'voiture' ? '🚗' : v.type === 'velo' ? '🚲' : '🛵' }}</span>
+        <span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-slate-100 text-slate-600" aria-hidden="true"><Icone :nom="v.type === 'voiture' ? 'voiture' : v.type === 'velo' ? 'velo' : 'moto'" /></span>
         <div class="min-w-0 flex-1">
           <p class="font-semibold">{{ v.plate || 'Sans plaque' }}</p>
           <p class="truncate text-sm text-slate-600">{{ [v.name, v.courier].filter(Boolean).join(' · ') }}</p>
@@ -13,11 +13,12 @@
         <span :class="['shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold', v.status === 'active' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800']">{{ v.status_label }}</span>
       </RouterLink>
     </div>
-    <EmptyState v-else icon="🛵" title="Aucun véhicule" :text="q ? 'Aucun véhicule ne correspond à votre recherche.' : 'Les véhicules du parc apparaissent ici.'" />
+    <EmptyState v-else icon="moto" title="Aucun véhicule" :text="q ? 'Aucun véhicule ne correspond à votre recherche.' : 'Les véhicules du parc apparaissent ici.'" />
   </div>
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import { onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'

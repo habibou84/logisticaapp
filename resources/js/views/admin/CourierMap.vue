@@ -45,12 +45,12 @@
         <div v-if="track.summary" class="p-3 grid grid-cols-2 gap-2 text-sm border-b">
           <div><p class="text-slate-600 text-xs">Distance</p><p class="font-semibold text-lg">{{ track.summary.distance_km }} km</p></div>
           <div><p class="text-slate-600 text-xs">En service</p><p class="font-semibold">{{ track.summary.first_at ? `${hour(track.summary.first_at)} → ${hour(track.summary.last_at)}` : '—' }}</p></div>
-          <div><p class="text-slate-600 text-xs">Livrés</p><p class="font-semibold">✅ {{ track.summary.delivered }}</p></div>
-          <div><p class="text-slate-600 text-xs">Récupérés · échecs</p><p class="font-semibold">📦 {{ track.summary.picked_up }} · ⚠️ {{ track.summary.failed }}</p></div>
+          <div><p class="text-slate-600 text-xs">Livrés</p><p class="flex items-center gap-1 font-semibold"><Icone nom="livre" taille="petite" /> {{ track.summary.delivered }}</p></div>
+          <div><p class="text-slate-600 text-xs">Récupérés · échecs</p><p class="font-semibold"><Icone nom="course" taille="petite" class="inline" /> {{ track.summary.picked_up }} · <Icone nom="alerte" taille="petite" class="inline" /> {{ track.summary.failed }}</p></div>
         </div>
         <div class="divide-y">
           <button v-for="(stop, i) in track.stops" :key="i" type="button" class="w-full text-left p-3 text-sm hover:bg-slate-50" @click="focusStop(stop)">
-            <span class="text-slate-600">{{ hour(stop.at) }}</span> · {{ stopIcon(stop.status) }} {{ stop.label }}
+            <span class="text-slate-600">{{ hour(stop.at) }}</span> · <Icone v-if="stopIcon(stop.status)" :nom="stopIcon(stop.status)" taille="petite" class="inline" /><template v-else>•</template> {{ stop.label }}
             <span class="block text-xs"><span class="font-mono">{{ stop.tracking_code }}</span><span v-if="stop.recipient"> · {{ stop.recipient }}</span><span v-if="stop.incident" class="text-red-600"> · {{ stop.incident }}</span></span>
           </button>
           <p v-if="!track.stops.length" class="p-3 text-sm text-slate-600">Aucune étape de course localisée ce jour-là.</p>
@@ -61,15 +61,15 @@
       <aside v-else class="card divide-y max-h-[75vh] overflow-y-auto">
         <!-- Ramassages sans livreur : les livreurs en service les plus proches -->
         <section v-if="showPickups && pickups.length" class="bg-orange-50/60">
-          <h2 class="px-3 pt-3 pb-1 text-sm font-semibold">📦 Ramassages sans livreur ({{ pickups.length }})</h2>
+          <h2 class="flex items-center gap-1.5 px-3 pt-3 pb-1 text-sm font-semibold"><Icone nom="course" taille="petite" /> Ramassages sans livreur ({{ pickups.length }})</h2>
           <div v-for="p in pickups" :key="p.order_id" :class="['px-3 py-2 border-t border-orange-100', selectedPickup === p.order_id ? 'bg-orange-100' : '']">
             <button type="button" class="w-full text-left" @click="focusPickup(p)">
               <span class="flex items-center justify-between gap-2 text-sm">
                 <span class="font-medium truncate">{{ p.merchant || 'Client' }}</span>
-                <span :class="['text-xs whitespace-nowrap', p.late ? 'text-red-700 font-semibold' : 'text-slate-600']">{{ p.late ? '⏰ ' : '' }}{{ waitDuration(p.minutes) }}</span>
+                <span :class="['inline-flex items-center gap-1 text-xs whitespace-nowrap', p.late ? 'text-red-700 font-semibold' : 'text-slate-600']"><Icone v-if="p.late" nom="retard" taille="petite" />{{ waitDuration(p.minutes) }}</span>
               </span>
               <span class="block text-xs text-slate-600 truncate"><span class="font-mono">{{ p.tracking_code }}</span> · {{ p.zone_name }}<span v-if="p.address"> · {{ p.address }}</span></span>
-              <span v-if="p.after_cutoff" class="text-xs text-red-700">🕒 Heure limite du jour passée</span>
+              <span v-if="p.after_cutoff" class="inline-flex items-center gap-1 text-xs text-red-700"><Icone nom="heure" taille="petite" /> Heure limite du jour passée</span>
             </button>
             <p v-if="p.lat === null" class="text-xs text-amber-700 mt-1">Position du client inconnue : pas de livreur proche calculé.</p>
             <p v-else-if="!p.nearest.length" class="text-xs text-slate-600 mt-1">Aucun livreur en service localisé.</p>
@@ -81,7 +81,7 @@
                 :title="`Assigner le ramassage à ${n.name}`"
                 @click="assign(p, n)"
               >
-                🛵 {{ n.name }} · {{ formatKm(n.km) }}<span v-if="n.missions" class="text-slate-600"> · {{ n.missions }} mission{{ n.missions > 1 ? 's' : '' }}</span>
+                <Icone nom="livreur" taille="petite" class="inline" /> {{ n.name }} · {{ formatKm(n.km) }}<span v-if="n.missions" class="text-slate-600"> · {{ n.missions }} mission{{ n.missions > 1 ? 's' : '' }}</span>
                 <span v-if="isStale(n)" class="text-amber-700" :title="`Position ${ago(n.last_location_at)} : le livreur a pu bouger depuis`"> · position ancienne</span>
               </button>
             </div>
@@ -102,7 +102,7 @@
               </li>
             </ul>
           </button>
-          <button type="button" class="mt-1 text-xs font-medium text-blue-600" @click="openTrack(c)">🛣️ Trajet du jour</button>
+          <button type="button" class="mt-1 inline-flex items-center gap-1 text-xs font-medium text-blue-600" @click="openTrack(c)"><Icone nom="trajet" taille="petite" /> Trajet du jour</button>
         </div>
         <p v-if="loaded && !listed.length" class="p-4 text-sm text-slate-600">Aucun livreur en service.</p>
       </aside>
@@ -111,6 +111,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import MadBadge from '../../components/MadBadge.vue'
 import FieldEventBadge from '../../components/FieldEventBadge.vue'
 import { madTitle } from '../../utils/mad'
@@ -124,6 +125,8 @@ import { useAuthStore } from '../../stores/auth'
 import { orderListChanges } from '../../composables/useRealtime'
 import { useToastStore } from '../../stores/toasts'
 import { today, waitDuration } from '../../utils/format'
+import { ICONES } from '../../utils/icones'
+import { svgIcone } from '../../utils/iconesSvg'
 
 // Onglet de « Activité des livreurs » : le titre de la page n'est pas répété
 defineProps({ embedded: { type: Boolean, default: false } })
@@ -161,7 +164,8 @@ let trackLayer = null
 
 // Trajet affiché : { courier, date, points, stops, summary, recent_days }
 const track = ref(null)
-const STOP_ICONS = { picked_up: '📦', delivered: '✅', delivery_failed: '⚠️', rescheduled: '📅', returned: '↩️', out_for_delivery: '🛵', pickup_in_progress: '🛵', at_hub: '🏬' }
+// Une étape du trajet = une icône de la charte (les mêmes noms ont un tracé dans utils/iconesSvg.js, pour les repères)
+const STOP_ICONS = { picked_up: 'course', delivered: 'livre', delivery_failed: 'urgent', rescheduled: 'date', returned: 'retour', out_for_delivery: 'livreur', pickup_in_progress: 'livreur', at_hub: 'depot' }
 
 const visible = computed(() => couriers.value.filter((c) => showOffDuty.value || c.is_available || c.missions.length))
 const located = computed(() => visible.value.filter((c) => c.lat !== null && c.lng !== null))
@@ -209,7 +213,7 @@ function popup(c) {
     ? `<ul style="margin:4px 0 0;padding-left:16px">${c.missions.map((m) => `<li>${escape(m.type_label)} · <a href="/admin/courses/${m.order_id}" data-order="${m.order_id}">${escape(m.tracking_code)}</a> · ${escape(m.zone_name)}</li>`).join('')}</ul>`
     : '<p style="margin:4px 0 0">Aucune mission en cours</p>'
 
-  return `<strong>${escape(c.name)}</strong><br>${c.mad ? `<span style="color:#6d28d9">${escape(madTitle(c.mad))}</span><br>` : ''}${c.field_event ? `<a href="/admin/terrain?evenement=${c.field_event.id}" style="color:#b91c1c">${escape(c.field_event.icon || '')} ${escape(c.field_event.label)} en cours</a><br>` : ''}
+  return `<strong>${escape(c.name)}</strong><br>${c.mad ? `<span style="color:#6d28d9">${escape(madTitle(c.mad))}</span><br>` : ''}${c.field_event ? `<a href="/admin/terrain?evenement=${c.field_event.id}" style="color:#b91c1c">${eventIcon(c.field_event.icon)} ${escape(c.field_event.label)} en cours</a><br>` : ''}
     <a href="tel:${escape(c.phone)}">${escape(c.phone)}</a> · ${c.is_available ? 'en service' : 'hors service'}<br>
     <span style="color:${isStale(c) ? '#b45309' : '#6b7280'}">Position ${escape(ago(c.last_location_at))}</span>${missions}`
 }
@@ -252,7 +256,7 @@ function pickupIcon(p) {
     iconSize: [30, 30],
     iconAnchor: [15, 15],
     popupAnchor: [0, -16],
-    html: `<div class="pickup-pin${p.late ? ' is-late' : ''}">📦</div>`,
+    html: `<div class="pickup-pin${p.late ? ' is-late' : ''}"><span style="color:#fff">${svgIcone('course', 16)}</span></div>`,
   })
 }
 
@@ -261,7 +265,7 @@ function pickupPopup(p) {
     ? `<br>Plus proches : ${p.nearest.map((n) => `${escape(n.name)} (${escape(formatKm(n.km))})`).join(', ')}`
     : ''
 
-  return `<strong>📦 ${escape(p.merchant || 'Client')}</strong> · sans livreur depuis ${escape(waitDuration(p.minutes))}<br>
+  return `<strong>${svgIcone('course', 14)} ${escape(p.merchant || 'Client')}</strong> · sans livreur depuis ${escape(waitDuration(p.minutes))}<br>
     <a href="/admin/courses/${p.order_id}" data-order="${p.order_id}">${escape(p.tracking_code)}</a> · ${escape(p.zone_name || '')}${p.address ? ` · ${escape(p.address)}` : ''}${nearest}`
 }
 
@@ -347,7 +351,18 @@ function shortDate(day) {
 }
 
 function stopIcon(status) {
-  return STOP_ICONS[status] || '•'
+  return STOP_ICONS[status] || null
+}
+
+// Repère d'une étape sur la carte : l'icône en texte SVG, ou un point si l'étape n'a pas d'icône
+function stopPin(status) {
+  const svg = svgIcone(stopIcon(status), 16)
+  return svg ? `<span style="color:#334155">${svg}</span>` : '<span style="color:#334155">•</span>'
+}
+
+// Icône d'un événement terrain envoyée par l'API : tracé de la charte, sinon l'ancien emoji tel quel
+function eventIcon(icon) {
+  return svgIcone(icon, 14) || (ICONES[icon] ? '' : escape(icon || ''))
 }
 
 function pin(html, color, size = 26) {
@@ -387,7 +402,7 @@ function drawTrack(fit) {
   }
 
   for (const stop of t.stops) {
-    L.marker([stop.lat, stop.lng], { icon: pin(stopIcon(stop.status), '#fff', 28), title: stop.label })
+    L.marker([stop.lat, stop.lng], { icon: pin(stopPin(stop.status), '#fff', 28), title: stop.label })
       .bindPopup(`<strong>${hour(stop.at)} · ${escape(stop.label)}</strong><br><a href="/admin/courses/${stop.order_id}" data-order="${stop.order_id}">${escape(stop.tracking_code)}</a>${stop.recipient ? ` · ${escape(stop.recipient)}` : ''}${stop.incident ? `<br><span style="color:#dc2626">${escape(stop.incident)}</span>` : ''}`)
       .addTo(trackLayer)
   }

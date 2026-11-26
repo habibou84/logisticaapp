@@ -28,7 +28,7 @@
             <button type="button" class="text-sm font-semibold text-red-600" @click="remove(r)">Supprimer</button>
           </template>
         </div>
-        <p v-if="!r.first_located" class="text-xs text-amber-700">⚠️ La première étape n'a pas de position sur la carte : le livreur ne pourra pas pointer par GPS.</p>
+        <p v-if="!r.first_located" class="text-xs text-amber-700"><Icone nom="alerte" taille="petite" class="inline align-text-bottom" /> La première étape n'a pas de position sur la carte : le livreur ne pourra pas pointer par GPS.</p>
         <ol class="space-y-1">
           <li v-for="s in r.stops" :key="s.id" class="flex gap-2 text-sm">
             <span :class="['grid h-6 w-6 shrink-0 place-items-center rounded-full text-xs font-bold text-white', s.position === 1 ? 'bg-emerald-600' : 'bg-slate-400']">{{ s.position }}</span>
@@ -43,6 +43,7 @@
 </template>
 
 <script setup>
+import Icone from '../ui/Icone.vue'
 import { onMounted, ref } from 'vue'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import { useToastStore } from '../../stores/toasts'

@@ -1,5 +1,5 @@
 <template>
-  <SettingsPage icon="⏰" title="Alertes et rappels" intro="Quand prévenir le dispatch et les administrateurs. 0 = pas d'alerte.">
+  <SettingsPage icon="rappel" title="Alertes et rappels" intro="Quand prévenir le dispatch et les administrateurs. 0 = pas d'alerte.">
     <template v-if="form">
       <section class="card p-4 space-y-3">
         <h2 class="font-semibold">Courses sans livreur</h2>

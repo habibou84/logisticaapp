@@ -87,7 +87,7 @@ export function adminMenuGroups(badges = {}) {
 
 // Poste de pilotage pour le dispatch (à faire maintenant, point du jour), tableau de bord pour les autres
 export const adminMenuTop = (can = () => true) => [
-  { to: '/admin', icon: can('orders.dispatch') ? '🎛️' : '🏠', label: can('orders.dispatch') ? 'Poste de pilotage' : 'Tableau de bord' },
+  { to: '/admin', icon: can('orders.dispatch') ? 'pilotage' : 'accueil', label: can('orders.dispatch') ? 'Poste de pilotage' : 'Tableau de bord' },
   { to: '/admin/statistiques', icon: 'statistiques', label: 'Statistiques', permission: 'orders.view' },
 ]
 

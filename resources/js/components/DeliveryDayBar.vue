@@ -1,7 +1,7 @@
 <template>
   <!-- Journée de livraison (validation avec règles) : ouverte, ou fermée → nouvelles courses pour le lendemain -->
   <div v-if="day?.rules" :class="['card px-3 py-2 sm:p-3 flex flex-wrap items-center gap-3 text-sm', day.closed ? 'bg-amber-50 border-amber-200' : 'bg-emerald-50 border-emerald-200']">
-    <span class="text-lg" aria-hidden="true">{{ day.closed ? '🌙' : '🟢' }}</span>
+    <Icone :nom="day.closed ? 'jour-ferme' : 'jour-ouvert'" />
     <div class="min-w-0 flex-1">
       <template v-if="day.closed">
         <p class="font-semibold">Livraisons du jour fermées <span class="font-normal">({{ reasonLabel }})</span></p>
@@ -17,7 +17,7 @@
     </div>
 
     <button v-if="day.closed && day.reason === 'manual'" class="btn-secondary" :disabled="busy" @click="reopen">Rouvrir<span class="hidden sm:inline">&nbsp;la journée</span></button>
-    <button v-else-if="!day.closed && !closing" class="btn-secondary" @click="closing = true">🌙 Fermer<span class="hidden sm:inline">&nbsp;la journée</span></button>
+    <button v-else-if="!day.closed && !closing" class="btn-secondary" @click="closing = true"><Icone nom="jour-ferme" /><span>Fermer<span class="hidden sm:inline">&nbsp;la journée</span></span></button>
 
     <div v-if="closing" class="w-full rounded-lg bg-white p-3 ring-1 ring-slate-200 space-y-2">
       <p class="font-medium">Fermer les livraisons du jour ?</p>
@@ -38,6 +38,7 @@
 </template>
 
 <script setup>
+import Icone from './ui/Icone.vue'
 import { computed, onMounted, ref } from 'vue'
 import http, { apiErrorMessage } from '../bootstrap/axios'
 import { useToastStore } from '../stores/toasts'

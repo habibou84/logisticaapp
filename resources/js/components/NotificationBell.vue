@@ -5,7 +5,7 @@
       aria-label="Notifications"
       @click="toggle"
     >
-      <span class="text-xl">🔔</span>
+      <Icone nom="notifications" />
       <span
         v-if="store.unread"
         class="absolute -top-0.5 -right-0.5 min-w-5 h-5 px-1 rounded-full bg-red-600 text-white text-xs flex items-center justify-center"
@@ -23,7 +23,7 @@
         <span class="font-semibold text-sm">Notifications</span>
         <span class="flex items-center gap-3">
           <button v-if="store.unread" class="text-xs text-blue-600" @click="store.markAllRead()">Tout marquer comme lu</button>
-          <button class="p-1 text-lg leading-none text-slate-600 sm:hidden" aria-label="Fermer les notifications" @click="open = false">×</button>
+          <button class="p-1 text-lg leading-none text-slate-600 sm:hidden" aria-label="Fermer les notifications" @click="open = false"><Icone nom="fermer" /></button>
         </span>
       </div>
       <ul class="max-h-[70vh] overflow-y-auto divide-y sm:max-h-96">
@@ -44,6 +44,7 @@
 </template>
 
 <script setup>
+import Icone from './ui/Icone.vue'
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useNotificationStore } from '../stores/notifications'

@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-3">
-    <input v-model="search" type="search" class="m-input" placeholder="🔍 Chercher un motif" aria-label="Chercher un motif">
+    <input v-model="search" type="search" class="m-input" placeholder="Chercher un motif" aria-label="Chercher un motif">
 
     <!-- Recherche : tous les motifs qui correspondent -->
     <ChoiceChips v-if="search.trim()" :model-value="modelValue" :options="options(matches)" label="Motif" @update:model-value="pick" />
@@ -10,7 +10,7 @@
       <!-- Peu de motifs : directement -->
       <ChoiceChips v-if="reasons.length <= 8" :model-value="modelValue" :options="options(reasons)" label="Motif" @update:model-value="pick" />
       <template v-else-if="family">
-        <button type="button" class="text-sm font-medium text-[var(--app-color)]" @click="family = null">← {{ FAMILY(family).icon }} {{ FAMILY(family).label }}</button>
+        <button type="button" class="text-sm font-medium text-[var(--app-color)]" @click="family = null">← <Icone :nom="FAMILY(family).icon" taille="petite" class="inline" /> {{ FAMILY(family).label }}</button>
         <ChoiceChips :model-value="modelValue" :options="options(reasons.filter((r) => (r.family || 'other') === family))" label="Motif" @update:model-value="pick" />
       </template>
       <template v-else>
@@ -28,6 +28,7 @@
 </template>
 
 <script setup>
+import Icone from '../ui/Icone.vue'
 import { computed, ref, watch } from 'vue'
 import ChoiceChips from './ChoiceChips.vue'
 import { REASON_FAMILIES } from '../../utils/reasons'

@@ -2,16 +2,16 @@
   <div class="card p-4 space-y-2">
     <h2 class="font-semibold">Note de suivi <span class="text-xs font-normal text-slate-600">· équipe</span></h2>
     <div v-if="order.follow_up && !editing" class="rounded-lg px-3 py-2 text-sm" :class="order.follow_up.holds ? 'bg-amber-50 text-amber-900' : 'bg-slate-50'">
-      <p class="font-medium">{{ order.follow_up.holds ? '⏸ ' : '📌 ' }}{{ order.follow_up.label }}</p>
+      <p class="font-medium"><Icone :nom="order.follow_up.holds ? 'pause' : 'epingle'" taille="petite" class="inline align-text-bottom" /> {{ order.follow_up.label }}</p>
       <p v-if="order.follow_up.note">{{ order.follow_up.note }}</p>
       <p class="text-xs text-slate-600">{{ order.follow_up.by }}<template v-if="order.follow_up.at"> · {{ dateTime(order.follow_up.at) }}</template></p>
       <p v-if="order.follow_up.holds" class="text-xs mt-1">En attente : ni attribution automatique, ni file « sans livreur ».</p>
     </div>
     <div v-if="order.follow_up && !editing" class="flex gap-2">
       <button type="button" class="btn-secondary flex-1" @click="start">Modifier</button>
-      <button type="button" class="btn-secondary flex-1" :disabled="saving" @click="clear">✓ Lever</button>
+      <button type="button" class="btn-secondary flex-1" :disabled="saving" @click="clear"><Icone nom="valider" />Lever</button>
     </div>
-    <button v-else-if="!editing" type="button" class="btn-secondary w-full" @click="start">📌 Poser une note de suivi</button>
+    <button v-else-if="!editing" type="button" class="btn-secondary w-full" @click="start"><Icone nom="epingle" />Poser une note de suivi</button>
 
     <form v-if="editing" class="space-y-2" @submit.prevent="save">
       <select v-model="form.reason_id" class="input" required aria-label="Note de suivi">
@@ -21,7 +21,7 @@
       <input v-if="selected?.requires_date" v-model="form.date" type="date" :min="today()" class="input" required aria-label="Date">
       <textarea v-model="form.note" rows="2" class="input" maxlength="500" :required="!!selected?.requires_note"
         :placeholder="selected?.requires_note ? 'Précisez (obligatoire)' : 'Précision (facultatif)'" />
-      <p v-if="selected?.visible_to_client" class="text-xs text-slate-600">👁 Le client verra cette note dans son suivi.</p>
+      <p v-if="selected?.visible_to_client" class="text-xs text-slate-600"><Icone nom="voir" taille="petite" class="inline align-text-bottom" /> Le client verra cette note dans son suivi.</p>
       <p v-if="error" class="text-red-600 text-sm">{{ error }}</p>
       <div class="flex gap-2">
         <button type="submit" class="btn-primary flex-1" :disabled="saving || !form.reason_id">Enregistrer</button>
@@ -32,6 +32,7 @@
 </template>
 
 <script setup>
+import Icone from './ui/Icone.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import http, { apiErrorMessage } from '../bootstrap/axios'
 import { cachedGet } from '../composables/useCachedApi'

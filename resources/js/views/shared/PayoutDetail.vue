@@ -2,7 +2,7 @@
   <div v-if="payout" class="max-w-4xl mx-auto space-y-4">
     <div class="no-print flex flex-wrap items-center gap-2">
       <button class="btn-secondary" @click="router.back()">← Retour</button>
-      <button class="btn-secondary" @click="print">🖨️ Imprimer / PDF</button>
+      <button class="btn-secondary" @click="print"><Icone nom="imprimer" />Imprimer / PDF</button>
     </div>
 
     <!-- Relevé imprimable -->
@@ -51,6 +51,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'

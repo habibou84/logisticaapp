@@ -2,13 +2,13 @@
  * Familles des motifs (miroir de App\Models\IncidentReason::FAMILIES) et filtre par étape et par activité.
  */
 export const REASON_FAMILIES = {
-  unavailable: { label: 'Indisponible', icon: '🚪' },
-  postponed: { label: 'Report', icon: '📅' },
-  address: { label: 'Adresse, contact', icon: '📍' },
-  documents: { label: 'Documents', icon: '📄' },
-  recipient: { label: 'Destinataire', icon: '🏢' },
-  pickup: { label: 'Ramassage', icon: '📦' },
-  other: { label: 'Autre', icon: '✏️' },
+  unavailable: { label: 'Indisponible', icon: 'absent' },
+  postponed: { label: 'Report', icon: 'date' },
+  address: { label: 'Adresse, contact', icon: 'adresse' },
+  documents: { label: 'Documents', icon: 'document' },
+  recipient: { label: 'Destinataire', icon: 'entreprise' },
+  pickup: { label: 'Ramassage', icon: 'course' },
+  other: { label: 'Autre', icon: 'modifier' },
 }
 
 /** Motifs proposés pour une étape (pickup, delivery) et l'activité de la course */

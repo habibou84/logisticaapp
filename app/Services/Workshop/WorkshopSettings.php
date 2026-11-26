@@ -11,16 +11,16 @@ use App\Models\Company;
 class WorkshopSettings
 {
     public const CATEGORIES = [
-        ['key' => 'engine', 'label' => 'Moteur', 'icon' => '⚙️'],
-        ['key' => 'electric', 'label' => 'Électrique', 'icon' => '🔋'],
-        ['key' => 'tyre', 'label' => 'Pneu', 'icon' => '🛞'],
-        ['key' => 'brakes', 'label' => 'Freins', 'icon' => '🛑'],
-        ['key' => 'chain', 'label' => 'Chaîne, transmission', 'icon' => '⛓️'],
-        ['key' => 'fuel', 'label' => 'Carburant', 'icon' => '⛽'],
-        ['key' => 'clutch', 'label' => 'Embrayage', 'icon' => '🔧'],
-        ['key' => 'lights', 'label' => 'Éclairage', 'icon' => '💡'],
-        ['key' => 'body', 'label' => 'Carrosserie, accident', 'icon' => '💥'],
-        ['key' => 'other', 'label' => 'Autre', 'icon' => '✏️'],
+        ['key' => 'engine', 'label' => 'Moteur', 'icon' => 'moteur'],
+        ['key' => 'electric', 'label' => 'Électrique', 'icon' => 'batterie'],
+        ['key' => 'tyre', 'label' => 'Pneu', 'icon' => 'pneu'],
+        ['key' => 'brakes', 'label' => 'Freins', 'icon' => 'freins'],
+        ['key' => 'chain', 'label' => 'Chaîne, transmission', 'icon' => 'chaine'],
+        ['key' => 'fuel', 'label' => 'Carburant', 'icon' => 'carburant'],
+        ['key' => 'clutch', 'label' => 'Embrayage', 'icon' => 'atelier'],
+        ['key' => 'lights', 'label' => 'Éclairage', 'icon' => 'eclairage'],
+        ['key' => 'body', 'label' => 'Carrosserie, accident', 'icon' => 'carrosserie'],
+        ['key' => 'other', 'label' => 'Autre', 'icon' => 'modifier'],
     ];
 
     public const DEFAULTS = [

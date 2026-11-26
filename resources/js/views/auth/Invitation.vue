@@ -9,7 +9,7 @@
 
         <template v-else-if="invite">
           <div class="space-y-1 text-center">
-            <p class="text-3xl" aria-hidden="true">👋</p>
+            <span class="mx-auto grid h-12 w-12 place-items-center rounded-full bg-slate-100 text-slate-600" aria-hidden="true"><Icone nom="main" taille="grande" /></span>
             <h1 class="text-xl font-bold">Bienvenue {{ invite.name }}</h1>
             <p class="text-sm text-slate-600">
               Votre compte <strong>{{ invite.role_label || 'équipe' }}</strong> chez <strong>{{ invite.company }}</strong> est prêt.
@@ -43,7 +43,7 @@
         </template>
 
         <div v-else class="space-y-3 text-center">
-          <p class="text-3xl" aria-hidden="true">⌛</p>
+          <span class="mx-auto grid h-12 w-12 place-items-center rounded-full bg-slate-100 text-slate-600" aria-hidden="true"><Icone nom="sablier" taille="grande" /></span>
           <h1 class="text-lg font-bold">Lien non valable</h1>
           <p class="text-sm text-slate-600">{{ error }}</p>
           <RouterLink to="/admin/connexion" class="btn-secondary inline-block">Page de connexion</RouterLink>
@@ -54,6 +54,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'

@@ -1,5 +1,5 @@
 <template>
-  <SettingsPage icon="📇" title="Annuaire des destinations" intro="Destinations partagées par tous les clients : suggérées pendant la saisie d'une course, enrichies par chaque course, positions confirmées sur place par les livreurs.">
+  <SettingsPage icon="annuaire" title="Annuaire des destinations" intro="Destinations partagées par tous les clients : suggérées pendant la saisie d'une course, enrichies par chaque course, positions confirmées sur place par les livreurs.">
     <template v-if="form?.destination_settings">
       <div class="grid gap-4 lg:grid-cols-2">
         <section class="card p-4 space-y-3">

@@ -7,7 +7,7 @@
     </div>
 
     <p v-if="!loaded" class="card p-6 text-center text-slate-600">Chargement…</p>
-    <p v-else-if="!groups.length" class="card flex items-center justify-center gap-2 p-6 text-emerald-700">✅ {{ orders.length ? 'Aucun client ne correspond.' : 'Aucun colis ramassé en retard : tout est décidé.' }}</p>
+    <p v-else-if="!groups.length" class="card flex items-center justify-center gap-2 p-6 text-emerald-700"><Icone nom="livre" />{{ orders.length ? 'Aucun client ne correspond.' : 'Aucun colis ramassé en retard : tout est décidé.' }}</p>
 
     <section v-for="g in groups" :key="g.id" class="card overflow-hidden" :aria-label="g.name">
       <div class="flex flex-wrap items-center gap-3 bg-slate-50 p-4" :class="opened[g.id] ? 'border-b' : ''">
@@ -17,8 +17,8 @@
             {{ g.phone }}<template v-if="g.phone"> · </template><b>{{ g.orders.length }} colis</b> · le plus ancien prévu le {{ shortDay(g.oldest) }} ({{ daysAgo(g.oldest) }})
           </span>
         </button>
-        <button type="button" class="btn-primary" :disabled="!checkedOf(g).length" @click="decide('return', checkedOf(g))">↩️ Tout renvoyer ({{ checkedOf(g).length }})</button>
-        <button type="button" class="btn-secondary" :disabled="!checkedOf(g).length" @click="decide('reschedule', checkedOf(g))">📅 Tout reporter ({{ checkedOf(g).length }})</button>
+        <button type="button" class="btn-primary" :disabled="!checkedOf(g).length" @click="decide('return', checkedOf(g))"><Icone nom="retour" />Tout renvoyer ({{ checkedOf(g).length }})</button>
+        <button type="button" class="btn-secondary" :disabled="!checkedOf(g).length" @click="decide('reschedule', checkedOf(g))"><Icone nom="date" />Tout reporter ({{ checkedOf(g).length }})</button>
         <button type="button" class="text-sm font-semibold text-blue-700" @click="opened[g.id] = !opened[g.id]">{{ opened[g.id] ? 'Masquer' : 'Voir les colis' }}</button>
       </div>
 
@@ -31,13 +31,13 @@
             <span class="ml-2 text-slate-600">{{ o.recipient?.name || o.recipient?.phone }}<template v-if="o.delivery?.zone_name"> · {{ o.delivery.zone_name }}</template></span>
           </span>
           <span :class="['min-w-[8rem] inline-flex items-center gap-1', o.held_by ? 'text-amber-800' : 'text-emerald-700']">
-            {{ o.held_by ? '🛵' : '🏬' }} {{ o.held_by ? `chez ${o.held_by.name}` : 'au dépôt' }}
+            <Icone :nom="o.held_by ? 'livreur' : 'depot'" taille="petite" />{{ o.held_by ? `chez ${o.held_by.name}` : 'au dépôt' }}
           </span>
           <span class="min-w-[8rem] font-semibold text-red-700">prévue le {{ shortDay(dayOf(o)) }}</span>
           <span class="min-w-[10rem] text-slate-600">{{ o.last_incident?.label || o.status_label }}</span>
           <span class="ml-auto flex gap-1">
-            <button type="button" class="btn-primary !px-2 !py-1 text-xs" @click="decide('return', [o])">↩️ Retour</button>
-            <button type="button" class="btn-secondary !px-2 !py-1 text-xs" @click="decide('reschedule', [o])">📅 Reporter</button>
+            <button type="button" class="btn-primary !px-2 !py-1 text-xs" @click="decide('return', [o])"><Icone nom="retour" taille="petite" />Retour</button>
+            <button type="button" class="btn-secondary !px-2 !py-1 text-xs" @click="decide('reschedule', [o])"><Icone nom="date" taille="petite" />Reporter</button>
           </span>
         </li>
       </ul>
@@ -48,6 +48,7 @@
 </template>
 
 <script setup>
+import Icone from './ui/Icone.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import http from '../bootstrap/axios'

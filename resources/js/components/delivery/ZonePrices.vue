@@ -156,7 +156,7 @@
         <div class="card divide-y overflow-hidden">
           <div v-for="z in shipping" :key="z.id" class="flex flex-wrap items-center gap-3 px-4 py-3">
             <label class="flex items-center gap-2 text-sm"><input type="checkbox" class="h-5 w-5" :checked="z.is_active" :disabled="!canZones" :aria-label="`On livre ici : ${z.name}`" @change="patch(z, 'is_active')"> On livre ici</label>
-            <span :class="['min-w-40 flex-1 font-medium', z.is_active ? '' : 'text-slate-600 line-through']">🚌 {{ z.name }}</span>
+            <span :class="['min-w-40 flex-1 font-medium', z.is_active ? '' : 'text-slate-600 line-through']"><Icone nom="expedition" taille="petite" class="inline align-text-bottom" /> {{ z.name }}</span>
             <label class="flex items-center gap-2 text-xs text-slate-600">
               Frais habituels du transporteur
               <input :value="z.shipping_fee_estimate" type="number" min="0" class="input w-24 py-1" :disabled="!canZones" :aria-label="`Frais habituels : ${z.name}`" @change="setEstimate(z, $event.target.value)">
@@ -187,6 +187,7 @@
 </template>
 
 <script setup>
+import Icone from '../ui/Icone.vue'
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'

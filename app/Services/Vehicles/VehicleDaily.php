@@ -100,7 +100,7 @@ class VehicleDaily
             $who = $doc->vehicle?->plate ?? $doc->courier?->user?->name;
             $when = $days < 0 ? 'dépassé depuis le '.$doc->ends_on->format('d/m') : ($days === 0 ? 'se termine aujourd\'hui' : "se termine dans {$days} jour(s) ({$doc->ends_on->format('d/m')})");
             $href = $doc->vehicle_id ? "/admin/vehicules/{$doc->vehicle_id}?onglet=papiers" : '/admin/vehicules/echeances';
-            Notification::send($this->managers($company->id), new VehicleAlert('document', "📄 {$label} · {$who}", ucfirst($when).'.', $href, $days < 0 ? 'alert' : 'warning'));
+            Notification::send($this->managers($company->id), new VehicleAlert('document', "{$label} · {$who}", ucfirst($when).'.', $href, $days < 0 ? 'alert' : 'warning'));
             // Le livreur aussi : son permis, ou les papiers du véhicule qu'il conduit
             $courierUser = $doc->courier?->user ?? ($doc->vehicle?->courier_id ? Courier::withoutGlobalScopes()->with('user')->find($doc->vehicle->courier_id)?->user : null);
             $courierUser?->notify(new VehicleAlert('document', "📄 {$label} · {$who}", ucfirst($when).'.', '/livreur/vehicule', 'warning'));
@@ -125,10 +125,10 @@ class VehicleDaily
                     $item['remaining_km'] !== null ? "dans {$item['remaining_km']} km" : null,
                     $item['remaining_days'] !== null ? "dans {$item['remaining_days']} jour(s)" : null,
                 ])->filter()->implode(' ou ');
-                Notification::send($this->managers($company->id), new VehicleAlert('maintenance', "{$item['icon']} {$item['label']} · {$vehicle->plate}", ucfirst($left).'.', "/admin/vehicules/{$vehicle->id}?onglet=entretien"));
+                Notification::send($this->managers($company->id), new VehicleAlert('maintenance', "{$item['label']} · {$vehicle->plate}", ucfirst($left).'.', "/admin/vehicules/{$vehicle->id}?onglet=entretien"));
                 if ($vehicle->courier_id) {
                     Courier::withoutGlobalScopes()->with('user')->find($vehicle->courier_id)?->user
-                        ?->notify(new VehicleAlert('maintenance', "{$item['icon']} {$item['label']} {$left}", "Votre véhicule {$vehicle->plate} : prévenez l'agence pour le garage.", '/livreur/vehicule'));
+                        ?->notify(new VehicleAlert('maintenance', "🔧 {$item['label']} {$left}", "Votre véhicule {$vehicle->plate} : prévenez l'agence pour le garage.", '/livreur/vehicule'));
                 }
                 $reminded[$item['key']] = $item['state'];
                 $sent++;

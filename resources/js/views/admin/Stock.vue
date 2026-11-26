@@ -63,7 +63,7 @@
                 <span v-else class="text-gray-300">—</span>
               </td>
               <td class="p-2 text-right text-slate-600">{{ level(p, null)?.on_hand ?? '—' }}</td>
-              <td :class="['p-2 text-right font-semibold', p.is_low ? 'text-amber-700' : '']">{{ p.available }}<span v-if="p.is_low"> ⚠️</span></td>
+              <td :class="['p-2 text-right font-semibold', p.is_low ? 'text-amber-700' : '']">{{ p.available }}<Icone v-if="p.is_low" nom="alerte" taille="petite" class="ml-1 inline" /></td>
               <td class="p-2 text-right whitespace-nowrap space-x-1">
                 <button class="btn-success px-2 py-1 text-xs" :disabled="!hubs.length" @click="openMove(p, 'receipt')">Entrée</button>
                 <button class="btn-secondary px-2 py-1 text-xs" :disabled="!hubs.length" @click="openMove(p, 'withdrawal')">Retrait</button>
@@ -144,7 +144,7 @@
           <ul class="rounded bg-slate-50 p-2 space-y-0.5">
             <li v-for="item in o.items" :key="item.id"><strong>{{ item.quantity }} ×</strong> {{ item.label }}</li>
           </ul>
-          <button class="btn-success w-full" @click="prepare(o)">📦 Commande préparée</button>
+          <button class="btn-success w-full" @click="prepare(o)"><Icone nom="course" /> Commande préparée</button>
         </div>
       </div>
     </template>
@@ -313,6 +313,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import SearchSelect from '../../components/SearchSelect.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'

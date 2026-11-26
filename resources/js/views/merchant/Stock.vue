@@ -12,7 +12,7 @@
     </div>
 
     <p v-for="c in activeContracts" :key="c.id" class="rounded-xl bg-sky-50 text-sky-900 text-sm p-3">
-      🏬 Stockage {{ c.hub_name ? `à ${c.hub_name}` : 'à l\'entrepôt' }} : {{ c.description }}, facturé chaque mois et déduit de vos paiements.
+      <Icone nom="depot" taille="petite" class="inline align-[-0.15em]" /> Stockage {{ c.hub_name ? `à ${c.hub_name}` : 'à l\'entrepôt' }} : {{ c.description }}, facturé chaque mois et déduit de vos paiements.
     </p>
 
     <button
@@ -34,15 +34,15 @@
       </div>
       <div v-if="p.levels.length" class="flex flex-wrap gap-1.5">
         <span v-for="l in p.levels" :key="l.location_id" class="rounded-full bg-slate-100 px-2.5 py-1 text-xs">
-          {{ l.hub_id ? '🏬' : '🏠' }} {{ l.hub_id ? l.label : 'Chez moi' }} : <strong>{{ l.on_hand }}</strong><span v-if="l.reserved" class="text-amber-700"> · {{ l.reserved }} réservé{{ l.reserved > 1 ? 's' : '' }}</span>
+          <Icone :nom="l.hub_id ? 'depot' : 'domicile'" taille="petite" class="inline align-[-0.15em]" /> {{ l.hub_id ? l.label : 'Chez moi' }} : <strong>{{ l.on_hand }}</strong><span v-if="l.reserved" class="text-amber-700"> · {{ l.reserved }} réservé{{ l.reserved > 1 ? 's' : '' }}</span>
         </span>
       </div>
-      <p v-if="p.is_low" class="text-xs font-medium text-amber-700">⚠️ {{ p.available <= 0 ? 'Rupture de stock' : 'Stock bas' }} (alerte à {{ p.low_stock_threshold }})</p>
+      <p v-if="p.is_low" class="text-xs font-medium text-amber-700"><Icone nom="alerte" taille="petite" class="inline align-[-0.15em]" /> {{ p.available <= 0 ? 'Rupture de stock' : 'Stock bas' }} (alerte à {{ p.low_stock_threshold }})</p>
     </button>
 
     <EmptyState
       v-if="loaded && !products.length"
-      icon="📦"
+      icon="package"
       :title="filter === 'low' ? 'Aucun produit en stock bas' : 'Aucun produit'"
       :text="filter === 'low' ? '' : 'Ajoutez vos produits pour suivre votre stock et les choisir en créant une course. Vous pouvez aussi les déposer à l\'entrepôt de l\'agence.'"
     />
@@ -52,7 +52,7 @@
       <div v-if="current" class="space-y-4">
         <div class="m-card divide-y">
           <div v-for="l in current.levels" :key="l.location_id" class="p-3 flex justify-between text-sm">
-            <span>{{ l.hub_id ? `🏬 ${l.label}` : '🏠 Chez moi' }}</span>
+            <span class="inline-flex items-center gap-1.5"><Icone :nom="l.hub_id ? 'depot' : 'domicile'" taille="petite" />{{ l.hub_id ? l.label : 'Chez moi' }}</span>
             <span><strong>{{ l.available }}</strong> dispo<span class="text-slate-600"> · {{ l.on_hand }} en stock</span></span>
           </div>
           <p v-if="!current.levels.length" class="p-3 text-sm text-slate-600">Aucun stock enregistré.</p>
@@ -118,6 +118,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'

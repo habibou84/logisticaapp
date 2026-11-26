@@ -1,14 +1,14 @@
 <template>
   <div :class="['rounded-2xl border bg-white p-4 space-y-3', main?.status === 'verified' ? 'ring-2 ring-emerald-500 border-transparent' : '']">
-    <p class="font-semibold">💸 Payer ce client</p>
+    <p class="flex items-center gap-1.5 font-semibold"><Icone nom="argent" />Payer ce client</p>
 
     <p v-if="!methods.length" class="rounded-xl bg-red-50 p-3 text-sm text-red-700">
-      ⚠️ Le client n'a encore donné aucun moyen de paiement. Demandez-lui de l'ajouter dans son application (Profil › Comment être payé), ou saisissez-le depuis la page E-commerçants.
+      <Icone nom="alerte" taille="petite" class="inline align-text-bottom" /> Le client n'a encore donné aucun moyen de paiement. Demandez-lui de l'ajouter dans son application (Profil › Comment être payé), ou saisissez-le depuis la page E-commerçants.
     </p>
 
     <template v-if="main">
       <p v-if="main.status !== 'verified'" class="rounded-xl border border-amber-300 bg-amber-50 p-2 text-sm text-amber-900">
-        ⚠️ Ce moyen n'a pas été vérifié par l'agence{{ main.status === 'rejected' ? ' (refusé)' : '' }}. Appelez le client à son numéro habituel avant de payer.
+        <Icone nom="alerte" taille="petite" class="inline align-text-bottom" /> Ce moyen n'a pas été vérifié par l'agence{{ main.status === 'rejected' ? ' (refusé)' : '' }}. Appelez le client à son numéro habituel avant de payer.
       </p>
       <div class="flex items-center gap-3">
         <PaymentMethodIcon :type="main.type" />
@@ -16,15 +16,15 @@
           <p class="font-semibold break-words">{{ main.type_label }}{{ main.bank_name ? ` · ${main.bank_name}` : '' }} · {{ main.display_number }}</p>
           <p class="text-xs text-slate-600">{{ main.holder_name || '—' }} · <PaymentMethodStatus :status="main.status" /></p>
         </div>
-        <button type="button" class="btn-secondary text-xs" @click="copy(main.type === 'bank' ? main.number : main.display_number.replace(/\s/g, ''), 'Numéro copié.')">📋 Copier</button>
+        <button type="button" class="btn-secondary text-xs" @click="copy(main.type === 'bank' ? main.number : main.display_number.replace(/\s/g, ''), 'Numéro copié.')"><Icone nom="copier" taille="petite" />Copier</button>
       </div>
       <div class="flex flex-wrap items-start gap-3">
         <button v-if="main.qr_url" type="button" class="shrink-0" title="QR code en grand" @click="bigQr = main.qr_url">
           <AuthImage :src="main.qr_url" alt="QR code" class="h-36 w-36 rounded-lg border object-contain bg-white" />
         </button>
         <div class="min-w-[12rem] flex-1 space-y-2 text-sm">
-          <a v-if="main.payment_link" :href="main.payment_link" target="_blank" rel="noopener noreferrer" class="block w-full rounded-lg bg-sky-500 py-2 text-center font-semibold text-white hover:bg-sky-600">🔗 Ouvrir le lien de paiement</a>
-          <button v-if="main.qr_url" type="button" class="btn-secondary w-full" @click="bigQr = main.qr_url">🔍 QR code en grand</button>
+          <a v-if="main.payment_link" :href="main.payment_link" target="_blank" rel="noopener noreferrer" class="flex w-full items-center justify-center gap-2 rounded-lg bg-sky-500 py-2 text-center font-semibold text-white hover:bg-sky-600"><Icone nom="lien" />Ouvrir le lien de paiement</a>
+          <button v-if="main.qr_url" type="button" class="btn-secondary w-full" @click="bigQr = main.qr_url"><Icone nom="agrandir" />QR code en grand</button>
           <p class="text-xs text-slate-600">Montant : <b>{{ money(amount) }}</b> · <button type="button" class="underline" @click="copy(String(amount), 'Montant copié.')">copier</button></p>
         </div>
       </div>
@@ -46,6 +46,7 @@
 </template>
 
 <script setup>
+import Icone from '../ui/Icone.vue'
 import { computed, ref, watch } from 'vue'
 import { useToastStore } from '../../stores/toasts'
 import { money } from '../../utils/format'

@@ -10,7 +10,7 @@
         <KpiTile title="Chiffre d'affaires" kind="money" :value="data.pareto.total" />
       </div>
       <p v-if="data.pareto.top_share >= 30" class="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">
-        ⚠️ Un seul client fait {{ data.pareto.top_share.toLocaleString('fr-FR') }} % du chiffre d'affaires : son départ pèserait lourd.
+        <Icone nom="alerte" taille="petite" class="inline align-text-bottom" /> Un seul client fait {{ data.pareto.top_share.toLocaleString('fr-FR') }} % du chiffre d'affaires : son départ pèserait lourd.
       </p>
       <ul class="space-y-1.5 text-sm">
         <li v-for="r in data.pareto.rows.slice(0, 15)" :key="r.id">
@@ -22,15 +22,15 @@
 
     <!-- Clients en baisse -->
     <section class="card space-y-2 p-4">
-      <h2 class="font-semibold">📉 Clients en baisse <span class="text-sm font-normal text-slate-600">· 30 derniers jours contre la moyenne des 3 mois d'avant</span></h2>
+      <h2 class="font-semibold"><Icone nom="baisse" class="inline align-text-bottom" /> Clients en baisse <span class="text-sm font-normal text-slate-600">· 30 derniers jours contre la moyenne des 3 mois d'avant</span></h2>
       <p v-if="!data.decline.length" class="text-sm text-slate-600">Aucun client en baisse de plus de 20 %.</p>
       <ul v-else class="divide-y text-sm">
         <li v-for="c in data.decline" :key="c.id" class="flex flex-wrap items-center justify-between gap-2 py-2">
           <span class="min-w-[12rem] flex-1"><b>{{ c.name }}</b><span class="block text-xs text-slate-600">{{ c.contact_name || '' }} {{ c.phone || '' }}</span></span>
           <span>{{ c.recent }} course(s) contre {{ c.average }} par mois · <b class="text-red-700">{{ c.change }} %</b></span>
           <span v-if="c.phone" class="flex gap-2">
-            <a :href="`tel:${c.phone}`" class="btn-secondary py-1">📞 Appeler</a>
-            <a :href="`https://wa.me/${c.phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Bonjour ${c.contact_name || ''}, nous n'avons pas eu de vos nouvelles ces dernières semaines : avez-vous des courses à nous confier ?`)}`" target="_blank" rel="noopener" class="btn-secondary py-1">💬 WhatsApp</a>
+            <a :href="`tel:${c.phone}`" class="btn-secondary py-1"><Icone nom="appeler" taille="petite" />Appeler</a>
+            <a :href="`https://wa.me/${c.phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Bonjour ${c.contact_name || ''}, nous n'avons pas eu de vos nouvelles ces dernières semaines : avez-vous des courses à nous confier ?`)}`" target="_blank" rel="noopener" class="btn-secondary py-1"><Icone nom="message" taille="petite" />WhatsApp</a>
           </span>
         </li>
       </ul>
@@ -72,6 +72,7 @@
 </template>
 
 <script setup>
+import Icone from '../ui/Icone.vue'
 import { money } from '../../utils/format'
 import KpiTile from './KpiTile.vue'
 import SortableTable from './SortableTable.vue'

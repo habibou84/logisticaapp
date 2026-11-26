@@ -114,7 +114,7 @@ class FieldEvents
             $courier->loadMissing('user');
             foreach (Order::whereIn('id', $orderIds)->get() as $order) {
                 $this->journal->record($order, null, OrderEventType::Note, [
-                    'note' => "{$type['icon']} Événement terrain signalé par {$courier->user?->name} : {$type['label']}".($event->note ? " · « {$event->note} »" : ''),
+                    'note' => "Événement terrain signalé par {$courier->user?->name} : {$type['label']}".($event->note ? " · « {$event->note} »" : ''),
                     'visible_to_merchant' => false,
                     'meta' => ['field_event_id' => $event->id],
                 ]);

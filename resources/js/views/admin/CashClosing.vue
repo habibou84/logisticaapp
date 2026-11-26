@@ -11,7 +11,7 @@
     <!-- Journée déjà clôturée -->
     <template v-else-if="closed">
       <div class="card border-emerald-200 bg-emerald-50 p-4">
-        <p class="font-semibold text-emerald-900">🔒 Caisse du {{ date(closed.day) }} clôturée à {{ time(closed.closed_at) }} par {{ closed.closed_by }}</p>
+        <p class="flex items-center gap-1.5 font-semibold text-emerald-900"><Icone nom="verrou" taille="petite" /> Caisse du {{ date(closed.day) }} clôturée à {{ time(closed.closed_at) }} par {{ closed.closed_by }}</p>
         <p class="text-sm text-emerald-900">Ce qui arrive maintenant passera sur la clôture de demain.</p>
       </div>
       <ClosingDetail :closing="closed" />
@@ -20,9 +20,9 @@
     <!-- Compter et clôturer -->
     <template v-else-if="figures">
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <StatCard title="Entré" :value="money(figures.total_in)" icon="⬇️" :subtitle="`depuis ${since}`" />
-        <StatCard title="Sorti" :value="money(figures.total_out)" icon="⬆️" subtitle="clients, paie, avances" />
-        <StatCard title="Encore chez les livreurs" :value="money(figures.with_couriers)" icon="🛵" subtitle="pas dans la caisse" />
+        <StatCard title="Entré" :value="money(figures.total_in)" icon="entree" :subtitle="`depuis ${since}`" />
+        <StatCard title="Sorti" :value="money(figures.total_out)" icon="sortie" subtitle="clients, paie, avances" />
+        <StatCard title="Encore chez les livreurs" :value="money(figures.with_couriers)" icon="livreur" subtitle="pas dans la caisse" />
       </div>
 
       <div class="card overflow-x-auto">
@@ -108,6 +108,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import { computed, defineComponent, h, onMounted, reactive, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import http from '../../bootstrap/axios'

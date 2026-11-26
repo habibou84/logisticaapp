@@ -34,7 +34,7 @@ class CashClosed extends Notification implements ShouldQueue
         if ($this->closing === null) {
             return [
                 'kind' => 'cash_close_reminder',
-                'title' => '🔒 Caisse pas encore clôturée',
+                'title' => 'Caisse pas encore clôturée',
                 'body' => 'Entré : '.Money::format($this->in).', sorti : '.Money::format($this->out).'. Comptez la caisse et clôturez la journée.',
                 'severity' => 'alert',
                 'href' => '/admin/caisse/cloture',
@@ -45,7 +45,7 @@ class CashClosed extends Notification implements ShouldQueue
 
         return [
             'kind' => 'cash_closed',
-            'title' => '🔒 Caisse du '.$closing->day->format('d/m').' clôturée',
+            'title' => 'Caisse du '.$closing->day->format('d/m').' clôturée',
             'body' => 'Entré : '.Money::format($closing->total_in).', sorti : '.Money::format($closing->total_out).'. '
                 .($closing->explanation ? 'Écart : '.Money::format($closing->difference).' (« '.$closing->explanation.' »).' : 'Aucun écart.'),
             'severity' => $closing->explanation ? 'alert' : 'note',

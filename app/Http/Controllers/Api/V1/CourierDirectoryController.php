@@ -229,7 +229,7 @@ class CourierDirectoryController extends Controller
             }
             $out[$courierId][] = [
                 'level' => $a['state'] === 'expired' ? 'alert' : 'warning',
-                'text' => trim(($a['icon'] ?? '').' '.$a['label'].($a['state'] === 'expired' ? ' : à régulariser' : ' : bientôt')),
+                'text' => $a['label'].($a['state'] === 'expired' ? ' : à régulariser' : ' : bientôt'),
             ];
         }
 

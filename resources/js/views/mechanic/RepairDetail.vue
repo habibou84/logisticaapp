@@ -3,7 +3,7 @@
     <!-- La panne -->
     <div :class="['m-card border-l-4 p-4 space-y-2', SEVERITY_BORDERS[repair.severity] || 'border-l-slate-300']">
       <div class="flex items-start gap-3">
-        <span class="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-slate-100 text-2xl" aria-hidden="true">{{ repair.icon || '🛠️' }}</span>
+        <span class="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-slate-100 text-2xl text-slate-600" aria-hidden="true"><Icone :nom="repair.icon || 'atelier'" taille="grande" /></span>
         <div class="min-w-0 flex-1">
           <p class="text-xs text-slate-600">Panne n° {{ repair.number }} · {{ dateTime(repair.created_at) }}</p>
           <p class="text-lg font-semibold leading-snug">{{ repair.category_label ? `${repair.category_label}${repair.part ? ' · ' + repair.part : ''}` : repair.title }}</p>
@@ -13,8 +13,8 @@
       <p class="flex flex-wrap gap-x-3 gap-y-1 text-sm text-slate-600">
         <span :class="['rounded-full px-2 py-0.5 text-xs font-semibold', SEVERITY_STYLES[repair.severity]]">{{ repair.severity_label }}</span>
         <span v-if="repair.event">{{ repair.event.capacity_label }}</span>
-        <span v-if="repair.event?.orders_count">📦 {{ repair.event.orders_count }} colis en cours</span>
-        <span v-if="repair.distance_km !== null">📍 à {{ repair.distance_km }} km</span>
+        <span v-if="repair.event?.orders_count" class="inline-flex items-center gap-1"><Icone nom="course" taille="petite" />{{ repair.event.orders_count }} colis en cours</span>
+        <span v-if="repair.distance_km !== null" class="inline-flex items-center gap-1"><Icone nom="adresse" taille="petite" />à {{ repair.distance_km }} km</span>
       </p>
       <p v-if="repair.note" class="rounded-xl bg-slate-50 px-3 py-2 text-sm">« {{ repair.note }} »</p>
       <div v-if="media.length" class="flex flex-wrap items-center gap-2">
@@ -23,21 +23,21 @@
           <audio v-else :src="m.src" controls class="h-9 w-56" />
         </template>
       </div>
-      <a v-if="repair.lat !== null" :href="mapsLink(repair.lat, repair.lng)" target="_blank" rel="noopener" class="m-btn-secondary py-3 text-[15px]">🧭 Itinéraire jusqu'à la panne</a>
+      <a v-if="repair.lat !== null" :href="mapsLink(repair.lat, repair.lng)" target="_blank" rel="noopener" class="m-btn-secondary py-3 text-[15px]"><Icone nom="itineraire" />Itinéraire jusqu'à la panne</a>
     </div>
 
     <!-- Le livreur et le véhicule -->
     <div class="m-card divide-y">
       <div v-if="repair.courier" class="flex items-center gap-3 p-4">
-        <span class="grid h-10 w-10 place-items-center rounded-full bg-slate-100" aria-hidden="true">👤</span>
+        <span class="grid h-10 w-10 place-items-center rounded-full bg-slate-100 text-slate-600" aria-hidden="true"><Icone nom="livreur" /></span>
         <div class="min-w-0 flex-1">
           <p class="font-semibold">{{ repair.courier.name }}</p>
           <p class="text-sm text-slate-600">{{ localPhone(repair.courier.phone) }}</p>
         </div>
-        <a v-if="repair.courier.phone" :href="telLink(repair.courier.phone)" class="rounded-full bg-[var(--app-color)] px-4 py-2 text-sm font-semibold text-white">📞 Appeler</a>
+        <a v-if="repair.courier.phone" :href="telLink(repair.courier.phone)" class="inline-flex items-center gap-1.5 rounded-full bg-[var(--app-color)] px-4 py-2 text-sm font-semibold text-white"><Icone nom="appeler" taille="petite" />Appeler</a>
       </div>
       <RouterLink v-if="repair.vehicle" :to="`/mecanicien/vehicules/${repair.vehicle.id}`" class="flex items-center gap-3 p-4 active:bg-slate-50">
-        <span class="grid h-10 w-10 place-items-center rounded-full bg-slate-100" aria-hidden="true">🛵</span>
+        <span class="grid h-10 w-10 place-items-center rounded-full bg-slate-100 text-slate-600" aria-hidden="true"><Icone nom="moto" /></span>
         <div class="min-w-0 flex-1">
           <p class="font-semibold">{{ repair.vehicle.plate }}</p>
           <p class="text-sm text-slate-600">{{ repair.vehicle.name }}{{ repair.vehicle.odometer ? ` · ${repair.vehicle.odometer.toLocaleString('fr-FR')} km` : '' }}</p>
@@ -49,11 +49,11 @@
     <!-- Étapes et leurs heures -->
     <ol class="m-card space-y-2.5 p-4" aria-label="Étapes de l'intervention">
       <li v-for="s in steps" :key="s.label" class="flex items-center gap-3 text-sm">
-        <span :class="['grid h-6 w-6 shrink-0 place-items-center rounded-full text-xs text-white', s.at ? 'bg-emerald-600' : s.current ? 'bg-[var(--app-color)] ring-4 ring-orange-100' : 'bg-slate-300']">{{ s.at ? '✓' : '' }}</span>
+        <span :class="['grid h-6 w-6 shrink-0 place-items-center rounded-full text-xs text-white', s.at ? 'bg-emerald-600' : s.current ? 'bg-[var(--app-color)] ring-4 ring-orange-100' : 'bg-slate-300']"><Icone v-if="s.at" nom="valider" taille="petite" /></span>
         <span :class="['flex-1', s.at || s.current ? 'text-slate-900' : 'text-slate-400', s.current ? 'font-semibold' : '']">{{ s.label }}</span>
         <span class="font-mono text-xs text-slate-600">{{ s.at ? time(s.at) : '—' }}</span>
       </li>
-      <li v-if="repair.status === 'cancelled'" class="text-sm text-slate-600">✖️ Annulée à {{ time(repair.cancelled_at) }}</li>
+      <li v-if="repair.status === 'cancelled'" class="text-sm text-slate-600"><Icone nom="annulation" taille="petite" class="inline" /> Annulée à {{ time(repair.cancelled_at) }}</li>
     </ol>
 
     <!-- Diagnostic et photos -->
@@ -95,7 +95,7 @@
       <p v-if="repair.garage">Garage : {{ repair.garage }} · {{ money(repair.garage_amount) }}</p>
       <p class="font-semibold">Total : {{ money(repair.total) }}</p>
       <p v-if="repair.remark" class="text-slate-600">À prévoir : {{ repair.remark }}</p>
-      <p :class="repair.courier_can_resume ? 'text-emerald-700' : 'text-amber-700'">{{ repair.courier_can_resume ? '✅ Le livreur a pu repartir' : '⏸️ Le livreur n\'est pas reparti : l\'agence s\'en occupe' }}</p>
+      <p :class="repair.courier_can_resume ? 'text-emerald-700' : 'text-amber-700'"><Icone :nom="repair.courier_can_resume ? 'livre' : 'en-pause'" taille="petite" class="inline" /> {{ repair.courier_can_resume ? 'Le livreur a pu repartir' : 'Le livreur n\'est pas reparti : l\'agence s\'en occupe' }}</p>
     </div>
 
     <!-- Échange avec le livreur -->
@@ -120,14 +120,14 @@
         <button type="button" class="m-btn-secondary" :disabled="busy" @click="answer('decline')">Je ne peux pas</button>
       </template>
       <button v-else-if="repair.status === 'searching'" type="button" class="m-btn-primary text-lg" :disabled="busy" @click="answer('accept')">Je prends cette panne</button>
-      <button v-else-if="repair.status === 'accepted' && repair.mine" type="button" class="m-btn-primary text-lg" :disabled="busy" @click="step('depart')">🛵 Je pars</button>
-      <button v-else-if="repair.status === 'en_route' && repair.mine" type="button" class="m-btn-primary text-lg" :disabled="busy" @click="step('arrive')">📍 Je suis arrivé</button>
-      <RouterLink v-else-if="repair.status === 'on_site' && repair.mine" :to="`/mecanicien/pannes/${repair.id}/diagnostic`" class="m-btn-primary text-lg">🔍 Faire le diagnostic</RouterLink>
+      <button v-else-if="repair.status === 'accepted' && repair.mine" type="button" class="m-btn-primary text-lg" :disabled="busy" @click="step('depart')"><Icone nom="trajet" />Je pars</button>
+      <button v-else-if="repair.status === 'en_route' && repair.mine" type="button" class="m-btn-primary text-lg" :disabled="busy" @click="step('arrive')"><Icone nom="adresse" />Je suis arrivé</button>
+      <RouterLink v-else-if="repair.status === 'on_site' && repair.mine" :to="`/mecanicien/pannes/${repair.id}/diagnostic`" class="m-btn-primary text-lg"><Icone nom="chercher" />Faire le diagnostic</RouterLink>
       <template v-else-if="repair.status === 'repairing' && repair.mine">
-        <RouterLink :to="`/mecanicien/pannes/${repair.id}/cloture`" class="m-btn-success text-lg">✅ Réparation terminée</RouterLink>
+        <RouterLink :to="`/mecanicien/pannes/${repair.id}/cloture`" class="m-btn bg-action text-white text-lg"><Icone nom="livre" />Réparation terminée</RouterLink>
         <RouterLink :to="`/mecanicien/pannes/${repair.id}/diagnostic`" class="m-btn-secondary">Modifier le diagnostic</RouterLink>
       </template>
-      <button v-if="canWork" type="button" class="m-btn-secondary" @click="purchaseOpen = true">🛒 Acheter une pièce sur place</button>
+      <button v-if="canWork" type="button" class="m-btn-secondary" @click="purchaseOpen = true"><Icone nom="achat" />Acheter une pièce sur place</button>
     </div>
 
     <PurchaseSheet :open="purchaseOpen" :repair-id="repair.id" @close="purchaseOpen = false" @sent="purchaseSent" />
@@ -137,6 +137,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'

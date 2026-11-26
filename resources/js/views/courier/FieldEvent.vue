@@ -2,7 +2,7 @@
   <div v-if="event" class="space-y-4">
     <div class="m-card p-4 space-y-3">
       <div class="flex items-start gap-3">
-        <span class="h-12 w-12 shrink-0 rounded-2xl grid place-items-center text-2xl bg-slate-100">{{ event.icon }}</span>
+        <span class="h-12 w-12 shrink-0 rounded-2xl grid place-items-center text-2xl bg-slate-100 text-slate-600"><Icone :nom="event.icon || 'alerte'" taille="grande" /></span>
         <div class="min-w-0 flex-1">
           <p class="font-semibold text-lg">{{ event.type_label }}</p>
           <p class="text-sm text-slate-600">{{ dateTime(event.created_at) }} · {{ capacityText }}</p>
@@ -13,7 +13,7 @@
       <!-- Suivi : envoyé, pris en charge, réglé -->
       <ol class="space-y-2">
         <li v-for="s in steps" :key="s.label" class="flex items-center gap-3 text-sm">
-          <span :class="['h-6 w-6 shrink-0 rounded-full grid place-items-center text-xs text-white', s.done ? 'bg-emerald-600' : 'bg-slate-300']">{{ s.done ? '✓' : '' }}</span>
+          <span :class="['h-6 w-6 shrink-0 rounded-full grid place-items-center text-xs text-white', s.done ? 'bg-emerald-600' : 'bg-slate-300']"><Icone v-if="s.done" nom="valider" taille="petite" /></span>
           <span :class="s.done ? 'text-slate-900' : 'text-slate-400'">{{ s.label }}</span>
         </li>
       </ol>
@@ -21,23 +21,23 @@
       <!-- Mécanicien envoyé par l'agence : qui vient, où il en est -->
       <div v-if="event.repair && event.repair.status !== 'cancelled'" class="rounded-xl bg-orange-50 p-3 text-sm ring-1 ring-orange-200">
         <div class="flex items-center gap-3">
-          <span class="text-2xl" aria-hidden="true">🛠️</span>
+          <Icone nom="atelier" taille="grande" />
           <div class="min-w-0 flex-1">
             <p class="font-semibold">{{ event.repair.mechanic ? `Mécanicien : ${event.repair.mechanic.name}` : 'Un mécanicien va être envoyé' }}</p>
             <p class="text-slate-700">{{ repairText }}</p>
           </div>
-          <a v-if="event.repair.mechanic?.phone && event.status !== 'resolved'" :href="`tel:${event.repair.mechanic.phone}`" class="shrink-0 rounded-full bg-[var(--app-color)] px-3 py-1.5 font-semibold text-white">📞</a>
+          <a v-if="event.repair.mechanic?.phone && event.status !== 'resolved'" :href="`tel:${event.repair.mechanic.phone}`" class="shrink-0 rounded-full bg-[var(--app-color)] px-3 py-1.5 font-semibold text-white" aria-label="Appeler le mécanicien"><Icone nom="appeler" /></a>
         </div>
       </div>
       <p v-if="event.note" class="rounded-xl bg-slate-50 px-3 py-2 text-sm">« {{ event.note }} »</p>
-      <p v-if="event.resolution" class="text-sm text-emerald-700">✓ {{ event.resolution }}</p>
+      <p v-if="event.resolution" class="text-sm text-emerald-700"><Icone nom="valider" taille="petite" class="inline" /> {{ event.resolution }}</p>
       <div v-if="media.length" class="flex flex-wrap items-center gap-2">
         <template v-for="m in media" :key="m.id">
           <img v-if="m.kind === 'photo'" :src="m.src" alt="Photo jointe" class="h-20 w-20 rounded-xl object-cover ring-1 ring-slate-200">
           <audio v-else :src="m.src" controls class="h-9 w-52" />
         </template>
       </div>
-      <p v-if="event.orders?.length" class="text-sm text-slate-600">📦 {{ event.orders.length }} course{{ event.orders.length > 1 ? 's' : '' }} touchée{{ event.orders.length > 1 ? 's' : '' }} : {{ event.orders.map((o) => o.tracking_code).join(', ') }}</p>
+      <p v-if="event.orders?.length" class="text-sm text-slate-600"><Icone nom="course" taille="petite" class="inline" /> {{ event.orders.length }} course{{ event.orders.length > 1 ? 's' : '' }} touchée{{ event.orders.length > 1 ? 's' : '' }} : {{ event.orders.map((o) => o.tracking_code).join(', ') }}</p>
     </div>
 
     <!-- Échange avec l'agence -->
@@ -55,14 +55,15 @@
       </div>
     </div>
 
-    <button v-if="event.status !== 'resolved'" type="button" class="m-btn-success text-lg py-4" :disabled="busy" @click="resume">✅ C'est réglé, je reprends</button>
-    <a v-if="companyPhone" :href="`tel:${companyPhone}`" class="m-btn-secondary">📞 Appeler l'agence</a>
+    <button v-if="event.status !== 'resolved'" type="button" class="m-btn bg-action text-white text-lg py-4" :disabled="busy" @click="resume"><Icone nom="livre" />C'est réglé, je reprends</button>
+    <a v-if="companyPhone" :href="`tel:${companyPhone}`" class="m-btn-secondary"><Icone nom="appeler" />Appeler l'agence</a>
   </div>
   <p v-else-if="error" class="text-center text-slate-600 py-10">{{ error }}</p>
   <p v-else class="text-center text-slate-400 py-10">Chargement…</p>
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'

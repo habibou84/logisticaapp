@@ -7,7 +7,7 @@
         <p class="text-sm text-slate-600">Ce que chaque rôle de l'équipe peut faire. Les rôles intégrés servent de modèles ; créez vos rôles sur mesure.</p>
       </div>
       <div class="flex flex-wrap gap-2">
-        <RouterLink to="/admin/utilisateurs" class="btn-secondary">👥 Comptes</RouterLink>
+        <RouterLink to="/admin/utilisateurs" class="btn-secondary"><Icone nom="utilisateurs" /> Comptes</RouterLink>
         <button v-if="canManage" type="button" class="btn-primary" @click="edit(null)">+ Nouveau rôle</button>
       </div>
     </div>
@@ -58,6 +58,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import PageTabs from '../../components/PageTabs.vue'
 import { TEAM_TABS } from '../../utils/pageTabs'
 import { computed, onMounted, reactive, ref } from 'vue'

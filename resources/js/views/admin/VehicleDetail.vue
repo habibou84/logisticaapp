@@ -5,7 +5,7 @@
     <!-- En-tête -->
     <div class="flex flex-wrap items-start gap-4">
       <label class="card grid h-24 w-32 shrink-0 cursor-pointer place-items-center overflow-hidden text-5xl" title="Changer la photo">
-        <img v-if="photo" :src="photo" alt="" class="h-full w-full object-cover"><span v-else>{{ VEHICLE_TYPES[v.type]?.icon }}</span>
+        <img v-if="photo" :src="photo" alt="" class="h-full w-full object-cover"><span v-else class="grid h-12 w-12 place-items-center rounded-full bg-slate-100 text-2xl text-slate-600"><Icone :nom="VEHICLE_TYPES[v.type]?.icon || 'vehicule'" taille="grande" /></span>
         <input type="file" accept="image/*" class="hidden" @change="uploadPhoto">
       </label>
       <div class="min-w-0 flex-1">
@@ -16,14 +16,14 @@
         </div>
         <p class="text-slate-600">{{ [v.brand, v.model, v.year].filter(Boolean).join(' ') || VEHICLE_TYPES[v.type]?.label }}{{ v.color ? ` · ${v.color}` : '' }}{{ v.vin ? ` · châssis ${v.vin}` : '' }}{{ capacity ? ` · ${capacity}` : '' }}</p>
         <p class="mt-1 text-sm">
-          🛵 <template v-if="v.courier">Confié à <b>{{ v.courier.name }}</b></template><template v-else>Confié à personne</template>
+          <Icone nom="livreur" taille="petite" class="inline" /> <template v-if="v.courier">Confié à <b>{{ v.courier.name }}</b></template><template v-else>Confié à personne</template>
           · compteur <b>{{ km(v.odometer) }}</b><span v-if="v.odometer_at" class="text-slate-600"> (relevé le {{ dateTime(v.odometer_at) }})</span>
         </p>
-        <p v-if="v.problems.length" class="mt-1 text-sm font-medium text-red-700">⛔ Pas utilisable : {{ v.problems.join(', ') }}</p>
+        <p v-if="v.problems.length" class="mt-1 text-sm font-medium text-red-700"><Icone nom="refus" taille="petite" class="inline" /> Pas utilisable : {{ v.problems.join(', ') }}</p>
       </div>
       <div class="flex flex-wrap gap-2">
-        <button type="button" class="btn-secondary" @click="assigning = true">🔁 Confier à…</button>
-        <button type="button" class="btn-secondary" @click="openLog('maintenance')">🔧 Entretien, dépense</button>
+        <button type="button" class="btn-secondary" @click="assigning = true"><Icone nom="repeter" /> Confier à…</button>
+        <button type="button" class="btn-secondary" @click="openLog('maintenance')"><Icone nom="atelier" /> Entretien, dépense</button>
         <button type="button" class="btn-primary" @click="formOpen = true">Modifier</button>
       </div>
     </div>
@@ -38,7 +38,7 @@
         <div class="flex items-center justify-between"><h2 class="font-semibold">Papiers</h2><button type="button" class="text-sm text-blue-600" @click="setTab('papiers')">Tout voir →</button></div>
         <table class="mt-1 w-full text-sm">
           <tr v-for="d in currentDocs" :key="d.id" class="border-t border-slate-100">
-            <td class="py-2">{{ d.icon }} {{ d.kind_label }}</td><td class="py-2 text-slate-600">{{ [d.issuer, d.reference].filter(Boolean).join(' · ') }}</td>
+            <td class="py-2"><Icone v-if="d.icon" :nom="d.icon" taille="petite" class="inline" /> {{ d.kind_label }}</td><td class="py-2 text-slate-600">{{ [d.issuer, d.reference].filter(Boolean).join(' · ') }}</td>
             <td class="py-2"><span :class="['rounded-full px-2 py-0.5 text-xs font-medium', STATE_STYLES[d.state]]">{{ d.ends_on ? `jusqu'au ${date(d.ends_on)}` : 'permanent' }}</span></td>
           </tr>
           <tr v-if="!currentDocs.length"><td class="py-3 text-slate-600">Aucun papier : <button type="button" class="text-blue-600" @click="openDoc(null)">ajouter l'assurance, la visite…</button></td></tr>
@@ -51,7 +51,7 @@
           {{ [v.cost_per_km ? `${money(v.cost_per_km)} / km` : null, v.cost_per_course ? `${money(v.cost_per_course)} / course (${v.courses} courses)` : null].filter(Boolean).join(' et ') }}
         </p>
         <ul class="mt-3 space-y-1 text-sm">
-          <li v-for="c in COST_LINES" v-show="v.costs[c.key]" :key="c.key" class="flex justify-between"><span>{{ c.label }}</span><b>{{ money(v.costs[c.key]) }}</b></li>
+          <li v-for="c in COST_LINES" v-show="v.costs[c.key]" :key="c.key" class="flex justify-between"><span class="inline-flex items-center gap-1.5"><Icone :nom="c.icon" taille="petite" />{{ c.label }}</span><b>{{ money(v.costs[c.key]) }}</b></li>
         </ul>
         <p v-if="v.purchase_price" class="mt-2 text-xs text-slate-500">Prix d'achat ({{ money(v.purchase_price) }}) à part.</p>
       </section>
@@ -62,7 +62,7 @@
       <section class="card p-4 lg:col-span-2">
         <h2 class="font-semibold">Derniers faits</h2>
         <ul class="mt-1 divide-y divide-slate-100 text-sm">
-          <li v-for="f in recent" :key="f.key" class="flex gap-3 py-2"><span class="w-14 shrink-0 text-slate-600">{{ shortDate(f.at) }}</span><span class="flex-1">{{ f.text }}</span><span class="font-medium">{{ f.amount ? money(f.amount) : '' }}</span></li>
+          <li v-for="f in recent" :key="f.key" class="flex gap-3 py-2"><span class="w-14 shrink-0 text-slate-600">{{ shortDate(f.at) }}</span><span class="flex flex-1 items-center gap-1.5"><Icone v-if="f.icon" :nom="f.icon" taille="petite" />{{ f.text }}</span><span class="font-medium">{{ f.amount ? money(f.amount) : '' }}</span></li>
           <li v-if="!recent.length" class="py-3 text-slate-600">Rien pour l'instant.</li>
         </ul>
       </section>
@@ -74,7 +74,7 @@
       <table class="w-full text-sm">
         <thead class="text-left text-xs uppercase text-slate-600"><tr><th class="py-2">Papier</th><th>Numéro, délivré par</th><th>Période</th><th>État</th><th>Coût</th><th /></tr></thead>
         <tr v-for="d in v.documents" :key="d.id" :class="['border-t border-slate-100', d.current ? '' : 'opacity-50']">
-          <td class="py-2">{{ d.icon }} {{ d.kind === 'other' ? d.label : d.kind_label }}</td>
+          <td class="py-2"><Icone v-if="d.icon" :nom="d.icon" taille="petite" class="inline" /> {{ d.kind === 'other' ? d.label : d.kind_label }}</td>
           <td class="text-slate-600">{{ [d.reference, d.issuer].filter(Boolean).join(' · ') || '—' }}</td>
           <td>{{ d.starts_on ? date(d.starts_on) : '' }}{{ d.ends_on ? ` → ${date(d.ends_on)}` : ' · sans fin' }}</td>
           <td><span :class="['rounded-full px-2 py-0.5 text-xs font-medium', STATE_STYLES[d.state]]">{{ d.current ? (d.state === 'permanent' ? 'permanent' : daysText(d.days)) : 'remplacé' }}</span></td>
@@ -83,7 +83,7 @@
             <button v-if="d.has_file" type="button" class="text-blue-600" @click="openFile(`/vehicles/documents/${d.id}/file`)">Voir</button>
             <button v-if="d.has_original" type="button" class="text-slate-600" @click="openFile(`/vehicles/documents/${d.id}/file?original=1`)">Original</button>
             <button type="button" class="ml-3 text-blue-600" @click="openDoc(d)">Modifier</button>
-            <button type="button" class="ml-3 text-red-600" @click="removeDoc(d)">✕</button>
+            <button type="button" class="ml-3 text-red-600" aria-label="Supprimer le papier" @click="removeDoc(d)"><Icone nom="fermer" taille="petite" class="inline" /></button>
           </td>
         </tr>
         <tr v-if="!v.documents.length"><td colspan="6" class="py-4 text-slate-600">Aucun papier enregistré.</td></tr>
@@ -100,15 +100,15 @@
       <section class="card p-4 space-y-2">
         <h2 class="font-semibold">Plan de ce véhicule</h2>
         <div v-for="(p, i) in plan" :key="i" class="grid grid-cols-[3rem_1fr_6rem_5rem_2rem] items-center gap-2">
-          <input v-model="p.icon" class="input px-1 text-center" :aria-label="`Icône ${i + 1}`">
+          <IconePicker v-model="p.icon" :label="`Icône ${i + 1}`" />
           <input v-model="p.label" class="input" :aria-label="`Entretien ${i + 1}`">
           <input v-model.number="p.every_km" type="number" min="1" class="input" placeholder="km" :aria-label="`Tous les … km (${p.label})`">
           <input v-model.number="p.every_months" type="number" min="1" class="input" placeholder="mois" :aria-label="`Tous les … mois (${p.label})`">
-          <button type="button" class="text-red-600" :aria-label="`Retirer ${p.label}`" @click="plan.splice(i, 1)">✕</button>
+          <button type="button" class="text-red-600" :aria-label="`Retirer ${p.label}`" @click="plan.splice(i, 1)"><Icone nom="fermer" taille="petite" class="inline" /></button>
         </div>
         <p class="text-xs text-slate-600">Tous les … km et/ou tous les … mois (le premier atteint).</p>
         <div class="flex gap-2">
-          <button type="button" class="btn-secondary text-sm" @click="plan.push({ icon: '🔧', label: '', every_km: null, every_months: null })">+ Ligne</button>
+          <button type="button" class="btn-secondary text-sm" @click="plan.push({ icon: 'atelier', label: '', every_km: null, every_months: null })">+ Ligne</button>
           <button type="button" class="btn-primary text-sm" :disabled="busy" @click="savePlan">Enregistrer le plan</button>
         </div>
       </section>
@@ -118,23 +118,23 @@
     <section v-if="tab === 'carnet'" class="card p-4 space-y-2">
       <div class="flex flex-wrap items-center gap-2">
         <h2 class="mr-auto font-semibold">Carnet</h2>
-        <button v-for="k in [{ value: '', label: 'Tout', icon: '' }, ...catalog.log_kinds]" :key="k.value" type="button" :class="['rounded-full px-3 py-1 text-sm', logFilter === k.value ? 'bg-slate-900 text-white' : 'bg-slate-100']" @click="logFilter = k.value">{{ k.icon }} {{ k.label }}</button>
+        <button v-for="k in [{ value: '', label: 'Tout', icon: '' }, ...catalog.log_kinds]" :key="k.value" type="button" :class="['rounded-full px-3 py-1 text-sm', logFilter === k.value ? 'bg-slate-900 text-white' : 'bg-slate-100']" @click="logFilter = k.value"><Icone v-if="k.icon" :nom="k.icon" taille="petite" class="inline" /> {{ k.label }}</button>
         <button type="button" class="btn-primary text-sm" @click="openLog(logFilter || 'maintenance')">+ Ajouter</button>
       </div>
       <table class="w-full text-sm">
         <tr v-for="l in logs" :key="l.id" class="border-t border-slate-100 align-top">
           <td class="w-20 py-2 text-slate-600">{{ date(l.done_on) }}</td>
           <td class="py-2">
-            <p>{{ l.icon }} <b>{{ l.kind_label }}</b><span v-if="l.label"> · {{ l.label }}</span><span v-if="l.garage" class="text-slate-600"> · {{ l.garage }}</span></p>
+            <p><Icone v-if="l.icon" :nom="l.icon" taille="petite" class="inline" /> <b>{{ l.kind_label }}</b><span v-if="l.label"> · {{ l.label }}</span><span v-if="l.garage" class="text-slate-600"> · {{ l.garage }}</span></p>
             <p class="text-xs text-slate-600">
               {{ [l.odometer ? km(l.odometer) : null, l.liters ? `${l.liters} L` : null, l.courier, l.paid_by === 'courier' ? 'payé par le livreur' : null,
                   l.immobilized_days ? `${l.immobilized_days} j d'immobilisation` : null, l.charged ? (l.kind === 'fuel' ? `remboursé ${money(l.charged)}` : `retenu ${money(l.charged)}`) : null].filter(Boolean).join(' · ') }}
               <RouterLink v-if="l.field_event_id" :to="`/admin/terrain?evenement=${l.field_event_id}`" class="text-blue-600"> · événement terrain</RouterLink>
-              <button v-for="n in l.photos" :key="n" type="button" class="ml-1 text-blue-600" @click="openFile(`/vehicles/logs/${l.id}/photos/${n - 1}`)">📎{{ n }}</button>
+              <button v-for="n in l.photos" :key="n" type="button" class="ml-1 text-blue-600" @click="openFile(`/vehicles/logs/${l.id}/photos/${n - 1}`)"><Icone nom="piece-jointe" taille="petite" class="inline" />{{ n }}</button>
             </p>
           </td>
           <td class="py-2 text-right font-medium">{{ l.amount ? money(l.amount) : '' }}</td>
-          <td class="w-8 py-2 text-right"><button type="button" class="text-red-600" :aria-label="`Supprimer la ligne du ${date(l.done_on)}`" @click="removeLog(l)">✕</button></td>
+          <td class="w-8 py-2 text-right"><button type="button" class="text-red-600" :aria-label="`Supprimer la ligne du ${date(l.done_on)}`" @click="removeLog(l)"><Icone nom="fermer" taille="petite" class="inline" /></button></td>
         </tr>
         <tr v-if="!logs.length"><td class="py-4 text-slate-600">Rien dans le carnet.</td></tr>
       </table>
@@ -159,9 +159,9 @@
             <p><b>{{ c.moment === 'end' ? 'Retour' : 'Départ' }}</b> · {{ c.courier }} · {{ dateTime(c.created_at) }}</p>
             <p class="text-xs text-slate-600">
               {{ [c.odometer ? km(c.odometer) : null, c.fuel_label ? `essence ${c.fuel_label}` : null, c.gps_km !== null ? `GPS ${c.gps_km} km` : null].filter(Boolean).join(' · ') }}
-              <span v-if="c.problems" class="font-medium text-red-700"> · ⚠️ {{ problemList(c) }}</span><span v-else-if="c.items && Object.keys(c.items).length" class="text-emerald-700"> · tout est OK</span>
+              <span v-if="c.problems" class="font-medium text-red-700"> · <Icone nom="alerte" taille="petite" class="inline" /> {{ problemList(c) }}</span><span v-else-if="c.items && Object.keys(c.items).length" class="text-emerald-700"> · tout est OK</span>
               <span v-if="c.note"> · « {{ c.note }} »</span>
-              <button v-for="n in c.photos" :key="n" type="button" class="ml-1 text-blue-600" @click="openFile(`/vehicles/checks/${c.id}/photos/${n - 1}`)">📷{{ n }}</button>
+              <button v-for="n in c.photos" :key="n" type="button" class="ml-1 text-blue-600" @click="openFile(`/vehicles/checks/${c.id}/photos/${n - 1}`)"><Icone nom="photo" taille="petite" class="inline" />{{ n }}</button>
             </p>
           </li>
           <li v-if="!v.checks.length" class="py-3 text-slate-600">Aucun état des lieux.</li>
@@ -183,7 +183,7 @@
           <VKpi title="En retard" :value="money(l.late)" :hint="l.late ? `${l.late_periods} versement(s)` : 'à jour'" :tone="l.late ? 'text-red-700' : 'text-slate-900'" />
         </div>
         <section v-if="l.progress !== null" class="card p-4">
-          <div class="flex justify-between text-sm"><span>🛵 {{ l.courier.name }} devient propriétaire à la fin</span><b>{{ l.progress }} %</b></div>
+          <div class="flex justify-between text-sm"><span><Icone nom="livreur" taille="petite" class="inline" /> {{ l.courier.name }} devient propriétaire à la fin</span><b>{{ l.progress }} %</b></div>
           <div class="mt-2 h-3 rounded-full bg-slate-100"><div class="h-3 rounded-full bg-violet-500" :style="{ width: `${l.progress}%` }" /></div>
         </section>
         <div class="grid gap-4 lg:grid-cols-3">
@@ -237,6 +237,8 @@
 </template>
 
 <script setup>
+import IconePicker from '../../components/ui/IconePicker.vue'
+import Icone from '../../components/ui/Icone.vue'
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
@@ -259,8 +261,8 @@ const TABS = [
   { value: 'carnet', label: 'Carnet et carburant' }, { value: 'historique', label: 'Historique' }, { value: 'location', label: 'Location-vente' },
 ]
 const COST_LINES = [
-  { key: 'fuel', label: '⛽ Carburant' }, { key: 'maintenance', label: '🔧 Entretien' }, { key: 'repair', label: '🛠️ Réparations' }, { key: 'claim', label: '💥 Sinistres' },
-  { key: 'fine', label: '👮 Amendes' }, { key: 'documents', label: '🛡️ Assurance, papiers' }, { key: 'other', label: '📝 Autres' },
+  { key: 'fuel', icon: 'carburant', label: 'Carburant' }, { key: 'maintenance', icon: 'atelier', label: 'Entretien' }, { key: 'repair', icon: 'reparation', label: 'Réparations' }, { key: 'claim', icon: 'sinistre', label: 'Sinistres' },
+  { key: 'fine', icon: 'amende', label: 'Amendes' }, { key: 'documents', icon: 'securite', label: 'Assurance, papiers' }, { key: 'other', icon: 'note', label: 'Autres' },
 ]
 const route = useRoute()
 const router = useRouter()
@@ -289,9 +291,9 @@ const capacity = computed(() => [v.value.has_box ? '1 coffre' : null, v.value.ca
 const currentDocs = computed(() => v.value.documents.filter((d) => d.current))
 const logs = computed(() => v.value.logs.filter((l) => !logFilter.value || l.kind === logFilter.value))
 const recent = computed(() => [
-  ...v.value.logs.slice(0, 8).map((l) => ({ key: `l${l.id}`, at: l.done_on, text: `${l.icon} ${l.kind_label}${l.label ? ` : ${l.label}` : ''}${l.garage ? ` · ${l.garage}` : ''}${l.courier ? ` · ${l.courier}` : ''}`, amount: l.amount })),
-  ...v.value.assignments.slice(0, 3).map((a) => ({ key: `a${a.id}`, at: a.starts_at, text: `🔑 Confié à ${a.courier}${a.kind === 'day' ? ' pour la journée' : ''} · compteur ${km(a.odometer_start)}` })),
-  ...v.value.checks.filter((c) => c.problems).slice(0, 3).map((c) => ({ key: `c${c.id}`, at: c.created_at, text: `⚠️ État des lieux de ${c.courier} : ${problemList(c)}` })),
+  ...v.value.logs.slice(0, 8).map((l) => ({ key: `l${l.id}`, at: l.done_on, icon: l.icon, text: `${l.kind_label}${l.label ? ` : ${l.label}` : ''}${l.garage ? ` · ${l.garage}` : ''}${l.courier ? ` · ${l.courier}` : ''}`, amount: l.amount })),
+  ...v.value.assignments.slice(0, 3).map((a) => ({ key: `a${a.id}`, at: a.starts_at, icon: 'cle', text: `Confié à ${a.courier}${a.kind === 'day' ? ' pour la journée' : ''} · compteur ${km(a.odometer_start)}` })),
+  ...v.value.checks.filter((c) => c.problems).slice(0, 3).map((c) => ({ key: `c${c.id}`, at: c.created_at, icon: 'alerte', text: `État des lieux de ${c.courier} : ${problemList(c)}` })),
 ].sort((a, b) => new Date(b.at) - new Date(a.at)).slice(0, 8))
 
 function problemList(c) {

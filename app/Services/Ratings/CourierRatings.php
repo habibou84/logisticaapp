@@ -280,7 +280,7 @@ class CourierRatings
         Notification::send($users, new CourierRatingAlert(
             $rating->courier,
             'courier_bad_rating',
-            "⭐ {$rating->stars}/5 pour {$rating->courier->user?->name}",
+            "{$rating->stars}/5 pour {$rating->courier->user?->name}",
             "{$who}".($rating->order ? " (course {$rating->order->tracking_code})" : '').($reasons ? " : {$reasons}" : '').($rating->comment ? " · « {$rating->comment} »" : '').'.',
         ));
     }

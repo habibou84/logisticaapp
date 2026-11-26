@@ -40,14 +40,14 @@
     <div class="flex-1 flex flex-col min-w-0">
       <header class="flex items-center justify-between bg-white shadow px-4 py-2 gap-2 print:hidden">
         <div class="flex items-center gap-2">
-          <button class="md:hidden p-2 rounded bg-[var(--admin-color,#0f172a)] text-white" aria-label="Menu" @click="sidebarOpen = true">☰</button>
+          <button class="md:hidden p-2 rounded bg-[var(--admin-color,#0f172a)] text-white" aria-label="Menu" @click="sidebarOpen = true"><Icone nom="menu" /></button>
           <button
             v-if="auth.can('orders.view')"
             class="md:hidden p-2 rounded hover:bg-black/5 text-lg"
             aria-label="Rechercher une course"
             :aria-expanded="searchOpen"
             @click="searchOpen = !searchOpen"
-          >🔍</button>
+          ><Icone nom="chercher" /></button>
           <form class="hidden md:block" @submit.prevent="quickSearch">
             <input v-model="search" type="search" placeholder="Code, téléphone…" class="input w-64" aria-label="Rechercher une course">
           </form>
@@ -72,7 +72,7 @@
         class="flex flex-wrap items-center justify-between gap-2 bg-amber-50 px-4 py-2 text-sm text-amber-900 print:hidden"
       >
         <span>
-          🧭 Mise en route : {{ setup.essentials.done }} étape(s) essentielle(s) sur {{ setup.essentials.total }}.
+          <Icone nom="mise-en-route" taille="petite" class="inline" /> Mise en route : {{ setup.essentials.done }} étape(s) essentielle(s) sur {{ setup.essentials.total }}.
           <template v-if="setupNext">Prochaine : {{ setupNext.title }}.</template>
         </span>
         <span class="font-medium underline">Continuer la mise en route</span>
@@ -81,7 +81,7 @@
       <!-- Réglage ouvert depuis la mise en route : y revenir en un geste -->
       <div v-if="setupReturn" class="flex items-center justify-between gap-2 bg-slate-800 px-4 py-2 text-sm text-white print:hidden">
         <RouterLink to="/admin/mise-en-route" class="font-medium underline">← Revenir à la mise en route</RouterLink>
-        <button type="button" class="rounded px-2 hover:bg-white/20" aria-label="Fermer" @click="closeSetupReturn">✕</button>
+        <button type="button" class="rounded px-2 hover:bg-white/20" aria-label="Fermer" @click="closeSetupReturn"><Icone nom="fermer" taille="petite" class="inline" /></button>
       </div>
 
       <main :class="['flex-1 overflow-y-auto p-4 md:p-6 print:overflow-visible', tabs.length ? 'pb-20 md:pb-6' : '']">
@@ -113,7 +113,7 @@
           <span v-if="isActive(t)" class="absolute inset-x-4 top-0 h-0.5 rounded-full bg-[var(--admin-color,#0f172a)]" aria-hidden="true" />
         </RouterLink>
         <button class="tap flex flex-col items-center gap-0.5 py-2 text-[11px] font-medium text-slate-500" aria-label="Menu complet" @click="sidebarOpen = true">
-          <span class="text-xl leading-none" aria-hidden="true">☰</span>
+          <Icone nom="menu" taille="grande" />
           <span>Menu</span>
         </button>
       </div>

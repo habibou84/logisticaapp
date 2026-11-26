@@ -4,7 +4,7 @@
     <div v-if="!embedded" class="flex flex-wrap items-center justify-between gap-2">
       <div>
         <RouterLink to="/admin/courses" class="text-sm text-blue-600">‹ Courses</RouterLink>
-        <h1 class="text-xl font-bold">⏳ Courses non traitées</h1>
+        <h1 class="flex items-center gap-1.5 text-xl font-bold"><Icone nom="sablier" /> Courses non traitées</h1>
         <p class="text-sm text-slate-600">
           Date de livraison dépassée, et pas encore livrées, retournées ni annulées. La distribution n'y arrive qu'après
           l'échéance de son lot, la MAD jamais (Réglages › Courses, « Livraisons du jour »).
@@ -20,7 +20,7 @@
         :class="['rounded-full px-3 py-1 ring-1', by === g.value ? 'bg-slate-900 text-white ring-slate-900' : 'bg-white ring-slate-300']"
         :aria-pressed="by === g.value" @click="setBy(g.value)"
       >
-        {{ g.label }}
+        <Icone :nom="g.icon" taille="petite" class="inline" /> {{ g.label }}
       </button>
       <template v-if="activityChoices.length > 1">
         <span class="ml-2 text-slate-600">Activité :</span>
@@ -35,7 +35,7 @@
     </div>
 
     <p v-if="error" class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">{{ error }}</p>
-    <p v-else-if="data && !data.total" class="card p-6 text-center text-slate-600">✅ Aucune course non traitée : tout est à jour.</p>
+    <p v-else-if="data && !data.total" class="card p-6 text-center text-slate-600"><Icone nom="livre" class="inline" /> Aucune course non traitée : tout est à jour.</p>
 
     <div v-else-if="data" class="grid gap-4 lg:grid-cols-[18rem_1fr]">
       <!-- Groupes : date, livreur ou client -->
@@ -68,14 +68,14 @@
         <div v-if="selected.length" class="card flex flex-wrap items-center gap-2 border-blue-200 bg-blue-50 p-3 text-sm">
           <span class="font-medium">{{ selected.length }} sélectionnée(s)</span>
           <input v-model="newDate" type="date" class="input w-auto" :min="todayIso" aria-label="Nouvelle date">
-          <button type="button" class="btn-primary" :disabled="busy || !newDate" @click="reschedule">📅 Nouvelle date</button>
+          <button type="button" class="btn-primary" :disabled="busy || !newDate" @click="reschedule"><Icone nom="date" /> Nouvelle date</button>
           <span class="mx-1 h-6 w-px bg-blue-200" aria-hidden="true" />
           <SearchSelect
             v-model="courierId" input-class="input w-auto min-w-[14rem]" placeholder="Livreur…" :allow-empty="false" :empty-value="null" aria-label="Livreur"
             :options="couriers.map((c) => ({ value: c.id, label: c.name, hint: `${c.active_assignments_count} en cours${c.is_available ? '' : ' · indisponible'}${madSuffix(c)}`, search: c.phone }))"
           />
-          <button type="button" class="btn-secondary" :disabled="busy || !courierId" @click="assign">🛵 Confier</button>
-          <button type="button" class="btn-secondary" :disabled="busy || !returnable.length" @click="returnMany()">↩️ Retour ({{ returnable.length }})</button>
+          <button type="button" class="btn-secondary" :disabled="busy || !courierId" @click="assign"><Icone nom="livreur" /> Confier</button>
+          <button type="button" class="btn-secondary" :disabled="busy || !returnable.length" @click="returnMany()"><Icone nom="retour" /> Retour ({{ returnable.length }})</button>
           <button v-if="auth.can('orders.cancel')" type="button" class="btn-secondary text-red-700" :disabled="busy" @click="cancel">Annuler les courses</button>
           <button type="button" class="btn-secondary" @click="selected = []">Désélectionner</button>
         </div>
@@ -109,8 +109,8 @@
                 <button type="button" class="btn-secondary !px-2 !py-1 text-xs" :disabled="busy" title="Livrer aujourd'hui" @click="rescheduleOne(o, todayIso)">Aujourd'hui</button>
                 <button type="button" class="btn-secondary !px-2 !py-1 text-xs" :disabled="busy" title="Livrer demain" @click="rescheduleOne(o, tomorrowIso)">Demain</button>
               </template>
-              <button v-if="canReturn(o)" type="button" class="btn-secondary !px-2 !py-1 text-xs" :disabled="busy" @click="returnMany([o])">↩️ Retour</button>
-              <a v-if="o.recipient.phone" :href="`tel:${o.recipient.phone}`" class="btn-secondary !px-2 !py-1 text-xs" :title="`Appeler ${o.recipient.name || 'le client'}`">📞</a>
+              <button v-if="canReturn(o)" type="button" class="btn-secondary !px-2 !py-1 text-xs" :disabled="busy" @click="returnMany([o])"><Icone nom="retour" taille="petite" /> Retour</button>
+              <a v-if="o.recipient.phone" :href="`tel:${o.recipient.phone}`" class="btn-secondary !px-2 !py-1 text-xs" :title="`Appeler ${o.recipient.name || 'le client'}`" :aria-label="`Appeler ${o.recipient.name || 'le client'}`"><Icone nom="appeler" taille="petite" /></a>
             </div>
           </div>
         </div>
@@ -132,6 +132,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import SearchSelect from '../../components/SearchSelect.vue'
 import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
@@ -159,9 +160,9 @@ import { confirmDialog } from '../../composables/useDialog'
 // embedded : onglet de « Courses en retard » ; stage picked : sans les colis jamais ramassés
 const props = defineProps({ embedded: Boolean, stage: { type: String, default: 'all' } })
 const GROUPINGS = [
-  { value: 'date', label: '📅 Par date' },
-  { value: 'courier', label: '🛵 Par livreur' },
-  { value: 'merchant', label: '🏪 Par client' },
+  { value: 'date', icon: 'date', label: 'Par date' },
+  { value: 'courier', icon: 'livreur', label: 'Par livreur' },
+  { value: 'merchant', icon: 'clients', label: 'Par client' },
 ]
 const auth = useAuthStore()
 const toasts = useToastStore()

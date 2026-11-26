@@ -3,12 +3,13 @@
     <p v-if="!report" class="text-slate-600">Chargement…</p>
     <template v-else>
       <ClientReportView :report="report" />
-      <button type="button" class="btn-secondary w-full" @click="print">🖨 Imprimer ou enregistrer en PDF</button>
+      <button type="button" class="btn-secondary w-full" @click="print"><Icone nom="imprimer" />Imprimer ou enregistrer en PDF</button>
     </template>
   </div>
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import http from '../../bootstrap/axios'

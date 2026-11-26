@@ -4,7 +4,7 @@
       <div>
         <label class="label" for="d-kind">Papier</label>
         <select id="d-kind" v-model="form.kind" class="input">
-          <option v-for="k in kinds" :key="k.value" :value="k.value">{{ k.icon }} {{ k.label }}</option>
+          <option v-for="k in kinds" :key="k.value" :value="k.value">{{ k.label }}</option>
         </select>
       </div>
       <div v-if="form.kind === 'other'"><label class="label" for="d-label">Nom du papier</label><input id="d-label" v-model="form.label" class="input"></div>
@@ -20,7 +20,7 @@
         <div>
           <label class="label" for="d-file">Photo ou PDF</label>
           <input id="d-file" ref="input" type="file" accept="image/*,application/pdf" class="text-sm" @change="pick">
-          <p v-if="photo?.meta?.scanned" class="text-xs text-green-700 mt-1">📄 Document scanné{{ photo.original ? ', original gardé' : '' }}</p>
+          <p v-if="photo?.meta?.scanned" class="text-xs text-green-700 mt-1"><Icone nom="document" taille="petite" class="inline align-text-bottom" /> Document scanné{{ photo.original ? ', original gardé' : '' }}</p>
         </div>
       </div>
       <p v-if="error" class="field-error">{{ error }}</p>
@@ -34,6 +34,7 @@
 </template>
 
 <script setup>
+import Icone from '../ui/Icone.vue'
 import { computed, reactive, ref, watch } from 'vue'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import Modal from '../Modal.vue'

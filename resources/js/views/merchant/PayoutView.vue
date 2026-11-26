@@ -28,12 +28,13 @@
       </div>
     </section>
 
-    <button class="m-btn-secondary" @click="print">🖨️ Imprimer / PDF</button>
+    <button class="m-btn-secondary" @click="print"><Icone nom="imprimer" />Imprimer / PDF</button>
   </div>
   <p v-else class="text-center text-slate-400 py-10">Chargement…</p>
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import http from '../../bootstrap/axios'

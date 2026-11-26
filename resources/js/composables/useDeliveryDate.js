@@ -58,7 +58,7 @@ export function useDeliveryDate(form) {
   const summary = computed(() => {
     if (!when.value) return null
     if (!form.delivery_scheduled_date) return 'Choisissez le jour dans le calendrier.'
-    return `📅 Votre course sera livrée le ${longDay(form.delivery_scheduled_date)}.`
+    return `Votre course sera livrée le ${longDay(form.delivery_scheduled_date)}.`
   })
 
   // Choix fait et, pour « Autre date », jour choisi

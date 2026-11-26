@@ -15,7 +15,7 @@
       <!-- État : envois réels ou simulation, pour cette entreprise -->
       <div :class="['rounded-lg p-4 text-sm', s.mode === 'live' ? 'bg-emerald-50 text-emerald-900' : 'bg-amber-50 text-amber-900']">
         <template v-if="s.mode === 'live'">
-          <p class="font-semibold">✅ WhatsApp connecté : les messages partent pour de vrai.</p>
+          <p class="font-semibold"><Icone nom="livre" taille="petite" class="inline" /> WhatsApp connecté : les messages partent pour de vrai.</p>
           <p>
             {{ s.account.verified_name || 'Numéro' }} · {{ s.account.display_phone }}
             <span v-if="s.account.quality_rating"> · qualité <strong :class="QUALITY[s.account.quality_rating]?.[1]">{{ QUALITY[s.account.quality_rating]?.[0] || s.account.quality_rating }}</strong></span>
@@ -167,6 +167,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import WhatsAppTabs from '../../components/WhatsAppTabs.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import http, { apiErrorMessage } from '../../bootstrap/axios'

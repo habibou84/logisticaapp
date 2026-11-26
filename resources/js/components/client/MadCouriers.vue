@@ -13,12 +13,13 @@
       <a v-if="c.phone" :href="`tel:${c.phone}`" class="tap shrink-0 grid h-10 w-10 place-items-center rounded-full bg-slate-100 text-slate-700" :aria-label="`Appeler ${c.name}`"><StatusIcon name="phone" class="h-5 w-5" /></a>
     </div>
     <RouterLink to="/marchand/mes-parcours" class="tap flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2.5 text-sm font-semibold text-[var(--app-color)]">
-      🧭 Parcours de mes livreurs <span aria-hidden="true">›</span>
+      <span class="inline-flex items-center gap-1.5"><Icone nom="itineraire" taille="petite" />Parcours de mes livreurs</span> <span aria-hidden="true">›</span>
     </RouterLink>
   </div>
 </template>
 
 <script setup>
+import Icone from '../ui/Icone.vue'
 import StatusIcon from '../mobile/StatusIcon.vue'
 import { hm } from '../../utils/shifts'
 

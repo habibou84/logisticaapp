@@ -14,7 +14,7 @@
       </section>
       <section class="card p-4 space-y-3">
         <h2 class="font-semibold">Échecs par commune <span class="text-sm font-normal text-slate-600">· passages ratés</span></h2>
-        <BarList :items="byFailed" :color="SERIES[1]" empty="Aucun échec sur la période. 👏" />
+        <BarList :items="byFailed" :color="SERIES[1]" empty="Aucun échec sur la période." />
       </section>
     </div>
 

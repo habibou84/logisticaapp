@@ -7,7 +7,7 @@
         <p class="font-semibold truncate">{{ order.recipient.name || localPhone(order.recipient.phone) }}</p>
         <p class="text-sm text-slate-600 truncate">{{ place }}</p>
         <!-- Départements du client : qui envoie → vers qui -->
-        <p v-if="order.department || order.to_department" class="text-xs text-slate-600 truncate">🏢 {{ order.department?.code || order.department?.name || '—' }}<template v-if="order.to_department"> → {{ order.to_department.code || order.to_department.name }}</template></p>
+        <p v-if="order.department || order.to_department" class="text-xs text-slate-600 truncate"><Icone nom="entreprise" taille="petite" class="inline" /> {{ order.department?.code || order.department?.name || '—' }}<template v-if="order.to_department"> → {{ order.to_department.code || order.to_department.name }}</template></p>
         <p :class="['text-sm font-medium flex items-center gap-1.5 min-w-0', state.color]">
           <StatusIcon :name="state.icon" class="h-3.5 w-3.5 shrink-0" /><span class="truncate">{{ state.text }}</span>
         </p>
@@ -29,6 +29,7 @@
 </template>
 
 <script setup>
+import Icone from '../ui/Icone.vue'
 import { computed } from 'vue'
 import { localPhone, money } from '../../utils/format'
 import { laterDay, merchantStatus } from '../../utils/merchantStatus'

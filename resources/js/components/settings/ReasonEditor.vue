@@ -16,7 +16,7 @@
       <div v-if="tab !== 'follow_up'">
         <label class="label" for="reason-family">Famille</label>
         <select id="reason-family" v-model="model.family" class="input">
-          <option v-for="(f, key) in REASON_FAMILIES" :key="key" :value="key">{{ f.icon }} {{ f.label }}</option>
+          <option v-for="(f, key) in REASON_FAMILIES" :key="key" :value="key">{{ f.label }}</option>
         </select>
       </div>
     </div>

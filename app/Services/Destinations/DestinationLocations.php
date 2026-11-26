@@ -54,7 +54,7 @@ class DestinationLocations
                 $destination->update(['located_at' => now()]);
             } elseif ($outcome === 'conflict') {
                 $destination->update(['location_conflict' => true]);
-                $this->destinations->tellStaff($destination->company_id, 'destination_conflict', "📍 Position à vérifier : {$destination->label()}",
+                $this->destinations->tellStaff($destination->company_id, 'destination_conflict', "Position à vérifier : {$destination->label()}",
                     "{$user->name} la place à {$distance} m de la position connue.", "/admin/annuaire?filtre=conflict&id={$destination->id}");
             }
 

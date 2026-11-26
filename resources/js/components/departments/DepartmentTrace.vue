@@ -1,7 +1,7 @@
 <template>
   <!-- Départements du client : qui a demandé, qui a remis, qui a livré, qui a reçu -->
   <section v-if="order.department || order.to_department" :class="mobile ? 'm-card p-4 space-y-3' : 'card p-4 space-y-3'">
-    <h2 class="font-semibold">🏢 Qui a fait quoi</h2>
+    <h2 class="flex items-center gap-1.5 font-semibold"><Icone nom="entreprise" />Qui a fait quoi</h2>
     <ol class="relative space-y-3 border-l-2 border-slate-200 pl-4">
       <li v-for="(s, i) in steps" :key="i" class="relative">
         <span :class="['absolute -left-[1.4rem] top-1 h-3 w-3 rounded-full ring-2 ring-white', s.done ? 'bg-emerald-500' : 'bg-slate-300']" aria-hidden="true" />
@@ -15,6 +15,7 @@
 </template>
 
 <script setup>
+import Icone from '../ui/Icone.vue'
 import { computed } from 'vue'
 import { dateTime } from '../../utils/format'
 

@@ -2,13 +2,13 @@
   <div v-if="invoice" class="max-w-4xl mx-auto space-y-4">
     <div class="no-print flex flex-wrap items-center gap-2">
       <button class="btn-secondary" @click="router.back()">← Retour</button>
-      <button class="btn-secondary" @click="print">🖨️ Imprimer / PDF</button>
-      <button class="btn-secondary" :disabled="busy" @click="exportCsv">⬇️ Excel (par centre de coûts)</button>
+      <button class="btn-secondary" @click="print"><Icone nom="imprimer" />Imprimer / PDF</button>
+      <button class="btn-secondary" :disabled="busy" @click="exportCsv"><Icone nom="exporter" />Excel (par centre de coûts)</button>
       <template v-if="canManage && invoice.status === 'draft'">
-        <button class="btn-secondary" :disabled="busy" @click="act('refresh', 'Facture recalculée.')">↻ Recalculer</button>
+        <button class="btn-secondary" :disabled="busy" @click="act('refresh', 'Facture recalculée.')"><Icone nom="actualiser" />Recalculer</button>
         <button class="btn-primary" :disabled="busy" @click="issue">Émettre la facture</button>
       </template>
-      <button v-if="canCredit" class="btn-secondary" :disabled="busy" @click="openCredit">🧾 Faire un avoir</button>
+      <button v-if="canCredit" class="btn-secondary" :disabled="busy" @click="openCredit"><Icone nom="facture" />Faire un avoir</button>
       <button v-if="canManage && (invoice.status === 'draft' || (invoice.status === 'issued' && !invoice.amount_paid && !invoice.credited_amount && auth.can('invoices.void')))" class="text-red-600 ml-auto" :disabled="busy" @click="voidInvoice">
         {{ invoice.status === 'draft' ? 'Supprimer le brouillon' : 'Annuler la facture' }}
       </button>
@@ -16,7 +16,7 @@
 
     <!-- Facture normalisée (FNE) : à certifier (FNE injoignable) ou refusée (données à corriger) -->
     <div v-if="fneProblem" class="no-print rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 flex flex-wrap items-center gap-2">
-      <span class="flex-1">⚠️ {{ fneProblem }}</span>
+      <span class="flex-1"><Icone nom="alerte" taille="petite" class="inline align-[-0.15em]" /> {{ fneProblem }}</span>
       <button v-if="canManage" class="btn-secondary" :disabled="busy" @click="act('certify', 'Certification envoyée.')">Certifier maintenant</button>
     </div>
 
@@ -59,7 +59,7 @@
         <!-- Facture ventilée : une section par département, avec son sous-total -->
         <tbody v-for="g in groups" :key="g.key" class="divide-y">
           <tr v-if="g.department" class="bg-slate-50">
-            <td class="py-2 font-semibold" colspan="3">🏢 {{ g.department.label }}<span v-if="g.department.cost_center" class="font-normal text-slate-600"> · centre de coûts {{ g.department.cost_center }}</span></td>
+            <td class="py-2 font-semibold" colspan="3"><Icone nom="entreprise" taille="petite" class="inline align-[-0.15em]" /> {{ g.department.label }}<span v-if="g.department.cost_center" class="font-normal text-slate-600"> · centre de coûts {{ g.department.cost_center }}</span></td>
             <td class="py-2 text-right font-semibold">{{ money(g.department.total) }}</td><td class="no-print" />
           </tr>
           <tr v-for="l in g.lines" :key="l.id" :class="l.kind === 'included' ? 'text-slate-600' : ''">
@@ -104,7 +104,7 @@
         <p class="font-semibold">Comment payer</p>
         <div v-if="invoice.payment_methods?.length" class="grid sm:grid-cols-2 gap-2">
           <div v-for="(m, i) in invoice.payment_methods" :key="i" class="rounded bg-white border border-slate-200 p-2">
-            <p class="font-medium">{{ ICONS[m.method] }} {{ m.title }}</p>
+            <p class="flex items-center gap-1.5 font-medium"><Icone v-if="ICONS[m.method]" :nom="ICONS[m.method]" taille="petite" />{{ m.title }}</p>
             <!-- Libellé au-dessus de la valeur : un IBAN tient sur une ligne, sans être coupé -->
             <div v-for="l in m.lines" :key="l.label" class="mt-1">
               <p class="text-xs text-slate-600">{{ l.label }}</p>
@@ -127,7 +127,7 @@
           <span v-if="n.refund_due" class="text-amber-700">· {{ money(n.refund_due) }} à rembourser</span>
           <span v-if="n.fne?.reference" class="text-slate-600">· FNE {{ n.fne.reference }}</span>
           <span v-else-if="n.fne" class="text-amber-700">· {{ n.fne.status === 'failed' ? 'refusé par la FNE' : 'à certifier' }}</span>
-          <button type="button" class="no-print text-xs text-blue-600" @click="printNote(n)">🖨️ Imprimer l'avoir</button>
+          <button type="button" class="no-print text-xs text-blue-600" @click="printNote(n)"><Icone nom="imprimer" taille="petite" class="inline align-[-0.15em]" /> Imprimer l'avoir</button>
         </div>
       </div>
 
@@ -254,6 +254,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
@@ -388,7 +389,7 @@ async function addLine() {
   Object.assign(line, { label: '', quantity: 1, unit_price: 0, department_id: line.department_id })
 }
 
-const ICONS = { bank_transfer: '🏦', mobile_money: '📱', cheque: '🧾', cash: '💵', other: '💳' }
+const ICONS = { bank_transfer: 'banque', mobile_money: 'mobile', cheque: 'recette', cash: 'argent', other: 'carte-bancaire' }
 
 // IBAN ou numéro copié pour le coller dans l'application de la banque ou du Mobile Money
 async function copy(value) {

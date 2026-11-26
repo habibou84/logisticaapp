@@ -60,7 +60,7 @@ class CourierVehicleController extends Controller
                 'status' => $vehicle->status, 'status_label' => Vehicle::STATUSES[$vehicle->status] ?? '',
             ] : null,
             'documents' => $docs->map(fn (VehicleDocument $d) => [
-                'id' => $d->id, 'kind' => $d->kind, 'label' => VehicleCatalog::DOCUMENTS[$d->kind]['label'] ?? $d->label, 'icon' => VehicleCatalog::DOCUMENTS[$d->kind]['icon'] ?? '📄',
+                'id' => $d->id, 'kind' => $d->kind, 'label' => VehicleCatalog::DOCUMENTS[$d->kind]['label'] ?? $d->label, 'icon' => VehicleCatalog::DOCUMENTS[$d->kind]['icon'] ?? 'document',
                 'ends_on' => $d->ends_on?->toDateString(), 'has_file' => $d->file_path !== null, ...$this->fleet->documentState($d, $s),
             ])->values(),
             'maintenance' => $vehicle ? $this->fleet->maintenance($vehicle, $s) : [],

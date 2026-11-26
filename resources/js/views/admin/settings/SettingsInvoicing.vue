@@ -1,5 +1,5 @@
 <template>
-  <SettingsPage icon="🧾" title="Facturation et TVA" intro="Identité fiscale imprimée sur les factures et les avoirs, TVA des factures du mois des clients (distribution, MAD) et facture normalisée électronique (FNE).">
+  <SettingsPage icon="facture" title="Facturation et TVA" intro="Identité fiscale imprimée sur les factures et les avoirs, TVA des factures du mois des clients (distribution, MAD) et facture normalisée électronique (FNE).">
     <section v-if="identity.form.value" class="card p-4 space-y-3">
       <h2 class="font-semibold">Identité fiscale de l'entreprise</h2>
       <div class="grid sm:grid-cols-2 gap-3">
@@ -86,7 +86,7 @@
           <button type="button" class="btn-secondary whitespace-nowrap" :disabled="!apiKey || savingKey" @click="saveKey">Enregistrer la clé</button>
         </div>
         <p class="text-sm" :class="fne.company.value?.fne_enabled ? 'text-emerald-700' : 'text-slate-600'">
-          {{ fne.company.value?.fne_enabled ? `✓ Certification active (${fne.company.value.fne_settings.mode === 'production' ? 'production' : 'test'})` : 'Certification inactive : cochez la case, enregistrez la clé et l\'URL.' }}
+          <Icone v-if="fne.company.value?.fne_enabled" nom="valider" taille="petite" class="inline" /> {{ fne.company.value?.fne_enabled ? `Certification active (${fne.company.value.fne_settings.mode === 'production' ? 'production' : 'test'})` : 'Certification inactive : cochez la case, enregistrez la clé et l\'URL.' }}
           <template v-if="fne.company.value?.fne_balance_sticker != null"> · Stickers restants : <b :class="fne.company.value.fne_warning ? 'text-red-600' : ''">{{ fne.company.value.fne_balance_sticker }}</b></template>
         </p>
       </div>
@@ -95,6 +95,7 @@
 </template>
 
 <script setup>
+import Icone from '../../../components/ui/Icone.vue'
 import { computed, ref } from 'vue'
 import http, { apiErrorMessage } from '../../../bootstrap/axios'
 import { useAuthStore } from '../../../stores/auth'

@@ -51,7 +51,7 @@ class FieldEventAlerts
         Notification::send($this->staff($event->company_id, $roles), new FieldEventAlert(
             $event,
             'field_event_reminder',
-            "⏰ Toujours sans prise en charge : {$event->type_label} · {$event->courier?->user?->name}",
+            "Toujours sans prise en charge : {$event->type_label} · {$event->courier?->user?->name}",
             "Signalé il y a {$minutes} min. Prenez-le en charge ou répondez au livreur.",
             'alert',
         ));
@@ -77,7 +77,7 @@ class FieldEventAlerts
 
     public function title(FieldEvent $event): string
     {
-        return "{$event->icon} {$event->type_label} · {$event->courier?->user?->name}";
+        return "{$event->type_label} · {$event->courier?->user?->name}";
     }
 
     public function summary(FieldEvent $event): string

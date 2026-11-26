@@ -31,7 +31,7 @@
     </div>
 
     <p class="text-sm">
-      <template v-if="state.active">✅ Clé active jusqu'au {{ dateTime(state.expires_at) }}.</template>
+      <template v-if="state.active"><Icone nom="livre" taille="petite" class="inline align-text-bottom" /> Clé active jusqu'au {{ dateTime(state.expires_at) }}.</template>
       <template v-else>Aucune clé active.</template>
       <span v-if="state.used_at" class="text-slate-600"> Dernier envoi reçu le {{ dateTime(state.used_at) }}.</span>
     </p>
@@ -48,6 +48,7 @@
 </template>
 
 <script setup>
+import Icone from './ui/Icone.vue'
 import { onMounted, ref } from 'vue'
 import http, { apiErrorMessage } from '../bootstrap/axios'
 import { useToastStore } from '../stores/toasts'

@@ -38,17 +38,17 @@
             <div v-if="canManage || (settings.slips && d.active)" class="relative">
               <button type="button" class="grid h-9 w-9 place-items-center rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50" :aria-label="`Actions pour ${d.name}`" :aria-expanded="menuFor === d.id" @click="menuFor = menuFor === d.id ? null : d.id">⋯</button>
               <div v-if="menuFor === d.id" class="absolute right-0 top-10 z-20 w-56 overflow-hidden rounded-xl bg-white text-sm shadow-lg ring-1 ring-slate-200">
-                <button v-if="canManage" type="button" class="block w-full px-4 py-2.5 text-left hover:bg-slate-50" @click="menuFor = null; edit(d)">✏️ Modifier</button>
-                <RouterLink v-if="settings.slips && d.active" :to="`/bordereau/${d.id}`" class="block px-4 py-2.5 hover:bg-slate-50">🧾 Bordereau de livraison</RouterLink>
-                <button v-if="canManage && d.active && !d.is_main" type="button" class="block w-full border-t px-4 py-2.5 text-left text-red-600 hover:bg-red-50" @click="menuFor = null; removing = d">{{ d.orders_count ? '⏸️ Désactiver' : '🗑️ Supprimer' }}</button>
+                <button v-if="canManage" type="button" class="block w-full px-4 py-2.5 text-left hover:bg-slate-50" @click="menuFor = null; edit(d)"><Icone nom="modifier" taille="petite" class="inline align-text-bottom" /> Modifier</button>
+                <RouterLink v-if="settings.slips && d.active" :to="`/bordereau/${d.id}`" class="block px-4 py-2.5 hover:bg-slate-50"><Icone nom="document" taille="petite" class="inline align-text-bottom" /> Bordereau de livraison</RouterLink>
+                <button v-if="canManage && d.active && !d.is_main" type="button" class="block w-full border-t px-4 py-2.5 text-left text-red-600 hover:bg-red-50" @click="menuFor = null; removing = d"><Icone :nom="d.orders_count ? 'pause' : 'supprimer'" taille="petite" class="inline align-text-bottom" /> {{ d.orders_count ? 'Désactiver' : 'Supprimer' }}</button>
               </div>
             </div>
           </div>
           <div class="mt-3 flex min-w-0 flex-wrap gap-1.5 text-xs [&>span]:max-w-full [&>span]:break-words">
-            <span v-if="d.own_address" class="rounded-full bg-sky-50 px-2.5 py-1 text-sky-900">📍 {{ [d.pickup_zone_name, d.pickup_address].filter(Boolean).join(' · ') }}</span>
-            <span v-if="d.location" class="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">🏢 {{ d.location }}</span>
-            <span class="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">👥 {{ plural(usersOf(d).length, 'compte', 'aucun compte') }}</span>
-            <span v-if="d.cost_center" class="rounded-full bg-slate-100 px-2.5 py-1 font-mono text-slate-700">💳 {{ d.cost_center }}</span>
+            <span v-if="d.own_address" class="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2.5 py-1 text-sky-900"><Icone nom="adresse" taille="petite" />{{ [d.pickup_zone_name, d.pickup_address].filter(Boolean).join(' · ') }}</span>
+            <span v-if="d.location" class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-slate-700"><Icone nom="entreprise" taille="petite" />{{ d.location }}</span>
+            <span class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-slate-700"><Icone nom="utilisateurs" taille="petite" />{{ plural(usersOf(d).length, 'compte', 'aucun compte') }}</span>
+            <span v-if="d.cost_center" class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 font-mono text-slate-700"><Icone nom="carte-bancaire" taille="petite" />{{ d.cost_center }}</span>
           </div>
           <template v-if="d.usage">
             <div v-if="d.usage.quota" class="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
@@ -111,7 +111,7 @@
       </div>
       <div class="flex items-center gap-3">
         <button type="button" class="btn-primary" :disabled="saving" @click="saveSettings">Enregistrer les réglages</button>
-        <span v-if="saved" class="text-sm text-emerald-700">Enregistré ✓</span>
+        <span v-if="saved" class="text-sm text-emerald-700">Enregistré <Icone nom="valider" taille="petite" class="inline align-text-bottom" /></span>
         <span v-if="error" class="field-error">{{ error }}</span>
       </div>
     </section>
@@ -140,6 +140,7 @@
 </template>
 
 <script setup>
+import Icone from '../ui/Icone.vue'
 import { computed, onMounted, ref } from 'vue'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import BottomSheet from '../mobile/BottomSheet.vue'

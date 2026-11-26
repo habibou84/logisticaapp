@@ -37,7 +37,7 @@
             class="tap inline-flex items-center gap-1 rounded-full bg-red-50 px-3 py-1.5 text-sm text-red-700 ring-1 ring-red-200"
             :aria-label="`Retirer : ${reasonLabel(r)}`" @click="toggle('reasons', r)"
           >
-            {{ reasonLabel(r) }} <span aria-hidden="true">✕</span>
+            {{ reasonLabel(r) }} <Icone nom="fermer" taille="petite" />
           </button>
         </div>
       </div>
@@ -64,6 +64,7 @@
 </template>
 
 <script setup>
+import Icone from '../ui/Icone.vue'
 import { computed, reactive, watch } from 'vue'
 import BottomSheet from '../mobile/BottomSheet.vue'
 import StarRating from '../StarRating.vue'

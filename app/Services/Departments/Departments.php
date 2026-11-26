@@ -117,7 +117,7 @@ class Departments
         try {
             $name = $order->department_id ? Department::query()->whereKey($order->department_id)->value('name') : null;
             Notification::send($this->approvers($order), new ClientBillingAlert('order_approval',
-                '✋ Course à valider'.($name ? " · {$name}" : ''),
+                'Course à valider'.($name ? " · {$name}" : ''),
                 trim(($order->requested_by ? "{$order->requested_by} · " : '')."{$order->tracking_code} pour {$order->recipient_name}"),
                 "/marchand/courses/{$order->id}"));
         } catch (Throwable $e) {
@@ -291,7 +291,7 @@ class Departments
                     ->orWhereHas('departments', fn ($d) => $d->whereKey($department->id)))
                 ->get();
             Notification::send($users, new ClientBillingAlert('department_quota',
-                $reached >= 100 ? "🏢 Quota du mois atteint · {$department->name}" : "🏢 Quota utilisé à {$reached} % · {$department->name}",
+                $reached >= 100 ? "Quota du mois atteint · {$department->name}" : "Quota utilisé à {$reached} % · {$department->name}",
                 "{$usage['used']} envois sur {$usage['quota']} prévus ce mois-ci.", '/marchand/courses'));
         } catch (Throwable $e) {
             // Un avertissement manqué ne doit jamais empêcher la course

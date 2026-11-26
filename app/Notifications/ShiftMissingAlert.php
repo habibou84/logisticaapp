@@ -37,7 +37,7 @@ class ShiftMissingAlert extends Notification implements ShouldQueue
 
         return [
             'kind' => 'shift_missing',
-            'title' => $count === 1 ? "⏰ {$this->rows[0]['name']} n'a pas encore pointé" : "⏰ {$count} livreurs n'ont pas encore pointé",
+            'title' => $count === 1 ? "{$this->rows[0]['name']} n'a pas encore pointé" : "{$count} livreurs n'ont pas encore pointé",
             'body' => $names.($count > 5 ? '…' : '').'. Appelez-les ou pointez-les à la main si besoin.',
             'severity' => 'warning',
             'href' => '/admin/pointages',

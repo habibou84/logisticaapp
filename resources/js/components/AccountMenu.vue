@@ -29,16 +29,17 @@
         <p class="truncate text-sm text-slate-600">{{ auth.user?.role_label }}<template v-if="auth.user?.company?.name"> · {{ auth.user.company.name }}</template></p>
       </div>
       <RouterLink to="/admin/mon-compte" role="menuitem" class="flex min-h-11 items-center gap-3 px-4 text-sm hover:bg-slate-50" @click="close">
-        <span aria-hidden="true">👤</span> Mon compte
+        <Icone nom="compte" /> Mon compte
       </RouterLink>
       <button type="button" role="menuitem" class="flex min-h-11 w-full items-center gap-3 border-t border-slate-100 px-4 text-left text-sm font-medium text-red-700 hover:bg-red-50" @click="logout">
-        <span aria-hidden="true">🚪</span> Déconnexion
+        <Icone nom="deconnexion" /> Déconnexion
       </button>
     </div>
   </div>
 </template>
 
 <script setup>
+import Icone from './ui/Icone.vue'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useAuthStore } from '../stores/auth'

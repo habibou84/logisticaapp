@@ -22,7 +22,7 @@
 
     <div class="grid gap-4 lg:grid-cols-2">
       <section v-if="data.lots.length" class="card space-y-2 p-4">
-        <h2 class="font-semibold">📦 Lots arrivés à échéance</h2>
+        <h2 class="flex items-center gap-1.5 font-semibold"><Icone nom="course" />Lots arrivés à échéance</h2>
         <ul class="divide-y text-sm">
           <li v-for="l in data.lots" :key="l.id" class="flex flex-wrap items-center justify-between gap-2 py-1.5">
             <span>{{ l.merchant }} · {{ l.name }} <span class="text-xs text-slate-600">échéance {{ date(l.due_on) }}</span></span>
@@ -31,7 +31,7 @@
         </ul>
       </section>
       <section v-if="data.mad.length" class="card space-y-2 p-4">
-        <h2 class="font-semibold">🤝 MAD : jours de présence</h2>
+        <h2 class="flex items-center gap-1.5 font-semibold"><Icone nom="relais" />MAD : jours de présence</h2>
         <ul class="divide-y text-sm">
           <li v-for="m in data.mad" :key="m.id" class="flex flex-wrap items-center justify-between gap-2 py-1.5">
             <span>{{ m.merchant }} <span class="text-xs text-slate-600">{{ m.couriers.join(', ') || 'aucun livreur' }}</span></span>
@@ -42,7 +42,7 @@
     </div>
 
     <!-- Échecs -->
-    <h2 class="pt-2 text-lg font-semibold">❌ Échecs de livraison <span class="text-sm font-normal text-slate-600">· {{ data.failures.total }} sur la période</span></h2>
+    <h2 class="pt-2 text-lg font-semibold"><Icone nom="echec" class="inline align-text-bottom" /> Échecs de livraison <span class="text-sm font-normal text-slate-600">· {{ data.failures.total }} sur la période</span></h2>
     <div class="grid gap-4 lg:grid-cols-2">
       <section class="card space-y-2 p-4">
         <h3 class="font-semibold">Motifs</h3>
@@ -81,7 +81,7 @@
 
     <!-- Distribution -->
     <template v-if="data.distribution && (data.distribution.courses || data.distribution.lots.length)">
-      <h2 class="pt-2 text-lg font-semibold">✉️ Distribution</h2>
+      <h2 class="flex items-center gap-1.5 pt-2 text-lg font-semibold"><Icone nom="mail" />Distribution</h2>
       <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <KpiTile title="Plis et chèques remis" :value="data.distribution.units" :hint="`${data.distribution.courses} courses`" />
         <KpiTile title="Accusés manquants" :value="data.distribution.missing_receipts" :higher-is-better="false" />
@@ -113,7 +113,7 @@
 
     <!-- Historique -->
     <section class="card space-y-2 p-4">
-      <h2 class="font-semibold">⏳ Courses non traitées dans le temps</h2>
+      <h2 class="flex items-center gap-1.5 font-semibold"><Icone nom="sablier" />Courses non traitées dans le temps</h2>
       <LineChart
         v-if="data.history.length > 1"
         :labels="data.history.map((h) => h.date)"
@@ -130,6 +130,7 @@
 </template>
 
 <script setup>
+import Icone from '../ui/Icone.vue'
 import { computed, ref } from 'vue'
 import { date, waitDuration } from '../../utils/format'
 import BarList from './BarList.vue'

@@ -1,7 +1,7 @@
 <template>
   <div v-if="slip" class="slip-page p-4 max-w-3xl mx-auto">
     <div class="no-print mb-4 flex flex-wrap gap-2 items-center">
-      <button class="btn-primary" @click="print">🖨️ Imprimer</button>
+      <button class="btn-primary" @click="print"><Icone nom="imprimer" />Imprimer</button>
       <button class="btn-secondary" @click="$router.back()">← Retour</button>
       <span class="text-sm text-slate-600">Format A4 · à faire signer par le client à la remise</span>
     </div>
@@ -81,6 +81,7 @@
 </template>
 
 <script setup>
+import Icone from '../components/ui/Icone.vue'
 import { printPage } from '../native/print'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'

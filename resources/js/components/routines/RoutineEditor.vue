@@ -41,7 +41,7 @@
           <span class="flex-1 text-xs text-slate-600">{{ i === 0 ? 'Lieu de pointage' : '' }}</span>
           <button type="button" class="px-1 text-slate-600 disabled:opacity-30" :disabled="i === 0" aria-label="Monter" @click="move(i, -1)">↑</button>
           <button type="button" class="px-1 text-slate-600 disabled:opacity-30" :disabled="i === form.stops.length - 1" aria-label="Descendre" @click="move(i, 1)">↓</button>
-          <button type="button" class="px-1 text-red-600" aria-label="Retirer l'étape" @click="form.stops.splice(i, 1)">✕</button>
+          <button type="button" class="px-1 text-red-600" aria-label="Retirer l'étape" @click="form.stops.splice(i, 1)"><Icone nom="fermer" taille="petite" /></button>
         </div>
 
         <!-- Lieu : siège du client, lieu de l'annuaire, ou nouveau lieu placé sur la carte -->
@@ -73,7 +73,7 @@
         <template v-if="s.mode === 'new'">
           <input v-model="s.new_place.name" type="text" maxlength="191" :class="c.input" placeholder="Nom du lieu (ex. : Agence Mamadou Cocody)">
           <input v-model="s.new_place.address" type="text" maxlength="255" :class="c.input" placeholder="Adresse, repère">
-          <LocationPicker v-model="s.point" allow-link height="h-48" :button-class="mobile ? 'm-btn-secondary' : 'btn-secondary'" gps-label="📍 Je suis sur place : utiliser ma position" />
+          <LocationPicker v-model="s.point" allow-link height="h-48" :button-class="mobile ? 'm-btn-secondary' : 'btn-secondary'" gps-label="Je suis sur place : utiliser ma position" />
         </template>
 
         <div class="grid gap-2 sm:grid-cols-[1fr_auto]">
@@ -95,6 +95,7 @@
 </template>
 
 <script setup>
+import Icone from '../ui/Icone.vue'
 import { computed, ref } from 'vue'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import LocationPicker from '../LocationPicker.vue'

@@ -1,7 +1,7 @@
 <template>
   <div class="card p-4 space-y-3">
     <div class="flex flex-wrap items-center justify-between gap-2">
-      <h2 class="font-semibold">🧮 Simulateur</h2>
+      <h2 class="flex items-center gap-1.5 font-semibold"><Icone nom="calcul" />Simulateur</h2>
       <div class="flex rounded-lg bg-slate-100 p-1 text-sm">
         <button v-for="m in MODES" :key="m.value" :class="['rounded-md px-3 py-1', mode === m.value ? 'bg-white shadow font-medium' : 'text-slate-600']" @click="mode = m.value">{{ m.label }}</button>
       </div>
@@ -21,7 +21,7 @@
           <label class="label">Zone {{ scenario.event === 'pickup' ? 'de ramassage' : 'du destinataire' }}</label>
           <SearchSelect
             v-model="scenario.zone_id" input-class="input w-auto min-w-[12rem]" placeholder="—" :empty-value="null" search-placeholder="Commune, quartier…"
-            :options="zones.map((z) => ({ value: z.id, label: `${z.is_shipping ? '🚌 ' : ''}${z.full_name}`, search: z.name }))"
+            :options="zones.map((z) => ({ value: z.id, label: z.full_name, search: z.name }))"
           />
         </div>
         <div>
@@ -120,6 +120,7 @@
 </template>
 
 <script setup>
+import Icone from './ui/Icone.vue'
 import SearchSelect from './SearchSelect.vue'
 import { reactive, ref, watch } from 'vue'
 import http, { apiErrorMessage } from '../bootstrap/axios'

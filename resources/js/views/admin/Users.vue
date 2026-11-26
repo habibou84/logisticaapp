@@ -7,7 +7,7 @@
         <p class="text-sm text-slate-600">Les comptes de l'équipe, des livreurs et des clients : qui accède à quoi, et qui n'utilise plus son accès.</p>
       </div>
       <div class="flex flex-wrap gap-2">
-        <RouterLink to="/admin/roles" class="btn-secondary">🔐 Rôles et droits</RouterLink>
+        <RouterLink to="/admin/roles" class="btn-secondary"><Icone nom="verrou" /> Rôles et droits</RouterLink>
         <button v-if="auth.can('users.manage')" class="btn-primary" @click="openForm()">+ Nouveau compte</button>
       </div>
     </div>
@@ -15,7 +15,7 @@
     <!-- Compteurs : un clic ouvre l'onglet -->
     <div v-if="summary" class="grid grid-cols-2 gap-3 lg:grid-cols-5">
       <button v-for="c in counters" :key="c.key" type="button" :class="['card p-3 text-left hover:shadow', c.warn ? 'border-amber-300 bg-amber-50' : '']" @click="setTab(c.key)">
-        <p :class="['text-xs', c.warn ? 'text-amber-800' : 'text-slate-600']">{{ c.label }}</p>
+        <p :class="['text-xs', c.warn ? 'text-amber-800' : 'text-slate-600']"><Icone v-if="c.icon" :nom="c.icon" taille="petite" class="inline" /> {{ c.label }}</p>
         <p :class="['text-2xl font-bold', c.warn ? 'text-amber-800' : '']">{{ c.value }}</p>
         <p class="text-xs text-slate-600">{{ c.hint }}</p>
       </button>
@@ -33,7 +33,7 @@
         </button>
       </div>
       <div class="flex flex-wrap gap-2">
-        <input v-model="search" type="search" class="input min-w-48 flex-1" placeholder="🔍 Nom, téléphone ou e-mail…" aria-label="Rechercher un compte" @input="debouncedLoad">
+        <input v-model="search" type="search" class="input min-w-48 flex-1" placeholder="Nom, téléphone ou e-mail…" aria-label="Rechercher un compte" @input="debouncedLoad">
         <select v-if="tab === 'team'" v-model="role" class="input !w-auto" aria-label="Rôle" @change="reload">
           <option value="">Tous les rôles</option>
           <option v-for="r in teamRoles" :key="r.value" :value="r.value">{{ r.label }}</option>
@@ -103,7 +103,7 @@
                 <div v-if="menu === u.id" class="absolute right-0 top-9 z-20 w-72 rounded-xl border bg-white p-1 text-left shadow-lg" role="menu" @click.stop>
                   <template v-for="a in actions(u)" :key="a.key">
                     <hr v-if="a.danger" class="my-1">
-                    <button type="button" role="menuitem" :class="['block w-full rounded-lg px-3 py-2 text-left hover:bg-slate-50', a.danger ? 'text-red-600' : '']" @click="run(a.key, u)">{{ a.label }}</button>
+                    <button type="button" role="menuitem" :class="['flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left hover:bg-slate-50', a.danger ? 'text-red-600' : '']" @click="run(a.key, u)"><Icone v-if="a.icon" :nom="a.icon" taille="petite" />{{ a.label }}</button>
                   </template>
                 </div>
               </span>
@@ -165,7 +165,7 @@
           <label class="label" for="u-password">{{ form.id ? 'Nouveau mot de passe (vide : ne change pas)' : 'Mot de passe (facultatif, 8 caractères min.)' }}</label>
           <div class="flex">
             <input id="u-password" v-model="form.data.password" :type="showPassword ? 'text' : 'password'" class="input rounded-r-none" autocomplete="new-password" :placeholder="form.id ? '' : 'Vide : un lien de connexion à envoyer par WhatsApp'">
-            <button type="button" class="rounded-r-lg border border-l-0 border-slate-300 px-3" :aria-label="showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'" @click="showPassword = !showPassword">{{ showPassword ? '🙈' : '👁️' }}</button>
+            <button type="button" class="rounded-r-lg border border-l-0 border-slate-300 px-3" :aria-label="showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'" @click="showPassword = !showPassword"><Icone :nom="showPassword ? 'masquer' : 'voir'" /></button>
           </div>
           <p class="mt-1 text-xs text-slate-600">
             {{ form.id ? 'Changer le mot de passe déconnecte le compte de tous ses appareils.' : 'Sans mot de passe, vous obtenez un lien personnel à envoyer par WhatsApp : la personne arrive connectée et choisit son mot de passe si elle veut.' }}
@@ -205,7 +205,7 @@
     <Modal :open="!!invitation" title="Lien de connexion à envoyer" @close="invitation = null">
       <div v-if="invitation" class="space-y-3 text-sm">
         <p>Envoyez ce lien à <strong>{{ invitation.user.name }}</strong> ({{ invitation.user.phone }}). Il est personnel, ne sert qu'une fois et expire le {{ dateTime(invitation.expires_at) }}. En l'ouvrant, la personne arrive connectée dans son espace.</p>
-        <a :href="invitation.whatsapp_link" target="_blank" rel="noopener" class="flex w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] py-3 font-semibold text-white hover:bg-[#1ebe5b]">💬 Envoyer par WhatsApp</a>
+        <a :href="invitation.whatsapp_link" target="_blank" rel="noopener" class="flex w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] py-3 font-semibold text-white hover:bg-[#1ebe5b]"><Icone nom="message" /> Envoyer par WhatsApp</a>
         <div class="flex gap-2">
           <input :value="invitation.url" readonly class="input flex-1 text-xs" aria-label="Lien de connexion" @focus="$event.target.select()">
           <button type="button" class="btn-secondary" @click="copy(invitation.url)">Copier</button>
@@ -219,6 +219,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import PageTabs from '../../components/PageTabs.vue'
 import { TEAM_TABS } from '../../utils/pageTabs'
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
@@ -309,7 +310,7 @@ const counters = computed(() => {
     { key: 'couriers', label: 'Livreurs', value: s.couriers, hint: `${roleCount('courier', 'active')} actif(s) · ${roleCount('courier', 'suspended')} suspendu(s)${s.mad_couriers ? ` · ${s.mad_couriers} en MAD` : ''}` },
     { key: 'merchants', label: 'Comptes clients', value: s.merchants, hint: `${roleCount('merchant_owner')} propriétaire(s) · ${roleCount('merchant_manager')} gestionnaire(s) · ${roleCount('merchant_staff')} agent(s)` },
     { key: 'suspended', label: 'Suspendus', value: s.suspended, hint: 'accès coupé' },
-    { key: 'inactive', label: s.inactive ? '⚠️ À vérifier' : 'À vérifier', value: s.inactive, warn: s.inactive > 0, hint: `${s.never_logged} jamais connecté(s) · ${s.inactive_old} inactif(s) +${s.inactive_days} j` },
+    { key: 'inactive', label: 'À vérifier', icon: s.inactive ? 'alerte' : '', value: s.inactive, warn: s.inactive > 0, hint: `${s.never_logged} jamais connecté(s) · ${s.inactive_old} inactif(s) +${s.inactive_days} j` },
   ]
 })
 
@@ -334,17 +335,17 @@ const canEdit = (u) => auth.can('users.manage') && u.id !== auth.user.id && !u.m
 function actions(u) {
   const manage = canEdit(u)
   const list = []
-  if (manage) list.push({ key: 'edit', label: '✏️ Modifier le compte' })
-  if (isStaffRole(u.role)) list.push({ key: 'preview', label: '👁 Voir comme ce compte' })
-  if (u.courier_id) list.push({ key: 'courier', label: '🛵 Fiche du livreur' })
+  if (manage) list.push({ key: 'edit', icon: 'modifier', label: 'Modifier le compte' })
+  if (isStaffRole(u.role)) list.push({ key: 'preview', icon: 'voir', label: 'Voir comme ce compte' })
+  if (u.courier_id) list.push({ key: 'courier', icon: 'livreur', label: 'Fiche du livreur' })
   if (u.merchant_id) {
-    list.push({ key: 'merchant', label: '🏪 Fiche du client' })
-    list.push({ key: 'merchant_accounts', label: '👥 Comptes et départements du client' })
+    list.push({ key: 'merchant', icon: 'clients', label: 'Fiche du client' })
+    list.push({ key: 'merchant_accounts', icon: 'utilisateurs', label: 'Comptes et départements du client' })
   }
-  if (manage && u.status === 'active') list.push({ key: 'invite', label: '💬 Lien de connexion par WhatsApp' })
-  if (auth.can('users.view')) list.push({ key: 'history', label: '🕘 Historique du compte' })
-  if (auth.can('users.manage') && u.id !== auth.user.id && (manage || u.merchant_id)) list.push({ key: 'logout', label: '📵 Déconnecter de tous ses appareils' })
-  if (manage && u.status === 'active') list.push({ key: 'suspend', label: '⏸ Suspendre le compte', danger: true })
+  if (manage && u.status === 'active') list.push({ key: 'invite', icon: 'message', label: 'Lien de connexion par WhatsApp' })
+  if (auth.can('users.view')) list.push({ key: 'history', icon: 'historique', label: 'Historique du compte' })
+  if (auth.can('users.manage') && u.id !== auth.user.id && (manage || u.merchant_id)) list.push({ key: 'logout', icon: 'deconnexion', label: 'Déconnecter de tous ses appareils' })
+  if (manage && u.status === 'active') list.push({ key: 'suspend', icon: 'pause', label: 'Suspendre le compte', danger: true })
   return list
 }
 

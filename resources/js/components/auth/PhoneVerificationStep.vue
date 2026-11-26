@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-5">
     <div class="text-center space-y-1">
-      <p class="text-3xl" aria-hidden="true">📱</p>
+      <span class="mx-auto grid h-12 w-12 place-items-center rounded-full bg-slate-100 text-slate-600" aria-hidden="true"><Icone nom="mobile" taille="grande" /></span>
       <h2 class="text-xl font-bold">Vérifiez votre numéro</h2>
       <p class="text-sm text-slate-600">{{ state.phone }} · <button type="button" class="font-semibold underline" @click="$emit('restart')">modifier</button></p>
     </div>
@@ -25,7 +25,7 @@
           <li>Revenez ici : la page continue toute seule.</li>
         </ol>
         <a :href="state.whatsapp.link" target="_blank" rel="noopener" class="flex items-center justify-center gap-2 w-full rounded-xl bg-[#25D366] hover:bg-[#1ebe5b] py-3 font-semibold text-white shadow-sm">
-          <span aria-hidden="true">💬</span> Envoyer le message WhatsApp
+          <Icone nom="message" /> Envoyer le message WhatsApp
         </a>
         <p class="flex items-center justify-center gap-2 text-sm text-slate-600" aria-live="polite">
           <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" aria-hidden="true"></span> En attente de votre message…
@@ -78,6 +78,7 @@
 </template>
 
 <script setup>
+import Icone from '../ui/Icone.vue'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 

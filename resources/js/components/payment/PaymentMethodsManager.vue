@@ -1,13 +1,13 @@
 <template>
   <div class="space-y-3">
     <p v-if="merchantSide" class="text-sm text-slate-600">
-      Votre agence vous reverse l'argent de vos ventes avec ces moyens. Le moyen ⭐ est utilisé en premier.
+      Votre agence vous reverse l'argent de vos ventes avec ces moyens. Le moyen <Icone nom="prioritaire" taille="petite" class="inline align-text-bottom" /> est utilisé en premier.
     </p>
     <p v-if="loading" class="text-sm text-slate-600">Chargement…</p>
 
     <!-- Nouveau moyen à vérifier : l'agence appelle le client à son numéro habituel avant de valider -->
     <p v-if="!merchantSide && pending.length" class="rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
-      ⚠️ {{ pending.length > 1 ? `${pending.length} moyens ajoutés ou changés` : 'Moyen ajouté ou changé' }} par le client :
+      <Icone nom="alerte" taille="petite" class="inline align-text-bottom" /> {{ pending.length > 1 ? `${pending.length} moyens ajoutés ou changés` : 'Moyen ajouté ou changé' }} par le client :
       <b>{{ pending.map((m) => m.summary).join(', ') }}</b>. Vérifiez auprès du client (appel à son numéro habituel) avant de valider.
     </p>
 
@@ -18,20 +18,20 @@
       <div class="flex items-center gap-3">
         <PaymentMethodIcon :type="m.type" />
         <div class="min-w-0 flex-1">
-          <p class="font-semibold break-words">{{ m.type_label }}{{ m.bank_name ? ` · ${m.bank_name}` : '' }} · {{ m.display_number }} <span v-if="m.is_preferred" title="Utilisé en premier">⭐</span></p>
+          <p class="font-semibold break-words">{{ m.type_label }}{{ m.bank_name ? ` · ${m.bank_name}` : '' }} · {{ m.display_number }} <span v-if="m.is_preferred" title="Utilisé en premier"><Icone nom="prioritaire" taille="petite" class="inline align-text-bottom" /></span></p>
           <p v-if="m.holder_name" class="text-xs text-slate-600">{{ m.holder_name }}</p>
         </div>
         <AuthImage v-if="m.qr_url" :src="`${m.qr_url}`" alt="QR code" class="h-12 w-12 rounded border object-contain" />
       </div>
       <div class="flex flex-wrap items-center gap-2 text-xs">
         <PaymentMethodStatus :status="m.status" :merchant="merchantSide" :title="m.verified_by ? `Par ${m.verified_by} le ${dateTime(m.verified_at)}` : null" />
-        <a v-if="m.payment_link" :href="m.payment_link" target="_blank" rel="noopener noreferrer" class="rounded-full bg-slate-100 px-2 py-0.5 hover:bg-slate-200">🔗 Lien de paiement</a>
+        <a v-if="m.payment_link" :href="m.payment_link" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 hover:bg-slate-200"><Icone nom="lien" taille="petite" />Lien de paiement</a>
         <span v-if="m.qr_url" class="rounded-full bg-slate-100 px-2 py-0.5">▦ QR code</span>
         <span v-if="m.status === 'rejected' && m.rejected_reason" class="text-red-700">{{ m.rejected_reason }}</span>
       </div>
       <div v-if="canEdit" class="flex flex-wrap gap-x-4 gap-y-1 text-sm">
-        <button v-if="!merchantSide && m.status !== 'verified'" class="font-semibold text-emerald-700" :disabled="busy" @click="verify(m)">✔ Valider</button>
-        <button v-if="!merchantSide && m.status === 'pending'" class="text-red-700" :disabled="busy" @click="reject(m)">✕ Refuser</button>
+        <button v-if="!merchantSide && m.status !== 'verified'" class="font-semibold text-emerald-700" :disabled="busy" @click="verify(m)"><Icone nom="valider" taille="petite" class="inline align-text-bottom" /> Valider</button>
+        <button v-if="!merchantSide && m.status === 'pending'" class="text-red-700" :disabled="busy" @click="reject(m)"><Icone nom="refus" taille="petite" class="inline align-text-bottom" /> Refuser</button>
         <button v-if="!m.is_preferred" class="text-blue-600" :disabled="busy" @click="prefer(m)">Mettre en premier</button>
         <button class="text-blue-600" @click="openForm(m)">Modifier</button>
         <button class="text-red-600" :disabled="busy" @click="remove(m)">Retirer</button>
@@ -45,7 +45,7 @@
       + Ajouter un moyen de paiement
     </button>
     <p v-if="merchantSide" class="rounded-xl border border-blue-200 bg-blue-50 p-3 text-xs text-blue-900">
-      🔒 Pour votre sécurité, chaque changement est vérifié par l'agence avant d'être utilisé, et vous êtes prévenu sur WhatsApp.
+      <Icone nom="verrou" taille="petite" class="inline align-text-bottom" /> Pour votre sécurité, chaque changement est vérifié par l'agence avant d'être utilisé, et vous êtes prévenu sur WhatsApp.
     </p>
 
     <!-- Historique : pour la caisse -->
@@ -90,7 +90,7 @@
             <img v-if="form.preview" :src="form.preview" alt="QR code" class="h-20 w-20 rounded border object-contain">
             <AuthImage v-else-if="form.currentQr && !form.removeQr" :src="form.currentQr" alt="QR code" class="h-20 w-20 rounded border object-contain" />
             <div class="space-y-1 text-sm">
-              <label class="btn-secondary cursor-pointer">📷 Photo ou image<input type="file" accept="image/*" class="hidden" @change="pickQr"></label>
+              <label class="btn-secondary cursor-pointer"><Icone nom="photo" />Photo ou image<input type="file" accept="image/*" class="hidden" @change="pickQr"></label>
               <button v-if="form.preview || (form.currentQr && !form.removeQr)" type="button" class="block text-red-600" @click="dropQr">Retirer le QR code</button>
             </div>
           </div>
@@ -105,6 +105,7 @@
 </template>
 
 <script setup>
+import Icone from '../ui/Icone.vue'
 import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import { useToastStore } from '../../stores/toasts'

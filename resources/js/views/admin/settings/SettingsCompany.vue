@@ -1,5 +1,5 @@
 <template>
-  <SettingsPage icon="🏢" title="Entreprise et marque" intro="Ce que voient vos clients, vos livreurs et votre équipe : nom, coordonnées, logo, couleurs, adresse de l'espace.">
+  <SettingsPage icon="entreprise" title="Entreprise et marque" intro="Ce que voient vos clients, vos livreurs et votre équipe : nom, coordonnées, logo, couleurs, adresse de l'espace.">
     <section v-if="form" class="card p-4 space-y-3">
       <h2 class="font-semibold">Identité</h2>
       <div class="grid sm:grid-cols-2 gap-3">

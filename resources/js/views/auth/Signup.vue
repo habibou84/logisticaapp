@@ -9,7 +9,7 @@
         <div v-else-if="!options.open" class="space-y-4 text-center">
           <h1 class="text-2xl font-bold">Ouverture de compte</h1>
           <p class="text-slate-600">Les inscriptions en ligne sont fermées pour le moment. Contactez-nous pour ouvrir votre compte.</p>
-          <a v-if="contactLink" :href="contactLink" target="_blank" rel="noopener" class="inline-block rounded-xl bg-emerald-600 px-6 py-3 font-semibold text-white">💬 Nous écrire sur WhatsApp</a>
+          <a v-if="contactLink" :href="contactLink" target="_blank" rel="noopener" class="inline-block rounded-xl bg-emerald-600 px-6 py-3 font-semibold text-white"><Icone nom="message" taille="petite" class="inline align-[-0.15em]" /> Nous écrire sur WhatsApp</a>
         </div>
 
         <!-- Étape 2 : vérification du numéro -->
@@ -75,6 +75,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import { computed, defineComponent, h, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'

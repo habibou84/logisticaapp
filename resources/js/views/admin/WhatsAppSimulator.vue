@@ -13,7 +13,7 @@
       <!-- Conversation -->
       <div class="card flex flex-col h-[70vh] overflow-hidden">
         <div class="flex items-center gap-3 border-b p-3 bg-emerald-700 text-white">
-          <span class="text-2xl">💬</span>
+          <Icone nom="message" taille="grande" />
           <div class="min-w-0">
             <p class="font-semibold truncate">{{ companyName }}</p>
             <p class="text-xs opacity-80 truncate">vu par {{ sender?.label || 'choisissez un expéditeur' }}</p>
@@ -82,6 +82,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import { computed, nextTick, onMounted, ref } from 'vue'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import { useAuthStore } from '../../stores/auth'

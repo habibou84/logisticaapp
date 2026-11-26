@@ -1,5 +1,5 @@
 <template>
-  <SettingsPage icon="🏢" title="Départements des clients" intro="Pour les clients de distribution et de MAD qui envoient ou reçoivent pour plusieurs départements (une banque : Finance, Marketing, Gestion…). Chaque client peut changer ces réglages sur sa fiche.">
+  <SettingsPage icon="societe" title="Départements des clients" intro="Pour les clients de distribution et de MAD qui envoient ou reçoivent pour plusieurs départements (une banque : Finance, Marketing, Gestion…). Chaque client peut changer ces réglages sur sa fiche.">
     <template v-if="form?.department_settings">
       <section class="card p-4">
         <label class="flex items-start gap-2 text-sm">

@@ -2,7 +2,7 @@
   <!-- Fiche course (équipe) : notes du livreur sur cette course, et la note de l'équipe -->
   <div class="card p-4 space-y-3 text-sm">
     <div class="flex items-center justify-between gap-2">
-      <h2 class="font-semibold">⭐ Notes du livreur</h2>
+      <h2 class="flex items-center gap-1.5 font-semibold"><Icone nom="prioritaire" />Notes du livreur</h2>
       <RouterLink v-if="couriers.length" :to="{ path: `/admin/livreurs/${couriers[0].id}`, query: { onglet: 'notes' } }" class="text-blue-600">Sa note globale</RouterLink>
     </div>
     <ul v-if="ratings.length" class="divide-y">
@@ -52,7 +52,7 @@
         </select>
         <div v-if="form.reasons.length" class="mt-2 flex flex-wrap gap-1.5">
           <button v-for="k in form.reasons" :key="k" type="button" class="rounded-full bg-red-50 px-3 py-1 text-xs text-red-700 ring-1 ring-red-200" :aria-label="`Retirer : ${reasonLabel(k)}`" @click="form.reasons = form.reasons.filter((x) => x !== k)">
-            {{ reasonLabel(k) }} ✕
+            {{ reasonLabel(k) }} <Icone nom="fermer" taille="petite" class="inline align-text-bottom" />
           </button>
         </div>
       </div>
@@ -65,6 +65,7 @@
 </template>
 
 <script setup>
+import Icone from './ui/Icone.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import http, { apiErrorMessage } from '../bootstrap/axios'
 import StarRating from './StarRating.vue'

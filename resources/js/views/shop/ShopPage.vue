@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-dvh bg-slate-50 text-slate-900 pb-28" :style="{ '--app-color': '#047857' }">
     <div v-if="error" class="max-w-md mx-auto px-4 py-24 text-center space-y-2">
-      <p class="text-4xl" aria-hidden="true">🛍️</p>
+      <span class="mx-auto grid h-12 w-12 place-items-center rounded-full bg-slate-100 text-slate-600" aria-hidden="true"><Icone nom="boutique" taille="grande" /></span>
       <p class="text-lg font-semibold">{{ error }}</p>
     </div>
 
@@ -9,7 +9,7 @@
 
     <!-- Commande envoyée -->
     <div v-else-if="done" class="max-w-md mx-auto px-4 py-10 space-y-5 text-center">
-      <p class="text-5xl" aria-hidden="true">✅</p>
+      <span class="mx-auto grid h-12 w-12 place-items-center rounded-full bg-succes-fond text-succes" aria-hidden="true"><Icone nom="livre" taille="grande" /></span>
       <h1 class="text-2xl font-bold">Commande envoyée !</h1>
       <p class="text-slate-600">
         {{ shop.name }} a bien reçu votre commande. Un livreur vous appellera au moment de la livraison.
@@ -22,7 +22,7 @@
         <p class="text-sm text-slate-600 pt-2">Code de suivi</p>
         <p class="font-mono font-semibold">{{ done.tracking_code }}</p>
       </div>
-      <RouterLink :to="`/suivi/${done.tracking_code}`" class="m-btn-primary">📍 Suivre ma commande</RouterLink>
+      <RouterLink :to="`/suivi/${done.tracking_code}`" class="m-btn-primary"><Icone nom="adresse" />Suivre ma commande</RouterLink>
       <button type="button" class="text-sm text-slate-600 underline" @click="done = null">Retour à la boutique</button>
     </div>
 
@@ -33,8 +33,8 @@
           <h1 class="text-2xl md:text-3xl font-bold">{{ shop.name }}</h1>
           <p v-if="shop.intro" class="text-emerald-50/90">{{ shop.intro }}</p>
           <div class="flex flex-wrap gap-2 pt-1 text-sm">
-            <span class="rounded-full bg-white/15 px-3 py-1">💵 Paiement à la livraison</span>
-            <a v-if="contactLink" :href="contactLink" target="_blank" rel="noopener" class="rounded-full bg-white/15 px-3 py-1">💬 Contacter le vendeur</a>
+            <span class="rounded-full bg-white/15 px-3 py-1"><Icone nom="argent" taille="petite" class="inline align-[-0.15em]" /> Paiement à la livraison</span>
+            <a v-if="contactLink" :href="contactLink" target="_blank" rel="noopener" class="rounded-full bg-white/15 px-3 py-1"><Icone nom="message" taille="petite" class="inline align-[-0.15em]" /> Contacter le vendeur</a>
           </div>
         </div>
       </header>
@@ -46,7 +46,7 @@
           <li v-for="p in shop.products" :key="p.id" class="m-card overflow-hidden flex flex-col">
             <div class="aspect-square bg-slate-100 grid place-items-center">
               <img v-if="p.photo_url" :src="p.photo_url" :alt="p.name" class="h-full w-full object-cover" loading="lazy">
-              <span v-else class="text-4xl" aria-hidden="true">🛍️</span>
+              <span v-else class="text-slate-400" aria-hidden="true"><Icone nom="boutique" taille="grande" /></span>
             </div>
             <div class="p-3 flex flex-col gap-1 flex-1">
               <p class="font-medium leading-snug">{{ p.name }}</p>
@@ -140,6 +140,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import SearchSelect from '../../components/SearchSelect.vue'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'

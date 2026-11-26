@@ -32,10 +32,10 @@
     </div>
 
     <div v-if="state === 'current' && plans.length" class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-      <StatCard title="Contrats en cours" :value="String(plans.length)" icon="📑" />
-      <StatCard title="Forfaits du mois" :value="money(plans.reduce((s, p) => s + (p.monthly_fee || 0), 0))" icon="💼" />
-      <StatCard title="Courses en plus" :value="String(plans.reduce((s, p) => s + (p.usage?.over || 0), 0))" icon="➕" />
-      <StatCard v-if="plans.some((p) => p.usage?.estimate !== null && p.usage?.estimate !== undefined)" title="Factures estimées" :value="money(plans.reduce((s, p) => s + (p.usage?.estimate || 0), 0))" icon="📄" />
+      <StatCard title="Contrats en cours" :value="String(plans.length)" icon="contrat" />
+      <StatCard title="Forfaits du mois" :value="money(plans.reduce((s, p) => s + (p.monthly_fee || 0), 0))" icon="travail" />
+      <StatCard title="Courses en plus" :value="String(plans.reduce((s, p) => s + (p.usage?.over || 0), 0))" icon="ajouter" />
+      <StatCard v-if="plans.some((p) => p.usage?.estimate !== null && p.usage?.estimate !== undefined)" title="Factures estimées" :value="money(plans.reduce((s, p) => s + (p.usage?.estimate || 0), 0))" icon="facture" />
     </div>
 
     <div class="card overflow-x-auto">
@@ -50,11 +50,11 @@
               <span :class="['ml-1 rounded-full px-2 py-0.5 text-xs font-medium', activityBadge(p.activity)]">{{ activityShort(p.activity) }}</span>
             </td>
             <td data-label="Contrat" class="p-2 max-w-sm">
-              <div class="font-medium">{{ p.formula === 'distribution_lot' ? `📦 ${p.lot_name}` : p.formula_label }}</div>
+              <div class="flex items-center gap-1 font-medium"><Icone v-if="p.formula === 'distribution_lot'" nom="course" taille="petite" />{{ p.formula === 'distribution_lot' ? p.lot_name : p.formula_label }}</div>
               <div class="text-xs text-slate-600">{{ p.summary }}</div>
               <div v-if="p.has_forfait" class="text-xs text-slate-600">Zones : {{ p.zones?.length ? (p.zones.length > 5 ? `${p.zones.slice(0, 5).map((z) => z.name).join(', ')}… (${p.zones.length})` : p.zones.map((z) => z.name).join(', ')) : 'communes « Forfait »' }}</div>
               <div v-if="p.couriers?.length" class="text-xs text-slate-600">Livreurs : {{ p.couriers.map((c) => c.name).join(', ') }}</div>
-              <button v-if="p.formula === 'mad_contract'" type="button" class="mt-1 text-xs font-semibold text-blue-700" @click="routinesOf = p">🧭 Parcours et lieu de pointage</button>
+              <button v-if="p.formula === 'mad_contract'" type="button" class="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-blue-700" @click="routinesOf = p"><Icone nom="itineraire" taille="petite" /> Parcours et lieu de pointage</button>
             </td>
             <td data-label="Période" class="p-2 whitespace-nowrap">
               du {{ date(p.starts_on) }}<template v-if="p.ends_on"><br>au {{ date(p.ends_on) }}</template>
@@ -74,8 +74,8 @@
                 <div v-if="p.formula === 'distribution_lot'" class="text-xs text-slate-600">
                   {{ p.usage.delivered }} livré(s) · {{ p.usage.in_progress }} en cours<template v-if="p.usage.remaining"> · {{ p.usage.remaining }} à créer</template>
                   <span v-if="p.usage.late" class="text-red-600 font-medium"> · {{ p.usage.late }} en retard</span>
-                  <span v-if="p.usage.done" class="text-emerald-700 font-medium"> · terminé ✓</span>
-                  <a v-if="p.usage.used" :href="`/etiquettes?lot=${p.id}`" target="_blank" class="ml-1 text-blue-600">🏷️ Étiquettes du lot</a>
+                  <span v-if="p.usage.done" class="text-emerald-700 font-medium"> · terminé <Icone nom="valider" taille="petite" class="inline" /></span>
+                  <a v-if="p.usage.used" :href="`/etiquettes?lot=${p.id}`" target="_blank" class="ml-1 inline-flex items-center gap-1 text-blue-600"><Icone nom="etiquette" taille="petite" /> Étiquettes du lot</a>
                 </div>
                 <div v-if="p.usage.supplements" class="text-xs text-slate-600">Suppléments : {{ money(p.usage.supplements) }}</div>
               </template>
@@ -127,6 +127,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import http from '../../bootstrap/axios'

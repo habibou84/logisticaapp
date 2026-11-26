@@ -12,41 +12,41 @@
         <StatusBadge :status="order.status" :label="order.status_label" />
       </div>
       <p v-if="mission.offline" class="rounded-xl bg-sky-50 text-sky-900 p-3 text-sm">
-        ⏳ Enregistré sur votre téléphone : envoi automatique au retour du réseau.
+        <Icone nom="sablier" taille="petite" class="inline" /> Enregistré sur votre téléphone : envoi automatique au retour du réseau.
       </p>
       <p v-if="shipping" class="rounded-xl bg-indigo-50 text-indigo-900 p-3 font-medium">
-        🚌 Expédition : déposez le colis à la gare ou chez le transporteur, payez l'envoi et gardez le ticket.
+        <Icone nom="expedition" taille="petite" class="inline" /> Expédition : déposez le colis à la gare ou chez le transporteur, payez l'envoi et gardez le ticket.
       </p>
-      <p v-if="mission.gain" class="text-sm font-semibold text-emerald-700">💰 Votre gain prévu : + {{ money(mission.gain) }}</p>
+      <p v-if="mission.gain" class="text-sm font-semibold text-emerald-700"><Icone nom="gain" taille="petite" class="inline" /> Votre gain prévu : + {{ money(mission.gain) }}</p>
       <p class="text-xl font-bold">{{ target.name }}</p>
-      <p class="text-slate-700">📍 {{ target.zone }}<span v-if="target.address"> · {{ target.address }}</span></p>
+      <p class="text-slate-700"><Icone nom="adresse" taille="petite" class="inline" /> {{ target.zone }}<span v-if="target.address"> · {{ target.address }}</span></p>
       <p v-if="target.landmark" class="text-slate-600">Repère : {{ target.landmark }}</p>
       <!-- Annuaire : position de l'adresse confirmée sur place (ou à enregistrer) -->
       <div v-if="canLocate" class="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-slate-50 p-3 text-sm">
-        <span v-if="order.destination?.has_location" class="text-emerald-700">📍 Position confirmée{{ order.destination.located_at ? ` le ${date(order.destination.located_at)}` : '' }} : suivez l'itinéraire</span>
-        <span v-else class="text-slate-600">📍 Cette adresse n'a pas encore de position.</span>
+        <span v-if="order.destination?.has_location" class="text-emerald-700"><Icone nom="adresse" taille="petite" class="inline" /> Position confirmée{{ order.destination.located_at ? ` le ${date(order.destination.located_at)}` : '' }} : suivez l'itinéraire</span>
+        <span v-else class="text-slate-600"><Icone nom="adresse" taille="petite" class="inline" /> Cette adresse n'a pas encore de position.</span>
         <button type="button" class="font-semibold text-[var(--app-color)]" :disabled="locating" @click="locateHere">{{ locating ? 'Position…' : 'Je suis sur place : enregistrer' }}</button>
       </div>
       <!-- Département du client : chez qui ramasser, à qui remettre -->
       <p v-if="targetDepartment" class="rounded-xl bg-violet-50 p-3 text-violet-900">
-        🏢 <strong>{{ targetDepartment.label }}</strong><template v-if="targetDepartment.location"> · {{ targetDepartment.location }}</template>
-        <span v-if="targetDepartment.manager_name" class="block text-sm">👤 {{ targetDepartment.manager_name }}</span>
+        <Icone nom="entreprise" taille="petite" class="inline" /> <strong>{{ targetDepartment.label }}</strong><template v-if="targetDepartment.location"> · {{ targetDepartment.location }}</template>
+        <span v-if="targetDepartment.manager_name" class="block text-sm"><Icone nom="client" taille="petite" class="inline" /> {{ targetDepartment.manager_name }}</span>
         <span v-if="mission.type === 'pickup' && order.to_department" class="block text-sm">Courrier interne vers {{ order.to_department.label }}</span>
       </p>
       <p v-if="mission.type === 'delivery' && order.delivery.scheduled_date" class="text-sm text-slate-600">Prévue le {{ date(order.delivery.scheduled_date) }} {{ order.delivery.time_slot ? `(${order.delivery.time_slot}h)` : '' }}</p>
 
       <div class="grid grid-cols-3 gap-2 pt-2">
         <a :href="telLink(target.phone)" class="tap rounded-2xl bg-slate-100 py-3 flex flex-col items-center gap-1 text-sm font-medium active:bg-slate-200">
-          <span class="text-2xl">📞</span>Appeler
+          <Icone nom="appeler" taille="grande" />Appeler
         </a>
         <a :href="whatsappLink(target.phone)" target="_blank" class="tap rounded-2xl bg-slate-100 py-3 flex flex-col items-center gap-1 text-sm font-medium active:bg-slate-200">
-          <span class="text-2xl">💬</span>WhatsApp
+          <Icone nom="message" taille="grande" />WhatsApp
         </a>
         <a :href="mapsLink(target.lat, target.lng, `${target.address || ''} ${target.zone}`)" target="_blank" class="tap rounded-2xl bg-slate-100 py-3 flex flex-col items-center gap-1 text-sm font-medium active:bg-slate-200">
-          <span class="text-2xl">🗺️</span>Itinéraire
+          <Icone nom="itineraire" taille="grande" />Itinéraire
         </a>
       </div>
-      <a v-if="target.phone2" :href="telLink(target.phone2)" class="block text-center text-sm text-[var(--app-color)] font-medium pt-1">📞 Autre numéro : {{ target.phone2 }}</a>
+      <a v-if="target.phone2" :href="telLink(target.phone2)" class="block text-center text-sm text-[var(--app-color)] font-medium pt-1"><Icone nom="appeler" taille="petite" class="inline" /> Autre numéro : {{ target.phone2 }}</a>
     </section>
 
     <!-- Argent et colis -->
@@ -60,20 +60,20 @@
         <span class="text-3xl font-bold">{{ money(order.amounts.cod_amount) }}</span>
       </div>
       <p v-if="order.from_warehouse && mission.type === 'delivery' && ['delivery_assigned', 'at_hub'].includes(order.status)" class="rounded-xl bg-sky-50 p-3 text-sky-900">
-        🏬 À récupérer à l'entrepôt <strong>{{ order.pickup.hub_name }}</strong><span v-if="order.pickup.address"> · {{ order.pickup.address }}</span>
+        <Icone nom="depot" taille="petite" class="inline" /> À récupérer à l'entrepôt <strong>{{ order.pickup.hub_name }}</strong><span v-if="order.pickup.address"> · {{ order.pickup.address }}</span>
       </p>
       <ul v-if="order.items?.length" class="text-slate-700 space-y-0.5">
-        <li v-for="item in order.items" :key="item.id">📦 <strong>{{ item.quantity }} ×</strong> {{ item.label }}</li>
+        <li v-for="item in order.items" :key="item.id"><Icone nom="course" taille="petite" class="inline" /> <strong>{{ item.quantity }} ×</strong> {{ item.label }}</li>
       </ul>
-      <p v-else class="text-slate-700">📦 {{ order.package.description || 'Colis' }}<strong v-if="order.package.shipment_quantity > 1 || order.package.pli_kind" class="ml-1 rounded-full bg-amber-100 px-2 text-amber-900">{{ shipmentLabel(order.package) }}</strong></p>
+      <p v-else class="text-slate-700"><Icone nom="course" taille="petite" class="inline" /> {{ order.package.description || 'Colis' }}<strong v-if="order.package.shipment_quantity > 1 || order.package.pli_kind" class="ml-1 rounded-full bg-amber-100 px-2 text-amber-900">{{ shipmentLabel(order.package) }}</strong></p>
       <div class="flex flex-wrap gap-2">
-        <span v-if="order.package.is_fragile" class="rounded-full bg-red-100 text-red-700 text-sm font-semibold px-3 py-1">🥚 Fragile</span>
-        <span v-if="order.package.is_express" class="rounded-full bg-amber-100 text-amber-800 text-sm font-semibold px-3 py-1">⚡ Express</span>
+        <span v-if="order.package.is_fragile" class="inline-flex items-center gap-1 rounded-full bg-red-100 text-red-700 text-sm font-semibold px-3 py-1"><Icone nom="fragile" taille="petite" />Fragile</span>
+        <span v-if="order.package.is_express" class="inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-800 text-sm font-semibold px-3 py-1"><Icone nom="rapide" taille="petite" />Express</span>
         <span v-if="order.attempts_count" class="rounded-full bg-slate-100 text-slate-700 text-sm px-3 py-1">Tentative {{ order.attempts_count + 1 }} / {{ order.max_attempts }}</span>
       </div>
-      <p v-if="order.package.merchant_note" class="rounded-xl bg-amber-50 p-3 text-amber-900">📝 {{ order.package.merchant_note }}</p>
+      <p v-if="order.package.merchant_note" class="rounded-xl bg-amber-50 p-3 text-amber-900"><Icone nom="note" taille="petite" class="inline" /> {{ order.package.merchant_note }}</p>
       <!-- Étiquette pas encore imprimée par le client : à vérifier au ramassage -->
-      <p v-if="mission.type === 'pickup' && order.label && !order.label.printed_at" class="rounded-xl bg-slate-100 p-3 text-slate-700">🏷️ Étiquette pas encore imprimée : vérifiez que le colis est bien identifié, sinon l'agence l'imprimera au dépôt.</p>
+      <p v-if="mission.type === 'pickup' && order.label && !order.label.printed_at" class="rounded-xl bg-slate-100 p-3 text-slate-700"><Icone nom="etiquette" taille="petite" class="inline" /> Étiquette pas encore imprimée : vérifiez que le colis est bien identifié, sinon l'agence l'imprimera au dépôt.</p>
       <p class="font-mono text-xs text-slate-400">{{ order.tracking_code }}<span v-if="mission.type === 'pickup'"> · {{ order.merchant?.business_name }}</span></p>
     </section>
 
@@ -93,20 +93,20 @@
         <template v-if="mission.status === 'assigned'">
           <div class="grid grid-cols-3 gap-2">
             <button class="m-btn-secondary" @click="sheet = 'refuse'">Refuser</button>
-            <button class="m-btn-success col-span-2" :disabled="busy" @click="accept">✓ Accepter</button>
+            <button class="m-btn-success col-span-2" :disabled="busy" @click="accept"><Icone nom="valider" />Accepter</button>
           </div>
         </template>
         <template v-else-if="active">
           <!-- Collecte : scan de l'étiquette (facultatif), pour être sûr de prendre le bon colis -->
           <button v-if="canScanLabel" type="button" :class="['m-btn-secondary', pickupCheck ? 'text-emerald-700' : '']" @click="openLabelScan">
-            {{ pickupCheck ? (pickupCheck === 'scan' ? '✓ Étiquette scannée' : '✓ Code du colis vérifié') : '📷 Scanner l\'étiquette' }}
+            <Icone :nom="pickupCheck ? 'valider' : 'scanner'" />{{ pickupCheck ? (pickupCheck === 'scan' ? 'Étiquette scannée' : 'Code du colis vérifié') : 'Scanner l\'étiquette' }}
           </button>
-          <button v-if="primary" :class="[primary.class, 'text-lg py-5']" :disabled="busy" @click="primary.action()">{{ primary.label }}</button>
+          <button v-if="primary" :class="[primary.class, 'text-lg py-5']" :disabled="busy" @click="primary.action()"><Icone :nom="primary.icon" />{{ primary.label }}</button>
           <div class="grid grid-cols-4 gap-2">
-            <button v-if="canReportIncident" class="m-btn-secondary py-3 px-1 text-sm text-red-600" @click="openIncident">⚠️ Problème</button>
-            <button class="m-btn-secondary py-3 px-1 text-sm" @click="sheet = 'note'">💬 Note</button>
-            <button class="m-btn-secondary py-3 px-1 text-sm" @click="openExpense">💸 Frais</button>
-            <PhotoCapture class="m-btn-secondary py-3 px-1 text-sm" @captured="uploadPhoto">📷 Photo</PhotoCapture>
+            <button v-if="canReportIncident" class="m-btn-secondary py-3 px-1 text-sm text-red-600" @click="openIncident"><Icone nom="alerte" taille="petite" />Problème</button>
+            <button class="m-btn-secondary py-3 px-1 text-sm" @click="sheet = 'note'"><Icone nom="note" taille="petite" />Note</button>
+            <button class="m-btn-secondary py-3 px-1 text-sm" @click="openExpense"><Icone nom="frais" taille="petite" />Frais</button>
+            <PhotoCapture class="m-btn-secondary py-3 px-1 text-sm" @captured="uploadPhoto"><Icone nom="photo" taille="petite" />Photo</PhotoCapture>
           </div>
           <!-- Mission confiée d'office, pas encore commencée : le livreur peut la rendre -->
           <button v-if="mission.can_report_impediment" class="w-full text-center text-sm text-slate-600 underline py-1" @click="sheet = 'refuse'">
@@ -137,12 +137,12 @@
             <label class="m-label" for="ticket">Numéro du ticket</label>
             <input id="ticket" v-model="delivery.shipping_reference" class="m-input" placeholder="Facultatif">
           </div>
-          <PhotoCapture class="m-btn-secondary" scan="receipts" @captured="uploadPhoto($event, false)">📷 Photographier le ticket</PhotoCapture>
+          <PhotoCapture class="m-btn-secondary" scan="receipts" @captured="uploadPhoto($event, false)"><Icone nom="photo" />Photographier le ticket</PhotoCapture>
         </template>
         <!-- Annuaire : position de l'adresse enregistrée avec la livraison -->
         <label v-if="locateAsk" class="flex items-start gap-2 rounded-xl bg-slate-50 p-3 text-sm">
           <input v-model="delivery.locate" type="checkbox" class="mt-1 h-5 w-5" :disabled="locateRequired">
-          <span>📍 Enregistrer ma position comme celle de cette adresse<span class="block text-xs text-slate-600">{{ locateRequired ? 'Obligatoire : l\'adresse n\'a pas encore de position.' : 'Le prochain livreur ira droit à la porte.' }}</span></span>
+          <span><Icone nom="position" taille="petite" class="inline" /> Enregistrer ma position comme celle de cette adresse<span class="block text-xs text-slate-600">{{ locateRequired ? 'Obligatoire : l\'adresse n\'a pas encore de position.' : 'Le prochain livreur ira droit à la porte.' }}</span></span>
         </label>
         <!-- Distribution, MAD : pas d'encaissement, la preuve de remise demandée par les réglages -->
         <template v-if="billed">
@@ -161,7 +161,7 @@
           </div>
           <button v-else type="button" class="text-sm font-medium text-[var(--app-color)]" @click="delivery.signature = ''">+ Faire signer</button>
           <PhotoCapture :class="['m-btn-secondary', order.proof?.proof_photo && !photoTaken ? 'ring-2 ring-amber-400' : '']" scan="delivery_proof" @captured="uploadPhoto">
-            📷 {{ photoTaken ? 'Photo envoyée ✓ (en reprendre une)' : `${order.proof?.receipt_label ? 'Photographier l\'accusé signé et tamponné' : 'Photographier la décharge'}${order.proof?.proof_photo ? ' *' : ''}` }}
+            <Icone :nom="photoTaken ? 'valider' : 'photo'" />{{ photoTaken ? 'Photo envoyée (en reprendre une)' : `${order.proof?.receipt_label ? 'Photographier l\'accusé signé et tamponné' : 'Photographier la décharge'}${order.proof?.proof_photo ? ' *' : ''}` }}
           </PhotoCapture>
         </template>
         <div v-else-if="!shipping || order.amounts.cod_amount > 0">
@@ -196,7 +196,7 @@
           <p v-if="offlineEnabled && !pwa.online" class="text-xs text-slate-600 mt-1">Hors connexion : le code sera vérifié au retour du réseau. S'il est faux, l'agence vérifiera la livraison auprès du client.</p>
         </div>
         <p v-if="sheetError" class="text-red-600 text-sm">{{ sheetError }}</p>
-        <button class="m-btn-success text-lg py-5" :disabled="busy" @click="confirmDelivered">{{ shipping ? '✓ Confirmer l\'expédition' : '✓ Confirmer la livraison' }}</button>
+        <button class="m-btn-success text-lg py-5" :disabled="busy" @click="confirmDelivered"><Icone nom="valider" />{{ shipping ? 'Confirmer l\'expédition' : 'Confirmer la livraison' }}</button>
       </div>
     </BottomSheet>
 
@@ -206,7 +206,7 @@
       <div class="space-y-4">
         <HandoverFields :model="handover" :proof="order.department_proof || {}" :department="order.department" />
         <p v-if="sheetError" class="text-red-600 text-sm">{{ sheetError }}</p>
-        <button class="m-btn-success" :disabled="busy" @click="confirmHandover">✓ Valider le ramassage</button>
+        <button class="m-btn-success" :disabled="busy" @click="confirmHandover"><Icone nom="valider" />Valider le ramassage</button>
       </div>
     </BottomSheet>
 
@@ -221,7 +221,7 @@
         <textarea v-model="incident.note" rows="2" class="m-input" :placeholder="selectedReason?.requires_note ? 'Précisez ce qui se passe (obligatoire)' : 'Précisez (facultatif) : ex. téléphone éteint, 3 appels'" />
         <!-- Photo demandée par le motif (ex. bureau fermé) -->
         <PhotoCapture v-if="selectedReason && selectedReason.photo !== 'off'" :class="['m-btn-secondary', selectedReason.photo === 'required' && !incidentPhoto ? 'ring-2 ring-amber-400' : '']" @captured="uploadIncidentPhoto">
-          📷 {{ incidentPhoto ? 'Photo envoyée ✓' : `Prendre une photo${selectedReason.photo === 'required' ? ' *' : ' (conseillée)'}` }}
+          <Icone :nom="incidentPhoto ? 'valider' : 'photo'" />{{ incidentPhoto ? 'Photo envoyée' : `Prendre une photo${selectedReason.photo === 'required' ? ' *' : ' (conseillée)'}` }}
         </PhotoCapture>
         <p class="text-xs text-slate-600">L'agence et le client sont prévenus immédiatement.</p>
         <p v-if="sheetError" class="text-red-600 text-sm">{{ sheetError }}</p>
@@ -242,7 +242,7 @@
           </div>
         </div>
         <p class="text-sm text-slate-600">Payé de votre poche ou avec une avance de la caisse : le montant est déduit de votre prochain versement et facturé au client.</p>
-        <PhotoCapture class="m-btn-secondary" scan="receipts" @captured="uploadPhoto($event, false)">📷 Photographier le reçu</PhotoCapture>
+        <PhotoCapture class="m-btn-secondary" scan="receipts" @captured="uploadPhoto($event, false)"><Icone nom="photo" />Photographier le reçu</PhotoCapture>
         <p v-if="sheetError" class="text-red-600 text-sm">{{ sheetError }}</p>
         <button class="m-btn-primary" :disabled="busy || !expense.type || !(expense.amount > 0)" @click="saveExpense">Enregistrer les frais</button>
       </div>
@@ -277,6 +277,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
@@ -339,11 +340,11 @@ function readCarriers() {
 const incident = reactive({ reason: null, when: 'tomorrow', date: null, note: '' })
 const expense = reactive({ type: 'transport', label: '', amount: null })
 const expenseOptions = [
-  { value: 'transport', label: 'Transport', icon: '🚕' },
-  { value: 'packaging', label: 'Emballage', icon: '📦' },
-  { value: 'parking', label: 'Parking, péage', icon: '🅿️' },
-  { value: 'shipping', label: 'Gare', icon: '🚌' },
-  { value: 'other', label: 'Autre', icon: '➕' },
+  { value: 'transport', label: 'Transport', icon: 'taxi' },
+  { value: 'packaging', label: 'Emballage', icon: 'course' },
+  { value: 'parking', label: 'Parking, péage', icon: 'parking' },
+  { value: 'shipping', label: 'Gare', icon: 'expedition' },
+  { value: 'other', label: 'Autre', icon: 'ajouter' },
 ]
 
 const active = computed(() => ['accepted', 'in_progress'].includes(mission.value?.status))
@@ -413,12 +414,12 @@ const target = computed(() => {
 const primary = computed(() => {
   const s = order.value.status
   const t = mission.value.type
-  if (t === 'pickup' && s === 'pickup_assigned') return { label: '🛵 Je pars chercher le colis', class: 'm-btn-primary', action: () => move('pickup_in_progress') }
-  if (t === 'pickup' && ['pickup_assigned', 'pickup_in_progress'].includes(s)) return { label: '✓ J\'ai récupéré le colis', class: 'm-btn-success', action: () => (asksHandover(order.value) ? openHandover() : move('picked_up')) }
-  if (t === 'delivery' && ['delivery_assigned', 'picked_up', 'at_hub', 'delivery_failed', 'rescheduled'].includes(s)) return { label: shipping.value ? '🚌 Je pars à la gare' : '🛵 Je pars livrer', class: 'm-btn-primary', action: () => move('out_for_delivery') }
-  if (t === 'delivery' && s === 'out_for_delivery') return { label: shipping.value ? '✓ Colis expédié' : '✓ Colis livré', class: 'm-btn-success', action: openDelivered }
-  if (t === 'return' && s === 'return_assigned') return { label: '🛵 Je rapporte le colis', class: 'm-btn-primary', action: () => move('returning') }
-  if (t === 'return' && ['return_assigned', 'returning'].includes(s)) return { label: '✓ Colis rendu au client', class: 'm-btn-success', action: () => move('returned') }
+  if (t === 'pickup' && s === 'pickup_assigned') return { icon: 'livrer', label: 'Je pars chercher le colis', class: 'm-btn-primary', action: () => move('pickup_in_progress') }
+  if (t === 'pickup' && ['pickup_assigned', 'pickup_in_progress'].includes(s)) return { icon: 'valider', label: 'J\'ai récupéré le colis', class: 'm-btn bg-action text-white', action: () => (asksHandover(order.value) ? openHandover() : move('picked_up')) }
+  if (t === 'delivery' && ['delivery_assigned', 'picked_up', 'at_hub', 'delivery_failed', 'rescheduled'].includes(s)) return { icon: shipping.value ? 'expedition' : 'livrer', label: shipping.value ? 'Je pars à la gare' : 'Je pars livrer', class: 'm-btn-primary', action: () => move('out_for_delivery') }
+  if (t === 'delivery' && s === 'out_for_delivery') return { icon: 'valider', label: shipping.value ? 'Colis expédié' : 'Colis livré', class: 'm-btn bg-action text-white', action: openDelivered }
+  if (t === 'return' && s === 'return_assigned') return { icon: 'retourner', label: 'Je rapporte le colis', class: 'm-btn-primary', action: () => move('returning') }
+  if (t === 'return' && ['return_assigned', 'returning'].includes(s)) return { icon: 'valider', label: 'Colis rendu au client', class: 'm-btn bg-action text-white', action: () => move('returned') }
   return null
 })
 
@@ -431,13 +432,13 @@ const selectedReason = computed(() => reasons.value.find((r) => r.id === inciden
 const paymentOptions = DELIVERY_PAYMENT_METHODS.map((m) => ({
   value: m,
   label: PAYMENT_METHODS[m],
-  icon: { cash: '💵', wave: '🌊', orange_money: '🟠', mtn_momo: '🟡', moov_money: '🔵' }[m],
+  icon: m === 'cash' ? 'argent' : 'mobile',
 }))
 const refusalOptions = [
-  { value: 'Moto en panne', label: '🔧 Moto en panne' },
-  { value: 'Trop loin de ma position', label: '📍 Trop loin de ma position' },
-  { value: 'Trop de missions en cours', label: '📦 Trop de missions en cours' },
-  { value: 'Pas disponible', label: '⏸️ Pas disponible' },
+  { value: 'Moto en panne', label: 'Moto en panne', icon: 'atelier' },
+  { value: 'Trop loin de ma position', label: 'Trop loin de ma position', icon: 'adresse' },
+  { value: 'Trop de missions en cours', label: 'Trop de missions en cours', icon: 'course' },
+  { value: 'Pas disponible', label: 'Pas disponible', icon: 'pause' },
 ]
 const dayOffset = (n) => {
   const d = new Date(Date.now() + n * 86400000)

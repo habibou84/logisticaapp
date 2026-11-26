@@ -20,7 +20,7 @@
 
     <!-- Comment être payé : rappel tant qu'aucun moyen n'est donné -->
     <RouterLink to="/marchand/moyens-de-paiement" class="tap flex items-center justify-between gap-3 rounded-2xl bg-white px-4 py-3 ring-1 ring-slate-200 active:bg-slate-50">
-      <span class="text-sm font-medium">💳 Comment être payé
+      <span class="text-sm font-medium"><Icone nom="carte-bancaire" taille="petite" class="inline align-[-0.15em]" /> Comment être payé
         <span :class="['block text-[12.5px] font-normal', methodsCount === 0 ? 'text-amber-700' : 'text-slate-600']">{{ methodsCount === 0 ? 'Indiquez votre Wave, Orange Money, MTN, Moov ou banque' : `${methodsCount} moyen${methodsCount > 1 ? 's' : ''} de paiement` }}</span>
       </span><span class="text-slate-400">›</span>
     </RouterLink>
@@ -45,7 +45,7 @@
         <p class="text-sm text-slate-600">{{ date(p.period_start) }} → {{ date(p.period_end) }}</p>
         <p v-if="p.paid_at" class="text-sm text-slate-600">Payé le {{ date(p.paid_at) }} · {{ p.method_label }}</p>
       </RouterLink>
-      <EmptyState v-if="loaded && !payouts.length" icon="💸" color="billets" title="Aucun paiement pour le moment" text="Vos paiements apparaîtront ici dès que l'agence vous reversera l'argent encaissé." />
+      <EmptyState v-if="loaded && !payouts.length" icon="wallet" color="billets" title="Aucun paiement pour le moment" text="Vos paiements apparaîtront ici dès que l'agence vous reversera l'argent encaissé." />
     </template>
 
     <template v-else>
@@ -58,12 +58,13 @@
           <p :class="['font-semibold whitespace-nowrap', signedClass(e.amount)]">{{ e.amount > 0 ? '+' : '' }}{{ money(e.amount) }}</p>
         </div>
       </div>
-      <EmptyState v-if="loaded && !entries.length" icon="🧾" color="argent" title="Aucune opération" />
+      <EmptyState v-if="loaded && !entries.length" icon="file" color="argent" title="Aucune opération" />
     </template>
   </div>
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import { onMounted, ref } from 'vue'
 import { useClientSpaceStore } from '../../stores/clientSpace'
 import { cachedGet } from '../../composables/useCachedApi'

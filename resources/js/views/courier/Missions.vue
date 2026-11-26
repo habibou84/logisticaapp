@@ -19,26 +19,26 @@
     <!-- Véhicule du jour : état des lieux à faire, entretien à prévoir -->
     <template v-if="vehicle">
       <div v-if="vehicle.vehicle && vehicle.check_needed" class="rounded-2xl bg-indigo-50 p-4 ring-1 ring-indigo-200">
-        <p class="font-semibold text-indigo-900">{{ VEHICLE_TYPES[vehicle.vehicle.type]?.icon }} Votre véhicule du jour : {{ vehicle.vehicle.plate }}</p>
+        <p class="font-semibold text-indigo-900"><Icone :nom="VEHICLE_TYPES[vehicle.vehicle.type]?.icon || 'vehicule'" taille="normale" class="inline" /> Votre véhicule du jour : {{ vehicle.vehicle.plate }}</p>
         <p class="text-sm text-indigo-800">{{ vehicle.vehicle.name }} · dernier relevé {{ km(vehicle.vehicle.odometer) }}</p>
-        <RouterLink to="/livreur/vehicule/etat-des-lieux" class="m-btn-primary mt-3">📋 Faire l'état des lieux{{ vehicle.blocks_service ? ' pour commencer' : '' }}</RouterLink>
+        <RouterLink to="/livreur/vehicule/etat-des-lieux" class="m-btn-primary mt-3"><Icone nom="controle" />Faire l'état des lieux{{ vehicle.blocks_service ? ' pour commencer' : '' }}</RouterLink>
       </div>
       <RouterLink v-else-if="!vehicle.vehicle && vehicle.free" to="/livreur/vehicule/etat-des-lieux" class="tap block rounded-2xl bg-indigo-50 p-4 ring-1 ring-indigo-200">
-        <span class="block font-semibold text-indigo-900">🔑 Prendre un véhicule pour la journée</span>
+        <span class="block font-semibold text-indigo-900"><Icone nom="cle" taille="normale" class="inline" /> Prendre un véhicule pour la journée</span>
         <span class="block text-sm text-indigo-800">{{ vehicle.free }} véhicule{{ vehicle.free > 1 ? 's' : '' }} libre{{ vehicle.free > 1 ? 's' : '' }} · état des lieux en 1 minute →</span>
       </RouterLink>
-      <p v-if="vehicle.problems?.length" class="rounded-2xl bg-red-50 p-4 text-sm text-red-800 ring-1 ring-red-200">⛔ Votre véhicule ne peut pas rouler : {{ vehicle.problems.join(', ') }}. Voyez avec l'agence.</p>
+      <p v-if="vehicle.problems?.length" class="rounded-2xl bg-red-50 p-4 text-sm text-red-800 ring-1 ring-red-200"><Icone nom="refus" taille="petite" class="inline" /> Votre véhicule ne peut pas rouler : {{ vehicle.problems.join(', ') }}. Voyez avec l'agence.</p>
       <div v-if="vehicle.maintenance" class="rounded-2xl bg-amber-50 p-4 text-amber-900 ring-1 ring-amber-200">
-        <p class="font-semibold">{{ vehicle.maintenance.icon }} {{ vehicle.maintenance.label }} {{ remainingText(vehicle.maintenance) }}</p>
+        <p class="font-semibold"><Icone :nom="vehicle.maintenance.icon || 'atelier'" taille="normale" class="inline" /> {{ vehicle.maintenance.label }} {{ remainingText(vehicle.maintenance) }}</p>
         <p class="text-sm">Prévenez l'agence pour prendre rendez-vous au garage.</p>
       </div>
     </template>
 
     <p v-if="fieldEventQueue.pending.length" class="rounded-xl bg-sky-50 text-sky-800 text-sm px-4 py-3">
-      ⏳ {{ fieldEventQueue.pending.length }} signalement{{ fieldEventQueue.pending.length > 1 ? 's' : '' }} en attente de réseau : envoi automatique dès que possible.
+      <Icone nom="sablier" taille="petite" class="inline" /> {{ fieldEventQueue.pending.length }} signalement{{ fieldEventQueue.pending.length > 1 ? 's' : '' }} en attente de réseau : envoi automatique dès que possible.
     </p>
     <RouterLink v-for="e in openEvents" :key="e.id" :to="`/livreur/evenements/${e.id}`" class="tap block rounded-2xl bg-orange-50 ring-1 ring-orange-200 p-4 active:bg-orange-100">
-      <span class="block font-semibold text-orange-900">{{ e.icon }} {{ e.type_label }} · {{ e.status === 'taken' ? 'pris en charge par l\'agence' : 'envoyé à l\'agence' }}</span>
+      <span class="block font-semibold text-orange-900"><Icone :nom="e.icon || 'alerte'" taille="normale" class="inline" /> {{ e.type_label }} · {{ e.status === 'taken' ? 'pris en charge par l\'agence' : 'envoyé à l\'agence' }}</span>
       <span class="block text-sm text-orange-800">{{ e.status === 'open' ? 'En attente de réponse' : 'Voir l\'échange' }} · « C'est réglé » quand vous reprenez →</span>
     </RouterLink>
     <FieldEventSheet :open="reporting" @close="reporting = false" @sent="fieldEventSent" />
@@ -55,12 +55,12 @@
 
     <!-- Livraisons confiées mais prévues un autre jour : cachées, à voir avec l'agence -->
     <p v-if="otherDays" class="rounded-2xl bg-slate-100 px-4 py-3 text-sm text-slate-700">
-      📅 {{ otherDays }} livraison{{ otherDays > 1 ? 's' : '' }} prévue{{ otherDays > 1 ? 's' : '' }} un autre jour ne {{ otherDays > 1 ? 'sont' : 'est' }} pas affichée{{ otherDays > 1 ? 's' : '' }} : voyez avec l'agence.
+      <Icone nom="date" taille="petite" class="inline" /> {{ otherDays }} livraison{{ otherDays > 1 ? 's' : '' }} prévue{{ otherDays > 1 ? 's' : '' }} un autre jour ne {{ otherDays > 1 ? 'sont' : 'est' }} pas affichée{{ otherDays > 1 ? 's' : '' }} : voyez avec l'agence.
     </p>
 
     <!-- Invitation à activer les notifications push -->
     <div v-if="showPushInvite" class="rounded-2xl bg-amber-50 ring-1 ring-amber-200 p-4 space-y-2">
-      <p class="font-semibold text-amber-900">🔔 Soyez prévenu même téléphone en veille</p>
+      <p class="font-semibold text-amber-900"><Icone nom="notifications" taille="normale" class="inline" /> Soyez prévenu même téléphone en veille</p>
       <p class="text-sm text-amber-900">Nouvelles missions et consignes de l'agence, sans garder l'application ouverte.</p>
       <p v-if="push.error" class="text-sm text-red-600">{{ push.error }}</p>
       <div class="flex gap-2">
@@ -71,26 +71,26 @@
 
     <!-- Bons de retour à remettre aux clients -->
     <RouterLink v-for="s in returnSlips" :key="s.id" :to="`/livreur/retours/${s.id}`" class="tap block rounded-2xl bg-rose-600 text-white p-4 active:bg-rose-700">
-      <span class="block font-semibold">📮 {{ s.orders_count }} colis à rendre à {{ s.merchant.business_name }}</span>
+      <span class="block font-semibold"><Icone nom="bon-retour" taille="normale" class="inline" /> {{ s.orders_count }} colis à rendre à {{ s.merchant.business_name }}</span>
       <span class="block text-sm text-white/80">Bon {{ s.reference }} · faites signer le client à la remise →</span>
     </RouterLink>
 
     <!-- Consignes de l'agence non lues -->
     <RouterLink v-if="messages.unread" to="/livreur/messages" class="tap block rounded-2xl bg-sky-600 text-white p-4 font-semibold active:bg-sky-700">
-      💬 {{ messages.unread }} consigne{{ messages.unread > 1 ? 's' : '' }} de l'agence à lire →
+      <Icone nom="message" taille="normale" class="inline" /> {{ messages.unread }} consigne{{ messages.unread > 1 ? 's' : '' }} de l'agence à lire →
     </RouterLink>
 
     <!-- À verser -->
     <RouterLink v-if="wallet && wallet.cash_in_hand !== 0" to="/livreur/caisse" class="block m-card p-4 active:bg-slate-50">
       <div class="flex justify-between items-center">
-        <span class="text-slate-600">{{ wallet.cash_in_hand > 0 ? '💵 À verser à la caisse' : '💵 La caisse vous doit' }}</span>
+        <span class="inline-flex items-center gap-1.5 text-slate-600"><Icone nom="argent" />{{ wallet.cash_in_hand > 0 ? 'À verser à la caisse' : 'La caisse vous doit' }}</span>
         <span class="font-bold text-lg">{{ money(Math.abs(wallet.cash_in_hand)) }}</span>
       </div>
     </RouterLink>
 
     <!-- Mon itinéraire : tous les arrêts dans l'ordre (ramassages, livraisons, retours), sur son écran -->
     <RouterLink v-if="missions.length" to="/livreur/itineraire" class="tap flex items-center gap-3 rounded-2xl bg-[var(--app-color)] p-4 text-white shadow-md active:opacity-90">
-      <span class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-white/20 text-2xl" aria-hidden="true">🧭</span>
+      <span class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-white/20" aria-hidden="true"><Icone nom="itineraire" taille="grande" /></span>
       <span class="min-w-0 flex-1">
         <span class="block text-[17px] font-bold">Mon itinéraire</span>
         <span class="block truncate text-[13px] text-white/90">{{ itineraryText }}</span>
@@ -105,7 +105,7 @@
         :class="['tap flex min-h-[104px] flex-col items-center justify-center gap-1 rounded-2xl border-2 bg-white px-1 shadow-sm', tab === t.value ? 'border-[var(--app-color)]' : 'border-transparent']"
         @click="tab = t.value"
       >
-        <span class="text-4xl leading-none" aria-hidden="true">{{ t.icon }}</span>
+        <Icone :nom="t.icon" taille="geante" />
         <span :class="['whitespace-nowrap text-[15px] leading-tight', tab === t.value ? 'font-bold text-[var(--app-color)]' : 'font-semibold text-slate-900']">{{ t.label }}</span>
         <span :class="['text-[13px]', count(t.value) ? 'font-semibold text-slate-700' : 'text-slate-600']">{{ count(t.value) }} à faire</span>
       </button>
@@ -125,7 +125,7 @@
     </div>
     <EmptyState
       v-else-if="!visible.length"
-      icon="✅"
+      icon="livre"
       :title="tab === 'pickup' ? 'Aucun ramassage en attente' : tab === 'delivery' ? 'Aucune livraison en attente' : 'Aucun retour'"
       text="Les nouvelles missions apparaissent ici automatiquement."
     />
@@ -135,16 +135,16 @@
       <p v-if="c.lotHeader" class="px-1 pt-1 text-xs font-bold uppercase tracking-wide text-slate-600">Lot · {{ c.lotHeader.name }} ({{ c.lotHeader.count }})</p>
       <RouterLink v-if="c.group" :to="`/livreur/ramassage/${c.key}`" class="block m-card p-4 active:bg-slate-50">
         <div class="flex items-start gap-3">
-          <span class="h-11 w-11 shrink-0 rounded-xl grid place-items-center text-xl bg-indigo-100">🏪</span>
+          <span class="h-11 w-11 shrink-0 rounded-xl grid place-items-center text-indigo-800 bg-indigo-100"><Icone nom="marchand" taille="grande" /></span>
           <div class="flex-1 min-w-0">
             <p class="font-semibold truncate">{{ c.first.order.merchant?.business_name || c.first.order.pickup.contact_name }} : {{ c.missions.length }} colis</p>
-            <p class="text-sm text-slate-600 truncate">📍 {{ c.first.order.pickup.zone_name }} · {{ c.first.order.pickup.address }}</p>
+            <p class="text-sm text-slate-600 truncate"><Icone nom="adresse" taille="petite" class="inline" /> {{ c.first.order.pickup.zone_name }} · {{ c.first.order.pickup.address }}</p>
             <div class="flex flex-wrap items-center gap-2 mt-2">
               <span v-if="c.toAccept" class="rounded-full bg-amber-100 text-amber-800 text-xs font-semibold px-2 py-0.5">{{ c.toAccept }} à accepter</span>
               <span v-if="c.started" class="rounded-full bg-indigo-100 text-indigo-800 text-xs font-semibold px-2 py-0.5">En route</span>
-              <span v-if="c.offline" class="rounded-full bg-sky-100 text-sky-800 text-xs font-semibold px-2 py-0.5">⏳ À envoyer</span>
-              <span v-if="c.express" class="rounded-full bg-red-100 text-red-700 text-xs font-semibold px-2 py-0.5">⚡ Express</span>
-              <span v-if="c.gain" class="rounded-full bg-emerald-100 text-emerald-800 text-xs font-semibold px-2 py-0.5" title="Votre gain prévu">💰 + {{ money(c.gain) }}</span>
+              <span v-if="c.offline" class="inline-flex items-center gap-1 rounded-full bg-sky-100 text-sky-800 text-xs font-semibold px-2 py-0.5"><Icone nom="sablier" taille="petite" />À envoyer</span>
+              <span v-if="c.express" class="inline-flex items-center gap-1 rounded-full bg-red-100 text-red-700 text-xs font-semibold px-2 py-0.5"><Icone nom="rapide" taille="petite" />Express</span>
+              <span v-if="c.gain" class="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-semibold px-2 py-0.5" title="Votre gain prévu"><Icone nom="gain" taille="petite" />+ {{ money(c.gain) }}</span>
             </div>
           </div>
           <span class="text-slate-400 text-xl">›</span>
@@ -152,26 +152,26 @@
       </RouterLink>
       <RouterLink v-else :to="`/livreur/missions/${c.first.id}`" class="block m-card p-4 active:bg-slate-50">
         <div class="flex items-start gap-3">
-          <span :class="['h-11 w-11 shrink-0 rounded-xl grid place-items-center text-xl', c.first.type === 'pickup' ? 'bg-indigo-100' : c.first.type === 'delivery' ? 'bg-blue-100' : 'bg-rose-100']">
-            {{ c.first.type === 'pickup' ? '📦' : c.first.type === 'delivery' ? '🛵' : '↩️' }}
+          <span :class="['h-11 w-11 shrink-0 rounded-xl grid place-items-center', c.first.type === 'pickup' ? 'bg-indigo-100 text-indigo-800' : c.first.type === 'delivery' ? 'bg-blue-100 text-blue-800' : 'bg-rose-100 text-rose-800']">
+            <Icone :nom="c.first.type === 'pickup' ? 'ramasser' : c.first.type === 'delivery' ? 'livrer' : 'retourner'" taille="grande" />
           </span>
           <div class="flex-1 min-w-0">
             <p class="font-semibold truncate">
               {{ c.first.type === 'pickup' ? c.first.order.merchant?.business_name : (c.first.order.recipient.name || c.first.order.recipient.phone) }}
-              <span v-if="c.first.unread_messages" class="ml-1 rounded-full bg-sky-600 px-2 py-0.5 text-xs text-white">💬 {{ c.first.unread_messages }}</span>
+              <span v-if="c.first.unread_messages" class="ml-1 inline-flex items-center gap-1 rounded-full bg-sky-600 px-2 py-0.5 text-xs text-white"><Icone nom="message" taille="petite" />{{ c.first.unread_messages }}</span>
             </p>
             <p class="text-sm text-slate-600 truncate">
-              📍 {{ c.first.type === 'pickup' ? c.first.order.pickup.zone_name : c.first.order.delivery.zone_name }}
+              <Icone nom="adresse" taille="petite" class="inline" /> {{ c.first.type === 'pickup' ? c.first.order.pickup.zone_name : c.first.order.delivery.zone_name }}
               · {{ c.first.type === 'pickup' ? c.first.order.pickup.address : c.first.order.delivery.address }}
             </p>
             <div class="flex flex-wrap items-center gap-2 mt-2">
               <span v-if="c.first.status === 'assigned'" class="rounded-full bg-amber-100 text-amber-800 text-xs font-semibold px-2 py-0.5">Nouvelle · à accepter</span>
               <StatusBadge v-else :status="c.first.order.status" :label="c.first.order.status_label" />
-              <span v-if="c.first.offline" class="rounded-full bg-sky-100 text-sky-800 text-xs font-semibold px-2 py-0.5">⏳ À envoyer</span>
-              <span v-if="c.first.order.package.is_express" class="rounded-full bg-red-100 text-red-700 text-xs font-semibold px-2 py-0.5">⚡ Express</span>
+              <span v-if="c.first.offline" class="inline-flex items-center gap-1 rounded-full bg-sky-100 text-sky-800 text-xs font-semibold px-2 py-0.5"><Icone nom="sablier" taille="petite" />À envoyer</span>
+              <span v-if="c.first.order.package.is_express" class="inline-flex items-center gap-1 rounded-full bg-red-100 text-red-700 text-xs font-semibold px-2 py-0.5"><Icone nom="rapide" taille="petite" />Express</span>
               <span v-if="c.first.order.billed_monthly" :class="['rounded-full text-xs font-semibold px-2 py-0.5', c.first.order.activity === 'mad' ? 'bg-violet-100 text-violet-800' : 'bg-amber-100 text-amber-800']">{{ c.first.order.activity_label }}</span>
-              <span v-if="c.first.order.is_shipping && c.first.type === 'delivery'" class="rounded-full bg-indigo-100 text-indigo-800 text-xs font-semibold px-2 py-0.5">🚌 À expédier</span>
-              <span v-if="c.first.gain" class="rounded-full bg-emerald-100 text-emerald-800 text-xs font-semibold px-2 py-0.5" title="Votre gain prévu">💰 + {{ money(c.first.gain) }}</span>
+              <span v-if="c.first.order.is_shipping && c.first.type === 'delivery'" class="inline-flex items-center gap-1 rounded-full bg-indigo-100 text-indigo-800 text-xs font-semibold px-2 py-0.5"><Icone nom="expedition" taille="petite" />À expédier</span>
+              <span v-if="c.first.gain" class="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-semibold px-2 py-0.5" title="Votre gain prévu"><Icone nom="gain" taille="petite" />+ {{ money(c.first.gain) }}</span>
             </div>
           </div>
           <span v-if="c.first.type === 'delivery' && c.first.order.amounts.cod_amount" class="font-bold whitespace-nowrap">{{ money(c.first.order.amounts.cod_amount) }}</span>
@@ -182,11 +182,11 @@
     <!-- Sous les missions : mon véhicule, et signaler un problème (aussi dans Profil) -->
     <div class="grid grid-cols-2 gap-2 pt-2">
       <RouterLink v-if="vehicle?.vehicle && !vehicle.check_needed" to="/livreur/vehicule" class="tap rounded-2xl bg-white p-3 ring-1 ring-slate-200 active:bg-slate-50">
-        <span class="block font-semibold">{{ VEHICLE_TYPES[vehicle.vehicle.type]?.icon }} {{ vehicle.vehicle.plate }}</span>
+        <span class="block font-semibold"><Icone :nom="VEHICLE_TYPES[vehicle.vehicle.type]?.icon || 'vehicule'" taille="normale" class="inline" /> {{ vehicle.vehicle.plate }}</span>
         <span class="block text-sm text-slate-600">Mon véhicule</span>
       </RouterLink>
       <button type="button" :class="['tap rounded-2xl bg-white p-3 text-left ring-1 ring-slate-200 active:bg-slate-50', vehicle?.vehicle && !vehicle.check_needed ? '' : 'col-span-2']" @click="reporting = true">
-        <span class="block font-semibold text-slate-800">⚠️ Signaler un problème</span>
+        <span class="block font-semibold text-slate-800"><Icone nom="alerte" taille="normale" class="inline" /> Signaler un problème</span>
         <span class="block text-sm text-slate-600">Panne, accident, contrôle…</span>
       </button>
     </div>
@@ -194,6 +194,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import { cachedGet } from '../../composables/useCachedApi'
@@ -230,9 +231,9 @@ const collects = computed(() => {
   return pickups.length > 0 && pickups.every((m) => ['distribution', 'mad'].includes(m.order?.activity))
 })
 const tabs = computed(() => [
-  { value: 'pickup', label: collects.value ? 'À collecter' : 'À ramasser', icon: '📦' },
-  { value: 'delivery', label: 'À livrer', icon: '🛵' },
-  { value: 'return', label: 'À retourner', icon: '↩️' },
+  { value: 'pickup', label: collects.value ? 'À collecter' : 'À ramasser', icon: 'ramasser' },
+  { value: 'delivery', label: 'À livrer', icon: 'livrer' },
+  { value: 'return', label: 'À retourner', icon: 'retourner' },
 ])
 const itineraryText = computed(() => {
   const n = (type) => missions.value.filter((m) => m.type === type).length

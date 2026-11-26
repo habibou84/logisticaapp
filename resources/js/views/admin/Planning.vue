@@ -2,7 +2,7 @@
   <div class="space-y-4 max-w-5xl">
     <div class="flex flex-wrap items-center justify-between gap-2">
       <div>
-        <h1 v-if="!embedded" class="text-xl font-bold">📅 Planning des livreurs</h1>
+        <h1 v-if="!embedded" class="flex items-center gap-1.5 text-xl font-bold"><Icone nom="planning" /> Planning des livreurs</h1>
         <p class="text-sm text-slate-600">Qui ramasse et qui livre où et quand. Livreur absent ou en pause : son remplaçant prend le relais.</p>
       </div>
       <button class="btn-primary" @click="openRule()">+ Nouvelle règle</button>
@@ -11,7 +11,7 @@
     <!-- Ramassage automatique : état et lien vers le réglage -->
     <div v-if="board?.automation?.paused" class="card px-3 py-2 text-sm bg-red-50 text-red-900 flex flex-wrap items-center gap-2">
       <span class="flex-1 min-w-0">
-        ⏸ Automatisation suspendue{{ board.automation.paused_by ? ` par ${board.automation.paused_by}` : '' }} :
+        <Icone nom="pause" taille="petite" class="inline" /> Automatisation suspendue{{ board.automation.paused_by ? ` par ${board.automation.paused_by}` : '' }} :
         plus aucune course n'est confiée ni passée au remplaçant. Les alertes continuent.
       </span>
       <button class="btn-primary" :disabled="pausing" @click="pause(false)">Reprendre</button>
@@ -22,7 +22,7 @@
         <template v-if="board.auto_delivery !== 'off'"> Livraison du jour même automatique {{ board.auto_delivery === 'on' ? 'active' : 'à l\'essai' }}.</template>
         <RouterLink v-if="auth.can('settings.manage')" to="/admin/reglages/courses" class="ml-1 font-medium underline">Régler</RouterLink>
       </span>
-      <button v-if="board.auto_pickup !== 'off' || board.auto_delivery !== 'off'" class="btn-secondary" :disabled="pausing" @click="pause(true)">⏸ Suspendre l'automatisation</button>
+      <button v-if="board.auto_pickup !== 'off' || board.auto_delivery !== 'off'" class="btn-secondary" :disabled="pausing" @click="pause(true)"><Icone nom="pause" /> Suspendre l'automatisation</button>
     </div>
 
     <!-- Jour affiché -->
@@ -45,9 +45,9 @@
               <span class="block font-medium">{{ r.label.split(' · ')[0] }}</span>
               <span class="block text-xs text-slate-600">{{ r.when }}</span>
             </span>
-            <span v-if="r.covering === 'courier'" class="rounded-full bg-emerald-50 px-2 py-0.5 text-sm font-medium text-emerald-800">🛵 {{ r.courier.name }}</span>
-            <span v-else-if="r.covering === 'backup'" class="rounded-full bg-amber-50 px-2 py-0.5 text-sm font-medium text-amber-800" :title="`${r.courier.name} absent ou en pause`">🔁 {{ r.backup.name }} (remplace {{ r.courier.name }})</span>
-            <span v-else class="rounded-full bg-red-50 px-2 py-0.5 text-sm font-medium text-red-700">⚠️ Personne : {{ r.courier.name }} absent{{ r.backup ? `, ${r.backup.name} aussi` : ', pas de remplaçant' }}</span>
+            <span v-if="r.covering === 'courier'" class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-sm font-medium text-emerald-800"><Icone nom="livreur" taille="petite" /> {{ r.courier.name }}</span>
+            <span v-else-if="r.covering === 'backup'" class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-sm font-medium text-amber-800" :title="`${r.courier.name} absent ou en pause`"><Icone nom="repeter" taille="petite" /> {{ r.backup.name }} (remplace {{ r.courier.name }})</span>
+            <span v-else class="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-sm font-medium text-red-700"><Icone nom="alerte" taille="petite" /> Personne : {{ r.courier.name }} absent{{ r.backup ? `, ${r.backup.name} aussi` : ', pas de remplaçant' }}</span>
           </li>
         </ul>
 
@@ -55,10 +55,10 @@
         <div v-if="type === 'pickup' && board.gaps.length" :class="['rounded-lg border p-3 space-y-3', gapTotals.waiting ? 'border-red-200 bg-red-50/60' : 'border-slate-200 bg-slate-50']">
           <div class="flex flex-wrap items-center gap-2">
             <p v-if="gapTotals.waiting" class="flex-1 text-sm font-semibold text-red-800">
-              ⚠️ Clients sans ramasseur ce jour-là : {{ gapTotals.merchants }} client{{ gapTotals.merchants > 1 ? 's' : '' }}, {{ gapTotals.waiting }} colis à ramasser
+              <Icone nom="alerte" taille="petite" class="inline" /> Clients sans ramasseur ce jour-là : {{ gapTotals.merchants }} client{{ gapTotals.merchants > 1 ? 's' : '' }}, {{ gapTotals.waiting }} colis à ramasser
             </p>
             <p v-else class="flex-1 text-sm text-slate-700">
-              ✅ Aucun colis à ramasser sans ramasseur ce jour-là. Clients habituels qu'aucune règle ne couvre :
+              <Icone nom="livre" taille="petite" class="inline" /> Aucun colis à ramasser sans ramasseur ce jour-là. Clients habituels qu'aucune règle ne couvre :
             </p>
             <input v-model="gapSearch" type="search" class="input sm:w-56" placeholder="Chercher un client" aria-label="Chercher un client sans ramasseur">
           </div>
@@ -79,7 +79,7 @@
                 <tr v-for="m in g.merchants" :key="m.id">
                   <td data-label="Client" class="p-2 font-medium">{{ m.name }}</td>
                   <td data-label="Colis" class="p-2 text-right font-semibold text-red-700">{{ m.waiting }}</td>
-                  <td data-label="D'habitude" class="p-2">{{ m.usual ? `🛵 ${m.usual.name}` : '—' }}</td>
+                  <td data-label="D'habitude" class="p-2"><template v-if="m.usual"><Icone nom="livreur" taille="petite" class="inline" /> {{ m.usual.name }}</template><template v-else>—</template></td>
                   <td class="p-2 text-right"><button type="button" class="text-blue-700 hover:underline whitespace-nowrap" @click="openGapRule({ merchant: m })">Créer une règle</button></td>
                 </tr>
               </tbody>
@@ -107,7 +107,7 @@
                 <span
                   v-for="c in m.couriers" :key="c.id"
                   :class="['rounded-full px-2 py-0.5 text-sm font-medium', c.absent && m.reserved_today ? 'bg-red-50 text-red-700' : m.reserved_today ? 'bg-violet-50 text-violet-800' : 'bg-slate-100 text-slate-600']"
-                >{{ c.absent ? '⚠️' : '🛵' }} {{ c.name }}{{ c.absent ? ' (absent)' : '' }}</span>
+                ><Icone :nom="c.absent ? 'alerte' : 'livreur'" taille="petite" class="inline" /> {{ c.name }}{{ c.absent ? ' (absent)' : '' }}</span>
               </span>
             </div>
             <p v-if="m.missing" class="rounded bg-red-50 p-2 text-sm text-red-800">
@@ -126,7 +126,7 @@
         <ul class="divide-y">
           <li v-for="r in board.rules" :key="r.id" :class="['py-2 flex flex-wrap items-center justify-between gap-2', r.is_active ? '' : 'opacity-50']">
             <span class="min-w-0">
-              <span class="block font-medium">🛵 {{ r.courier.name }}<span v-if="r.backup" class="font-normal text-slate-600"> · remplaçant {{ r.backup.name }}</span></span>
+              <span class="block font-medium"><Icone nom="livreur" taille="petite" class="inline" /> {{ r.courier.name }}<span v-if="r.backup" class="font-normal text-slate-600"> · remplaçant {{ r.backup.name }}</span></span>
               <span class="block text-sm text-slate-700">{{ TYPES[r.type] }} : {{ r.label }}</span>
               <span v-if="r.note" class="block text-xs text-slate-600">{{ r.note }}</span>
             </span>
@@ -238,6 +238,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import Modal from '../../components/Modal.vue'

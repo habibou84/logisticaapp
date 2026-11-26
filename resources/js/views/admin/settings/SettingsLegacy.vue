@@ -1,5 +1,5 @@
 <template>
-  <SettingsPage icon="📥" title="Reprise de l'ancienne application" intro="Récupérer les comptes de l'ancienne application.">
+  <SettingsPage icon="importer" title="Reprise de l'ancienne application" intro="Récupérer les comptes de l'ancienne application.">
     <LegacyImportSettings />
   </SettingsPage>
 </template>

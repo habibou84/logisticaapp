@@ -1,7 +1,7 @@
 <template>
   <div v-if="slip" class="slip-page p-4 max-w-3xl mx-auto">
     <div class="no-print mb-4 flex flex-wrap gap-2 items-center">
-      <button class="btn-primary" @click="print">🖨️ Imprimer</button>
+      <button class="btn-primary" @click="print"><Icone nom="imprimer" />Imprimer</button>
       <button class="btn-secondary" @click="$router.back()">← Retour</button>
       <input v-model="day" type="date" class="input w-auto" aria-label="Jour" @change="load">
       <select v-model="kind" class="input w-auto" aria-label="Type de bordereau" @change="load">
@@ -95,6 +95,7 @@
 </template>
 
 <script setup>
+import Icone from '../components/ui/Icone.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import http, { apiErrorMessage } from '../bootstrap/axios'

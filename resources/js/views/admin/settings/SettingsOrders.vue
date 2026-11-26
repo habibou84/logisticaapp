@@ -1,11 +1,11 @@
 <template>
   <SettingsPage
-    :icon="automation ? '⚡' : '📦'" :title="automation ? 'Automatisation' : 'Courses et livraison'"
+    :icon="automation ? 'automatisation' : 'course'" :title="automation ? 'Automatisation' : 'Courses et livraison'"
     :intro="automation ? 'Ce qui se fait tout seul pour les livraisons : validation des courses, journée, ramassages et livraisons confiés aux livreurs, acceptation des missions.' : 'Colis à reporter, livreurs, étiquettes, photos, tableau de bord, distribution et MAD.'"
   >
     <!-- Livraison › Automatisation : le planning à côté, puis les réglages de ce qui se fait tout seul -->
     <RouterLink v-if="automation && auth.can('planning.manage')" to="/admin/activite/planning" class="card flex items-center gap-3 p-4 hover:border-slate-400">
-      <span class="text-2xl" aria-hidden="true">🗓️</span>
+      <Icone nom="planning" taille="grande" />
       <span class="min-w-0 flex-1">
         <span class="block font-semibold">Planning des livreurs</span>
         <span class="block text-sm text-slate-600">Qui ramasse et qui livre où et quand, les remplaçants, et le bouton pour suspendre l'automatisation.</span>
@@ -13,7 +13,7 @@
       <span class="text-slate-600" aria-hidden="true">›</span>
     </RouterLink>
     <RouterLink v-if="!automation" to="/admin/automatisation" class="card flex items-center gap-3 p-4 hover:border-slate-400">
-      <span class="text-2xl" aria-hidden="true">⚡</span>
+      <Icone nom="automatisation" taille="grande" />
       <span class="min-w-0 flex-1">
         <span class="block font-semibold">Automatisation</span>
         <span class="block text-sm text-slate-600">Validation des courses, journée, ramassage et livraison automatiques, acceptation des missions : dans le menu Livraison.</span>
@@ -234,7 +234,7 @@
         <p class="text-sm text-slate-600">
           Délai que l'entreprise se donne pour distribuer une course, à partir de sa création. À 80 % du délai, l'équipe reçoit
           « risque de retard » ; au-delà, « en retard » (dispatch et responsables de l'activité). Les courses concernées sont
-          dans la file « ⏰ Délai interne dépassé ». Un contrat peut avoir son propre délai. Vide : pas de délai interne.
+          dans la file « Délai interne dépassé ». Un contrat peut avoir son propre délai. Vide : pas de délai interne.
         </p>
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div v-for="a in INTERNAL_ACTIVITIES" :key="a.value">
@@ -387,7 +387,7 @@
           <div class="flex flex-wrap gap-2">
             <span v-for="(k, i) in form.shipment_settings.pli_kinds" :key="`${k}-${i}`" class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-sm">
               {{ k }}
-              <button type="button" class="text-slate-600 hover:text-red-600" :aria-label="`Retirer ${k}`" @click="form.shipment_settings.pli_kinds.splice(i, 1)">✕</button>
+              <button type="button" class="text-slate-600 hover:text-red-600" :aria-label="`Retirer ${k}`" @click="form.shipment_settings.pli_kinds.splice(i, 1)"><Icone nom="fermer" taille="petite" /></button>
             </span>
           </div>
           <form class="mt-2 flex gap-2" @submit.prevent="addPliKind">
@@ -408,6 +408,7 @@
 </template>
 
 <script setup>
+import Icone from '../../../components/ui/Icone.vue'
 import { nextTick, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { useAuthStore } from '../../../stores/auth'

@@ -88,7 +88,7 @@
                 {{ m.pickup_zone?.name || '—' }}
                 <span v-if="m.pickup_address" class="block truncate text-xs text-slate-600">{{ m.pickup_address }}</span>
                 <span :class="['block text-xs', m.pickup_lat == null ? 'font-semibold text-amber-800' : m.pickup_location_source === 'courier' ? 'text-sky-700' : 'text-emerald-700']">
-                  {{ m.pickup_lat == null ? '⚠ sans position' : `📍 ${SOURCES[m.pickup_location_source] || 'localisé'}` }}
+                  <Icone :nom="m.pickup_lat == null ? 'alerte' : 'adresse'" taille="petite" class="inline" /> {{ m.pickup_lat == null ? 'sans position' : (SOURCES[m.pickup_location_source] || 'localisé') }}
                 </span>
               </td>
               <td class="px-3 py-2.5">
@@ -122,7 +122,7 @@
               <span class="block truncate text-xs text-slate-600">{{ m.phone }}<template v-if="m.pickup_zone"> · {{ m.pickup_zone.name }}</template> · {{ m.orders_count ?? 0 }} course{{ m.orders_count > 1 ? 's' : '' }}</span>
               <span v-if="m.status !== 'active' || m.pickup_lat == null || m.source === 'signup'" class="block text-xs font-semibold">
                 <span v-if="m.status !== 'active'" class="text-red-700">Suspendu </span>
-                <span v-if="m.pickup_lat == null" class="text-amber-800">⚠ sans position </span>
+                <span v-if="m.pickup_lat == null" class="text-amber-800"><Icone nom="alerte" taille="petite" class="inline" /> sans position </span>
                 <span v-if="m.source === 'signup'" class="text-emerald-800">{{ isNew(m) ? 'Nouveau · ' : '' }}inscrit en ligne</span>
               </span>
             </span>
@@ -202,7 +202,7 @@
                 {{ form.source === 'courier' ? 'Estimée d\'après les ramassages des livreurs' : form.source === 'merchant' ? 'Indiquée par le client depuis sa boutique' : 'Saisie par l\'agence' }}
               </p>
               <p class="text-xs text-slate-600">Collez le lien Google Maps envoyé par le client (« Partager » → « Copier le lien »), ou placez le repère sur la carte.</p>
-              <LocationPicker v-model="form.location" allow-link height="h-56" gps-label="📍 Ma position (sur place)" />
+              <LocationPicker v-model="form.location" allow-link height="h-56" gps-label="Ma position (sur place)" />
               <button v-if="form.location" type="button" class="text-xs text-red-600" @click="form.location = null">Retirer la position</button>
             </fieldset>
             <div class="grid grid-cols-2 gap-3">
@@ -313,6 +313,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'

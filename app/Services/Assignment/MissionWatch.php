@@ -82,7 +82,7 @@ class MissionWatch
             }
 
             $sent += $this->tell($company, $list->first()->order, 'courier_unreachable',
-                "📵 {$courier->user->name} injoignable depuis plus de ".AwaitingCourier::duration($minutes), $body, '/admin/carte');
+                "{$courier->user->name} injoignable depuis plus de ".AwaitingCourier::duration($minutes), $body, '/admin/carte');
         }
 
         return $sent;
@@ -157,7 +157,7 @@ class MissionWatch
             .' ('.$c->pluck('order.tracking_code')->take(3)->implode(', ').($c->count() > 3 ? '…' : '').')')->implode(' ; ');
 
         return $this->tell($company, $missions->first()->order, 'late_pickup',
-            '⏰ '.($count > 1 ? "{$count} ramassages pas commencés" : '1 ramassage pas commencé')." (heure limite {$company->cutoffFor()})",
+            ($count > 1 ? "{$count} ramassages pas commencés" : '1 ramassage pas commencé')." (heure limite {$company->cutoffFor()})",
             "{$byCourier}. Appelez les livreurs, ou confiez ces courses à un autre pour qu'elles soient livrées aujourd'hui.",
             '/admin/courses?queue=to_pickup');
     }

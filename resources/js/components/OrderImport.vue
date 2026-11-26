@@ -7,7 +7,7 @@
         Distribution et MAD : colonnes « Activité », « Type d'envoi » (pli, colis, chèque), « Poids » et « Délai » (24h, 48h, 72h),
         sans montant à encaisser.
       </p>
-      <button type="button" class="btn-secondary" @click="downloadTemplate">⬇️ Télécharger le modèle</button>
+      <button type="button" class="btn-secondary" @click="downloadTemplate"><Icone nom="exporter" />Télécharger le modèle</button>
 
       <div v-if="staff">
         <label class="label" for="imp-merchant">Client *</label>
@@ -22,7 +22,7 @@
         <label class="label" for="imp-lot">Lot de colis</label>
         <select id="imp-lot" v-model="lotId" class="input" @change="reset">
           <option :value="null">Aucun (courses ordinaires ou contrat du mois)</option>
-          <option v-for="l in lots" :key="l.id" :value="l.id">📦 {{ l.lot_name }} · {{ l.lot_quantity }} colis</option>
+          <option v-for="l in lots" :key="l.id" :value="l.id">{{ l.lot_name }} · {{ l.lot_quantity }} colis</option>
         </select>
       </div>
 
@@ -75,8 +75,8 @@
 
     <!-- Résultat -->
     <section v-if="result" class="card p-4 space-y-2 text-sm">
-      <p class="font-semibold text-emerald-700">✅ {{ result.created.length }} course(s) créée(s).</p>
-      <RouterLink v-if="auth.user?.merchant?.label_settings?.client_print !== 'no'" :to="`/etiquettes?ids=${result.created.map((c) => c.id).join(',')}`" class="inline-block font-medium text-blue-700">🖨️ Imprimer les {{ result.created.length }} étiquette(s)</RouterLink>
+      <p class="flex items-center gap-1.5 font-semibold text-emerald-700"><Icone nom="livre" />{{ result.created.length }} course(s) créée(s).</p>
+      <RouterLink v-if="auth.user?.merchant?.label_settings?.client_print !== 'no'" :to="`/etiquettes?ids=${result.created.map((c) => c.id).join(',')}`" class="inline-flex items-center gap-1 font-medium text-blue-700"><Icone nom="imprimer" taille="petite" />Imprimer les {{ result.created.length }} étiquette(s)</RouterLink>
       <p v-for="e in result.errors" :key="e.line" class="text-red-600">Ligne {{ e.line }} : {{ e.message }}</p>
       <div class="flex flex-wrap gap-1">
         <RouterLink v-for="c in result.created" :key="c.id" :to="`${base}/courses/${c.id}`" class="rounded bg-slate-100 px-2 py-1 font-mono text-xs">{{ c.tracking_code }}</RouterLink>
@@ -87,6 +87,7 @@
 </template>
 
 <script setup>
+import Icone from './ui/Icone.vue'
 import SearchSelect from './SearchSelect.vue'
 import { computed, onMounted, ref, watch } from 'vue'
 import http, { apiErrorMessage } from '../bootstrap/axios'

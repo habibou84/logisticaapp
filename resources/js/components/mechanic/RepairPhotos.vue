@@ -2,18 +2,19 @@
   <div class="flex flex-wrap gap-2">
     <div v-for="p in shown" :key="p.id" class="relative h-20 w-20 overflow-hidden rounded-xl bg-slate-200 ring-1 ring-slate-200">
       <img v-if="p.src" :src="p.src" :alt="`Photo ${kind === 'before' ? 'avant' : 'après'} réparation`" class="h-full w-full object-cover">
-      <button v-if="editable" type="button" class="absolute right-1 top-1 grid h-6 w-6 place-items-center rounded-full bg-black/60 text-xs text-white" aria-label="Retirer la photo" @click="remove(p)">✕</button>
+      <button v-if="editable" type="button" class="absolute right-1 top-1 grid h-6 w-6 place-items-center rounded-full bg-black/60 text-xs text-white" aria-label="Retirer la photo" @click="remove(p)"><Icone nom="fermer" taille="petite" /></button>
     </div>
     <PhotoCapture v-if="editable" class="grid h-20 w-20 place-items-center rounded-xl border-2 border-dashed border-slate-300 bg-white text-2xl text-slate-600" @captured="upload">
       <template #default="{ busy }">
         <span v-if="busy || uploading" class="text-sm">…</span>
-        <span v-else aria-label="Prendre une photo">📷</span>
+        <span v-else aria-label="Prendre une photo"><Icone nom="photo" taille="grande" /></span>
       </template>
     </PhotoCapture>
   </div>
 </template>
 
 <script setup>
+import Icone from '../ui/Icone.vue'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import PhotoCapture from '../mobile/PhotoCapture.vue'

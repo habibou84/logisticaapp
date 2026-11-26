@@ -2,14 +2,14 @@
   <div v-if="info" class="space-y-4">
     <template v-if="info.vehicle">
       <div class="m-card flex items-center gap-3 p-4">
-        <span class="grid h-14 w-14 place-items-center rounded-2xl bg-slate-100 text-3xl">{{ VEHICLE_TYPES[info.vehicle.type]?.icon }}</span>
+        <span class="grid h-14 w-14 place-items-center rounded-2xl bg-slate-100 text-3xl text-slate-600"><Icone :nom="VEHICLE_TYPES[info.vehicle.type]?.icon || 'vehicule'" taille="grande" /></span>
         <div class="min-w-0 flex-1">
           <p class="font-mono text-lg font-bold">{{ info.vehicle.plate }}</p>
           <p class="text-sm text-slate-600">{{ [info.vehicle.brand, info.vehicle.model].filter(Boolean).join(' ') }} · {{ km(info.vehicle.odometer) }}</p>
         </div>
         <span :class="['rounded-full px-2 py-0.5 text-xs font-semibold', OWNERSHIP_STYLES[info.vehicle.ownership]]">{{ info.vehicle.ownership_label }}</span>
       </div>
-      <p v-if="info.summary?.problems?.length" class="rounded-2xl bg-red-50 p-4 text-sm text-red-800 ring-1 ring-red-200">⛔ {{ info.summary.problems.join(', ') }} : voyez avec l'agence.</p>
+      <p v-if="info.summary?.problems?.length" class="rounded-2xl bg-red-50 p-4 text-sm text-red-800 ring-1 ring-red-200"><Icone nom="refus" taille="petite" class="inline" /> {{ info.summary.problems.join(', ') }} : voyez avec l'agence.</p>
 
       <!-- Location-vente -->
       <div v-if="info.lease" class="m-card p-4">
@@ -30,7 +30,7 @@
         <p class="font-semibold">Papiers</p>
         <ul class="mt-2 space-y-2 text-sm">
           <li v-for="d in info.documents" :key="d.id" class="flex items-center justify-between gap-2">
-            <button type="button" class="text-left" :disabled="!d.has_file" @click="openDoc(d)">{{ d.icon }} {{ d.label }}<span v-if="d.has_file" class="ml-1 text-[var(--app-color)]">· voir</span></button>
+            <button type="button" class="text-left" :disabled="!d.has_file" @click="openDoc(d)"><Icone :nom="d.icon || 'document'" taille="petite" class="inline" /> {{ d.label }}<span v-if="d.has_file" class="ml-1 text-[var(--app-color)]">· voir</span></button>
             <span :class="['rounded-full px-2 text-xs', STATE_STYLES[d.state]]">{{ d.state === 'permanent' ? 'permanent' : d.state === 'ok' ? 'à jour' : d.state === 'expired' ? `dépassé le ${shortDate(d.ends_on)}` : `fin le ${shortDate(d.ends_on)}` }}</span>
           </li>
           <li v-if="!info.documents.length" class="text-slate-600">Aucun papier enregistré par l'agence.</li>
@@ -42,33 +42,33 @@
       <div class="m-card p-4">
         <p class="font-semibold">Entretien</p>
         <div v-for="m in info.maintenance" :key="m.key" class="mt-1.5 flex justify-between text-sm">
-          <span>{{ m.icon }} {{ m.label }}</span><b :class="m.state === 'due' ? 'text-red-700' : m.state === 'soon' ? 'text-amber-700' : ''">{{ remainingText(m) }}</b>
+          <span><Icone :nom="m.icon || 'atelier'" taille="petite" class="inline" /> {{ m.label }}</span><b :class="m.state === 'due' ? 'text-red-700' : m.state === 'soon' ? 'text-amber-700' : ''">{{ remainingText(m) }}</b>
         </div>
         <div v-if="info.fuel_month?.count" class="mt-1.5 flex justify-between text-sm">
-          <span>⛽ Ce mois</span><b>{{ info.fuel_month.count }} plein{{ info.fuel_month.count > 1 ? 's' : '' }} · {{ money(info.fuel_month.amount) }}</b>
+          <span><Icone nom="carburant" taille="petite" class="inline" /> Ce mois</span><b>{{ info.fuel_month.count }} plein{{ info.fuel_month.count > 1 ? 's' : '' }} · {{ money(info.fuel_month.amount) }}</b>
         </div>
       </div>
 
       <div class="grid grid-cols-2 gap-3">
-        <button type="button" class="m-btn-secondary" @click="fuelOpen = true">⛽ Plein</button>
-        <RouterLink :to="`/livreur/vehicule/etat-des-lieux${info.summary?.check_needed ? '' : '?moment=end'}`" class="m-btn-secondary">📋 {{ info.summary?.check_needed ? 'État des lieux' : 'Retour' }}</RouterLink>
+        <button type="button" class="m-btn-secondary" @click="fuelOpen = true"><Icone nom="carburant" />Plein</button>
+        <RouterLink :to="`/livreur/vehicule/etat-des-lieux${info.summary?.check_needed ? '' : '?moment=end'}`" class="m-btn-secondary"><Icone nom="controle" />{{ info.summary?.check_needed ? 'État des lieux' : 'Retour' }}</RouterLink>
       </div>
     </template>
 
     <template v-else>
       <div class="m-card p-6 text-center text-slate-600">
-        <p class="text-4xl">🔑</p>
+        <p class="mx-auto grid h-12 w-12 place-items-center rounded-full bg-slate-100 text-slate-600"><Icone nom="cle" taille="grande" /></p>
         <p class="mt-2">Aucun véhicule à votre nom.</p>
         <RouterLink v-if="info.free_vehicles.length" to="/livreur/vehicule/etat-des-lieux" class="m-btn-primary mt-4">Prendre un véhicule pour la journée</RouterLink>
       </div>
       <div v-if="info.documents.length" class="m-card p-4">
         <p class="font-semibold">Mes papiers</p>
-        <p v-for="d in info.documents" :key="d.id" class="mt-2 flex justify-between text-sm"><span>{{ d.icon }} {{ d.label }}</span><span :class="['rounded-full px-2 text-xs', STATE_STYLES[d.state]]">{{ d.ends_on ? `fin le ${shortDate(d.ends_on)}` : 'permanent' }}</span></p>
+        <p v-for="d in info.documents" :key="d.id" class="mt-2 flex justify-between text-sm"><span><Icone :nom="d.icon || 'document'" taille="petite" class="inline" /> {{ d.label }}</span><span :class="['rounded-full px-2 text-xs', STATE_STYLES[d.state]]">{{ d.ends_on ? `fin le ${shortDate(d.ends_on)}` : 'permanent' }}</span></p>
       </div>
     </template>
 
     <!-- Plein -->
-    <BottomSheet :open="fuelOpen" title="⛽ J'ai fait le plein" @close="fuelOpen = false">
+    <BottomSheet :open="fuelOpen" title="J'ai fait le plein" @close="fuelOpen = false">
       <div class="space-y-4">
         <div>
           <label class="m-label" for="fuel-amount">Montant payé</label>
@@ -79,7 +79,7 @@
           <div><label class="m-label" for="fuel-odo">Compteur</label><input id="fuel-odo" v-model.number="fuel.odometer" type="number" inputmode="numeric" min="0" class="m-input" :placeholder="String(info.vehicle?.odometer || '')"></div>
         </div>
         <PhotoCapture :class="['m-btn-secondary', info.settings.fuel_receipt_required && !receipt ? 'ring-2 ring-amber-400' : '']" scan="vehicle" @captured="receipt = $event.file">
-          📷 {{ receipt ? 'Reçu photographié ✓' : `Photo du reçu${info.settings.fuel_receipt_required ? ' *' : ''}` }}
+          <Icone :nom="receipt ? 'valider' : 'photo'" />{{ receipt ? 'Reçu photographié' : `Photo du reçu${info.settings.fuel_receipt_required ? ' *' : ''}` }}
         </PhotoCapture>
         <p class="rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-600">{{ fuelNote }}</p>
         <p v-if="fuelError" class="text-sm text-red-600">{{ fuelError }}</p>
@@ -91,6 +91,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import BottomSheet from '../../components/mobile/BottomSheet.vue'

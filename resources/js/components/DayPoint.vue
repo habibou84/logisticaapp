@@ -2,7 +2,7 @@
   <!-- Point du jour (ou de la période) : livrées, argent de l'e-commerce, plis et accusés, livreurs en MAD -->
   <section v-if="report" class="card space-y-3 p-3 sm:p-4" aria-label="Point du jour">
     <div class="flex flex-wrap items-center justify-between gap-2">
-      <h2 class="font-semibold">📊 Point {{ dayLabel }}</h2>
+      <h2 class="flex items-center gap-1.5 font-semibold"><Icone nom="statistiques" />Point {{ dayLabel }}</h2>
       <div class="flex flex-wrap items-center gap-3 text-xs text-slate-600">
         <span v-if="detailed && c.created">🆕 {{ c.created }} nouvelle{{ c.created > 1 ? 's' : '' }} course{{ c.created > 1 ? 's' : '' }}<template v-if="c.created_later">, dont {{ c.created_later }} pour plus tard</template></span>
         <span>mis à jour à {{ updatedAt }}</span>
@@ -13,7 +13,7 @@
 
     <div v-if="open" class="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
       <button type="button" class="col-span-2 rounded-xl bg-emerald-50 p-3 text-left hover:ring-2 hover:ring-emerald-300 sm:col-span-1" @click="emit('delivered')">
-        <p class="text-xs text-emerald-800">✅ Livrées</p>
+        <p class="flex items-center gap-1 text-xs text-emerald-800"><Icone nom="livre" taille="petite" />Livrées</p>
         <p class="text-2xl font-bold text-emerald-900">{{ c.delivered }} <span v-if="c.planned" class="text-base font-normal">/ {{ c.planned }} course{{ c.planned > 1 ? 's' : '' }}</span></p>
         <div v-if="c.planned" class="mt-1 h-2 rounded-full bg-emerald-100" role="progressbar" :aria-valuenow="rate" aria-valuemin="0" aria-valuemax="100">
           <div class="h-2 rounded-full bg-emerald-500" :style="{ width: `${Math.min(rate, 100)}%` }" />
@@ -24,19 +24,19 @@
       <!-- E-commerce : argent (réservé à qui voit la caisse) -->
       <template v-if="m">
         <div class="rounded-xl bg-blue-50 p-3">
-          <p class="text-xs text-blue-800">🧾 Recette livraison</p>
+          <p class="flex items-center gap-1 text-xs text-blue-800"><Icone nom="recette" taille="petite" />Recette livraison</p>
           <p class="text-2xl font-bold text-blue-900">{{ money(m.fees) }}</p>
           <p class="mt-1 text-xs text-blue-800">frais des {{ m.delivered }} livrée(s) e-commerce<template v-if="m.shipping_fees"> · + {{ money(m.shipping_fees) }} d'expédition</template></p>
         </div>
         <RouterLink to="/admin/caisse?tab=cash" class="block rounded-xl bg-amber-50 p-3 hover:ring-2 hover:ring-amber-300">
-          <p class="text-xs text-amber-800">💵 Encaissé chez les clients</p>
+          <p class="flex items-center gap-1 text-xs text-amber-800"><Icone nom="encaissement" taille="petite" />Encaissé chez les clients</p>
           <p class="text-2xl font-bold text-amber-900">{{ money(m.collected) }}</p>
           <p class="mt-1 text-xs text-amber-800">
             {{ money(m.at_desk) }} déjà à la caisse<template v-if="m.with_couriers"> · <b>{{ money(m.with_couriers) }} chez {{ m.couriers_holding }} livreur(s)</b></template>
           </p>
         </RouterLink>
         <RouterLink to="/admin/caisse?tab=merchants" class="block rounded-xl bg-violet-50 p-3 hover:ring-2 hover:ring-violet-300">
-          <p class="text-xs text-violet-800">🏦 À reverser aux e-commerçants</p>
+          <p class="flex items-center gap-1 text-xs text-violet-800"><Icone nom="reverser" taille="petite" />À reverser aux e-commerçants</p>
           <p class="text-2xl font-bold text-violet-900">{{ money(m.net_to_merchants) }}</p>
           <p class="mt-1 text-xs text-violet-800">encaissé moins les frais · {{ m.merchants }} client(s)</p>
         </RouterLink>
@@ -44,7 +44,7 @@
 
       <!-- Distribution : plis et chèques comptés un à un, accusés, délai interne -->
       <RouterLink v-if="d && (d.planned || d.delivered)" :to="{ path: '/admin/courses', query: { activity: 'distribution', ...(day ? { day } : {}) } }" class="block rounded-xl bg-sky-50 p-3 hover:ring-2 hover:ring-sky-300">
-        <p class="text-xs text-sky-800">✉️ Distribution</p>
+        <p class="flex items-center gap-1 text-xs text-sky-800"><Icone nom="mail" taille="petite" />Distribution</p>
         <p class="text-2xl font-bold text-sky-900">{{ d.units_delivered }} <span v-if="d.units_planned" class="text-base font-normal">/ {{ d.units_planned }} pli(s) prévus</span></p>
         <p class="mt-1 text-xs text-sky-800">
           {{ d.delivered }} course(s) livrée(s)
@@ -53,14 +53,14 @@
         </p>
       </RouterLink>
       <RouterLink v-if="d && d.lots_due.length" :to="{ path: '/admin/contrats', query: { activity: 'distribution' } }" class="block rounded-xl bg-orange-50 p-3 hover:ring-2 hover:ring-orange-300">
-        <p class="text-xs text-orange-800">📦 Lots à échéance proche</p>
+        <p class="flex items-center gap-1 text-xs text-orange-800"><Icone nom="course" taille="petite" />Lots à échéance proche</p>
         <p class="text-2xl font-bold text-orange-900">{{ d.lots_due.length }}</p>
         <p class="mt-1 truncate text-xs text-orange-800">{{ d.lots_due.map((l) => `${l.name} (${l.delivered}/${l.included}, ${shortDay(l.due_on)})`).join(' · ') }}</p>
       </RouterLink>
 
       <!-- MAD : livreurs à disposition aujourd'hui -->
       <RouterLink v-if="mad && (mad.couriers || mad.delivered || mad.uncovered.length)" to="/admin/activite?activite=mad" class="block rounded-xl bg-purple-50 p-3 hover:ring-2 hover:ring-purple-300">
-        <p class="text-xs text-purple-800">🤝 Mise à disposition</p>
+        <p class="flex items-center gap-1 text-xs text-purple-800"><Icone nom="relais" taille="petite" />Mise à disposition</p>
         <p class="text-2xl font-bold text-purple-900">{{ mad.couriers }} <span class="text-base font-normal">livreur(s) chez {{ mad.clients }} client(s)</span></p>
         <p class="mt-1 text-xs text-purple-800">
           {{ mad.delivered }} course(s) livrée(s)<template v-if="mad.in_progress"> · {{ mad.in_progress }} en cours</template>
@@ -72,6 +72,7 @@
 </template>
 
 <script setup>
+import Icone from './ui/Icone.vue'
 import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import http from '../bootstrap/axios'

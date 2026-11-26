@@ -6,7 +6,7 @@
     aria-live="polite"
     :aria-label="advice.kind === 'reopen' ? 'Conseil : rouvrir la journée' : 'Conseil : fermer la journée'"
   >
-    <span class="text-xl" aria-hidden="true">💡</span>
+    <Icone nom="conseil" taille="grande" />
     <div class="min-w-0 flex-1 space-y-1">
       <template v-if="advice.kind === 'reopen'">
         <p class="font-semibold">Vous pouvez rouvrir la journée</p>
@@ -44,6 +44,7 @@
 </template>
 
 <script setup>
+import Icone from './ui/Icone.vue'
 import { ref, watch } from 'vue'
 import http, { apiErrorMessage } from '../bootstrap/axios'
 import { useToastStore } from '../stores/toasts'

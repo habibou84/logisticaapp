@@ -98,7 +98,7 @@ class StatsAlerts
                 $total = ($ok[$zone] ?? 0) + ($ko[$zone] ?? 0);
                 $rate = $total ? round(($ok[$zone] ?? 0) / $total * 100) : 100;
                 if ($total >= $min && $rate < $s['zone_success_min']) {
-                    $out[] = $this->alert("zone:{$zone}", "📍 Réussite en baisse : {$names[$zone]}",
+                    $out[] = $this->alert("zone:{$zone}", "Réussite en baisse : {$names[$zone]}",
                         "taux de réussite de {$names[$zone]} à {$rate} % sur 7 jours (seuil {$s['zone_success_min']} %, {$total} passages)", '/admin/statistiques?onglet=quality&periode=week');
                 }
             }
@@ -114,7 +114,7 @@ class StatsAlerts
                 $prev = (int) ($before[$courier] ?? 0);
                 if ($courier && $count >= max(3, intdiv($min, 2)) && $count >= 2 * max(1, $prev)) {
                     $name = $names[$courier] ?? 'Un livreur';
-                    $out[] = $this->alert("courier:{$courier}", "🛵 Échecs en hausse : {$name}",
+                    $out[] = $this->alert("courier:{$courier}", "Échecs en hausse : {$name}",
                         "{$name} a {$count} échecs sur 7 jours contre {$prev} la semaine d'avant", '/admin/statistiques?onglet=quality&periode=week');
                 }
             }
@@ -132,7 +132,7 @@ class StatsAlerts
                 $recent = (int) ($last[$merchant] ?? 0);
                 $drop = $avg > 0 ? (int) round((1 - $recent / $avg) * 100) : 0;
                 if ($avg >= $min && $drop >= $s['client_drop_percent']) {
-                    $out[] = $this->alert("client:{$merchant}", "🏪 Client en baisse : {$names[$merchant]}",
+                    $out[] = $this->alert("client:{$merchant}", "Client en baisse : {$names[$merchant]}",
                         "{$names[$merchant]} a envoyé {$recent} courses en 30 jours contre ".(int) round($avg)." par mois avant (−{$drop} %)", '/admin/statistiques?onglet=merchants&periode=days30');
                 }
             }

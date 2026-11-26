@@ -4,8 +4,8 @@
     <div class="flex flex-wrap items-center justify-between gap-3">
       <h1 class="text-xl font-bold">Statistiques</h1>
       <div class="flex flex-wrap gap-2">
-        <button type="button" class="btn-secondary" :disabled="exporting" title="Toutes les statistiques de la période, en plusieurs onglets" @click="exportXlsx">{{ exporting ? 'Export…' : '📥 Exporter en Excel' }}</button>
-        <a :href="`/admin/rapport-mensuel?mois=${from.slice(0, 7)}`" target="_blank" class="btn-secondary" title="À imprimer ou enregistrer en PDF">🖨 Rapport du mois</a>
+        <button type="button" class="btn-secondary" :disabled="exporting" title="Toutes les statistiques de la période, en plusieurs onglets" @click="exportXlsx"><Icone v-if="!exporting" nom="exporter" />{{ exporting ? 'Export…' : 'Exporter en Excel' }}</button>
+        <a :href="`/admin/rapport-mensuel?mois=${from.slice(0, 7)}`" target="_blank" class="btn-secondary" title="À imprimer ou enregistrer en PDF"><Icone nom="imprimer" /> Rapport du mois</a>
       </div>
     </div>
 
@@ -17,7 +17,7 @@
           :class="['flex shrink-0 items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium ring-1', section.key === g.key ? 'bg-slate-900 text-white ring-slate-900' : 'bg-white text-slate-700 ring-slate-300 hover:bg-slate-50']"
           @click="selectTab(g.tabs[0].key)"
         >
-          <span aria-hidden="true">{{ g.icon }}</span>{{ g.label }}
+          <Icone :nom="g.icon" taille="petite" />{{ g.label }}
         </button>
       </div>
       <div v-if="section.tabs.length > 1" ref="tabBar" class="flex gap-1 overflow-x-auto border-b" role="tablist">
@@ -124,7 +124,7 @@
       <div class="grid gap-4 lg:grid-cols-2">
         <section class="card p-4 space-y-3">
           <h2 class="font-semibold">Pourquoi les livraisons échouent</h2>
-          <BarList :items="dl.failure_reasons" empty="Aucun échec sur la période. 👏" />
+          <BarList :items="dl.failure_reasons" empty="Aucun échec sur la période." />
         </section>
 
         <section class="card p-4 space-y-3">
@@ -139,7 +139,7 @@
           <h3 class="pt-2 text-sm font-semibold">Issues sur la période</h3>
           <ul class="grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
             <li v-for="o in outcomes" :key="o.key" class="flex items-center justify-between rounded border px-3 py-2">
-              <span class="text-slate-600">{{ o.icon }} {{ o.label }}</span><strong>{{ dl.outcomes[o.key] }}</strong>
+              <span class="inline-flex items-center gap-1 text-slate-600"><Icone :nom="o.icon" taille="petite" />{{ o.label }}</span><strong>{{ dl.outcomes[o.key] }}</strong>
             </li>
           </ul>
         </section>
@@ -209,6 +209,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
@@ -276,14 +277,14 @@ const PRESETS = {
  */
 const SECTIONS = [
   {
-    key: 'pilotage', label: 'Pilotage', icon: '🎯',
+    key: 'pilotage', label: 'Pilotage', icon: 'objectif',
     tabs: [
       { key: 'overview', label: 'Vue d\'ensemble', description: 'Les chiffres clés de la période comparés à la période précédente, les courses jour par jour et les heures de pointe.' },
       { key: 'goals', label: 'Objectifs et tendances', period: false, description: 'Le mois en cours face à ses objectifs, sa projection de fin de mois, la comparaison avec l\'an dernier et 13 mois d\'historique.' },
     ],
   },
   {
-    key: 'operations', label: 'Opérations', icon: '🚚',
+    key: 'operations', label: 'Opérations', icon: 'vehicule',
     tabs: [
       { key: 'deliveries', label: 'Livraisons', description: 'Réussite au premier passage, délais de ramassage et de livraison, issues des courses de la période.' },
       { key: 'quality', label: 'Délais et échecs', description: 'Respect des délais par client, zone et livreur, lots et MAD, analyse des échecs, distribution et courses non traitées dans le temps.' },
@@ -294,21 +295,21 @@ const SECTIONS = [
     ],
   },
   {
-    key: 'clients', label: 'Clients', icon: '🏪',
+    key: 'clients', label: 'Clients', icon: 'clients',
     tabs: [
       { key: 'merchants', label: 'Activité des clients', permission: 'merchants.view', description: 'Courses, réussite et montants de chaque client sur la période, clients inactifs à relancer.' },
       { key: 'clients', label: 'Fidélité et paiements', permission: 'merchants.view', description: 'Concentration du chiffre d\'affaires, clients en baisse, fidélité des nouveaux clients, paiement des factures.' },
     ],
   },
   {
-    key: 'argent', label: 'Argent', icon: '💰',
+    key: 'argent', label: 'Argent', icon: 'argent',
     tabs: [
       { key: 'profitability', label: 'Rentabilité', permission: 'finance.view', description: 'Ce que rapportent et coûtent les clients, les zones, les livreurs et les contrats : marge nette, frais fixes compris.' },
       { key: 'finances', label: 'Trésorerie', permission: 'finance.view', activity: false, description: 'L\'argent en circulation aujourd\'hui : chez les livreurs, à reverser aux clients, dû par des clients.' },
     ],
   },
   {
-    key: 'partage', label: 'Analyse et partage', icon: '🔀',
+    key: 'partage', label: 'Analyse et partage', icon: 'partager',
     tabs: [
       { key: 'pivot', label: 'Analyse croisée', description: 'Croisez deux axes (client, zone, livreur, activité, jour, mois, heure) avec l\'indicateur de votre choix.' },
       { key: 'integrations', label: 'Partage et alertes', period: false, activity: false, permission: ['settings.manage', 'merchants.view'], description: 'Alertes du matin, point par e-mail, lien Google Sheets et rapports mensuels des clients sous contrat.' },
@@ -420,11 +421,11 @@ function duration(minutes) {
 }
 
 const outcomes = [
-  { key: 'delivered', label: 'Livrées', icon: '✅' },
-  { key: 'rescheduled', label: 'Reportées', icon: '📅' },
-  { key: 'returned', label: 'Retournées', icon: '↩️' },
-  { key: 'cancelled', label: 'Annulées', icon: '✖️' },
-  { key: 'lost', label: 'Perdues', icon: '⚠️' },
+  { key: 'delivered', label: 'Livrées', icon: 'livre' },
+  { key: 'rescheduled', label: 'Reportées', icon: 'date' },
+  { key: 'returned', label: 'Retournées', icon: 'retour' },
+  { key: 'cancelled', label: 'Annulées', icon: 'annulation' },
+  { key: 'lost', label: 'Perdues', icon: 'alerte' },
 ]
 
 const courierColumns = computed(() => [

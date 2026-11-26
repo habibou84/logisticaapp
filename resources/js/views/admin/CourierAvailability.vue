@@ -9,9 +9,9 @@
     </div>
 
     <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-      <StatCard title="Livreurs libres" :value="counts.free" icon="🟢" />
-      <StatCard :title="`Bientôt libres (≤ ${soon} missions)`" :value="counts.soon" icon="🟡" />
-      <StatCard title="Avec des colis à ramasser près d'eux" :value="counts.withPickups" icon="📦" />
+      <StatCard title="Livreurs libres" :value="counts.free" icon="disponible" />
+      <StatCard :title="`Bientôt libres (≤ ${soon} missions)`" :value="counts.soon" icon="attente" />
+      <StatCard title="Avec des colis à ramasser près d'eux" :value="counts.withPickups" icon="course" />
     </div>
 
     <div class="flex flex-wrap gap-2 items-center">
@@ -23,7 +23,7 @@
     <section v-for="c in visible" :key="c.id" class="card p-4 flex flex-wrap items-center gap-4">
       <div class="min-w-0 flex-1">
         <p class="font-semibold">
-          🛵 {{ c.name }} <MadBadge :mad="c.mad" />
+          <Icone nom="livreur" taille="petite" class="inline" /> {{ c.name }} <MadBadge :mad="c.mad" />
           <span :class="['ml-1 rounded-full px-2 py-0.5 text-xs font-medium', STATES[c.state].class]">{{ STATES[c.state].label }}</span>
           <FieldEventBadge :event="c.field_event" class="ml-1" />
         </p>
@@ -32,8 +32,8 @@
           <span v-if="c.zones.length"> · Zones : {{ c.zones.join(', ') }}</span>
         </p>
         <p class="text-sm mt-1">
-          <template v-if="c.arrival_zone">📍 Dernier arrêt à <strong>{{ c.arrival_zone.name }}</strong> à {{ time(c.last_stop_at) }}</template>
-          <template v-else>📍 Pas encore d'arrêt aujourd'hui</template>
+          <template v-if="c.arrival_zone"><Icone nom="adresse" taille="petite" class="inline" /> Dernier arrêt à <strong>{{ c.arrival_zone.name }}</strong> à {{ time(c.last_stop_at) }}</template>
+          <template v-else><Icone nom="adresse" taille="petite" class="inline" /> Pas encore d'arrêt aujourd'hui</template>
           <span v-if="c.position" class="text-slate-600"> · position GPS il y a {{ ago(c.position.at) }}</span>
         </p>
         <p class="text-sm text-slate-600">
@@ -47,7 +47,7 @@
           <span class="text-slate-600">({{ c.nearby.stops }} boutique{{ c.nearby.stops > 1 ? 's' : '' }}<template v-if="c.nearby.for_tomorrow">, {{ c.nearby.for_tomorrow }} pour demain ou plus tard</template>)</span>
         </p>
         <p v-else class="text-sm text-slate-600">Rien à ramasser près de lui</p>
-        <button v-if="c.nearby.count && c.state !== 'off'" type="button" class="btn-primary mt-2" @click="openMission(c)">📦 Mission ramassage</button>
+        <button v-if="c.nearby.count && c.state !== 'off'" type="button" class="btn-primary mt-2" @click="openMission(c)"><Icone nom="course" /> Mission ramassage</button>
       </div>
     </section>
 
@@ -68,7 +68,7 @@
             <input type="checkbox" class="mt-1" :checked="stopChecked(s)" :aria-label="`Tous les colis de ${s.merchant}`" @change="toggleStop(s)">
             <span class="min-w-0 flex-1">
               <strong>{{ s.merchant }}</strong> · {{ s.count }} colis
-              <span class="ml-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-700">{{ reason(s) }}</span>
+              <span class="ml-1 inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-700"><Icone v-if="s.reason === 'near'" nom="adresse" taille="petite" />{{ reason(s) }}</span>
               <span class="block text-xs text-slate-600">{{ [s.zone_name, s.address].filter(Boolean).join(' · ') }}</span>
             </span>
           </label>
@@ -94,9 +94,9 @@
               <span>garde les colis jusqu'à leur livraison, qui lui sera confiée le jour prévu</span>
             </label>
           </template>
-          <p v-else-if="custodySetting === 'depot' && !depotClosed">🏢 Le livreur rapporte les colis au dépôt (réglage de l'entreprise).</p>
-          <p v-else-if="custodySetting === 'depot'">🌙 Dépôt fermé depuis {{ depotClosesAt }} : le livreur gardera les colis jusqu'au matin.</p>
-          <p v-else>🌙 Le livreur garde les colis jusqu'à leur livraison, qui lui sera confiée le jour prévu (réglage de l'entreprise).</p>
+          <p v-else-if="custodySetting === 'depot' && !depotClosed"><Icone nom="depot" taille="petite" class="inline" /> Le livreur rapporte les colis au dépôt (réglage de l'entreprise).</p>
+          <p v-else-if="custodySetting === 'depot'"><Icone nom="jour-ferme" taille="petite" class="inline" /> Dépôt fermé depuis {{ depotClosesAt }} : le livreur gardera les colis jusqu'au matin.</p>
+          <p v-else><Icone nom="jour-ferme" taille="petite" class="inline" /> Le livreur garde les colis jusqu'à leur livraison, qui lui sera confiée le jour prévu (réglage de l'entreprise).</p>
         </div>
         <div class="flex justify-end gap-2 pt-1">
           <button type="button" class="btn-secondary" @click="mission = null">Annuler</button>
@@ -108,6 +108,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import MadBadge from '../../components/MadBadge.vue'
 import FieldEventBadge from '../../components/FieldEventBadge.vue'
 import { computed, onMounted, ref, watch } from 'vue'
@@ -166,7 +167,7 @@ function missionsDetail(c) {
   return [r.pickup && `${r.pickup} ramassage${r.pickup > 1 ? 's' : ''}`, r.delivery && `${r.delivery} livraison${r.delivery > 1 ? 's' : ''}`, r.return && `${r.return} retour${r.return > 1 ? 's' : ''}`].filter(Boolean).join(', ')
 }
 function reason(s) {
-  if (s.reason === 'near') return `📍 à ${String(s.km).replace('.', ',')} km`
+  if (s.reason === 'near') return `à ${String(s.km).replace('.', ',')} km`
   return s.reason === 'arrival_zone' ? 'Zone de son dernier arrêt' : 'Une de ses zones'
 }
 

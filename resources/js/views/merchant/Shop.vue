@@ -18,8 +18,8 @@
             <a :href="settings.url" target="_blank" rel="noopener" class="font-semibold text-emerald-900 break-all">{{ settings.url }}</a>
           </div>
           <div class="grid grid-cols-2 gap-2">
-            <button type="button" class="m-btn-secondary !py-3" @click="copy">{{ copied ? '✓ Copié' : '📋 Copier' }}</button>
-            <a :href="shareLink" target="_blank" rel="noopener" class="m-btn-success !py-3">💬 Partager</a>
+            <button type="button" class="m-btn-secondary !py-3" @click="copy"><Icone :nom="copied ? 'valider' : 'copier'" />{{ copied ? 'Copié' : 'Copier' }}</button>
+            <a :href="shareLink" target="_blank" rel="noopener" class="m-btn-success !py-3"><Icone nom="partager" />Partager</a>
           </div>
           <p class="text-xs text-slate-600">
             Mettez ce lien dans vos statuts WhatsApp, sur Facebook, Instagram ou TikTok. Chaque commande devient une
@@ -53,7 +53,7 @@
             :class="['tap rounded-xl p-3 text-left ring-1 transition', settings.shop_fee_payer === o.value ? 'ring-2 ring-[var(--app-color)] bg-emerald-50' : 'ring-slate-200 bg-white']"
             @click="setFeePayer(o.value)"
           >
-            <span class="block font-medium">{{ o.label }}</span>
+            <span class="flex items-center gap-1.5 font-medium"><Icone :nom="o.icon" taille="petite" />{{ o.label }}</span>
             <span class="block text-sm text-slate-600">{{ o.text }}</span>
           </button>
         </div>
@@ -68,12 +68,12 @@
         </div>
         <p class="text-sm text-slate-600">Les articles de votre stock apparaissent ici. Le stock suivi est réservé à chaque commande ; un article épuisé ne peut pas être commandé.</p>
 
-        <EmptyState v-if="!products.length" icon="🛍️" title="Aucun article" text="Ajoutez vos articles avec une photo et un prix." />
+        <EmptyState v-if="!products.length" icon="store" title="Aucun article" text="Ajoutez vos articles avec une photo et un prix." />
 
         <div v-for="p in products" :key="p.id" class="m-card p-3 flex gap-3">
           <label class="relative h-20 w-20 shrink-0 rounded-xl bg-slate-100 overflow-hidden grid place-items-center cursor-pointer" :title="p.photo_url ? 'Changer la photo' : 'Ajouter une photo'">
             <img v-if="p.photo_url" :src="p.photo_url" :alt="p.name" class="h-full w-full object-cover">
-            <span v-else class="text-center text-xs text-slate-600 px-1">📷<br>Photo</span>
+            <span v-else class="text-center text-xs text-slate-600 px-1"><Icone nom="photo" class="mx-auto" />Photo</span>
             <input type="file" accept="image/png,image/jpeg,image/webp" class="sr-only" @change="upload(p, $event)">
             <span v-if="uploading === p.id" class="absolute inset-0 bg-white/70 grid place-items-center text-xs">Envoi…</span>
           </label>
@@ -117,6 +117,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import BottomSheet from '../../components/mobile/BottomSheet.vue'
@@ -143,8 +144,8 @@ const uploading = ref(null)
 const editor = reactive({ open: false, id: null, name: '', price: null, description: '', photo: null, saving: false, error: '' })
 
 const FEE_PAYERS = [
-  { value: 'recipient', label: '🧾 Le client', text: 'Le prix de la livraison, selon sa commune, s\'ajoute au total qu\'il paie au livreur.' },
-  { value: 'merchant', label: '🎁 Moi (livraison offerte)', text: 'Le client voit « Livraison offerte » ; le prix est retiré de vos reversements.' },
+  { value: 'recipient', icon: 'client', label: 'Le client', text: 'Le prix de la livraison, selon sa commune, s\'ajoute au total qu\'il paie au livreur.' },
+  { value: 'merchant', icon: 'cadeau', label: 'Moi (livraison offerte)', text: 'Le client voit « Livraison offerte » ; le prix est retiré de vos reversements.' },
 ]
 
 async function setFeePayer(value) {

@@ -24,7 +24,7 @@
     <!-- 1. État du jour : une seule ligne -->
     <section class="card flex flex-wrap items-center gap-x-7 gap-y-4 px-5 py-4" aria-label="État du jour">
       <div v-if="deliveryDay?.rules" class="min-w-[11rem]">
-        <p class="font-semibold">{{ deliveryDay.closed ? '🟠 Journée fermée' : '🟢 Journée ouverte' }}</p>
+        <p class="flex items-center gap-1.5 font-semibold"><Icone :nom="deliveryDay.closed ? 'jour-ferme' : 'jour-ouvert'" :class="deliveryDay.closed ? 'text-attention' : 'text-succes'" />{{ deliveryDay.closed ? 'Journée fermée' : 'Journée ouverte' }}</p>
         <p class="text-sm text-slate-600">
           <template v-if="deliveryDay.closed">nouvelles courses pour le prochain jour</template>
           <template v-else-if="deliveryDay.cutoff_time">après {{ deliveryDay.cutoff_time }}, les courses partent le lendemain</template>
@@ -80,14 +80,14 @@
           <h2 id="a-regler" class="text-lg font-semibold">À régler <span v-if="todos.length" class="font-medium text-slate-600">· {{ todos.length }}</span></h2>
           <span class="flex flex-wrap items-center gap-3 text-sm text-slate-600">
             <span>du plus urgent au moins urgent</span>
-            <RouterLink v-if="auth.can('settings.manage')" to="/admin/reglages/courses#tableau-de-bord" class="hover:underline">⚙️ Lignes affichées</RouterLink>
+            <RouterLink v-if="auth.can('settings.manage')" to="/admin/reglages/courses#tableau-de-bord" class="inline-flex items-center gap-1 hover:underline"><Icone nom="reglages" taille="petite" />Lignes affichées</RouterLink>
           </span>
         </div>
         <p v-if="!counts" class="px-5 py-6 text-slate-600">Chargement…</p>
-        <p v-else-if="!todos.length" class="px-5 py-6 font-medium text-emerald-700">✓ Tout est réglé pour le moment.</p>
+        <p v-else-if="!todos.length" class="px-5 py-6 font-medium text-emerald-700"><Icone nom="valider" taille="petite" class="inline align-text-bottom" /> Tout est réglé pour le moment.</p>
         <ul v-else class="divide-y divide-slate-100">
           <li v-for="t in todos" :key="t.key" :class="['flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3', t.level === 'urgent' ? 'bg-red-50/50' : '']">
-            <span :class="['inline-flex w-[6.5rem] shrink-0 items-center justify-center rounded-full py-0.5 text-xs font-semibold ring-1', LEVELS[t.level].class]">{{ LEVELS[t.level].label }}</span>
+            <span :class="['inline-flex w-[6.5rem] shrink-0 items-center justify-center rounded-full py-0.5 text-xs font-semibold ring-1', LEVELS[t.level].class, 'gap-1']"><Icone v-if="LEVELS[t.level].icon" :nom="LEVELS[t.level].icon" taille="petite" />{{ LEVELS[t.level].label }}</span>
             <span class="w-9 text-right text-xl font-bold tabular-nums">{{ t.count }}</span>
             <div class="min-w-[12rem] flex-1">
               <p class="font-semibold">{{ t.title }}</p>
@@ -103,7 +103,7 @@
         <div class="flex items-baseline justify-between gap-2 border-b border-slate-200 px-5 py-3.5">
           <h2 id="a-surveiller" class="text-lg font-semibold">Livreurs à surveiller</h2>
           <span class="flex gap-3 text-sm">
-            <RouterLink to="/admin/activite/mural" class="text-slate-600 hover:underline">📺 Écran mural</RouterLink>
+            <RouterLink to="/admin/activite/mural" class="inline-flex items-center gap-1 text-slate-600 hover:underline"><Icone nom="ecran" taille="petite" />Écran mural</RouterLink>
             <RouterLink to="/admin/activite" class="font-medium text-blue-700 hover:underline">Activité des livreurs</RouterLink>
           </span>
         </div>
@@ -176,7 +176,7 @@
     <!-- Dernières courses -->
     <section class="card space-y-2 px-5 py-4">
       <div class="flex items-center justify-between">
-        <h2 class="font-semibold">🕘 Dernières courses</h2>
+        <h2 class="flex items-center gap-1.5 font-semibold"><Icone nom="historique" />Dernières courses</h2>
         <RouterLink to="/admin/courses" class="text-sm text-blue-600">Tout voir</RouterLink>
       </div>
       <p v-if="!recent.length" class="text-sm text-slate-600">Aucune course pour le moment.</p>
@@ -197,6 +197,7 @@
 </template>
 
 <script setup>
+import Icone from './ui/Icone.vue'
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import http from '../bootstrap/axios'
@@ -258,7 +259,7 @@ const queue = (q) => ({ path: '/admin/courses', query: { queue: q, ...scope() } 
 const late = (onglet) => ({ path: '/admin/courses/en-retard', query: { onglet, ...scope() } })
 
 const LEVELS = {
-  urgent: { label: '⚠ Urgent', class: 'bg-red-50 text-red-700 ring-red-200' },
+  urgent: { label: 'Urgent', icon: 'urgent', class: 'bg-red-50 text-red-700 ring-red-200' },
   faire: { label: 'Aujourd\'hui', class: 'bg-amber-50 text-amber-800 ring-amber-200' },
   voir: { label: 'À suivre', class: 'bg-slate-100 text-slate-700 ring-slate-300' },
 }

@@ -2,7 +2,7 @@
   <div class="space-y-4">
     <div>
       <RouterLink to="/admin/reglages" class="text-sm text-blue-600">‹ Réglages</RouterLink>
-      <h1 class="text-xl font-bold">💬 Messages aux clients</h1>
+      <h1 class="flex items-center gap-1.5 text-xl font-bold"><Icone nom="message" /> Messages aux clients</h1>
       <p class="text-sm text-slate-600">
         Pour chaque étape d'une course : la notification dans l'application est toujours envoyée (gratuite).
         Choisissez si le client reçoit aussi un message WhatsApp (ou une notification sur son téléphone quand il l'a activée).
@@ -18,8 +18,8 @@
           <thead class="bg-slate-50 text-left text-xs uppercase text-slate-600">
             <tr>
               <th class="px-3 py-2 font-bold">Étape</th>
-              <th class="px-3 py-2 font-bold">📱 Application</th>
-              <th class="px-3 py-2 font-bold">💬 WhatsApp</th>
+              <th class="px-3 py-2 font-bold"><span class="inline-flex items-center gap-1"><Icone nom="mobile" taille="petite" /> Application</span></th>
+              <th class="px-3 py-2 font-bold"><span class="inline-flex items-center gap-1"><Icone nom="message" taille="petite" /> WhatsApp</span></th>
               <th class="hidden px-3 py-2 font-bold md:table-cell">Message</th>
             </tr>
           </thead>
@@ -59,7 +59,7 @@
           </span>
         </label>
         <div v-if="totalDiffers && !data.locked" class="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-amber-50 px-3 py-2 text-amber-900">
-          <span>⚠️ Des clients ont gardé un autre choix que le vôtre ({{ totalDiffers }} réglage{{ totalDiffers > 1 ? 's' : '' }}).</span>
+          <span><Icone nom="alerte" taille="petite" class="inline" /> Des clients ont gardé un autre choix que le vôtre ({{ totalDiffers }} réglage{{ totalDiffers > 1 ? 's' : '' }}).</span>
           <button type="button" class="rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-bold text-white" :disabled="busy" @click="applyAll(null)">Appliquer mes choix à tous</button>
         </div>
       </div>
@@ -72,6 +72,7 @@
 </template>
 
 <script setup>
+import Icone from '../../../components/ui/Icone.vue'
 import { computed, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import http, { apiErrorMessage } from '../../../bootstrap/axios'

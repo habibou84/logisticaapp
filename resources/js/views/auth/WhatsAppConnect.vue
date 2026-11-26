@@ -2,7 +2,7 @@
   <div class="min-h-screen bg-gradient-to-b from-emerald-800 to-emerald-600 px-5 py-10">
     <div class="mx-auto w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl space-y-5">
       <div class="text-center space-y-2">
-        <p class="text-4xl" aria-hidden="true">💬</p>
+        <span class="mx-auto grid h-12 w-12 place-items-center rounded-full bg-slate-100 text-slate-600" aria-hidden="true"><Icone nom="message" taille="grande" /></span>
         <h1 class="text-xl font-bold text-slate-900">Connecter WhatsApp</h1>
         <p v-if="session" class="text-sm text-slate-600">pour <strong>{{ session.company }}</strong></p>
       </div>
@@ -11,7 +11,7 @@
 
       <!-- Numéro connecté : retour automatique dans l'espace de l'entreprise -->
       <div v-if="result" class="space-y-3 text-center">
-        <p class="text-5xl" aria-hidden="true">✅</p>
+        <span class="mx-auto grid h-12 w-12 place-items-center rounded-full bg-succes-fond text-succes" aria-hidden="true"><Icone nom="livre" taille="grande" /></span>
         <p class="font-semibold text-slate-900">WhatsApp est connecté</p>
         <p class="text-sm text-slate-600">{{ result.verified_name }} · {{ result.display_phone }}</p>
         <p v-if="result.warning" class="rounded bg-amber-50 px-3 py-2 text-sm text-amber-800">{{ result.warning }}</p>
@@ -45,6 +45,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import { onMounted, ref } from 'vue'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import { connectWhatsApp } from '../../composables/useMetaSignup'

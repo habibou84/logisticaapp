@@ -3,10 +3,10 @@
     <div v-if="!embedded" class="flex flex-wrap items-center justify-between gap-2">
       <div>
         <RouterLink to="/admin/courses" class="text-sm text-blue-600">‹ Courses</RouterLink>
-        <h1 class="text-xl font-bold">⏰ À reporter</h1>
+        <h1 class="flex items-center gap-1.5 text-xl font-bold"><Icone nom="rappel" /> À reporter</h1>
         <p class="text-sm text-slate-600">Date de livraison passée, colis pas encore ramassés. Ils sont cachés chez les livreurs tant que la date n'est pas actualisée.</p>
       </div>
-      <RouterLink v-if="auth.can('settings.manage')" to="/admin/reglages/courses" class="text-sm text-blue-600">⚙️ Message du soir</RouterLink>
+      <RouterLink v-if="auth.can('settings.manage')" to="/admin/reglages/courses" class="inline-flex items-center gap-1 text-sm text-blue-600"><Icone nom="reglages" taille="petite" /> Message du soir</RouterLink>
     </div>
 
     <p v-if="error" class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">{{ error }}</p>
@@ -37,7 +37,7 @@
         </div>
       </div>
 
-      <p v-if="!data.groups.length" class="card p-6 text-center text-slate-600">✅ Aucun colis à reporter : toutes les dates sont à jour.</p>
+      <p v-if="!data.groups.length" class="card p-6 text-center text-slate-600"><Icone nom="livre" class="inline" /> Aucun colis à reporter : toutes les dates sont à jour.</p>
 
       <!-- Une ligne par client -->
       <div v-else class="card divide-y">
@@ -51,14 +51,14 @@
               <span class="font-semibold">{{ open.includes(g.merchant?.id) ? '▾' : '▸' }} {{ g.merchant?.business_name }}</span>
               <span class="block text-xs text-slate-600">
                 {{ g.merchant?.zone_name }}<template v-if="g.merchant?.address">, {{ g.merchant.address }}</template> ·
-                {{ g.merchant?.uses_app ? '📱 Jibiat Marchand' : '💬 WhatsApp' }}
+                <Icone :nom="g.merchant?.uses_app ? 'mobile' : 'message'" taille="petite" class="inline" /> {{ g.merchant?.uses_app ? 'Jibiat Marchand' : 'WhatsApp' }}
               </span>
             </button>
             <span class="w-24 text-sm"><b>{{ g.count }}</b> colis<span class="block text-xs text-slate-600">{{ money(g.cod_total) }}</span></span>
             <span class="w-28 text-sm">{{ shortDay(g.missed_day) }}<span class="block text-xs text-red-700">{{ since(g.missed_day) }}</span></span>
             <span class="w-44 text-xs">
               <template v-if="g.request">
-                <span class="rounded-full bg-blue-100 px-2 py-0.5 font-semibold text-blue-900">⏳ Demandé {{ time(g.request.created_at) }}</span>
+                <span class="rounded-full bg-blue-100 px-2 py-0.5 font-semibold text-blue-900"><Icone nom="sablier" taille="petite" class="inline" /> Demandé {{ time(g.request.created_at) }}</span>
                 <span v-if="g.request.reminded_at" class="mt-0.5 block text-slate-600">relancé {{ time(g.request.reminded_at) }}</span>
                 <span v-else-if="!g.request.whatsapp_sent_at" class="mt-0.5 block text-slate-600">message WhatsApp pas encore parti</span>
               </template>
@@ -93,7 +93,7 @@
 
       <!-- Actions groupées -->
       <div v-if="checked.length" class="sticky bottom-2 z-10 flex flex-wrap items-center gap-2 rounded-xl bg-slate-900 px-3 py-2 text-sm text-white shadow-lg">
-        <span class="flex-1">☑️ {{ checked.length }} client{{ checked.length > 1 ? 's' : '' }} · {{ checkedOrders.length }} colis</span>
+        <span class="flex flex-1 items-center gap-1.5"><Icone nom="selection" taille="petite" />{{ checked.length }} client{{ checked.length > 1 ? 's' : '' }} · {{ checkedOrders.length }} colis</span>
         <button type="button" class="rounded-lg bg-white px-3 py-1 font-semibold text-slate-900" @click="openAsk(checkedGroups)">Demander aux {{ checked.length }}</button>
         <button type="button" class="rounded-lg bg-emerald-500 px-3 py-1 font-semibold" :disabled="busy" @click="allToday">Tout livrer aujourd'hui</button>
         <button type="button" class="px-2 text-slate-300" @click="checked = []">Annuler</button>
@@ -111,8 +111,8 @@
           <p class="font-semibold">Envoyé par</p>
           <p v-for="g in ask.groups" :key="g.merchant?.id" class="text-slate-700">
             {{ g.merchant?.business_name }} :
-            <template v-if="g.merchant?.uses_app && data.settings.channel === 'app_first'">📱 Jibiat Marchand, puis 💬 WhatsApp sans réponse en 30 min</template>
-            <template v-else>💬 WhatsApp (lien vers la page de réponse)</template>
+            <template v-if="g.merchant?.uses_app && data.settings.channel === 'app_first'"><Icone nom="mobile" taille="petite" class="inline" /> Jibiat Marchand, puis <Icone nom="message" taille="petite" class="inline" /> WhatsApp sans réponse en 30 min</template>
+            <template v-else><Icone nom="message" taille="petite" class="inline" /> WhatsApp (lien vers la page de réponse)</template>
           </p>
         </div>
         <p class="text-xs text-slate-600">Sans réponse : {{ data?.settings.no_answer === 'auto_next_day' ? 'livraison reportée toute seule le lendemain à 08:00' : 'rappel le lendemain à 08:00, puis à vous de trancher' }}.</p>
@@ -151,6 +151,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'

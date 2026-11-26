@@ -36,11 +36,12 @@
       </select>
     </label>
 
-    <div v-if="order.held_by" class="text-amber-700" :title="`Colis chez ${order.held_by.name}`">🎒 {{ order.held_by.name }}</div>
+    <div v-if="order.held_by" class="text-amber-700" :title="`Colis chez ${order.held_by.name}`"><Icone nom="en-main" taille="petite" class="inline align-text-bottom" /> {{ order.held_by.name }}</div>
   </div>
 </template>
 
 <script setup>
+import Icone from './ui/Icone.vue'
 import { computed, ref } from 'vue'
 import http, { apiErrorMessage } from '../bootstrap/axios'
 import { useToastStore } from '../stores/toasts'

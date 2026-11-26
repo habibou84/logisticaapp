@@ -168,7 +168,7 @@ class OrderNotifier
             OrderStatus::Confirmed => $event->from_status === OrderStatus::Pending
                 ? [! empty($event->meta['auto'])
                     // Validée automatiquement à l'enregistrement
-                    ? ['confirmed', "✅ Course {$code} reçue et validée", $this->receivedLine($order, $event->meta['postponed'] ?? null)]
+                    ? ['confirmed', "Course {$code} reçue et validée", $this->receivedLine($order, $event->meta['postponed'] ?? null)]
                     : ['confirmed', "Course {$code} validée", 'Votre course a été validée. Le livreur passe bientôt.'], null]
                 : [null, ['pickup_failed', "Échec du ramassage {$code}", trim("{$reason}{$note}")]],
             OrderStatus::Returned => [['returned', "Colis {$code} retourné", 'Le colis vous a été retourné.'], null],

@@ -20,7 +20,7 @@
 
     <!-- Achats sur place à accorder (administrateur) -->
     <section v-if="auth.can('repairs.purchases') && purchases.length" class="card space-y-3 p-4 ring-2 ring-orange-200">
-      <h2 class="font-semibold">🛒 Achats sur place à accorder · {{ purchases.length }}</h2>
+      <h2 class="flex items-center gap-1.5 font-semibold"><Icone nom="achat" taille="petite" /> Achats sur place à accorder · {{ purchases.length }}</h2>
       <div v-for="p in purchases" :key="p.id" class="flex flex-wrap items-center gap-3 border-t border-slate-100 pt-3 text-sm">
         <div class="min-w-0 flex-1">
           <p class="font-medium">{{ p.quantity }} × {{ p.label }} · environ {{ money(p.estimated_amount) }}</p>
@@ -50,7 +50,7 @@
           <tbody>
             <tr v-for="r in repairs" :key="r.id" class="cursor-pointer border-t border-slate-100 hover:bg-slate-50" @click="open(r.id)">
               <td class="p-3 font-mono">{{ r.number }}</td>
-              <td class="p-3"><span class="mr-1">{{ r.icon }}</span>{{ r.category_label ? `${r.category_label}${r.part ? ' · ' + r.part : ''}` : r.title }}</td>
+              <td class="p-3"><Icone v-if="r.icon" :nom="r.icon" taille="petite" class="mr-1 inline" />{{ r.category_label ? `${r.category_label}${r.part ? ' · ' + r.part : ''}` : r.title }}</td>
               <td class="p-3">{{ [r.vehicle?.plate, r.courier?.name].filter(Boolean).join(' · ') || '—' }}</td>
               <td class="p-3">
                 <span v-if="r.mechanic">{{ r.mechanic.name }}</span>
@@ -61,7 +61,7 @@
               <td class="p-3 font-mono text-xs">{{ r.arrived_at ? clock(r.arrived_at) : '—' }}</td>
               <td class="p-3 tabular-nums">{{ r.status === 'done' ? money(r.total) : '—' }}</td>
             </tr>
-            <tr v-if="!loading && !repairs.length"><td colspan="8" class="p-8 text-center text-slate-600">{{ tab === 'waiting' ? 'Aucune panne en attente de mécanicien. 👍' : 'Aucune intervention ici.' }}</td></tr>
+            <tr v-if="!loading && !repairs.length"><td colspan="8" class="p-8 text-center text-slate-600"><template v-if="tab === 'waiting'">Aucune panne en attente de mécanicien. <Icone nom="pouce" taille="petite" class="inline" /></template><template v-else>Aucune intervention ici.</template></td></tr>
           </tbody>
         </table>
       </div>
@@ -86,7 +86,7 @@
         <table class="w-full">
           <tr v-for="s in timeline" :key="s.label" class="border-t border-slate-100"><td class="py-1.5 text-slate-600">{{ s.label }}</td><td class="py-1.5 text-right font-mono">{{ s.at ? dateTime(s.at) : '—' }}</td></tr>
         </table>
-        <p v-if="current.arrival_lat !== null"><a :href="mapsLink(current.arrival_lat, current.arrival_lng)" target="_blank" rel="noopener" class="text-blue-700">📍 Position à l'arrivée</a></p>
+        <p v-if="current.arrival_lat !== null"><a :href="mapsLink(current.arrival_lat, current.arrival_lng)" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-blue-700"><Icone nom="adresse" taille="petite" /> Position à l'arrivée</a></p>
 
         <div v-if="current.category" class="space-y-1">
           <p class="font-semibold">Diagnostic</p>
@@ -152,6 +152,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import PageTabs from '../../components/PageTabs.vue'
 import { FLEET_TABS } from '../../utils/pageTabs'
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'

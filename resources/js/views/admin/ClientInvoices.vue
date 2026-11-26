@@ -37,9 +37,9 @@
     </p>
 
     <div v-if="totals" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-      <StatCard title="Reste à encaisser" :value="money(totals.to_collect)" icon="💰" />
-      <StatCard title="En retard" :value="money(totals.overdue)" icon="⏰" />
-      <StatCard title="Brouillons à vérifier" :value="String(totals.drafts)" icon="📝" />
+      <StatCard title="Reste à encaisser" :value="money(totals.to_collect)" icon="argent" />
+      <StatCard title="En retard" :value="money(totals.overdue)" icon="retard" />
+      <StatCard title="Brouillons à vérifier" :value="String(totals.drafts)" icon="document" />
     </div>
 
     <div class="card overflow-x-auto">
@@ -50,7 +50,7 @@
         <tbody class="divide-y">
           <tr v-for="i in invoices" :key="i.id">
             <td class="p-2 font-mono">{{ i.number || '—' }}</td>
-            <td data-label="Client" class="p-2 font-medium">{{ i.merchant?.business_name }}<span v-if="i.department" class="block text-xs font-normal text-slate-600">🏢 {{ i.department.label }}</span></td>
+            <td data-label="Client" class="p-2 font-medium">{{ i.merchant?.business_name }}<span v-if="i.department" class="flex items-center gap-1 text-xs font-normal text-slate-600"><Icone nom="entreprise" taille="petite" /> {{ i.department.label }}</span></td>
             <td data-label="Activité" class="p-2"><span :class="['rounded-full px-2 py-0.5 text-xs font-medium', activityBadge(i.activity)]">{{ activityShort(i.activity) }}</span></td>
             <td data-label="Mois" class="p-2">{{ i.period_label }}</td>
             <td data-label="Total" class="p-2 text-right">{{ money(i.total) }}</td>
@@ -66,6 +66,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import { computed, onMounted, ref } from 'vue'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import StatCard from '../../components/StatCard.vue'

@@ -79,7 +79,7 @@ class FieldReportReminders
                 Notification::send($recipients, new OrderAlert(
                     $event->order,
                     'field_reminder',
-                    "⏰ Toujours sans suite : {$label} · {$event->order->tracking_code}",
+                    "Toujours sans suite : {$label} · {$event->order->tracking_code}",
                     ($event->actor_name ?? 'Le livreur')." l'a signalé il y a {$minutes} min. Répondez-lui ou marquez la remontée comme traitée.",
                     ['field' => true, 'severity' => 'alert', 'event_id' => $event->id, 'reminder' => $level],
                 ));

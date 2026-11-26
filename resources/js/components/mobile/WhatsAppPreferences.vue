@@ -4,7 +4,7 @@
     <!-- Notifications sur ce téléphone : remplacent WhatsApp quand elles sont activées -->
     <PushSettings v-if="settings.push_first" audience="merchant" />
 
-    <p v-if="onPhone || !settings.push_first" class="px-1 text-sm text-slate-600">{{ deliveryHint }}</p>
+    <p v-if="onPhone || !settings.push_first" class="px-1 text-sm text-slate-600"><Icone :nom="onPhone ? 'mobile' : 'message'" taille="petite" class="inline" /> {{ deliveryHint }}</p>
 
     <div class="m-card divide-y">
       <button type="button" class="tap w-full p-4 flex items-center gap-3 text-left active:bg-slate-50" @click="openPhone">
@@ -19,7 +19,7 @@
 
     <p class="px-1 text-sm text-slate-600">
       Les notifications de l'application arrivent toujours. Choisissez les étapes que vous voulez aussi recevoir en message.
-      <template v-if="settings.locked"><br>🔒 Réglé par {{ settings.company_name || 'votre agence' }}.</template>
+      <template v-if="settings.locked"><br><Icone nom="verrou" taille="petite" class="inline" /> Réglé par {{ settings.company_name || 'votre agence' }}.</template>
     </p>
     <div class="m-card divide-y">
       <ToggleRow
@@ -70,6 +70,7 @@
 </template>
 
 <script setup>
+import Icone from '../ui/Icone.vue'
 import { computed, onMounted, ref, watch } from 'vue'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import BottomSheet from './BottomSheet.vue'
@@ -108,8 +109,8 @@ const url = () => `/merchants/${auth.user.merchant_id}/notifications`
 // Messages reçus en notification (gratuit pour l'entreprise) dès qu'un téléphone est abonné
 const onPhone = computed(() => settings.value?.push_first && settings.value.push_devices > 0)
 const deliveryHint = computed(() => (onPhone.value
-  ? `📱 Vos messages arrivent en notification sur ${settings.value.push_devices > 1 ? `vos ${settings.value.push_devices} appareils` : 'votre téléphone'}. WhatsApp ne sert que si elle n'arrive pas.`
-  : '💬 Vos messages arrivent par WhatsApp.'))
+  ? `Vos messages arrivent en notification sur ${settings.value.push_devices > 1 ? `vos ${settings.value.push_devices} appareils` : 'votre téléphone'}. WhatsApp ne sert que si elle n'arrive pas.`
+  : 'Vos messages arrivent par WhatsApp.'))
 
 async function load() {
   try {

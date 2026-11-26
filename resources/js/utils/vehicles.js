@@ -1,10 +1,10 @@
 // Véhicules : libellés et couleurs communs aux écrans de l'équipe et du livreur
 export const VEHICLE_TYPES = {
-  moto: { label: 'Moto', icon: '🏍️' },
-  tricycle: { label: 'Tricycle', icon: '🛺' },
-  voiture: { label: 'Voiture', icon: '🚗' },
-  velo: { label: 'Vélo', icon: '🚲' },
-  pieton: { label: 'À pied', icon: '🚶' },
+  moto: { label: 'Moto', icon: 'moto' },
+  tricycle: { label: 'Tricycle', icon: 'tricycle' },
+  voiture: { label: 'Voiture', icon: 'voiture' },
+  velo: { label: 'Vélo', icon: 'velo' },
+  pieton: { label: 'À pied', icon: 'a-pied' },
 }
 
 export const STATUS_STYLES = {

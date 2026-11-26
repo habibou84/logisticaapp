@@ -89,7 +89,7 @@ class Repairs
 
         // Remorquage ou véhicule de remplacement : l'équipe s'organise tout de suite
         if ($data['decision'] !== 'fixed') {
-            $this->toTeam($repair, 'repair_decision', "🚚 {$repair->title} : ".mb_strtolower(Repair::DECISIONS[$data['decision']]),
+            $this->toTeam($repair, 'repair_decision', "{$repair->title} : ".mb_strtolower(Repair::DECISIONS[$data['decision']]),
                 "{$user->name} : ".($repair->part ?: $category['label']).'. '.$this->dispatcher->summary($repair));
         }
 
@@ -146,7 +146,7 @@ class Repairs
         Notification::send($this->dispatcher->workshopTeam($repair->company_id, Permission::RepairsPurchases), new RepairAlert(
             $repair,
             'repair_purchase',
-            "🛒 Achat sur place à accorder : {$purchase->label}",
+            "Achat sur place à accorder : {$purchase->label}",
             "{$user->name} demande à acheter {$purchase->quantity} × {$purchase->label} (environ ".Money::format($purchase->estimated_amount).')'
                 .($purchase->reason ? " : {$purchase->reason}" : '').". {$repair->title}.",
             'alert',
@@ -344,7 +344,7 @@ class Repairs
         if ($event && ! $event->isResolved()) {
             $this->fieldEvents->message($user, $event, "Intervention terminée : {$what}. {$decision}. L'agence vous dit comment continuer.");
         }
-        $this->toTeam($repair, 'repair_done_blocked', "🛠️ Intervention terminée, livreur pas encore reparti : {$repair->title}",
+        $this->toTeam($repair, 'repair_done_blocked', "Intervention terminée, livreur pas encore reparti : {$repair->title}",
             "{$user->name} : {$what}. {$decision}. ".$this->dispatcher->summary($repair));
     }
 

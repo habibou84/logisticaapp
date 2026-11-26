@@ -162,7 +162,7 @@
                 <!-- Mise à disposition : chez quel client, horaire, courses faites pour lui -->
                 <p v-if="c.mad" class="mt-0.5 text-xs text-violet-900">MAD chez <b>{{ c.mad.merchant }}</b><template v-if="c.mad.from"> · {{ c.mad.from }}–{{ c.mad.to }}</template><template v-if="c.mad.total"> · {{ c.mad.done }} / {{ c.mad.total }}</template><template v-if="isToday && !c.mad.reserved_now"> · pas en ce moment</template></p>
                 <p v-if="c.objective" class="mt-0.5 text-xs text-violet-800">Prime {{ money(c.objective.amount) }} : {{ Math.min(c.objective.value, c.objective.threshold) }} / {{ c.objective.threshold }}</p>
-                <p v-if="c.flags.length" class="mt-0.5 text-xs font-semibold text-orange-800">⚠ {{ c.flags.join(' · ') }}</p>
+                <p v-if="c.flags.length" class="mt-0.5 text-xs font-semibold text-orange-800"><Icone nom="alerte" taille="petite" class="inline" /> {{ c.flags.join(' · ') }}</p>
               </td>
               <td data-label="Livraisons" class="p-2">
                 <template v-if="c.deliveries.total">
@@ -181,12 +181,12 @@
               </td>
               <td v-if="!isFuture" data-label="Fin" class="whitespace-nowrap p-2 text-xs">
                 <template v-if="c.remaining && c.estimated_end"><b :class="c.late_end ? 'text-orange-800' : ''">{{ time(c.estimated_end) }}</b><span v-if="c.late_end" class="block text-orange-800">après {{ closesAt }}</span></template>
-                <template v-else-if="!c.remaining && c.estimated_end"><span class="text-emerald-700">✓ {{ time(c.estimated_end) }}</span></template>
+                <template v-else-if="!c.remaining && c.estimated_end"><span class="text-emerald-700"><Icone nom="valider" taille="petite" class="inline" /> {{ time(c.estimated_end) }}</span></template>
                 <template v-else>—</template>
               </td>
               <td class="whitespace-nowrap p-2 text-right" @click.stop>
-                <a v-if="c.phone" :href="telLink(c.phone)" class="inline-grid h-8 w-8 place-items-center rounded-lg border border-slate-300 hover:bg-slate-100" :title="`Appeler ${c.name}`">📞</a>
-                <RouterLink :to="{ path: '/admin/activite/carte', query: { livreur: c.id, date: day } }" class="ml-1 inline-grid h-8 w-8 place-items-center rounded-lg border border-slate-300 hover:bg-slate-100" :title="`${c.name} sur la carte`">🗺️</RouterLink>
+                <a v-if="c.phone" :href="telLink(c.phone)" class="inline-grid h-8 w-8 place-items-center rounded-lg border border-slate-300 hover:bg-slate-100" :title="`Appeler ${c.name}`" :aria-label="`Appeler ${c.name}`"><Icone nom="appeler" taille="petite" /></a>
+                <RouterLink :to="{ path: '/admin/activite/carte', query: { livreur: c.id, date: day } }" class="ml-1 inline-grid h-8 w-8 place-items-center rounded-lg border border-slate-300 hover:bg-slate-100" :title="`${c.name} sur la carte`" :aria-label="`${c.name} sur la carte`"><Icone nom="carte" taille="petite" /></RouterLink>
                 <RouterLink v-if="isToday && !c.remaining && (c.cash_in_hand > 0 || c.parcels_in_hand > 0) && auth.can('finance.manage')" :to="{ path: '/admin/caisse', query: { verser: c.id } }" class="ml-1 text-xs font-semibold text-emerald-700 hover:underline">Faire le point</RouterLink>
               </td>
             </tr>
@@ -203,12 +203,12 @@
               <h2 class="text-lg font-bold">{{ selected.name }}</h2>
               <p class="text-sm text-slate-600">{{ STATE[selected.state].label }}<template v-if="selected.zones.length"> · {{ selected.zones.join(', ') }}</template><template v-if="selected.vehicle_type"> · {{ selected.vehicle_type }}</template></p>
             </div>
-            <button type="button" class="btn-secondary" aria-label="Fermer le détail" @click="unselect">✕</button>
+            <button type="button" class="btn-secondary" aria-label="Fermer le détail" @click="unselect"><Icone nom="fermer" /></button>
           </div>
           <div class="flex flex-wrap gap-2">
             <a v-if="selected.phone" :href="telLink(selected.phone)" class="btn-primary">Appeler</a>
             <a v-if="selected.phone" :href="whatsappLink(selected.phone)" target="_blank" rel="noopener" class="btn-secondary">WhatsApp</a>
-            <RouterLink :to="{ path: '/admin/activite/carte', query: { livreur: selected.id, date: day } }" class="btn-secondary">🗺️ Voir sur la carte</RouterLink>
+            <RouterLink :to="{ path: '/admin/activite/carte', query: { livreur: selected.id, date: day } }" class="btn-secondary"><Icone nom="carte" /> Voir sur la carte</RouterLink>
             <button v-if="isToday && activeMissions.length" type="button" class="btn-secondary" @click="openConsigne">Envoyer une consigne</button>
             <RouterLink v-if="isToday && (selected.cash_in_hand > 0 || selected.parcels_in_hand > 0) && auth.can('finance.manage')" :to="{ path: '/admin/caisse', query: { verser: selected.id } }" class="btn-secondary">Faire le point</RouterLink>
           </div>
@@ -218,7 +218,7 @@
             <div class="rounded-lg bg-slate-50 p-2"><p class="text-slate-600">{{ isToday ? 'Colis en main' : 'Échecs' }}</p><p class="text-lg font-bold">{{ isToday ? selected.parcels_in_hand : selected.failed }}</p></div>
             <div class="rounded-lg bg-slate-50 p-2"><p class="text-slate-600">{{ isToday ? 'Argent en main' : 'Réussite' }}</p><p class="text-lg font-bold">{{ isToday ? money(selected.cash_in_hand) : pct(selected.success_rate) }}</p></div>
           </div>
-          <p v-if="selected.flags.length" class="rounded-lg bg-orange-50 px-3 py-2 text-sm text-orange-900">⚠ {{ selected.flags.join(' · ') }}</p>
+          <p v-if="selected.flags.length" class="rounded-lg bg-orange-50 px-3 py-2 text-sm text-orange-900"><Icone nom="alerte" taille="petite" class="inline" /> {{ selected.flags.join(' · ') }}</p>
 
           <!-- Consigne au livreur, rattachée à une de ses missions en cours -->
           <form v-if="consigne.open" class="rounded-lg bg-slate-50 p-3 space-y-2" @submit.prevent="sendConsigne">
@@ -301,6 +301,7 @@
 </template>
 
 <script setup>
+import Icone from '../../../components/ui/Icone.vue'
 import { computed, defineComponent, h, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../../bootstrap/axios'

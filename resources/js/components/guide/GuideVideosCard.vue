@@ -2,7 +2,7 @@
   <section v-if="show" class="card p-4 space-y-3">
     <div class="flex flex-wrap items-start justify-between gap-2">
       <div>
-        <h2 class="font-semibold">🎬 Bien démarrer</h2>
+        <h2 class="flex items-center gap-1.5 font-semibold"><Icone nom="video" />Bien démarrer</h2>
         <p class="text-sm text-slate-600">
           Neuf courtes vidéos, des étapes essentielles au planning des livreurs : regardez, puis faites-le vous-même.
           <span v-if="guide.essentials">Étapes faites : {{ guide.essentials.done }} sur {{ guide.essentials.total }}.</span>
@@ -19,9 +19,9 @@
           <span class="relative block overflow-hidden rounded-lg ring-1 ring-slate-200 bg-slate-100 aspect-video">
             <img :src="guideFiles(c.key).poster" alt="" loading="lazy" class="h-full w-full object-cover transition group-hover:scale-105">
             <span class="absolute inset-0 grid place-items-center">
-              <span class="grid h-9 w-9 place-items-center rounded-full bg-black/60 text-white text-sm" aria-hidden="true">▶</span>
+              <span class="grid h-9 w-9 place-items-center rounded-full bg-black/60 text-white text-sm" aria-hidden="true"><Icone nom="lecture" taille="petite" /></span>
             </span>
-            <span v-if="steps[c.key]?.status === 'done'" class="absolute right-1 top-1 rounded-full bg-emerald-600 px-1.5 text-xs text-white">✓ fait</span>
+            <span v-if="steps[c.key]?.status === 'done'" class="absolute right-1 top-1 inline-flex items-center gap-0.5 rounded-full bg-emerald-600 px-1.5 text-xs text-white"><Icone nom="valider" taille="petite" />fait</span>
           </span>
           <span class="block text-sm font-medium">{{ i + 1 }}. {{ c.title }}</span>
           <span v-if="videos.watched.includes(c.key)" class="block text-xs text-slate-600">Vidéo vue</span>
@@ -33,6 +33,7 @@
 </template>
 
 <script setup>
+import Icone from '../ui/Icone.vue'
 import { computed, onMounted, ref } from 'vue'
 import http from '../../bootstrap/axios'
 import GuideVideoPlayer from './GuideVideoPlayer.vue'

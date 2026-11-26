@@ -1,5 +1,5 @@
 <template>
-  <SettingsPage icon="✋" title="Pointage des livreurs" intro="Chaque livreur pointe son arrivée sur son lieu de début, et seulement sur place. Le pointage le met en service. En MAD : chez le client, ou à la première étape de son parcours (fiche du contrat). Distribution et e-commerce : à l'agence.">
+  <SettingsPage icon="main" title="Pointage des livreurs" intro="Chaque livreur pointe son arrivée sur son lieu de début, et seulement sur place. Le pointage le met en service. En MAD : chez le client, ou à la première étape de son parcours (fiche du contrat). Distribution et e-commerce : à l'agence.">
     <template v-if="form?.shift_settings">
       <div class="grid gap-4 lg:grid-cols-2">
         <section class="card p-4 space-y-3">
@@ -15,7 +15,7 @@
           </label>
           <div>
             <p class="label">Position sur la carte</p>
-            <LocationPicker v-model="point" allow-link height="h-56" gps-label="📍 Je suis à l'agence : utiliser ma position" />
+            <LocationPicker v-model="point" allow-link height="h-56" gps-label="Je suis à l'agence : utiliser ma position" />
             <p v-if="!point" class="mt-1 text-xs text-amber-700">Sans position, les livreurs ne peuvent pas pointer à l'agence.</p>
           </div>
           <div class="flex flex-wrap items-end gap-4">

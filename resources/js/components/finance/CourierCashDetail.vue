@@ -35,7 +35,7 @@
         <span>{{ courier.cash_in_hand < 0 ? 'La caisse lui doit' : 'À remettre' }}</span><span class="tabular-nums">{{ money(Math.abs(courier.cash_in_hand)) }}</span>
       </p>
       <p class="flex justify-between pt-1 text-xs text-slate-600"><span>Gains non payés au livreur</span><span class="tabular-nums">{{ money(courier.unpaid) }}</span></p>
-      <p v-if="courier.oldest_collected_at" class="text-xs text-slate-600">Garde de l'argent depuis le {{ dateTime(courier.oldest_collected_at) }}<template v-if="courier.parcels_in_hand"> · 📦 {{ courier.parcels_in_hand }} colis en main</template></p>
+      <p v-if="courier.oldest_collected_at" class="text-xs text-slate-600">Garde de l'argent depuis le {{ dateTime(courier.oldest_collected_at) }}<template v-if="courier.parcels_in_hand"> · <Icone nom="en-main" taille="petite" class="inline align-text-bottom" /> {{ courier.parcels_in_hand }} colis en main</template></p>
       <div v-if="canManage" class="flex flex-wrap gap-2 pt-1">
         <button v-if="periodKey !== 'all' && hasOtherDates" type="button" class="btn-secondary" @click="$emit('remit-all')">Recevoir toutes les dates</button>
         <button type="button" class="btn-secondary" @click="$emit('advance')">Donner une avance</button>
@@ -46,6 +46,7 @@
 </template>
 
 <script setup>
+import Icone from '../ui/Icone.vue'
 import { computed } from 'vue'
 import { dateTime, money } from '../../utils/format'
 

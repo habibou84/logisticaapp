@@ -2,7 +2,7 @@
   <div v-if="push.checked && push.serverEnabled" class="m-card p-4 space-y-3">
     <div class="flex items-center justify-between gap-3">
       <div>
-        <p class="font-medium">🔔 Notifications sur ce téléphone</p>
+        <p class="font-medium"><Icone nom="notifications" taille="normale" class="inline" /> Notifications sur ce téléphone</p>
         <p class="text-sm text-slate-600">{{ status }}</p>
       </div>
       <button
@@ -24,6 +24,7 @@
 </template>
 
 <script setup>
+import Icone from '../ui/Icone.vue'
 import { computed, onMounted, ref } from 'vue'
 import { disablePush, enablePush, initPush, needsInstallFirst, push, testPush } from '../../composables/usePush'
 import { useToastStore } from '../../stores/toasts'

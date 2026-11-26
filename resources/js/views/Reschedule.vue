@@ -11,7 +11,7 @@
       <template v-else-if="info">
         <!-- Fini : réponse enregistrée -->
         <div v-if="result" class="space-y-2 rounded-2xl bg-emerald-50 p-6 text-center">
-          <p class="text-4xl" aria-hidden="true">✅</p>
+          <span class="mx-auto grid h-12 w-12 place-items-center rounded-full bg-succes-fond text-succes" aria-hidden="true"><Icone nom="livre" taille="grande" /></span>
           <p class="text-xl font-bold">C'est noté, merci !</p>
           <p v-for="r in result.rescheduled" :key="r.code" class="text-sm text-slate-700">{{ r.code }} : livraison le {{ longDay(r.date) }}</p>
           <p v-for="c in result.cancelled" :key="c" class="text-sm text-slate-700">{{ c }} : annulé</p>
@@ -24,12 +24,12 @@
         <form v-else class="space-y-4" @submit.prevent="send">
           <div>
             <p class="text-sm text-slate-600">{{ info.company.name }} · {{ info.merchant_name }}</p>
-            <h1 class="text-2xl font-bold">📅 Colis à reporter</h1>
+            <h1 class="flex items-center gap-2 text-2xl font-bold"><Icone nom="date" taille="grande" />Colis à reporter</h1>
             <p class="mt-1 text-sm text-slate-600">
               Nous n'avons pas pu ramasser {{ info.orders.length > 1 ? 'ces colis' : 'ce colis' }} le {{ longDay(info.missed_day) }}.
               Choisissez une nouvelle date pour chacun.
             </p>
-            <p v-if="info.note" class="mt-2 rounded-lg bg-blue-50 px-3 py-2 text-sm text-blue-900">💬 {{ info.note }}</p>
+            <p v-if="info.note" class="mt-2 rounded-lg bg-blue-50 px-3 py-2 text-sm text-blue-900"><Icone nom="message" taille="petite" class="inline align-[-0.15em]" /> {{ info.note }}</p>
           </div>
 
           <div v-for="o in info.orders" :key="o.id" class="space-y-2 rounded-2xl bg-white p-4 shadow-sm">
@@ -75,6 +75,7 @@
 </template>
 
 <script setup>
+import Icone from '../components/ui/Icone.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import axios from 'axios'

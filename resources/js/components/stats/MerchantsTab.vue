@@ -21,10 +21,10 @@
               <p class="font-medium">{{ m.name }}</p>
               <p class="text-xs text-slate-600">{{ m.contact_name }} · dernière course il y a {{ m.days }} jours</p>
             </div>
-            <a v-if="m.phone" :href="whatsappLink(m.phone)" target="_blank" rel="noopener" class="whitespace-nowrap rounded-lg bg-emerald-50 px-3 py-1.5 text-emerald-800 hover:bg-emerald-100">💬 Écrire</a>
+            <a v-if="m.phone" :href="whatsappLink(m.phone)" target="_blank" rel="noopener" class="inline-flex items-center gap-1 whitespace-nowrap rounded-lg bg-emerald-50 px-3 py-1.5 text-emerald-800 hover:bg-emerald-100"><Icone nom="message" taille="petite" />Écrire</a>
           </li>
         </ul>
-        <p v-else class="text-sm text-slate-600">Tous vos clients commandent régulièrement. 👏</p>
+        <p v-else class="text-sm text-slate-600">Tous vos clients commandent régulièrement. <Icone nom="bravo" taille="petite" class="inline align-text-bottom" /></p>
       </section>
     </div>
 
@@ -39,6 +39,7 @@
 </template>
 
 <script setup>
+import Icone from '../ui/Icone.vue'
 import { computed } from 'vue'
 import { money, whatsappLink } from '../../utils/format'
 import BarList from './BarList.vue'

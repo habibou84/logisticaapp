@@ -27,7 +27,7 @@
         :style="modelValue.key === 'custom' ? { backgroundColor: 'var(--app-color)' } : {}"
         @click="openPicker"
       >
-        📅 {{ modelValue.key === 'custom' ? modelValue.label : 'Autre date' }}
+        <Icone nom="date" taille="petite" class="inline" /> {{ modelValue.key === 'custom' ? modelValue.label : 'Autre date' }}
       </button>
     </div>
 
@@ -75,6 +75,7 @@
 </template>
 
 <script setup>
+import Icone from '../ui/Icone.vue'
 import { reactive, ref } from 'vue'
 import BottomSheet from './BottomSheet.vue'
 import StatusIcon from './StatusIcon.vue'

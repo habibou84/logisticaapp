@@ -10,7 +10,7 @@
     <div class="grid gap-4 lg:grid-cols-2">
       <section class="card p-4 space-y-3">
         <h2 class="font-semibold">Par type</h2>
-        <BarList :items="data.by_type" empty="Aucun événement sur la période. 👏" />
+        <BarList :items="data.by_type" empty="Aucun événement sur la période." />
       </section>
       <section class="card p-4 space-y-3">
         <h2 class="font-semibold">Zones à problème <span class="text-sm font-normal text-slate-600">· destination des courses touchées</span></h2>

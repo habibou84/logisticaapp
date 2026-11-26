@@ -2,7 +2,7 @@
   <div :class="['label-page p-4', `fmt-${format}`]">
     <div class="no-print mb-4 flex flex-wrap items-center gap-2">
       <button v-if="canGoBack" class="btn-secondary" @click="router.back()">← Retour</button>
-      <button class="btn-primary" :disabled="!orders.length || agencyPrints" @click="print">🖨️ Imprimer {{ orders.length > 1 ? `les ${orders.length} étiquettes` : 'l\'étiquette' }}</button>
+      <button class="btn-primary" :disabled="!orders.length || agencyPrints" @click="print"><Icone nom="imprimer" />Imprimer {{ orders.length > 1 ? `les ${orders.length} étiquettes` : 'l\'étiquette' }}</button>
       <label class="text-sm text-slate-600" for="label-format">Format</label>
       <select id="label-format" v-model="format" class="input w-auto" @change="remember">
         <option v-for="(f, key) in FORMATS" :key="key" :value="key">{{ f.label }}</option>
@@ -26,6 +26,7 @@
 </template>
 
 <script setup>
+import Icone from '../components/ui/Icone.vue'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../bootstrap/axios'

@@ -6,7 +6,7 @@
         <p class="text-sm text-slate-600">Partagé par tous les clients de distribution et de MAD : proposé pendant la saisie d'une course, enrichi par chaque course, positions confirmées par les livreurs.</p>
       </div>
       <div v-if="auth.can('destinations.manage')" class="flex gap-2">
-        <button type="button" class="btn-secondary" @click="importOpen = true">⬆️ Importer</button>
+        <button type="button" class="btn-secondary" @click="importOpen = true"><Icone nom="importer" /> Importer</button>
         <button type="button" class="btn-primary" @click="edit(null)">+ Nouvelle destination</button>
       </div>
     </div>
@@ -38,12 +38,12 @@
               <span class="block max-w-xs truncate text-xs text-slate-600">{{ d.address }}</span></td>
             <td class="p-2 whitespace-nowrap">
               <span v-for="p in d.phones" :key="p" class="block">{{ p }}</span>
-              <span v-if="d.phone_check" class="mt-0.5 inline-block rounded-full bg-amber-100 px-2 text-xs text-amber-900" :title="d.phones_raw">⚠️ à vérifier : {{ d.phones_raw }}</span>
+              <span v-if="d.phone_check" class="mt-0.5 inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 text-xs text-amber-900" :title="d.phones_raw"><Icone nom="alerte" taille="petite" /> à vérifier : {{ d.phones_raw }}</span>
               <span v-if="!d.phones.length && !d.phone_check" class="text-slate-500">—</span>
             </td>
             <td class="p-2">
               <span v-if="d.location_conflict" class="rounded-full bg-red-100 px-2 text-xs text-red-800">écart à trancher</span>
-              <a v-else-if="d.lat" :href="mapsLink(d.lat, d.lng)" target="_blank" class="text-emerald-700">✓ {{ d.location_source === 'staff' ? 'posée' : 'confirmée' }}<span class="block text-xs text-slate-600">{{ d.located_at ? date(d.located_at) : '' }}</span></a>
+              <a v-else-if="d.lat" :href="mapsLink(d.lat, d.lng)" target="_blank" class="text-emerald-700"><Icone nom="valider" taille="petite" class="inline" /> {{ d.location_source === 'staff' ? 'posée' : 'confirmée' }}<span class="block text-xs text-slate-600">{{ d.located_at ? date(d.located_at) : '' }}</span></a>
               <span v-else class="text-slate-500">—</span>
             </td>
             <td class="p-2 text-right">{{ d.deliveries_count }}</td>
@@ -61,6 +61,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import http from '../../bootstrap/axios'

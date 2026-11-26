@@ -16,7 +16,7 @@
       <div class="grid grid-cols-3 gap-2">
         <div class="rounded-lg bg-emerald-50 p-2"><p class="text-xs text-emerald-800">Prêt à payer</p><p class="font-bold tabular-nums text-emerald-700">{{ money(data.available) }}</p></div>
         <div :class="['rounded-lg p-2', data.pending_cash ? 'bg-amber-50' : 'bg-slate-50']"><p :class="['text-xs', data.pending_cash ? 'text-amber-800' : 'text-slate-600']">Chez les livreurs</p><p :class="['font-bold tabular-nums', data.pending_cash ? 'text-amber-800' : '']">{{ money(data.pending_cash) }}</p></div>
-        <div class="rounded-lg bg-slate-50 p-2"><p class="text-xs text-slate-600">Payer avec</p><p class="truncate font-semibold">{{ merchant.payment_method ? merchant.payment_method.summary : '⚠️ aucun moyen' }}<template v-if="merchant.payment_method?.status === 'verified'"> ✔</template></p></div>
+        <div class="rounded-lg bg-slate-50 p-2"><p class="text-xs text-slate-600">Payer avec</p><p class="truncate font-semibold"><Icone v-if="!merchant.payment_method" nom="alerte" taille="petite" class="inline align-text-bottom" /> {{ merchant.payment_method ? merchant.payment_method.summary : 'aucun moyen' }}<template v-if="merchant.payment_method?.status === 'verified'"> <Icone nom="verifie" taille="petite" class="inline align-text-bottom" /></template></p></div>
       </div>
 
       <div v-for="d in data.days" :key="d.day || 'none'" class="overflow-hidden rounded-xl border">
@@ -40,7 +40,7 @@
                 <td class="whitespace-nowrap px-3 py-1.5 text-right tabular-nums">{{ number(o.collected) }}</td>
                 <td class="whitespace-nowrap px-3 py-1.5 text-right tabular-nums">{{ o.fees ? number(o.fees) : '—' }}<span v-if="o.other" class="block text-slate-600">autres {{ number(o.other) }}</span></td>
                 <td class="whitespace-nowrap px-3 py-1.5 text-right font-semibold tabular-nums">{{ number(o.net) }}</td>
-                <td :class="['whitespace-nowrap px-3 py-1.5', WHERE[o.where].cls]">{{ WHERE[o.where].icon }} {{ o.where === 'courier' ? (o.courier || 'livreur') : WHERE[o.where].label }}</td>
+                <td :class="['whitespace-nowrap px-3 py-1.5', WHERE[o.where].cls]"><Icone :nom="WHERE[o.where].icon" taille="petite" class="inline align-text-bottom" /> {{ o.where === 'courier' ? (o.courier || 'livreur') : WHERE[o.where].label }}</td>
               </tr>
             </tbody>
           </table>
@@ -106,6 +106,7 @@
 </template>
 
 <script setup>
+import Icone from '../ui/Icone.vue'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
@@ -124,10 +125,10 @@ const props = defineProps({
 const emit = defineEmits(['close', 'pay', 'changed'])
 
 const WHERE = {
-  desk: { icon: '✓', label: 'caisse', cls: 'text-emerald-700' },
-  courier: { icon: '🛵', label: 'livreur', cls: 'text-amber-700' },
-  unverified: { icon: '⏳', label: 'code à vérifier', cls: 'text-red-700' },
-  paid: { icon: '✓', label: 'payé', cls: 'text-slate-600' },
+  desk: { icon: 'valider', label: 'caisse', cls: 'text-emerald-700' },
+  courier: { icon: 'livreur', label: 'livreur', cls: 'text-amber-700' },
+  unverified: { icon: 'code-a-verifier', label: 'code à vérifier', cls: 'text-red-700' },
+  paid: { icon: 'valider', label: 'payé', cls: 'text-slate-600' },
 }
 const STATUS = { paid: 'bg-emerald-100 text-emerald-800', draft: 'bg-amber-100 text-amber-800', cancelled: 'bg-slate-100 text-slate-600 line-through' }
 

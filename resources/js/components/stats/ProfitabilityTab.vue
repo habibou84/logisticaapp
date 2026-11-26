@@ -27,10 +27,10 @@
     <div class="flex flex-wrap gap-2 text-sm" role="group" aria-label="Rentabilité par">
       <button
         v-for="v in VIEWS" :key="v.key" type="button"
-        :class="['rounded-full px-3 py-1 ring-1', view === v.key ? 'bg-slate-900 text-white ring-slate-900' : 'bg-white ring-slate-300']"
+        :class="['inline-flex items-center gap-1 rounded-full px-3 py-1 ring-1', view === v.key ? 'bg-slate-900 text-white ring-slate-900' : 'bg-white ring-slate-300']"
         :aria-pressed="view === v.key" @click="view = v.key"
       >
-        {{ v.label }}
+        <Icone :nom="v.icon" taille="petite" />{{ v.label }}
       </button>
     </div>
 
@@ -87,6 +87,7 @@
 </template>
 
 <script setup>
+import Icone from '../ui/Icone.vue'
 import { computed, reactive, ref } from 'vue'
 import { money } from '../../utils/format'
 import KpiTile from './KpiTile.vue'
@@ -99,11 +100,11 @@ const emit = defineEmits(['reload'])
 const t = computed(() => props.data.totals)
 
 const VIEWS = [
-  { key: 'clients', label: '🏪 Par client' },
-  { key: 'zones', label: '📍 Par zone' },
-  { key: 'couriers', label: '🛵 Par livreur' },
-  { key: 'contracts', label: '📑 Contrats et forfaits' },
-  { key: 'fixed', label: '🏢 Frais fixes' },
+  { key: 'clients', icon: 'marchand', label: 'Par client' },
+  { key: 'zones', icon: 'adresse', label: 'Par zone' },
+  { key: 'couriers', icon: 'livreur', label: 'Par livreur' },
+  { key: 'contracts', icon: 'contrat', label: 'Contrats et forfaits' },
+  { key: 'fixed', icon: 'entreprise', label: 'Frais fixes' },
 ]
 const view = ref('clients')
 const VERDICTS = [

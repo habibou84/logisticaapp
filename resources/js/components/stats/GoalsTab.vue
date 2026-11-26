@@ -4,10 +4,10 @@
     <section class="card space-y-3 p-4">
       <div class="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 class="font-semibold">🎯 Objectifs de {{ data.current.label }}</h2>
+          <h2 class="flex items-center gap-1.5 font-semibold"><Icone nom="objectif" />Objectifs de {{ data.current.label }}</h2>
           <p class="text-sm text-slate-600">Jour {{ data.current.elapsed_days }} sur {{ data.current.days_in_month }} · la projection suit le rythme actuel jusqu'à la fin du mois.</p>
         </div>
-        <button v-if="canEdit" type="button" class="btn-secondary" @click="editing = !editing">{{ editing ? 'Fermer' : '✏️ Objectifs et seuils' }}</button>
+        <button v-if="canEdit" type="button" class="btn-secondary" @click="editing = !editing"><Icone v-if="!editing" nom="modifier" />{{ editing ? 'Fermer' : 'Objectifs et seuils' }}</button>
       </div>
 
       <form v-if="editing" class="grid gap-3 rounded-lg bg-slate-50 p-3 sm:grid-cols-2 lg:grid-cols-4" @submit.prevent="save">
@@ -48,7 +48,7 @@
               objectif {{ fmt(g, g.goal.target) }} · {{ g.goal.percent }} %
               <template v-if="g.key !== 'success_rate'"> · fin de mois estimée {{ fmt(g, g.goal.projection) }}</template>
             </p>
-            <p :class="['mt-1 text-xs font-semibold', g.goal.on_track ? 'text-emerald-700' : 'text-amber-700']">{{ g.goal.on_track ? '✓ En bonne voie' : '⚠️ En retard sur l\'objectif' }}</p>
+            <p :class="['mt-1 text-xs font-semibold', g.goal.on_track ? 'text-emerald-700' : 'text-amber-700']"><Icone :nom="g.goal.on_track ? 'valider' : 'alerte'" taille="petite" class="inline align-text-bottom" /> {{ g.goal.on_track ? 'En bonne voie' : 'En retard sur l\'objectif' }}</p>
           </template>
           <p v-else class="mt-1 text-xs text-slate-400">pas d'objectif</p>
         </div>
@@ -98,6 +98,7 @@
 </template>
 
 <script setup>
+import Icone from '../ui/Icone.vue'
 import { computed, reactive, ref } from 'vue'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import { useAuthStore } from '../../stores/auth'

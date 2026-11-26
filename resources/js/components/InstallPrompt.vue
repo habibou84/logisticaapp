@@ -12,7 +12,7 @@
         <h2 id="install-title" class="mt-4 text-xl font-bold">Installer l'application {{ label }}</h2>
         <p class="mt-1 text-sm text-slate-600">{{ branding.name }}, directement depuis l'écran d'accueil de votre téléphone.</p>
         <ul class="mt-4 space-y-2 text-left text-sm text-slate-700">
-          <li v-for="b in benefits" :key="b" class="flex gap-2"><span aria-hidden="true">✓</span>{{ b }}</li>
+          <li v-for="b in benefits" :key="b" class="flex gap-2"><Icone nom="valider" taille="petite" class="mt-0.5" />{{ b }}</li>
         </ul>
         <button type="button" class="mt-6 w-full rounded-xl py-3.5 text-base font-semibold text-white shadow-sm" :style="{ backgroundColor: color }" @click="install">
           Installer
@@ -24,6 +24,7 @@
 </template>
 
 <script setup>
+import Icone from './ui/Icone.vue'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { branding } from '../composables/useBranding'

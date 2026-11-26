@@ -1,19 +1,20 @@
 <template>
   <section v-if="messages.length" class="m-card p-4 space-y-3 ring-2 ring-sky-300">
-    <h2 v-if="!showOrder" class="font-semibold">💬 Consignes de l'agence</h2>
+    <h2 v-if="!showOrder" class="font-semibold"><Icone nom="message" taille="normale" class="inline" /> Consignes de l'agence</h2>
     <div v-for="m in messages" :key="m.id" class="rounded-xl bg-sky-50 p-3 space-y-2">
       <p v-if="showOrder && m.tracking_code" class="text-xs text-slate-600">{{ m.tracking_code }}<span v-if="m.recipient_name"> · {{ m.recipient_name }}</span></p>
       <p class="text-base font-medium text-slate-900">{{ m.body }}</p>
       <div class="flex items-center justify-between gap-2 text-xs text-slate-600">
         <span>{{ m.sender || 'Agence' }} · {{ time(m.created_at) }}</span>
-        <button v-if="!m.acknowledged_at" type="button" class="tap rounded-full px-4 py-2 text-sm font-semibold text-white" :style="{ backgroundColor: 'var(--app-color)' }" @click="ack(m)">👍 Compris</button>
-        <span v-else class="text-emerald-700 font-medium">✓ Compris</span>
+        <button v-if="!m.acknowledged_at" type="button" class="tap inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold text-white" :style="{ backgroundColor: 'var(--app-color)' }" @click="ack(m)"><Icone nom="pouce" taille="petite" />Compris</button>
+        <span v-else class="inline-flex items-center gap-1 text-emerald-700 font-medium"><Icone nom="valider" taille="petite" />Compris</span>
       </div>
     </div>
   </section>
 </template>
 
 <script setup>
+import Icone from '../ui/Icone.vue'
 import { onMounted, ref, watch } from 'vue'
 import http from '../../bootstrap/axios'
 import { useCourierMessageStore } from '../../stores/courierMessages'

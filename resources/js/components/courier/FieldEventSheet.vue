@@ -1,5 +1,5 @@
 <template>
-  <BottomSheet :open="open" :title="type ? `${type.icon} ${type.label}` : 'Que se passe-t-il ?'" @close="$emit('close')">
+  <BottomSheet :open="open" :title="type ? type.label : 'Que se passe-t-il ?'" @close="$emit('close')">
     <p v-if="!setup" class="text-center text-slate-400 py-6">Chargement…</p>
     <p v-else-if="!setup.enabled" class="text-slate-600 py-4">Le signalement n'est pas activé par l'agence. Appelez-la directement.</p>
 
@@ -12,7 +12,7 @@
         :class="['tap rounded-2xl p-3 text-left ring-1 active:scale-[0.98]', t.severity === 'urgent' ? 'ring-red-200 bg-red-50' : 'ring-slate-200 bg-white']"
         @click="choose(t)"
       >
-        <span class="block text-3xl leading-none">{{ t.icon }}</span>
+        <span class="block text-3xl leading-none"><Icone :nom="t.icon || 'alerte'" taille="grande" /></span>
         <span class="block font-semibold mt-1.5">{{ t.label }}</span>
         <span v-if="t.hint" class="block text-xs text-slate-600 leading-snug">{{ t.hint }}</span>
       </button>
@@ -34,21 +34,21 @@
       <!-- Photo et note vocale -->
       <div class="grid grid-cols-2 gap-2">
         <label :class="['m-btn-secondary cursor-pointer text-sm px-2', type.photo && !photos.length ? 'ring-2 ring-amber-400' : '']">
-          📷 {{ photos.length ? `Photo (${photos.length})` : 'Photo' }}{{ type.photo ? ' *' : '' }}
+          <Icone nom="photo" />{{ photos.length ? `Photo (${photos.length})` : 'Photo' }}{{ type.photo ? ' *' : '' }}
           <input type="file" accept="image/*" capture="environment" class="hidden" :disabled="photos.length >= 3" @change="addPhoto">
         </label>
         <button v-if="setup.voice_notes && canRecord" type="button" :class="['m-btn-secondary text-sm px-2', recording ? 'ring-2 ring-red-400 text-red-700' : '']" @click="recording ? stopRecording() : startRecording()">
-          {{ recording ? `⏹ Arrêter (${seconds} s)` : voice ? '🎙️ Refaire la note' : '🎙️ Note vocale' }}
+          <Icone :nom="recording ? 'stop' : 'micro'" />{{ recording ? `Arrêter (${seconds} s)` : voice ? 'Refaire la note' : 'Note vocale' }}
         </button>
       </div>
       <div v-if="photos.length || voice" class="flex flex-wrap items-center gap-2">
         <span v-for="(p, i) in previews" :key="i" class="relative">
           <img :src="p" alt="" class="h-16 w-16 rounded-xl object-cover ring-1 ring-slate-200">
-          <button type="button" class="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-slate-800 text-white text-xs" :aria-label="`Retirer la photo ${i + 1}`" @click="removePhoto(i)">✕</button>
+          <button type="button" class="absolute -top-2 -right-2 grid h-6 w-6 place-items-center rounded-full bg-slate-800 text-white text-xs" :aria-label="`Retirer la photo ${i + 1}`" @click="removePhoto(i)"><Icone nom="fermer" taille="petite" /></button>
         </span>
         <span v-if="voice" class="flex items-center gap-2 rounded-xl bg-slate-100 px-2 py-1">
           <audio :src="voiceUrl" controls class="h-9 w-44" />
-          <button type="button" class="text-slate-600" aria-label="Supprimer la note vocale" @click="clearVoice">✕</button>
+          <button type="button" class="text-slate-600" aria-label="Supprimer la note vocale" @click="clearVoice"><Icone nom="fermer" /></button>
         </span>
       </div>
 
@@ -76,7 +76,7 @@
         </div>
       </div>
 
-      <p v-if="type.gps" class="text-xs text-slate-600">📍 Votre position est jointe pour que l'agence sache où vous êtes.</p>
+      <p v-if="type.gps" class="text-xs text-slate-600"><Icone nom="position" taille="petite" class="inline" /> Votre position est jointe pour que l'agence sache où vous êtes.</p>
       <p v-if="error" class="text-red-600 text-sm">{{ error }}</p>
       <button type="button" :class="type.severity === 'urgent' || type.severity === 'blocking' ? 'm-btn-danger' : 'm-btn-primary'" :disabled="busy || recording || (type.photo && !photos.length)" @click="send">
         {{ busy ? 'Envoi…' : 'Envoyer à l\'agence' }}
@@ -86,6 +86,7 @@
 </template>
 
 <script setup>
+import Icone from '../ui/Icone.vue'
 import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import BottomSheet from '../mobile/BottomSheet.vue'
@@ -114,9 +115,9 @@ const seconds = ref(0)
 const form = reactive({ capacity: 'continue', blocked_minutes: 60, note: '', cost: null, order_ids: [] })
 
 const capacities = [
-  { value: 'continue', label: 'Je peux continuer', icon: '✅' },
-  { value: 'blocked', label: 'Je suis bloqué un moment', icon: '⏳' },
-  { value: 'stopped', label: 'J\'arrête pour aujourd\'hui', icon: '🛑' },
+  { value: 'continue', label: 'Je peux continuer', icon: 'livre' },
+  { value: 'blocked', label: 'Je suis bloqué un moment', icon: 'sablier' },
+  { value: 'stopped', label: 'J\'arrête pour aujourd\'hui', icon: 'stop' },
 ]
 const durations = [
   { value: 30, label: '30 min' },

@@ -1,5 +1,5 @@
 <template>
-  <SettingsPage icon="⭐" title="Notation des livreurs" intro="Qui note les livreurs, comment la note se calcule, ce que voit le livreur et à quoi servent les notes.">
+  <SettingsPage icon="prioritaire" title="Notation des livreurs" intro="Qui note les livreurs, comment la note se calcule, ce que voit le livreur et à quoi servent les notes.">
     <template v-if="form?.rating_settings">
       <section class="card p-4 space-y-3">
         <h2 class="font-semibold">La note finale (sur 5)</h2>

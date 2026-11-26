@@ -20,14 +20,14 @@
       <p v-if="plannedDay" class="flex items-center gap-2 rounded-xl bg-sky-50 px-3 py-2 text-sm text-sky-900"><StatusIcon name="calendar" class="h-4 w-4 shrink-0" /><span>Livraison prévue le <strong>{{ plannedDay }}</strong></span></p>
 
       <!-- Note de suivi de l'agence, quand elle est montrée au client (Réglages › Motifs) -->
-      <p v-if="order.follow_up" class="rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-700">📌 <strong>{{ order.follow_up.label }}</strong><template v-if="order.follow_up.note"> · {{ order.follow_up.note }}</template></p>
-      <RouterLink v-if="order.renewed_from" :to="`/marchand/courses/${order.renewed_from.id}`" class="block text-xs text-slate-600">🔁 Reconduite de {{ order.renewed_from.tracking_code }}</RouterLink>
+      <p v-if="order.follow_up" class="rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-700"><Icone nom="epingle" taille="petite" class="inline align-[-0.15em]" /> <strong>{{ order.follow_up.label }}</strong><template v-if="order.follow_up.note"> · {{ order.follow_up.note }}</template></p>
+      <RouterLink v-if="order.renewed_from" :to="`/marchand/courses/${order.renewed_from.id}`" class="flex items-center gap-1 text-xs text-slate-600"><Icone nom="repeter" taille="petite" />Reconduite de {{ order.renewed_from.tracking_code }}</RouterLink>
 
       <!-- Demande d'un agent : en attente du chef de service, qui la valide ou la refuse ici -->
       <div v-if="order.approval?.awaiting" class="rounded-xl bg-amber-50 p-3 text-sm text-amber-900 space-y-2">
-        <p>✋ <strong>En attente de validation</strong> par le chef de service<template v-if="order.department"> ({{ order.department.name }})</template>. Elle part à l'agence dès qu'elle est validée.</p>
+        <p><Icone nom="main" taille="petite" class="inline align-[-0.15em]" /> <strong>En attente de validation</strong> par le chef de service<template v-if="order.department"> ({{ order.department.name }})</template>. Elle part à l'agence dès qu'elle est validée.</p>
         <div v-if="order.approval.can_decide" class="grid grid-cols-2 gap-2">
-          <button class="m-btn-primary py-2" :disabled="busy" @click="approve(true)">✅ Valider</button>
+          <button class="m-btn-primary py-2" :disabled="busy" @click="approve(true)"><Icone nom="valider" />Valider</button>
           <button class="m-btn-secondary py-2" :disabled="busy" @click="approve(false)">Refuser</button>
         </div>
       </div>
@@ -35,9 +35,9 @@
 
       <!-- Échec de livraison : la décision d'abord (seulement si elle est encore attendue) -->
       <div v-if="order.needs_decision" class="grid grid-cols-2 gap-2">
-        <button class="m-btn-primary py-3" @click="openReschedule">📅 Reporter</button>
-        <button class="m-btn-secondary py-3" @click="openEdit(true)">✏️ Corriger et relivrer</button>
-        <button class="m-btn-secondary py-3 col-span-2" @click="sheet = 'return'">↩️ Faire revenir le colis</button>
+        <button class="m-btn-primary py-3" @click="openReschedule"><Icone nom="date" />Reporter</button>
+        <button class="m-btn-secondary py-3" @click="openEdit(true)"><Icone nom="modifier" />Corriger et relivrer</button>
+        <button class="m-btn-secondary py-3 col-span-2" @click="sheet = 'return'"><Icone nom="retour" />Faire revenir le colis</button>
       </div>
       <!-- Décision prise : on peut encore la changer tant qu'aucun livreur n'est reparti -->
       <p v-else-if="canChangeDecision" class="text-sm text-slate-600">
@@ -106,7 +106,7 @@
 
     <!-- Articles -->
     <section v-if="order.items?.length || order.from_warehouse" class="m-card p-4 space-y-1 text-sm">
-      <p class="text-sm text-slate-600">{{ order.from_warehouse ? `🏬 Préparée à ${order.pickup.hub_name}` : 'Articles' }}</p>
+      <p class="text-sm text-slate-600"><Icone v-if="order.from_warehouse" nom="depot" taille="petite" class="inline align-[-0.15em]" /> {{ order.from_warehouse ? `Préparée à ${order.pickup.hub_name}` : 'Articles' }}</p>
       <p v-for="item in order.items" :key="item.id">
         <strong>{{ item.quantity }} ×</strong> {{ item.label }}
         <span v-if="item.stock_state === 'reserved'" class="text-xs text-amber-700">· réservé</span>
@@ -133,7 +133,7 @@
         <span>− {{ money(order.amounts.total_fees) }}</span>
       </div>
       <div v-if="order.is_shipping" class="flex justify-between">
-        <span class="text-slate-600">🚌 Expédition</span>
+        <span class="inline-flex items-center gap-1.5 text-slate-600"><Icone nom="expedition" taille="petite" />Expédition</span>
         <span>− {{ order.shipping.fee !== null ? money(order.shipping.fee) : (order.shipping.fee_estimate ? '≈ ' + money(order.shipping.fee_estimate) : 'au réel') }}</span>
       </div>
       <div v-if="expensesTotal" class="flex justify-between">
@@ -158,14 +158,14 @@
 
     <!-- Expédition -->
     <section v-if="order.is_shipping && order.shipping.carrier" class="m-card p-4 space-y-1 text-sm">
-      <h2 class="font-semibold text-base">🚌 Colis expédié</h2>
+      <h2 class="flex items-center gap-1.5 font-semibold text-base"><Icone nom="expedition" />Colis expédié</h2>
       <p>Par <strong>{{ order.shipping.carrier }}</strong><span v-if="order.shipping.reference"> · ticket {{ order.shipping.reference }}</span></p>
       <p class="text-slate-600">Frais d'expédition de {{ money(order.shipping.fee) }} déduits de votre point.</p>
     </section>
 
     <!-- Le colis revient : pourquoi -->
     <section v-if="order.return_requested && order.return_cause_label && !['returned', 'cancelled', 'rejected', 'lost'].includes(order.status)" class="rounded-[22px] bg-violet-50 p-4 text-sm font-semibold text-violet-900 ring-1 ring-violet-200">
-      ↩️ {{ order.return_cause_label }}
+      <Icone nom="retour" taille="petite" class="inline align-[-0.15em]" /> {{ order.return_cause_label }}
     </section>
 
     <!-- Annulée ou refusée : par qui et pourquoi -->
@@ -185,7 +185,7 @@
       <div class="flex items-center gap-3">
         <ColorIcon name="aregler" :size="44" />
         <div class="min-w-0">
-          <p class="font-bold">📅 Colis à reporter</p>
+          <p class="flex items-center gap-1.5 font-bold"><Icone nom="date" taille="petite" />Colis à reporter</p>
           <p class="text-sm text-slate-600">Pas ramassé à la date prévue. Choisissez une nouvelle date.</p>
         </div>
       </div>
@@ -198,19 +198,19 @@
 
     <!-- Autres actions -->
     <section v-if="!isFinal" class="space-y-2">
-      <button class="m-btn-secondary" @click="sheet = 'note'">💬 Écrire au livreur / à l'agence</button>
-      <button v-if="!order.needs_decision && !beforePickup && !order.return_requested" class="m-btn-secondary" @click="sheet = 'return'">↩️ Demander le retour du colis</button>
+      <button class="m-btn-secondary" @click="sheet = 'note'"><Icone nom="message" />Écrire au livreur / à l'agence</button>
+      <button v-if="!order.needs_decision && !beforePickup && !order.return_requested" class="m-btn-secondary" @click="sheet = 'return'"><Icone nom="retour" />Demander le retour du colis</button>
       <button v-if="beforePickup" class="m-btn-secondary text-red-600" @click="sheet = 'cancel'">Annuler la course</button>
     </section>
 
     <!-- Étiquette à coller sur le colis ou le pli -->
     <RouterLink v-if="canPrintLabel" :to="`/etiquette/${order.id}`" class="m-btn-secondary flex items-center justify-center gap-2">
-      🖨️ {{ order.label?.printed_at ? 'Réimprimer l\'étiquette' : 'Imprimer l\'étiquette' }}<span v-if="!order.label?.printed_at && order.label?.settings?.client_print === 'required'" class="rounded-full bg-amber-100 px-2 text-xs text-amber-800">avant le ramassage</span>
+      <Icone nom="imprimer" />{{ order.label?.printed_at ? 'Réimprimer l\'étiquette' : 'Imprimer l\'étiquette' }}<span v-if="!order.label?.printed_at && order.label?.settings?.client_print === 'required'" class="rounded-full bg-amber-100 px-2 text-xs text-amber-800">avant le ramassage</span>
     </RouterLink>
 
     <!-- Revenue, annulée ou en échec : la refaire partir (nouvelle course liée) -->
     <section v-if="canRenew" class="space-y-2">
-      <button class="m-btn-secondary" @click="sheet = 'renew'">🔁 Reconduire la course</button>
+      <button class="m-btn-secondary" @click="sheet = 'renew'"><Icone nom="repeter" />Reconduire la course</button>
     </section>
 
     <!-- Historique : l'essentiel, le détail complet à un toucher -->
@@ -225,7 +225,7 @@
     <BottomSheet :open="sheet === 'reschedule'" title="Quand relivrer ?" @close="sheet = null">
       <div class="space-y-3">
         <ChoiceChips v-model="when" :options="deliveryOptions" :columns="3" label="Jour de la nouvelle livraison" />
-        <p v-if="closed" class="text-xs text-slate-600">🌙 {{ closedReason }}.</p>
+        <p v-if="closed" class="text-xs text-slate-600"><Icone nom="jour-ferme" taille="petite" class="inline align-[-0.15em]" /> {{ closedReason }}.</p>
         <input v-if="when === 'other'" v-model="reschedule.delivery_scheduled_date" type="date" :min="minDate" class="m-input" aria-label="Jour de la nouvelle livraison">
         <p v-if="dateSummary" class="text-sm font-semibold text-slate-700">{{ dateSummary.replace('Votre course sera livrée', 'Nouvelle livraison') }}</p>
         <textarea v-model="reschedule.note" rows="2" class="m-input" placeholder="Message (facultatif) : ex. le destinataire sera là après 17h" />
@@ -295,6 +295,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import CancelReasonPicker from '../../components/CancelReasonPicker.vue'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'

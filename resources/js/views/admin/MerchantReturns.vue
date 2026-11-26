@@ -15,7 +15,7 @@
       <div v-for="g in candidates" :key="g.merchant.id" class="card">
         <header class="flex flex-wrap items-center justify-between gap-2 p-4 border-b">
           <div>
-            <p class="font-semibold">🏪 {{ g.merchant.business_name }}</p>
+            <p class="flex items-center gap-1.5 font-semibold"><Icone nom="clients" taille="petite" />{{ g.merchant.business_name }}</p>
             <p class="text-sm text-slate-600">{{ g.merchant.phone }} · {{ [g.merchant.zone, g.merchant.address].filter(Boolean).join(' · ') }}</p>
           </div>
           <div class="flex flex-wrap items-center gap-2">
@@ -23,7 +23,7 @@
               v-model="courierFor[g.merchant.id]" input-class="input w-auto min-w-[14rem]" placeholder="Livreur…" :allow-empty="false" :empty-value="null" :aria-label="`Livreur pour ${g.merchant.business_name}`"
               :options="couriers.map((c) => ({ value: c.id, label: c.name, hint: `${holderCount(g, c.id) ? `a ${holderCount(g, c.id)} colis` : ''}${c.is_available ? '' : ' · indisponible'}`.replace(/^ · /, ''), search: c.phone }))"
             />
-            <button class="btn-primary" :disabled="!selectedOf(g).length || !courierFor[g.merchant.id] || busy" @click="create(g)">📮 Créer le bon ({{ selectedOf(g).length }})</button>
+            <button class="btn-primary" :disabled="!selectedOf(g).length || !courierFor[g.merchant.id] || busy" @click="create(g)"><Icone nom="bon-retour" /> Créer le bon ({{ selectedOf(g).length }})</button>
           </div>
         </header>
         <table class="w-full text-sm">
@@ -34,7 +34,7 @@
               <td class="p-2">{{ o.recipient_name || o.recipient_phone }} <span class="text-xs text-slate-600">{{ o.zone }}</span></td>
               <td class="p-2 text-xs">{{ o.status_label }}<span v-if="o.incident"> · {{ o.incident }}</span></td>
               <td class="p-2 text-xs">
-                <span v-if="o.held_by" class="text-amber-700">🎒 chez {{ o.held_by.name }}</span>
+                <span v-if="o.held_by" class="inline-flex items-center gap-1 text-amber-700"><Icone nom="en-main" taille="petite" /> chez {{ o.held_by.name }}</span>
                 <span v-else class="text-emerald-700">Au dépôt</span>
               </td>
               <td class="p-2 text-right">{{ money(o.items_amount) }}</td>
@@ -42,7 +42,7 @@
           </tbody>
         </table>
       </div>
-      <p v-if="loaded && !candidates.length" class="card p-6 text-center text-slate-600">🎉 Aucun colis à rendre aux clients.</p>
+      <p v-if="loaded && !candidates.length" class="card p-6 text-center text-slate-600"><Icone nom="bravo" class="inline" /> Aucun colis à rendre aux clients.</p>
     </section>
 
     <!-- Bons -->
@@ -63,7 +63,7 @@
               <div v-if="s.handed_at" class="text-xs text-slate-600">{{ dateTime(s.handed_at) }} · {{ s.received_by_name }}</div>
             </td>
             <td class="p-2 text-right whitespace-nowrap space-x-1">
-              <RouterLink :to="`/bon-de-retour/${s.id}`" class="btn-secondary text-xs">🖨️ Voir / imprimer</RouterLink>
+              <RouterLink :to="`/bon-de-retour/${s.id}`" class="btn-secondary text-xs"><Icone nom="imprimer" taille="petite" /> Voir / imprimer</RouterLink>
               <button v-if="s.status === 'open'" class="btn-secondary text-xs" @click="cancel(s)">Annuler</button>
             </td>
           </tr>
@@ -75,6 +75,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import SearchSelect from '../../components/SearchSelect.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'

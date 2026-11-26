@@ -3,7 +3,7 @@
     <!-- Alertes du matin (cloche des administrateurs, WhatsApp au choix) -->
     <section v-if="canManage" class="card space-y-3 p-4">
       <div>
-        <h2 class="font-semibold">🔔 Alertes du matin</h2>
+        <h2 class="flex items-center gap-1.5 font-semibold"><Icone nom="notifications" />Alertes du matin</h2>
         <p class="text-sm text-slate-600">Chaque matin à 7 h 35, les administrateurs sont prévenus quand un indicateur passe un seuil (une même alerte au plus une fois par semaine). Laissez vide pour ne pas être alerté.</p>
       </div>
       <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -34,12 +34,12 @@
     <section v-if="auth.can('merchants.view')" class="card space-y-3 p-4">
       <div class="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 class="font-semibold">📑 Rapports mensuels des clients sous contrat</h2>
+          <h2 class="flex items-center gap-1.5 font-semibold"><Icone nom="documents" />Rapports mensuels des clients sous contrat</h2>
           <p class="text-sm text-slate-600">Préparés le 1er du mois pour le mois écoulé. Relisez, ajoutez un mot si besoin, puis envoyez : le client les retrouve dans son espace.</p>
         </div>
         <div class="flex items-center gap-2">
           <input v-model="month" type="month" class="input w-auto" aria-label="Mois" @change="loadReports">
-          <button v-if="canManageReports" type="button" class="btn-secondary" :disabled="busy" @click="generate">↻ Préparer</button>
+          <button v-if="canManageReports" type="button" class="btn-secondary" :disabled="busy" @click="generate"><Icone nom="actualiser" />Préparer</button>
         </div>
       </div>
       <p v-if="!reports.length" class="text-sm text-slate-600">Aucun rapport pour ce mois.</p>
@@ -56,14 +56,14 @@
     <section v-if="canManage" class="card space-y-3 p-4">
       <div class="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 class="font-semibold">📊 Google Sheets</h2>
+          <h2 class="flex items-center gap-1.5 font-semibold"><Icone nom="tableur" />Google Sheets</h2>
           <p class="text-sm text-slate-600">
             Collez une formule dans une cellule de Google Sheets : le tableau se remplit et se met à jour tout seul (environ toutes les heures).
             Ajoutez <code>?jours=90</code> à l'adresse pour une autre période (30 jours par défaut).
           </p>
         </div>
         <div class="flex gap-2">
-          <button type="button" class="btn-primary" @click="regenerate">{{ feed?.enabled ? '↻ Nouveau lien' : 'Créer le lien' }}</button>
+          <button type="button" class="btn-primary" @click="regenerate"><Icone v-if="feed?.enabled" nom="actualiser" />{{ feed?.enabled ? 'Nouveau lien' : 'Créer le lien' }}</button>
           <button v-if="feed?.enabled" type="button" class="btn-secondary text-red-700" @click="disable">Couper le lien</button>
         </div>
       </div>
@@ -79,7 +79,7 @@
 
     <!-- Point par e-mail -->
     <section v-if="canManage" class="card space-y-3 p-4">
-      <h2 class="font-semibold">✉️ Point par e-mail</h2>
+      <h2 class="flex items-center gap-1.5 font-semibold"><Icone nom="mail" />Point par e-mail</h2>
       <p class="text-sm text-slate-600">Chiffres clés et fichier Excel complet en pièce jointe, aux adresses choisies.</p>
       <div class="grid gap-3 sm:grid-cols-2">
         <div>
@@ -116,6 +116,7 @@
 </template>
 
 <script setup>
+import Icone from '../ui/Icone.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import { useAuthStore } from '../../stores/auth'
@@ -202,7 +203,7 @@ async function saveAlerts() {
   try {
     const blank = (v) => (v === '' || v === undefined ? null : v)
     await http.patch(`/companies/${auth.user.company_id}`, { stats_settings: { ...settings, alerts: { ...alerts, zone_success_min: blank(alerts.zone_success_min), client_drop_percent: blank(alerts.client_drop_percent) } } })
-    alertsMessage.value = '✓ Enregistré'
+    alertsMessage.value = 'Enregistré'
     await loadEmail()
   } catch (e) {
     alertsMessage.value = apiErrorMessage(e)
@@ -227,7 +228,7 @@ async function saveEmail() {
   try {
     const list = recipients.value.split(/[\s,;]+/).map((v) => v.trim()).filter(Boolean)
     await http.patch(`/companies/${auth.user.company_id}`, { stats_settings: { ...settings, email: { recipients: list, weekly: email.weekly, monthly: email.monthly } } })
-    message.value = '✓ Enregistré'
+    message.value = 'Enregistré'
     await loadEmail()
   } catch (e) {
     message.value = apiErrorMessage(e)
@@ -240,7 +241,7 @@ async function testEmail() {
   message.value = ''
   try {
     await http.post('/stats/test-email', { frequency: 'weekly' })
-    message.value = '✓ E-mail d\'essai envoyé (semaine écoulée)'
+    message.value = 'E-mail d\'essai envoyé (semaine écoulée)'
   } catch (e) {
     message.value = apiErrorMessage(e)
   } finally {

@@ -5,7 +5,7 @@
         <div>
           <label class="label" for="v-type">Type</label>
           <select id="v-type" v-model="form.type" class="input">
-            <option v-for="(t, value) in VEHICLE_TYPES" v-show="value !== 'pieton'" :key="value" :value="value">{{ t.icon }} {{ t.label }}</option>
+            <option v-for="(t, value) in VEHICLE_TYPES" v-show="value !== 'pieton'" :key="value" :value="value">{{ t.label }}</option>
           </select>
         </div>
         <div><label class="label" for="v-plate">Immatriculation</label><input id="v-plate" v-model="form.plate" class="input uppercase" required maxlength="30" placeholder="AB-1234-CI"></div>

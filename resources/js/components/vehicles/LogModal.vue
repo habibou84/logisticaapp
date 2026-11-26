@@ -1,8 +1,8 @@
 <template>
-  <Modal :open="open" :title="`${kindInfo?.icon || ''} ${title}`" @close="$emit('close')">
+  <Modal :open="open" :title="title" @close="$emit('close')">
     <form class="space-y-3" @submit.prevent="save">
       <div class="flex flex-wrap gap-1.5">
-        <button v-for="k in catalog.log_kinds" :key="k.value" type="button" :class="['rounded-full px-3 py-1 text-sm', form.kind === k.value ? 'bg-slate-900 text-white' : 'bg-slate-100']" @click="form.kind = k.value">{{ k.icon }} {{ k.label }}</button>
+        <button v-for="k in catalog.log_kinds" :key="k.value" type="button" :class="['rounded-full px-3 py-1 text-sm', form.kind === k.value ? 'bg-slate-900 text-white' : 'bg-slate-100']" @click="form.kind = k.value"><Icone v-if="k.icon" :nom="k.icon" taille="petite" class="inline align-text-bottom" /> {{ k.label }}</button>
       </div>
       <div class="grid grid-cols-2 gap-3">
         <div><label class="label" for="l-date">Date</label><input id="l-date" v-model="form.done_on" type="date" class="input"></div>
@@ -34,7 +34,7 @@
       <div v-if="form.kind === 'maintenance' && plan.length">
         <p class="label">Entretien du plan fait</p>
         <div class="flex flex-wrap gap-x-4 gap-y-1">
-          <label v-for="p in plan" :key="p.key" class="flex items-center gap-1.5 text-sm"><input v-model="form.plan_keys" type="checkbox" :value="p.key"> {{ p.icon }} {{ p.label }}</label>
+          <label v-for="p in plan" :key="p.key" class="flex items-center gap-1.5 text-sm"><input v-model="form.plan_keys" type="checkbox" :value="p.key"> <Icone v-if="p.icon" :nom="p.icon" taille="petite" />{{ p.label }}</label>
         </div>
       </div>
       <div>
@@ -52,6 +52,7 @@
 </template>
 
 <script setup>
+import Icone from '../ui/Icone.vue'
 import { computed, reactive, ref, watch } from 'vue'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import Modal from '../Modal.vue'

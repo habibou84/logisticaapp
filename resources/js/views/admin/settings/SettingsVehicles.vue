@@ -1,5 +1,5 @@
 <template>
-  <SettingsPage icon="🏍️" title="Véhicules" intro="Ce que l'application suit pour le parc, et ce qu'elle fait toute seule.">
+  <SettingsPage icon="vehicule" title="Véhicules" intro="Ce que l'application suit pour le parc, et ce qu'elle fait toute seule.">
     <template v-if="form?.vehicle_settings">
       <div class="grid gap-4 lg:grid-cols-2">
         <section class="card p-4 space-y-3">
@@ -18,7 +18,7 @@
             <div>
               <p class="label">Points du contrôle rapide</p>
               <div class="grid grid-cols-2 gap-1">
-                <label v-for="i in catalog.check_items" :key="i.value" class="flex items-center gap-2 text-sm"><input v-model="s.check_items" type="checkbox" :value="i.value"> {{ i.icon }} {{ i.label }}</label>
+                <label v-for="i in catalog.check_items" :key="i.value" class="flex items-center gap-2 text-sm"><input v-model="s.check_items" type="checkbox" :value="i.value"> <Icone v-if="i.icon" :nom="i.icon" taille="petite" />{{ i.label }}</label>
               </div>
             </div>
           </template>
@@ -44,15 +44,15 @@
           <details class="rounded border border-slate-200 p-2">
             <summary class="cursor-pointer text-sm font-medium">Plans d'entretien proposés pour les nouveaux véhicules</summary>
             <div v-for="type in ['moto', 'tricycle', 'voiture', 'velo']" :key="type" class="mt-3 space-y-1">
-              <p class="text-sm font-semibold">{{ VEHICLE_TYPES[type].icon }} {{ VEHICLE_TYPES[type].label }}</p>
+              <p class="flex items-center gap-1.5 text-sm font-semibold"><Icone :nom="VEHICLE_TYPES[type].icon" taille="petite" />{{ VEHICLE_TYPES[type].label }}</p>
               <div v-for="(p, i) in s.default_plans[type]" :key="i" class="grid grid-cols-[3rem_1fr_5.5rem_4.5rem_1.5rem] items-center gap-1">
-                <input v-model="p.icon" class="input px-1 text-center" :aria-label="`Icône ${p.label}`">
+                <IconePicker v-model="p.icon" :label="`Icône ${p.label}`" />
                 <input v-model="p.label" class="input" :aria-label="`Entretien ${i + 1} (${type})`">
                 <input v-model.number="p.every_km" type="number" min="1" class="input" placeholder="km" :aria-label="`km (${p.label})`">
                 <input v-model.number="p.every_months" type="number" min="1" class="input" placeholder="mois" :aria-label="`mois (${p.label})`">
-                <button type="button" class="text-red-600" :aria-label="`Retirer ${p.label}`" @click="s.default_plans[type].splice(i, 1)">✕</button>
+                <button type="button" class="text-red-600" :aria-label="`Retirer ${p.label}`" @click="s.default_plans[type].splice(i, 1)"><Icone nom="fermer" taille="petite" class="inline" /></button>
               </div>
-              <button type="button" class="text-xs text-blue-600" @click="s.default_plans[type].push({ icon: '🔧', label: '', every_km: null, every_months: null })">+ Ligne</button>
+              <button type="button" class="text-xs text-blue-600" @click="s.default_plans[type].push({ icon: 'atelier', label: '', every_km: null, every_months: null })">+ Ligne</button>
             </div>
           </details>
         </section>
@@ -90,6 +90,8 @@
 </template>
 
 <script setup>
+import IconePicker from '../../../components/ui/IconePicker.vue'
+import Icone from '../../../components/ui/Icone.vue'
 import { computed, defineComponent, h, onMounted, ref, watch } from 'vue'
 import http from '../../../bootstrap/axios'
 import SettingsPage from '../../../components/settings/SettingsPage.vue'

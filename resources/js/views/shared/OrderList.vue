@@ -3,8 +3,8 @@
     <div class="flex flex-wrap items-center justify-between gap-2">
       <h1 class="text-xl font-bold">Courses</h1>
       <div class="flex gap-2">
-        <RouterLink v-if="isStaff && auth.can('settings.manage')" to="/admin/reglages/courses" class="btn-secondary" title="Réglages des courses" aria-label="Réglages des courses">⚙️</RouterLink>
-        <RouterLink v-if="auth.can('orders.create')" :to="`${auth.homeRoute}/courses/import`" class="btn-secondary">📥 Importer</RouterLink>
+        <RouterLink v-if="isStaff && auth.can('settings.manage')" to="/admin/reglages/courses" class="btn-secondary" title="Réglages des courses" aria-label="Réglages des courses"><Icone nom="reglages" /></RouterLink>
+        <RouterLink v-if="auth.can('orders.create')" :to="`${auth.homeRoute}/courses/import`" class="btn-secondary"><Icone nom="importer" />Importer</RouterLink>
         <RouterLink v-if="auth.can('orders.create')" :to="`${auth.homeRoute}/courses/nouvelle`" :class="['btn-primary', isStaff ? 'hidden md:inline-flex' : '']">+ Nouvelle course</RouterLink>
       </div>
     </div>
@@ -19,7 +19,7 @@
 
     <!-- Jour affiché : aujourd'hui par défaut (retards compris), gardé d'un onglet à l'autre -->
     <div v-if="isStaff" class="flex flex-wrap items-center gap-2 text-sm" role="group" aria-label="Jour affiché">
-      <span class="text-slate-600">📅 Jour :</span>
+      <span class="inline-flex items-center gap-1 text-slate-600"><Icone nom="date" taille="petite" />Jour :</span>
       <button
         v-for="d in DAY_CHOICES" :key="d.label" type="button"
         :class="['rounded-full px-3 py-1 ring-1', filters.day === d.value ? 'bg-slate-900 text-white ring-slate-900' : 'bg-white ring-slate-300']"
@@ -48,7 +48,7 @@
         :aria-pressed="filters.queue === e.value"
         @click="setQueue(filters.queue === e.value ? '' : e.value)"
       >
-        <b>{{ e.icon }} {{ e.count }} {{ e.count > 1 ? e.plural : e.label }}</b>
+        <b class="flex items-center gap-1.5"><Icone :nom="e.icon" taille="petite" />{{ e.count }} {{ e.count > 1 ? e.plural : e.label }}</b>
         <span class="block text-xs opacity-90">{{ e.hint }}</span>
       </button>
     </div>
@@ -105,13 +105,13 @@
         :class="['btn whitespace-nowrap', filters.queue === q.value ? 'bg-slate-900 text-white' : 'bg-white border border-slate-300']"
         @click="setQueue(filters.queue === q.value ? '' : q.value)"
       >
-        {{ q.label }}
+        <Icone v-if="q.icon" :nom="q.icon" taille="petite" />{{ q.label }}
         <span v-if="tabCount(q.value)" :class="['ml-1 rounded-full px-1.5 text-xs font-semibold', filters.queue === q.value ? 'bg-white/20' : 'bg-slate-100 text-slate-700']">{{ tabCount(q.value) }}</span>
         <span
           v-if="tabLate(q.value)"
           class="ml-1 rounded-full bg-red-600 px-1.5 text-xs font-semibold text-white"
           :title="`${tabLate(q.value)} course(s) sans livreur depuis trop longtemps`"
-        >⏰ {{ tabLate(q.value) }}</span>
+        ><Icone nom="retard" taille="petite" class="inline align-[-0.15em]" /> {{ tabLate(q.value) }}</span>
       </button>
     </div>
 
@@ -135,7 +135,7 @@
         · <button type="button" class="font-medium underline" @click="toggleLater">Afficher</button>
       </template>
       <template v-else>
-        Courses prévues plus tard affichées (étiquette 📅)
+        Courses prévues plus tard affichées (étiquette <Icone nom="date" taille="petite" class="inline align-[-0.15em]" />)
         · <button type="button" class="font-medium underline" @click="toggleLater">Masquer</button>
       </template>
     </p>
@@ -182,8 +182,8 @@
           <div>
             <p class="label">Période <span class="font-normal text-slate-600">(remplace le jour)</span></p>
             <select v-if="isStaff" v-model="filters.date_basis" class="input mb-2" aria-label="Dates selon" @change="filters.from || filters.to ? onPeriod() : null">
-              <option value="delivery">📅 Selon la livraison</option>
-              <option value="created">🆕 Selon la création</option>
+              <option value="delivery">Selon la livraison</option>
+              <option value="created">Selon la création</option>
             </select>
             <div class="grid grid-cols-2 gap-2">
               <input v-model="filters.from" type="date" class="input" aria-label="Du" @change="onPeriod">
@@ -214,8 +214,8 @@
         />
         <!-- Dates : jour de livraison prévu (par défaut) ou jour de création ; le client voit toujours le jour de livraison -->
         <select v-if="isStaff" v-model="filters.date_basis" class="input" aria-label="Dates selon" title="Dates : jour de livraison prévu ou jour de création" @change="filters.from || filters.to ? onPeriod() : null">
-          <option value="delivery">📅 Livraison</option>
-          <option value="created">🆕 Création</option>
+          <option value="delivery">Livraison</option>
+          <option value="created">Création</option>
         </select>
         <input v-model="filters.from" type="date" class="input" :aria-label="filters.date_basis === 'created' ? 'Créées à partir du' : 'À livrer à partir du'" :title="filters.date_basis === 'created' ? 'Créées à partir du' : 'À livrer à partir du'" @change="onPeriod">
         <input v-model="filters.to" type="date" class="input" :aria-label="filters.date_basis === 'created' ? 'Créées jusqu\'au' : 'À livrer jusqu\'au'" :title="filters.date_basis === 'created' ? 'Créées jusqu\'au' : 'À livrer jusqu\'au'" @change="onPeriod">
@@ -231,7 +231,7 @@
         <span class="text-sm font-medium">{{ selected.length }} sélectionnée(s)</span>
         <template v-if="auth.can('orders.dispatch') && pendingSelected.length">
           <button class="btn-success" :disabled="confirming" @click="bulkConfirm">
-            {{ confirming ? 'Validation…' : `✅ Valider (${pendingSelected.length})` }}
+            <Icone v-if="!confirming" nom="valider" />{{ confirming ? 'Validation…' : `Valider (${pendingSelected.length})` }}
           </button>
           <span class="mx-1 h-6 w-px bg-blue-200" aria-hidden="true" />
         </template>
@@ -250,8 +250,8 @@
           Retirer le livreur ({{ withCourierSelected.length }})
         </button>
         <!-- Distribution : liste à faire signer à chaque remise -->
-        <a :href="`/feuille-de-route?ids=${selected.join(',')}`" target="_blank" class="btn-secondary">🖨 Feuille de route</a>
-        <a :href="`/etiquettes?ids=${selected.join(',')}`" target="_blank" class="btn-secondary">🏷️ Étiquettes</a>
+        <a :href="`/feuille-de-route?ids=${selected.join(',')}`" target="_blank" class="btn-secondary"><Icone nom="imprimer" />Feuille de route</a>
+        <a :href="`/etiquettes?ids=${selected.join(',')}`" target="_blank" class="btn-secondary"><Icone nom="etiquette" />Étiquettes</a>
         <button class="btn-secondary" @click="selected = []">Annuler</button>
       </div>
 
@@ -281,12 +281,12 @@
               <div class="font-medium truncate">{{ o.recipient.name || '—' }}</div>
               <div class="text-xs text-slate-600">{{ o.recipient.phone }}</div>
             </div>
-            <a v-if="o.recipient.phone" :href="`tel:${o.recipient.phone}`" class="tap shrink-0 grid h-10 w-10 place-items-center rounded-full bg-slate-100 text-lg" :aria-label="`Appeler ${o.recipient.name || 'le destinataire'}`" @click.stop>📞</a>
+            <a v-if="o.recipient.phone" :href="`tel:${o.recipient.phone}`" class="tap shrink-0 grid h-10 w-10 place-items-center rounded-full bg-slate-100 text-lg" :aria-label="`Appeler ${o.recipient.name || 'le destinataire'}`" @click.stop><Icone nom="appeler" /></a>
           </div>
           <div class="text-xs text-slate-600">{{ o.pickup.zone_name }} → {{ o.delivery.zone_name }}<span v-if="isStaff && o.merchant"> · {{ o.merchant.business_name }}</span></div>
           <OrderStatusCell :order="o" :late="isLate(o)" :carried="isCarried(o)" :late-day="deliveryDay(o)" @decide="deciding = $event" />
           <CourierCell v-if="o.pickup_courier || o.delivery_courier || o.held_by || (isDispatch && o.awaiting_courier)" :order="o" :couriers="couriers" :can-dispatch="isDispatch" class="text-slate-700" @updated="replaceOrder" />
-          <div v-if="o.internal_late || o.internal_risk" :class="['text-xs font-medium', o.internal_late ? 'text-red-600' : 'text-amber-700']">{{ o.internal_late ? '⏰ Délai interne dépassé' : '⚠️ Risque de retard' }} ({{ dateTime(o.internal_due_at) }})</div>
+          <div v-if="o.internal_late || o.internal_risk" :class="['text-xs font-medium', o.internal_late ? 'text-red-600' : 'text-amber-700']"><Icone :nom="o.internal_late ? 'rappel' : 'alerte'" taille="petite" class="inline align-[-0.15em]" /> {{ o.internal_late ? 'Délai interne dépassé' : 'Risque de retard' }} ({{ dateTime(o.internal_due_at) }})</div>
           <div class="text-xs text-slate-500">Livraison {{ date(o.delivery.scheduled_date || o.created_at) }} · créée {{ dateTime(o.created_at) }}</div>
         </article>
       </div>
@@ -319,7 +319,7 @@
               <td v-if="isStaff" class="p-2" @click.stop><input v-model="selected" type="checkbox" :value="o.id" :aria-label="`Sélectionner ${o.tracking_code}`"></td>
               <td class="p-2 font-mono text-xs">
                 {{ o.tracking_code }}
-                <div v-if="o.internal_late || o.internal_risk" :class="['font-sans font-medium', o.internal_late ? 'text-red-600' : 'text-amber-700']" :title="`Délai interne : ${dateTime(o.internal_due_at)}`">{{ o.internal_late ? '⏰ délai dépassé' : '⚠️ risque de retard' }}</div>
+                <div v-if="o.internal_late || o.internal_risk" :class="['font-sans font-medium', o.internal_late ? 'text-red-600' : 'text-amber-700']" :title="`Délai interne : ${dateTime(o.internal_due_at)}`"><Icone :nom="o.internal_late ? 'rappel' : 'alerte'" taille="petite" class="inline align-[-0.15em]" /> {{ o.internal_late ? 'délai dépassé' : 'risque de retard' }}</div>
                 <div v-if="activityChoices.length > 1"><span :class="['rounded-full px-1.5 font-sans font-medium', activityBadge(o.activity)]">{{ activityShort(o.activity) }}</span></div>
               </td>
               <td v-if="isStaff" class="p-2">{{ o.merchant?.business_name }}</td>
@@ -356,6 +356,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import SearchSelect from '../../components/SearchSelect.vue'
 import { madSuffix } from '../../utils/mad'
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
@@ -439,25 +440,25 @@ function stageCellClass(st, q) {
 // Files sous les étapes
 const queues = [
   // Sans livreur pour le ramassage, regroupés par client et adresse (lot à assigner d'un coup)
-  { value: 'by_client', label: '🏪 Ramassages par client' },
+  { value: 'by_client', icon: 'marchand', label: 'Ramassages par client' },
   // Liens venus d'ailleurs (tableau de bord) : visibles quand on y est
-  { value: 'unassigned', label: '🛵 Sans livreur', linked: true },
+  { value: 'unassigned', icon: 'livreur', label: 'Sans livreur', linked: true },
   { value: 'to_deliver', label: 'À livrer', linked: true },
   // Files toutes dates, visibles seulement s'il y en a
   // Colis à rendre, pas encore sur un bon (même liste que Retours clients)
-  { value: 'to_return', label: '↩️ À retourner', extra: true },
-  { value: 'to_approve', label: '🏢 À approuver', extra: true },
+  { value: 'to_return', icon: 'retour', label: 'À retourner', extra: true },
+  { value: 'to_approve', icon: 'entreprise', label: 'À approuver', extra: true },
   { value: 'to_decide', label: 'À décider', extra: true },
   // Notes de suivi de l'équipe (Réglages › Motifs) ; « En attente » : celles qui retiennent la course
-  { value: 'on_hold', label: '⏸ En attente', extra: true },
-  { value: 'follow_up', label: '📌 Suivi', extra: true },
+  { value: 'on_hold', icon: 'pause', label: 'En attente', extra: true },
+  { value: 'follow_up', icon: 'epingle', label: 'Suivi', extra: true },
   // Délai interne de distribution dépassé
-  { value: 'internal_late', label: '⏰ Délai interne dépassé', extra: true },
+  { value: 'internal_late', icon: 'rappel', label: 'Délai interne dépassé', extra: true },
   { value: 'incidents', label: 'Incidents', extra: true },
   { value: 'scheduled', label: 'Prévues plus tard', extra: true },
   // Hors onglets : carte « à régler » et page « Courses en retard »
-  { value: 'code_to_verify', label: '⚠️ Codes à vérifier', hidden: true },
-  { value: 'untreated', label: '⏳ Non traitées', hidden: true },
+  { value: 'code_to_verify', icon: 'alerte', label: 'Codes à vérifier', hidden: true },
+  { value: 'untreated', icon: 'sablier', label: 'Non traitées', hidden: true },
 ]
 // Files qui montrent toutes les dates, même quand un jour est choisi
 const ALL_DATES_QUEUES = queues.filter((q) => q.extra || q.hidden).map((q) => q.value)
@@ -472,7 +473,7 @@ const visibleQueues = computed(() => queues.filter((q) => {
 }))
 // Cas à régler, toutes dates : en cartes de couleur au-dessus des onglets, seulement quand il y en a
 const EXCEPTIONS = [
-  { value: 'code_to_verify', icon: '⚠️', label: 'code à vérifier', plural: 'codes à vérifier', hint: 'livrées hors connexion avec un code faux', class: 'border-red-300 bg-red-50 text-red-900' },
+  { value: 'code_to_verify', icon: 'alerte', label: 'code à vérifier', plural: 'codes à vérifier', hint: 'livrées hors connexion avec un code faux', class: 'border-red-300 bg-red-50 text-red-900' },
 ]
 const exceptionCount = (queue) => (isDispatch.value ? dispatchCounts.counts.exceptions?.[queue] || 0 : 0)
 const exceptionCards = computed(() => EXCEPTIONS.map((e) => ({ ...e, count: exceptionCount(e.value) })).filter((e) => e.count > 0 || filters.queue === e.value))

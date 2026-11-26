@@ -10,7 +10,7 @@
           <option v-else :value="null" disabled>Choisir…</option>
           <option v-for="d in senders" :key="d.id" :value="d.id">{{ d.label }}{{ quotaText(d) }}</option>
         </select>
-        <p v-if="sender?.location" class="mt-1 text-xs text-slate-600">🏢 {{ sender.location }}<template v-if="sender.own_address"> · collecte à son adresse ({{ sender.pickup_zone_name }})</template></p>
+        <p v-if="sender?.location" class="mt-1 text-xs text-slate-600"><Icone nom="entreprise" taille="petite" class="inline align-text-bottom" /> {{ sender.location }}<template v-if="sender.own_address"> · collecte à son adresse ({{ sender.pickup_zone_name }})</template></p>
         <p v-if="errors.department_id" class="field-error">{{ errors.department_id[0] }}</p>
       </div>
       <div v-if="settings.requested_by !== 'off'">
@@ -41,6 +41,7 @@
 </template>
 
 <script setup>
+import Icone from '../ui/Icone.vue'
 import { computed, ref, watch } from 'vue'
 
 const props = defineProps({

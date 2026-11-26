@@ -12,7 +12,7 @@
         <PeriodPicker menu class="min-w-0 flex-1" :model-value="period" @update:model-value="setPeriod" />
         <ActivitySwitch v-if="space.activities.length > 1" menu class="min-w-0 flex-1" @change="reload" />
         <!-- Étiquettes : choisir les courses à imprimer -->
-        <button v-if="auth.can('orders.create') && auth.user?.merchant?.label_settings?.client_print !== 'no'" type="button" :class="['tap shrink-0 rounded-xl px-3 text-sm font-semibold ring-1', printMode ? 'text-white ring-transparent' : 'bg-white ring-slate-200 text-slate-700']" :style="printMode ? { backgroundColor: 'var(--app-color)' } : {}" :aria-pressed="printMode" @click="togglePrint">🏷️ Étiquettes</button>
+        <button v-if="auth.can('orders.create') && auth.user?.merchant?.label_settings?.client_print !== 'no'" type="button" :class="['tap inline-flex shrink-0 items-center gap-1.5 rounded-xl px-3 text-sm font-semibold ring-1', printMode ? 'text-white ring-transparent' : 'bg-white ring-slate-200 text-slate-700']" :style="printMode ? { backgroundColor: 'var(--app-color)' } : {}" :aria-pressed="printMode" @click="togglePrint"><Icone nom="etiquette" taille="petite" />Étiquettes</button>
       </div>
 
       <!-- Catégories, avec le nombre de courses de chacune (sur la période) -->
@@ -43,7 +43,7 @@
           :class="['tap shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold ring-1', department === d.id ? 'bg-slate-900 text-white ring-slate-900' : 'bg-white ring-slate-200 text-slate-700']"
           @click="department = d.id; reload()"
         >
-          🏢 {{ d.label }}
+          <Icone nom="entreprise" taille="petite" class="inline align-[-0.15em]" /> {{ d.label }}
         </button>
       </div>
     </div>
@@ -59,11 +59,11 @@
           <input v-model="picked" type="checkbox" :value="o.id" :disabled="!printable(o)" class="h-5 w-5 shrink-0">
           <span class="min-w-0 flex-1">
             <span class="block font-semibold truncate">{{ o.recipient.name || o.recipient.phone }}</span>
-            <span class="block text-sm text-slate-600 truncate">{{ o.delivery.zone_name }}<template v-if="o.department"> · 🏢 {{ o.department.code || o.department.name }}</template></span>
+            <span class="block text-sm text-slate-600 truncate">{{ o.delivery.zone_name }}<template v-if="o.department"> · <Icone nom="entreprise" taille="petite" class="inline align-[-0.15em]" /> {{ o.department.code || o.department.name }}</template></span>
           </span>
           <span class="text-right">
             <span class="block font-mono text-xs text-slate-600">{{ o.tracking_code }}</span>
-            <span v-if="o.label?.printed_at" class="text-xs text-emerald-700">✓ imprimée</span>
+            <span v-if="o.label?.printed_at" class="inline-flex items-center gap-1 text-xs text-emerald-700"><Icone nom="valider" taille="petite" />imprimée</span>
           </span>
         </label>
       </template>
@@ -89,7 +89,7 @@
       <button type="button" class="tap rounded-xl px-3 py-2 text-sm font-semibold ring-1 ring-slate-200" @click="pickUnprinted">Pas imprimées</button>
       <button v-if="picked.length" type="button" class="tap rounded-xl px-3 py-2 text-sm text-slate-600" @click="picked = []">Aucune</button>
       <RouterLink :to="`/etiquettes?ids=${picked.join(',')}`" :class="['tap ml-auto rounded-xl px-4 py-2 text-sm font-semibold text-white', picked.length ? '' : 'pointer-events-none opacity-50']" :style="{ backgroundColor: 'var(--app-color)' }">
-        🖨️ Imprimer {{ picked.length || '' }}
+        <Icone nom="imprimer" taille="petite" class="inline align-[-0.15em]" /> Imprimer {{ picked.length || '' }}
       </RouterLink>
     </div>
 
@@ -97,6 +97,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { cachedGet } from '../../composables/useCachedApi'
@@ -138,7 +139,7 @@ const filters = ORDER_FILTERS
 const EMPTY = {
   all: ['Aucune course sur ces dates', 'Choisissez d\'autres dates.'],
   active: ['Aucune course en cours', 'Toutes vos courses sont terminées.'],
-  problems: ['Rien à régler', 'Aucun colis n\'attend votre décision. 👍'],
+  problems: ['Rien à régler', 'Aucun colis n\'attend votre décision.'],
   delivered: ['Aucune course livrée', 'Les courses livrées apparaîtront ici.'],
   other: ['Aucune course retournée ou annulée', ''],
 }

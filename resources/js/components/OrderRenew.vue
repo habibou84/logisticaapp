@@ -1,6 +1,6 @@
 <template>
   <div>
-    <button type="button" class="btn-secondary w-full" @click="open = true">🔁 Reconduire la course</button>
+    <button type="button" class="btn-secondary w-full" @click="open = true"><Icone nom="repeter" />Reconduire la course</button>
     <Modal :open="open" title="Reconduire la course" @close="open = false">
       <form class="space-y-3" @submit.prevent="submit">
         <p class="text-sm text-slate-600">Une nouvelle course identique est créée (même expéditeur, destinataire et envoi). Celle-ci reste comptée.</p>
@@ -20,6 +20,7 @@
 </template>
 
 <script setup>
+import Icone from './ui/Icone.vue'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../bootstrap/axios'

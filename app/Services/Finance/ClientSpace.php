@@ -201,7 +201,7 @@ class ClientSpace
 
         $this->notify($merchant, NotificationEvent::InvoiceIssued, WhatsAppTemplate::InvoiceIssued,
             [$merchant->business_name, (string) $invoice->number, $invoice->activity->label(), $period, Money::format($invoice->total), $due],
-            new ClientBillingAlert('invoice_issued', "📄 Facture {$invoice->number}", "{$invoice->activity->label()} · {$period} : ".Money::format($invoice->total).", à payer avant le {$due}.", "/marchand/factures/{$invoice->id}"));
+            new ClientBillingAlert('invoice_issued', "Facture {$invoice->number}", "{$invoice->activity->label()} · {$period} : ".Money::format($invoice->total).", à payer avant le {$due}.", "/marchand/factures/{$invoice->id}"));
     }
 
     /**
@@ -212,7 +212,7 @@ class ClientSpace
         $invoice = $note->invoice()->withoutGlobalScopes()->first();
         $refund = $note->refund_due > 0 ? ' · '.Money::format($note->refund_due).' à vous rembourser' : '';
         $users = User::withoutGlobalScopes()->where('merchant_id', $note->merchant_id)->where('status', 'active')->get();
-        Notification::send($users, new ClientBillingAlert('credit_note_issued', "🧾 Avoir {$note->number}",
+        Notification::send($users, new ClientBillingAlert('credit_note_issued', "Avoir {$note->number}",
             'Sur la facture '.$invoice?->number.' : '.Money::format($note->total).$refund.'.', "/marchand/factures/{$note->client_invoice_id}"));
     }
 
@@ -237,13 +237,13 @@ class ClientSpace
             if ($due->greaterThanOrEqualTo($today) && $today->diffInDays($due) <= 3 && $invoice->reminded_at === null) {
                 $this->notify($invoice->merchant, NotificationEvent::InvoiceReminder, WhatsAppTemplate::InvoiceReminder,
                     [$invoice->merchant->business_name, (string) $invoice->number, $dueLabel, $balance],
-                    new ClientBillingAlert('invoice_reminder', "⏰ Facture {$invoice->number}", "À payer avant le {$dueLabel} : reste {$balance}.", "/marchand/factures/{$invoice->id}"));
+                    new ClientBillingAlert('invoice_reminder', "Facture {$invoice->number}", "À payer avant le {$dueLabel} : reste {$balance}.", "/marchand/factures/{$invoice->id}"));
                 $invoice->forceFill(['reminded_at' => $now])->save();
                 $sent++;
             } elseif ($due->lessThan($today) && ($invoice->overdue_notified_at === null || $invoice->overdue_notified_at->lte($now->subDays(7)))) {
                 $this->notify($invoice->merchant, NotificationEvent::InvoiceReminder, WhatsAppTemplate::InvoiceOverdue,
                     [$invoice->merchant->business_name, (string) $invoice->number, $dueLabel, $balance],
-                    new ClientBillingAlert('invoice_overdue', "⚠️ Facture {$invoice->number} en retard", "Elle était à payer le {$dueLabel} : reste {$balance}.", "/marchand/factures/{$invoice->id}"));
+                    new ClientBillingAlert('invoice_overdue', "Facture {$invoice->number} en retard", "Elle était à payer le {$dueLabel} : reste {$balance}.", "/marchand/factures/{$invoice->id}"));
                 $invoice->forceFill(['overdue_notified_at' => $now])->save();
                 $sent++;
             }
@@ -291,7 +291,7 @@ class ClientSpace
 
             $this->notify($merchant, NotificationEvent::ForfaitUsage, WhatsAppTemplate::ForfaitUsage,
                 [$merchant->business_name, $plan->formula->label(), mb_strtolower($usage['month_label']), "{$reached} %", (string) $usage['used'], (string) $usage['included'], Money::format((int) $plan->overage_price)],
-                new ClientBillingAlert('forfait_usage', $reached >= 100 ? '📦 Forfait du mois épuisé' : "📦 Forfait utilisé à {$reached} %",
+                new ClientBillingAlert('forfait_usage', $reached >= 100 ? 'Forfait du mois épuisé' : "Forfait utilisé à {$reached} %",
                     "{$plan->formula->label()} : {$usage['used']} sur {$usage['included']} inclus. Au-delà : ".Money::format((int) $plan->overage_price).' chacun.', '/marchand'));
         } catch (Throwable $e) {
             // Une alerte manquée ne doit jamais empêcher la course

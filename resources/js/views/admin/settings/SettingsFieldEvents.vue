@@ -1,5 +1,5 @@
 <template>
-  <SettingsPage icon="🚨" title="Événements terrain" intro="Ce que les livreurs peuvent signaler sur la route (panne, accident, contrôle…) et ce que l'application fait automatiquement.">
+  <SettingsPage icon="remontee" title="Événements terrain" intro="Ce que les livreurs peuvent signaler sur la route (panne, accident, contrôle…) et ce que l'application fait automatiquement.">
     <template v-if="form?.field_event_settings">
       <section class="card p-4 space-y-3">
         <label class="flex items-start gap-2 text-sm">
@@ -20,7 +20,7 @@
         <div class="divide-y border rounded">
           <div v-for="(t, i) in s.types" :key="i" :class="['p-2 space-y-2', t.active ? '' : 'bg-slate-50 opacity-70']">
             <div class="flex flex-wrap items-center gap-2">
-              <input v-model="t.icon" class="input w-14 text-center px-1" maxlength="16" :aria-label="`Icône du type ${i + 1}`">
+              <IconePicker v-model="t.icon" class="w-14" :label="`Icône du type ${i + 1}`" />
               <input v-model="t.label" class="input w-40 flex-1 min-w-[8rem]" maxlength="60" placeholder="Libellé" :aria-label="`Libellé du type ${i + 1}`">
               <input v-model="t.hint" class="input w-56 flex-[2] min-w-[10rem]" maxlength="120" placeholder="Précision : ex. moteur, crevaison" :aria-label="`Précision du type ${i + 1}`">
               <select v-model="t.severity" class="input w-32" :aria-label="`Gravité du type ${i + 1}`">
@@ -35,7 +35,7 @@
               <span class="ml-auto whitespace-nowrap">
                 <button type="button" class="px-1 text-slate-600 disabled:opacity-30" :disabled="i === 0" :aria-label="`Monter ${t.label}`" @click="move(i, -1)">↑</button>
                 <button type="button" class="px-1 text-slate-600 disabled:opacity-30" :disabled="i === s.types.length - 1" :aria-label="`Descendre ${t.label}`" @click="move(i, 1)">↓</button>
-                <button v-if="!t.key" type="button" class="px-1 text-red-600" :aria-label="`Supprimer ${t.label || 'le type'}`" @click="s.types.splice(i, 1)">✕</button>
+                <button v-if="!t.key" type="button" class="px-1 text-red-600" :aria-label="`Supprimer ${t.label || 'le type'}`" @click="s.types.splice(i, 1)"><Icone nom="fermer" taille="petite" class="inline" /></button>
               </span>
             </div>
           </div>
@@ -74,6 +74,8 @@
 </template>
 
 <script setup>
+import IconePicker from '../../../components/ui/IconePicker.vue'
+import Icone from '../../../components/ui/Icone.vue'
 import { computed } from 'vue'
 import SettingsPage from '../../../components/settings/SettingsPage.vue'
 import SaveBar from '../../../components/settings/SaveBar.vue'
@@ -85,7 +87,7 @@ const { form, dirty, saving, error, save, reset } = useCompanySettings(['field_e
 const s = computed(() => form.value.field_event_settings)
 
 function addType() {
-  s.value.types.push({ key: '', label: '', icon: '⚠️', hint: '', severity: 'info', photo: false, gps: true, excuse: false, active: true })
+  s.value.types.push({ key: '', label: '', icon: 'alerte', hint: '', severity: 'info', photo: false, gps: true, excuse: false, active: true })
 }
 
 function move(i, step) {
