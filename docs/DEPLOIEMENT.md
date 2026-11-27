@@ -34,12 +34,11 @@ En SSH, en root (le dépôt et le paquet commun `habibou84/socle` sont publics :
 
 ```bash
 apt-get update && apt-get install -y git
-git clone -b main https://github.com/habibou84/logisticaapp.git /opt/logistica
+git clone -b production https://github.com/habibou84/logisticaapp.git /opt/logistica
 cd /opt/logistica
 ```
 
-La branche clonée est celle que suivent les mises à jour (`deploy/update.sh`) : **`main`**, la version validée
-(voir section 4).
+La branche clonée est celle que suivent les mises à jour (`deploy/update.sh`) : **`production`** (voir section 4).
 
 Si le dépôt devient privé : créez une clé de déploiement (`ssh-keygen -t ed25519 -f /root/.ssh/logistica -N ""`),
 ajoutez `/root/.ssh/logistica.pub` dans GitHub › dépôt › **Settings › Deploy keys** (sans droit d'écriture), puis
@@ -78,58 +77,55 @@ passe de l'administrateur. La **mise en route** guide les réglages (zones, tari
 ### Le chemin d'une modification
 
 ```
-branche de travail ──► PR vers main ──► contrôles GitHub ──► VOUS fusionnez
-    ──► PRÉPRODUCTION (preprod.logisticadelivery.com) : installée toute seule, vous essayez
-    ──► VOUS publiez une version v1.4.0 (Releases GitHub)
+branche de travail ──► PR vers main ──► contrôles GitHub ──► fusion (squash)
+    ──► PRÉPRODUCTION (preprod.logisticadelivery.com) : installée toute seule, on essaie
+    ──► PR main → production ──► fusion (commit de fusion)
     ──► PRODUCTION : installée dans la plage horaire (sauvegarde, bascule, contrôle du site)
 ```
 
-- On ne pousse jamais directement sur `main` : chaque modification arrive par une PR. **Fusionner = mettre en
-  préproduction. Publier une version = mettre en production.**
-- La production n'installe que des versions publiées **et fusionnées sur `main`**, dont les contrôles GitHub sont
-  verts. La préproduction installe chaque fusion sur `main`.
-- Avant de publier : la modification essayée en préproduction (au moins les parcours touchés : saisie,
-  attribution, livraison, caisse…).
+- **Fusionner sur `main` = mettre en préproduction. Fusionner `main` dans `production` = mettre en production.**
+- On ne pousse jamais directement sur `main` ni sur `production` : tout passe par une PR, aux contrôles verts.
+- Les deux fusions se font sur demande du propriétaire, par lui ou par Claude (« ouvre la PR et fusionne »,
+  « mets en production »).
+- Avant de mettre en production : la modification essayée en préproduction (au moins les parcours touchés :
+  saisie, attribution, livraison, caisse…).
 
 **Réglages GitHub à faire une fois** (dépôt › *Settings*) :
 
 1. *General › Default branch* : `main`.
-2. *Branches › Add branch ruleset* (ou *Add rule*) sur `main` : « Require a pull request before merging » et
-   « Require status checks to pass » (cocher *Style (Pint)*, *Tests (PostgreSQL, PHP 8.3)*, *Tests (PostgreSQL, PHP 8.4)*,
-   *Build front-end*, *Téléphone (largeur des pages)*), « Block force pushes ».
-3. *General › Pull Requests* : n'autoriser que « Allow squash merging » (un commit par modification sur `main` :
-   facile à lire et à annuler).
+2. *General › Pull Requests* : cocher « Allow squash merging » (PR des modifications vers `main` : un commit par
+   modification) **et** « Allow merge commits » (PR `main` → `production` : la production reçoit exactement les
+   commits de `main`).
+3. *Rules › Rulesets › New branch ruleset*, cible `main` **et** `production` : « Restrict deletions »,
+   « Require a pull request before merging », « Require status checks to pass » (cocher *Style (Pint)*,
+   *Tests (PostgreSQL, PHP 8.3)*, *Tests (PostgreSQL, PHP 8.4)*, *Build front-end*, *Téléphone (largeur des pages)*),
+   « Block force pushes ».
+4. Branche `production` : créée une fois à partir de `main` (*Branches › New branch*).
 
-### Publier une version (mise en production)
+### Mettre en production
 
-Une fois la préproduction essayée : GitHub › dépôt › **Releases › Draft a new release**.
+GitHub › dépôt › **Pull requests › New pull request** : *base* `production` ← *compare* `main`, puis
+**Create pull request**. La liste des modifications depuis la dernière mise en production s'affiche (onglet
+*Commits*). Quand les contrôles sont verts : **Merge pull request** (« Create a merge commit », pas « Squash »).
 
-1. *Choose a tag* : tapez le numéro de la nouvelle version, par exemple `v1.4.0`, puis *Create new tag* ;
-   *Target* : `main`.
-2. **Generate release notes** : la liste des PR fusionnées depuis la version précédente s'écrit toute seule.
-3. **Publish release**.
+La production l'installe au début de la plage horaire (`AUTO_UPDATE_WINDOW`, 20 h à 7 h), une fois les contrôles
+GitHub du commit de fusion passés. L'historique des mises en production est la liste des PR `main → production`.
 
-La production l'installe dans les 5 minutes, ou au début de la plage horaire (`AUTO_UPDATE_WINDOW`).
-
-Numéros : `vMAJEUR.MINEUR.CORRECTIF`. Une correction seule : `v1.4.1` ; des nouveautés : `v1.5.0` ; un grand
-changement : `v2.0.0`. Toujours trois nombres (les versions comme `v1.4.0-test` sont ignorées).
-
-**Correction urgente** : PR, fusion, essai rapide en préproduction, publication, puis sur le serveur de production
-`bash deploy/auto-update.sh --now` pour ne pas attendre la plage horaire.
+**Correction urgente** : PR, fusion, essai rapide en préproduction, PR `main → production` fusionnée, puis sur le
+serveur de production `bash deploy/auto-update.sh --now` pour ne pas attendre la plage horaire.
 
 ### Mise à jour automatique
 
-Le serveur vérifie toutes les 5 minutes s'il y a une nouvelle version. Il l'installe **seulement si les contrôles
-GitHub sont passés** sur cette version (onglet *Actions*) ; sinon il attend, ou l'écarte si un contrôle a échoué.
-Rien n'est ouvert sur le serveur : c'est lui qui va chercher le code. Une installation qui échoue est réessayée
-deux fois, puis abandonnée (la version en service reste) jusqu'à `--now`.
+Le serveur vérifie toutes les 5 minutes s'il y a une nouvelle version sur la branche qu'il suit. Il l'installe
+**seulement si les contrôles GitHub sont passés** sur cette version (onglet *Actions*) ; sinon il attend, ou
+l'écarte si un contrôle a échoué. Rien n'est ouvert sur le serveur : c'est lui qui va chercher le code. Une
+installation qui échoue est réessayée deux fois, puis abandonnée (la version en service reste) jusqu'à `--now`.
 
-Réglages dans le `.env` de chaque installation :
-
-| Réglage | Production | Préproduction |
+| | Production (`/opt/logistica`) | Préproduction (`/opt/logistica-preprod`) |
 |---|---|---|
-| `AUTO_UPDATE_TRACK` | `tags` : seulement les versions publiées | `branch` (défaut) : chaque fusion sur `main` |
-| `AUTO_UPDATE_WINDOW` | `20:00-07:00` : en dehors des tournées | vide : à toute heure |
+| Branche suivie (celle du dossier) | `production` | `main` |
+| `AUTO_UPDATE_TRACK` (`.env`) | `branch` | `branch` (défaut) |
+| `AUTO_UPDATE_WINDOW` (`.env`) | `20:00-07:00` : en dehors des tournées | vide : à toute heure |
 
 ```bash
 bash deploy/auto-update.sh --install   # activer
@@ -141,15 +137,19 @@ bash deploy/auto-update.sh --remove    # désactiver
 
 Journal : `/var/log/<projet>-update.log` (`logistica`, `logistica-preprod`).
 
-**Passer la production aux versions publiées** (une fois, quand la préproduction fonctionne) : publiez d'abord
-`v1.0.0` (ci-dessus) à partir de la version en service, puis sur le serveur :
+**Passer la production sur la branche `production`** (une fois, la branche créée sur GitHub) :
 
 ```bash
 cd /opt/logistica
-echo 'AUTO_UPDATE_TRACK=tags' >> .env
-echo 'AUTO_UPDATE_WINDOW=20:00-07:00' >> .env
-bash deploy/auto-update.sh --status     # « Suivi : versions publiées v* »
+git fetch origin production
+git checkout -B production origin/production
+sed -i '/^AUTO_UPDATE_TRACK=/d' .env && echo 'AUTO_UPDATE_TRACK=branch' >> .env
+grep -q '^AUTO_UPDATE_WINDOW=' .env || echo 'AUTO_UPDATE_WINDOW=20:00-07:00' >> .env
+bash deploy/auto-update.sh --status     # « Suivi : branche production »
 ```
+
+Variante : `AUTO_UPDATE_TRACK=tags` fait suivre les versions publiées `v1.2.3` (*Releases* GitHub) au lieu d'une
+branche.
 
 ### À la main
 
@@ -170,12 +170,12 @@ d'après la version ; les 3 précédentes restent sur le serveur pour le retour 
 ```bash
 cd /opt/logistica
 bash deploy/rollback.sh             # versions disponibles sur le serveur (▶ = en service)
-bash deploy/rollback.sh v1.3.0      # remet v1.3.0 en service, contrôle du site compris
+bash deploy/rollback.sh 7d29741     # remet cette version en service, contrôle du site compris
 ```
 
 La version retirée n'est pas réinstallée par la mise à jour automatique : le serveur attend la suivante.
-Ensuite, corrigez : PR (ou **Revert** sur la PR fautive), fusion, essai en préproduction, nouvelle version
-`v1.3.1` publiée.
+Ensuite, corrigez : PR (ou **Revert** sur la PR fautive), fusion, essai en préproduction, nouvelle mise en
+production (PR `main → production`).
 
 La base garde les migrations de la version retirée ; c'est sans conséquence quand elles ne font qu'ajouter
 (règle suivie dans ce projet). Si une migration a abîmé des données, restaurez la sauvegarde d'avant la mise à
@@ -298,7 +298,7 @@ Depuis `/opt/logistica` :
 | Changer un mot de passe | `docker compose exec -u www-data app php artisan user:password 0700000000` |
 | Prendre en compte un changement du `.env` | `docker compose up -d --force-recreate` |
 | Sauvegarde immédiate | `bash deploy/backup.sh` |
-| Versions sur le serveur / retour arrière | `bash deploy/rollback.sh` / `bash deploy/rollback.sh v1.3.0` |
+| Versions sur le serveur / retour arrière | `bash deploy/rollback.sh` / `bash deploy/rollback.sh <version>` |
 | État de la mise à jour automatique | `bash deploy/auto-update.sh --status` |
 | Arrêter / redémarrer | `docker compose stop` / `docker compose up -d` |
 

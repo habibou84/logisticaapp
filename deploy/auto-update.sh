@@ -6,8 +6,9 @@
 # Rien n'est ouvert sur le serveur : il va chercher le code, GitHub ne s'y connecte pas.
 #
 # Réglages dans .env :
-#   AUTO_UPDATE_TRACK=branch           # (défaut) chaque nouveau commit de la branche suivie (main) : préproduction
-#   AUTO_UPDATE_TRACK=tags             # seulement les versions publiées v1.2.3 (Releases GitHub) : production
+#   AUTO_UPDATE_TRACK=branch           # (défaut) chaque nouveau commit de la branche suivie : main en préproduction,
+#                                      # production en production (fusion d'une PR main → production)
+#   AUTO_UPDATE_TRACK=tags             # variante : seulement les versions publiées v1.2.3 (Releases GitHub)
 #   AUTO_UPDATE_WINDOW=20:00-07:00     # installation seulement dans cette plage horaire (vide : à toute heure)
 #
 #   bash deploy/auto-update.sh --install   # active (cron toutes les 5 minutes)
@@ -76,8 +77,9 @@ find_target() {
     target=""; label=""
     git fetch -q origin "+refs/heads/$branch:refs/remotes/origin/$branch" || return 1
     if [[ "$TRACK" == tags ]]; then
-        git fetch -q --prune --force origin '+refs/tags/v*:refs/tags/v*' || return 1
-        label="$(git tag -l 'v*' --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n1 || true)"
+        git fetch -q --prune --force origin '+refs/tags/v*:refs/tags/v*' '+refs/tags/V*:refs/tags/V*' || return 1
+        # v1.2.3 ou V1.2.3 (majuscule acceptée)
+        label="$(git tag -l 'v*' 'V*' | grep -E '^[vV][0-9]+\.[0-9]+\.[0-9]+$' | sort -t. -k1.2,1n -k2,2n -k3,3n | tail -n1 || true)"
         [[ -n "$label" ]] || return 0
         target="$(git rev-list -n1 "$label")"
         # Une version publiée doit avoir été fusionnée sur la branche suivie (main), donc passée par une PR
