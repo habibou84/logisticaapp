@@ -11,7 +11,9 @@ name: ${COMPOSE_PROJECT_NAME:-logistica}
 
 # Site, files d'attente, temps réel et tâches planifiées : la même image
 x-app: &app
-  image: ${COMPOSE_PROJECT_NAME:-logistica}-app
+  # Une image par version (APP_VERSION, écrit dans .env par deploy/update.sh) : les précédentes restent sur le
+  # serveur pour revenir en arrière en quelques secondes (deploy/rollback.sh)
+  image: ${COMPOSE_PROJECT_NAME:-logistica}-app:${APP_VERSION:-latest}
   build:
     context: .
     target: app
@@ -77,7 +79,7 @@ services:
         condition: service_healthy
 
   web:
-    image: ${COMPOSE_PROJECT_NAME:-logistica}-web
+    image: ${COMPOSE_PROJECT_NAME:-logistica}-web:${APP_VERSION:-latest}
     build:
       context: .
       target: web
