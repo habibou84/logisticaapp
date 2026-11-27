@@ -38,3 +38,10 @@ Attention aux écarts SQLite / PostgreSQL (dates : utiliser `DATE()`, pas `CAST(
 - Ajouter un champ, un statut ou un événement : libre (version 1.x suivante du contrat, Jibiat Marchand d'abord prêt).
 - Retirer, renommer ou changer le type d'un champ : interdit sans nouvelle version majeure annoncée des deux côtés.
 - Un changement de socle se fait dans son dépôt, puis `composer update habibou84/socle` ici et dans Jibiat Marchand.
+
+  ## Mise en ligne : PR vers `main`, fusion par le propriétaire
+- Le serveur installe automatiquement chaque version de `main` dont les contrôles sont verts. Fusionner = mettre en ligne.
+- Ne jamais pousser sur `main` ni fusionner une PR : c'est la décision du propriétaire.
+- Travail terminé, testé et poussé : ouvrir une PR vers `main` sans attendre qu'on la demande.
+- Une PR = un sujet ; description : ce qui change, migrations, risques, ce qu'il faut essayer à la main.
+- Migrations compatibles avec la version précédente (ajouter avant de retirer).
