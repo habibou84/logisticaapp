@@ -6,9 +6,11 @@
 # Rien n'est ouvert sur le serveur : il va chercher le code, GitHub ne s'y connecte pas.
 #
 # Réglages dans .env :
-#   AUTO_UPDATE_TRACK=branch           # (défaut) chaque nouveau commit de la branche suivie (main) : préproduction
-#   AUTO_UPDATE_TRACK=tags             # seulement les versions publiées v1.2.3 (Releases GitHub) : production
-#   AUTO_UPDATE_WINDOW=20:00-07:00     # installation seulement dans cette plage horaire (vide : à toute heure)
+#   AUTO_UPDATE_TRACK=branch           # (défaut) chaque nouveau commit de la branche suivie : main en préproduction,
+#                                      # production en production (fusion d'une PR main → production)
+#   AUTO_UPDATE_TRACK=tags             # variante : seulement les versions publiées v1.2.3 (Releases GitHub)
+#   AUTO_UPDATE_WINDOW=20:00-07:00     # installation seulement dans cette plage horaire (vide : à toute heure),
+#                                      # sauf version marquée « [immédiat] » (titre de la fusion) : tout de suite
 #
 #   bash deploy/auto-update.sh --install   # active (cron toutes les 5 minutes)
 #   bash deploy/auto-update.sh --remove    # désactive
@@ -76,8 +78,9 @@ find_target() {
     target=""; label=""
     git fetch -q origin "+refs/heads/$branch:refs/remotes/origin/$branch" || return 1
     if [[ "$TRACK" == tags ]]; then
-        git fetch -q --prune --force origin '+refs/tags/v*:refs/tags/v*' || return 1
-        label="$(git tag -l 'v*' --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n1 || true)"
+        git fetch -q --prune --force origin '+refs/tags/v*:refs/tags/v*' '+refs/tags/V*:refs/tags/V*' || return 1
+        # v1.2.3 ou V1.2.3 (majuscule acceptée)
+        label="$(git tag -l 'v*' 'V*' | grep -E '^[vV][0-9]+\.[0-9]+\.[0-9]+$' | sort -t. -k1.2,1n -k2,2n -k3,3n | tail -n1 || true)"
         [[ -n "$label" ]] || return 0
         target="$(git rev-list -n1 "$label")"
         # Une version publiée doit avoir été fusionnée sur la branche suivie (main), donc passée par une PR
@@ -165,7 +168,11 @@ find_target || { log "GitHub injoignable (git fetch) : nouvel essai dans 5 minut
 verdict="$(checks "$target")"
 case "$verdict" in
     success)
-        if [[ "${1:-}" != --now ]] && ! in_window; then
+        # Mise en production immédiate : « [immédiat] » (ou « [urgent] ») dans le message de la version
+        # (titre de la fusion main → production) ; sinon, seulement dans la plage horaire
+        urgent=""
+        git log -1 --format=%B "$target" | grep -qiE '\[(immediat|immédiat|IMMÉDIAT|urgent)\]' && urgent=1
+        if [[ "${1:-}" != --now && -z "$urgent" ]] && ! in_window; then
             if [[ "$(cat "$WAITING" 2>/dev/null)" != "$label" ]]; then
                 log "Version $label validée : installation dans la plage horaire ($WINDOW)."
                 echo "$label" > "$WAITING"
@@ -174,7 +181,7 @@ case "$verdict" in
         fi
         failures="$(awk -v l="$label" '$1 == l {print $2}' "$FAILED" 2>/dev/null)"; failures="${failures:-0}"
         if [[ "${1:-}" != --now ]] && (( failures >= 3 )); then exit 0; fi
-        log "Nouvelle version $label ($(git log -1 --format=%s "$target")) : contrôles GitHub passés, mise à jour…"
+        log "Nouvelle version $label ($(git log -1 --format=%s "$target")) : contrôles GitHub passés, mise à jour$([[ -n $urgent ]] && ! in_window && echo ' immédiate (hors plage horaire, demandée)')…"
         if TARGET="$target" VERSION="$label" bash deploy/update.sh >> "$LOG" 2>&1; then
             rm -f "$FAILED" "$WAITING" "$SKIP"
             log "Version $label en ligne."
