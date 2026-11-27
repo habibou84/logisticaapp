@@ -7,6 +7,7 @@ use App\Enums\Permission;
 use App\Http\Controllers\Controller;
 use App\Services\Reports\ClientInsights;
 use App\Services\Reports\ClientReports;
+use App\Services\Reports\DirectionBoard;
 use App\Services\Reports\Performance;
 use App\Services\Reports\Pivot;
 use App\Services\Reports\Profitability;
@@ -179,6 +180,20 @@ class StatisticsController extends Controller
         $request->validate(['activity' => ['nullable', Rule::enum(Activity::class)]]);
 
         return $this->statistics->for($request->user()->company)->forActivity($request->input('activity'));
+    }
+
+    /**
+     * Tableau de direction › Vue d'ensemble : les activités côte à côte et les points à décider.
+     * Réservé à qui a l'autorisation « Voir le tableau de direction », dans son périmètre d'activités.
+     */
+    public function direction(Request $request, DirectionBoard $board): JsonResponse
+    {
+        $user = $request->user();
+        abort_if($user->merchant_id !== null || $user->company === null, 403);
+        [$from, $to] = $this->period($request);
+        $activities = array_values(array_filter(Activity::cases(), fn (Activity $a) => $user->seesActivity($a)));
+
+        return response()->json(['data' => $board->overview($user->company->fresh(), $from, $to, $activities)]);
     }
 
     private function withAmounts(Request $request): bool

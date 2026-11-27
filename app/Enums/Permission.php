@@ -46,6 +46,8 @@ enum Permission: string
     case InvoicesVoid = 'invoices.void';
     // Chiffre d'affaires par activité
     case RevenueView = 'revenue.view';
+    // Tableau de direction : chiffre d'affaires, marge, points à décider des trois activités
+    case DirectionView = 'direction.view';
 
     // Réglages et équipe
     case SettingsManage = 'settings.manage';
@@ -84,6 +86,7 @@ enum Permission: string
             self::InvoicesManage => 'Calculer, émettre et encaisser les factures',
             self::InvoicesVoid => 'Annuler une facture émise ou faire un avoir',
             self::RevenueView => 'Voir le chiffre d\'affaires',
+            self::DirectionView => 'Voir le tableau de direction',
             self::SettingsManage => 'Réglages généraux',
             self::ZonesManage => 'Zones et dépôts',
             self::PricingManage => 'Grille des tarifs',
@@ -123,6 +126,7 @@ enum Permission: string
             self::InvoicesManage => 'Calculer, compléter, émettre et encaisser les factures.',
             self::InvoicesVoid => 'Annuler une facture déjà émise, ou la corriger par un avoir (total ou partiel).',
             self::RevenueView => 'Chiffre d\'affaires par activité.',
+            self::DirectionView => 'Chiffre d\'affaires, marge, impayés et points à décider de chaque activité.',
             self::SettingsManage => 'Entreprise et marque, courses, alertes, clients, mise en route, reprise de l\'ancienne application.',
             self::ZonesManage => 'Communes, quartiers, zones au forfait, dépôts.',
             self::PricingManage => 'Grilles de prix, suppléments, frais de retour.',
@@ -140,7 +144,7 @@ enum Permission: string
             self::RepairsManage, self::RepairsPurchases => 'workshop',
             self::MerchantsView, self::MerchantsManage, self::RatesManage, self::DepartmentsManage, self::DestinationsManage,
             self::StockManage, self::IntegrationsManage => 'merchants',
-            self::FinanceView, self::FinanceManage, self::InvoicesView, self::InvoicesManage, self::InvoicesVoid, self::RevenueView => 'money',
+            self::FinanceView, self::FinanceManage, self::InvoicesView, self::InvoicesManage, self::InvoicesVoid, self::RevenueView, self::DirectionView => 'money',
             self::SettingsManage, self::ZonesManage, self::PricingManage, self::MessagingManage, self::UsersView, self::UsersManage => 'settings',
         };
     }

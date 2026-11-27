@@ -73,7 +73,7 @@ class ClientInsights
     /**
      * @return list<array<string, mixed>>
      */
-    private function decline(Company $company, callable $orders, CarbonImmutable $now): array
+    public function decline(Company $company, callable $orders, CarbonImmutable $now): array
     {
         $count = fn (CarbonImmutable $a, CarbonImmutable $b) => $orders()->whereBetween('created_at', [$a->utc(), $b->utc()])
             ->selectRaw('merchant_id, COUNT(*) AS n')->groupBy('merchant_id')->pluck('n', 'merchant_id');
@@ -123,7 +123,7 @@ class ClientInsights
     /**
      * @return array<string, mixed>
      */
-    private function payments(Company $company, CarbonImmutable $now, ?string $activity): array
+    public function payments(Company $company, CarbonImmutable $now, ?string $activity): array
     {
         $invoices = ClientInvoice::withoutGlobalScopes()->where('company_id', $company->id)
             ->when($activity, fn ($q) => $q->where('activity', $activity))
