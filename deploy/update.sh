@@ -65,13 +65,24 @@ main() {
     # Le site répond-il vraiment ? /up vérifie aussi la base et Redis
     echo "==> Contrôle du site"
     port="$(grep -E '^APP_PORT=' .env | tail -n1 | cut -d= -f2 | tr -d '"' || true)"
-    if ! curl -fsS --retry 10 --retry-delay 3 --retry-all-errors -m 10 -o /dev/null "http://127.0.0.1:${port:-8090}/up"; then
+    if ! site_up "http://127.0.0.1:${port:-8090}/up"; then
         echo "Le site ne répond pas après la mise à jour vers $version (version précédente : $previous)." >&2
         echo "Journaux : docker compose logs --tail=100 app web — retour arrière : bash deploy/rollback.sh $previous" >&2
         exit 1
     fi
 
     echo "==> Terminé : version $version en ligne (précédente : $previous)"
+}
+
+# Le site répond-il ? 10 essais espacés de 3 s (le temps que PHP-FPM et Nginx soient prêts). Boucle plutôt que
+# « curl --retry-all-errors », inconnu des curl anciens (avant 7.71)
+site_up() {
+    local i
+    for i in 1 2 3 4 5 6 7 8 9 10; do
+        curl -fsS -m 10 -o /dev/null "$1" 2>/dev/null && return 0
+        sleep 3
+    done
+    curl -fsS -m 10 -o /dev/null "$1"
 }
 
 env_get() { grep -E "^$1=" .env | tail -n1 | cut -d= -f2- | sed -e 's/^"//' -e 's/"$//' || true; }
