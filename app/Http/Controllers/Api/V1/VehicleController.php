@@ -217,7 +217,7 @@ class VehicleController extends Controller
     private function document(VehicleDocument $d, array $s, bool $current = true): array
     {
         return [
-            'id' => $d->id, 'kind' => $d->kind, 'kind_label' => VehicleCatalog::DOCUMENTS[$d->kind]['label'] ?? $d->kind, 'icon' => VehicleCatalog::DOCUMENTS[$d->kind]['icon'] ?? '📄',
+            'id' => $d->id, 'kind' => $d->kind, 'kind_label' => VehicleCatalog::DOCUMENTS[$d->kind]['label'] ?? $d->kind, 'icon' => VehicleCatalog::DOCUMENTS[$d->kind]['icon'] ?? 'document',
             'label' => $d->label, 'reference' => $d->reference, 'issuer' => $d->issuer, 'starts_on' => $d->starts_on?->toDateString(), 'ends_on' => $d->ends_on?->toDateString(),
             'cost' => $d->cost, 'has_file' => $d->file_path !== null, 'has_original' => $d->original_path !== null, 'current' => $current, ...$this->fleet->documentState($d, $s),
             'vehicle_id' => $d->vehicle_id, 'courier_id' => $d->courier_id,
@@ -284,7 +284,7 @@ class VehicleController extends Controller
         ]);
         $plan = collect($data['maintenance_plan'])->sortKeys()->values()->map(fn ($i) => [
             'key' => ($i['key'] ?? '') ?: Str::slug($i['label'], '_'),
-            'label' => $i['label'], 'icon' => ($i['icon'] ?? '') ?: '🔧',
+            'label' => $i['label'], 'icon' => ($i['icon'] ?? '') ?: 'atelier',
             'every_km' => $i['every_km'] ?? null, 'every_months' => $i['every_months'] ?? null,
             'last_km' => $i['last_km'] ?? $vehicle->odometer, 'last_on' => $i['last_on'] ?? today()->toDateString(),
         ])->all();
@@ -486,7 +486,7 @@ class VehicleController extends Controller
             foreach ($this->fleet->latestDocuments($v) as $doc) {
                 $state = $this->fleet->documentState($doc, $s);
                 if ($state['state'] === 'ok' && $state['days'] <= 90) {
-                    $upcoming->push(['kind' => 'document', 'icon' => VehicleCatalog::DOCUMENTS[$doc->kind]['icon'] ?? '📄', 'state' => 'ok', 'vehicle_id' => $v->id,
+                    $upcoming->push(['kind' => 'document', 'icon' => VehicleCatalog::DOCUMENTS[$doc->kind]['icon'] ?? 'document', 'state' => 'ok', 'vehicle_id' => $v->id,
                         'title' => $v->plate, 'label' => VehicleCatalog::DOCUMENTS[$doc->kind]['label'] ?? $doc->label, 'days' => $state['days'], 'date' => $doc->ends_on?->toDateString()]);
                 }
             }

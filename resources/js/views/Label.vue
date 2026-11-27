@@ -2,17 +2,17 @@
   <div :class="['label-page p-4', `fmt-${format}`]">
     <div class="no-print mb-4 flex flex-wrap items-center gap-2">
       <button v-if="canGoBack" class="btn-secondary" @click="router.back()">← Retour</button>
-      <button class="btn-primary" :disabled="!orders.length || agencyPrints" @click="print">🖨️ Imprimer {{ orders.length > 1 ? `les ${orders.length} étiquettes` : 'l\'étiquette' }}</button>
-      <label class="text-sm text-gray-600" for="label-format">Format</label>
+      <button class="btn-primary" :disabled="!orders.length || agencyPrints" @click="print"><Icone nom="imprimer" />Imprimer {{ orders.length > 1 ? `les ${orders.length} étiquettes` : 'l\'étiquette' }}</button>
+      <label class="text-sm text-slate-600" for="label-format">Format</label>
       <select id="label-format" v-model="format" class="input w-auto" @change="remember">
         <option v-for="(f, key) in FORMATS" :key="key" :value="key">{{ f.label }}</option>
       </select>
-      <span class="text-sm text-gray-500">{{ FORMATS[format].hint }}</span>
-      <span v-if="loading" class="text-sm text-gray-500">Chargement {{ orders.length }}/{{ ids.length }}…</span>
+      <span class="text-sm text-slate-600">{{ FORMATS[format].hint }}</span>
+      <span v-if="loading" class="text-sm text-slate-600">Chargement {{ orders.length }}/{{ ids.length }}…</span>
       <span v-if="missing" class="text-sm text-amber-700">{{ missing }} course(s) introuvable(s) ou hors de votre accès.</span>
     </div>
 
-    <p v-if="!loading && !orders.length" class="text-gray-500">{{ error || 'Aucune étiquette à imprimer.' }}</p>
+    <p v-if="!loading && !orders.length" class="text-slate-600">{{ error || 'Aucune étiquette à imprimer.' }}</p>
     <p v-if="agencyPrints" class="no-print mb-3 rounded bg-amber-50 p-3 text-sm text-amber-900">L'agence imprime les étiquettes de vos courses : vous n'avez rien à imprimer.</p>
     <!-- Une page imprimée par groupe : quatre étiquettes en A4, une sinon -->
     <div class="sheets">
@@ -26,6 +26,7 @@
 </template>
 
 <script setup>
+import Icone from '../components/ui/Icone.vue'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../bootstrap/axios'

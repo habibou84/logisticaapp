@@ -27,10 +27,10 @@
     <div class="flex flex-wrap gap-2 text-sm" role="group" aria-label="Rentabilité par">
       <button
         v-for="v in VIEWS" :key="v.key" type="button"
-        :class="['rounded-full px-3 py-1 ring-1', view === v.key ? 'bg-slate-900 text-white ring-slate-900' : 'bg-white ring-slate-300']"
+        :class="['inline-flex items-center gap-1 rounded-full px-3 py-1 ring-1', view === v.key ? 'bg-slate-900 text-white ring-slate-900' : 'bg-white ring-slate-300']"
         :aria-pressed="view === v.key" @click="view = v.key"
       >
-        {{ v.label }}
+        <Icone :nom="v.icon" taille="petite" />{{ v.label }}
       </button>
     </div>
 
@@ -38,7 +38,7 @@
     <template v-if="view === 'clients'">
       <div class="flex flex-wrap gap-2 text-sm">
         <span v-for="v in VERDICTS" :key="v.key" :class="['rounded-full px-3 py-1', v.class]">{{ v.label }} : {{ data.clients.filter((c) => c.verdict === v.key).length }}</span>
-        <span class="text-xs text-slate-500 self-center">« À renégocier » : marge sous {{ data.settings.renegotiate_margin }} % (réglable dans Objectifs)</span>
+        <span class="text-xs text-slate-600 self-center">« À renégocier » : marge sous {{ data.settings.renegotiate_margin }} % (réglable dans Objectifs)</span>
       </div>
       <SortableTable title="Rentabilité par client" :columns="clientColumns" :rows="data.clients" initial-sort="margin" filename="rentabilite-clients.csv" empty="Aucun client sur la période.">
         <template #verdict="{ row }"><span :class="['rounded-full px-2 py-0.5 text-xs font-semibold', verdict(row.verdict).class]">{{ verdict(row.verdict).label }}</span></template>
@@ -55,7 +55,7 @@
           >
         </template>
       </SortableTable>
-      <p class="text-xs text-slate-500">
+      <p class="text-xs text-slate-600">
         Simulation : tapez un nouveau tarif moyen pour une zone, la marge est recalculée avec le même nombre de livraisons.
         <template v-if="simulatedGain"> Effet sur la période : <b :class="simulatedGain > 0 ? 'text-emerald-700' : 'text-red-700'">{{ simulatedGain > 0 ? '+' : '' }}{{ money(simulatedGain) }}</b>.</template>
       </p>
@@ -70,7 +70,7 @@
           <span v-if="row.verdict" :class="['rounded-full px-2 py-0.5 text-xs font-semibold', CONTRACT[row.verdict].class]">{{ CONTRACT[row.verdict].label }}</span>
         </template>
       </SortableTable>
-      <p class="text-xs text-slate-500">
+      <p class="text-xs text-slate-600">
         Forfait utilisé à plus de {{ data.settings.forfait_high }} % : à revoir à la hausse ; sous {{ data.settings.forfait_low }} % : sous-utilisé (risque de perdre le client).
         MAD : prix du contrat sur la période comparé au coût des livreurs mis à disposition (paie sans course et véhicule).
       </p>
@@ -78,7 +78,7 @@
 
     <FixedCostsPanel v-if="view === 'fixed'" @changed="emit('reload')" />
 
-    <p class="text-xs text-slate-500">
+    <p class="text-xs text-slate-600">
       Estimation : la paie sans course (fixe, primes, journées MAD) et les coûts des véhicules sont répartis sur les missions de chaque livreur ;
       les frais fixes au nombre de courses livrées. Revenus : frais e-commerce de la période, montant facturé des courses de distribution et de MAD livrées,
       forfaits au prorata des jours et lots commencés sur la période.
@@ -87,6 +87,7 @@
 </template>
 
 <script setup>
+import Icone from '../ui/Icone.vue'
 import { computed, reactive, ref } from 'vue'
 import { money } from '../../utils/format'
 import KpiTile from './KpiTile.vue'
@@ -99,11 +100,11 @@ const emit = defineEmits(['reload'])
 const t = computed(() => props.data.totals)
 
 const VIEWS = [
-  { key: 'clients', label: '🏪 Par client' },
-  { key: 'zones', label: '📍 Par zone' },
-  { key: 'couriers', label: '🛵 Par livreur' },
-  { key: 'contracts', label: '📑 Contrats et forfaits' },
-  { key: 'fixed', label: '🏢 Frais fixes' },
+  { key: 'clients', icon: 'marchand', label: 'Par client' },
+  { key: 'zones', icon: 'adresse', label: 'Par zone' },
+  { key: 'couriers', icon: 'livreur', label: 'Par livreur' },
+  { key: 'contracts', icon: 'contrat', label: 'Contrats et forfaits' },
+  { key: 'fixed', icon: 'entreprise', label: 'Frais fixes' },
 ]
 const view = ref('clients')
 const VERDICTS = [

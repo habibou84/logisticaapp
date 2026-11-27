@@ -5,11 +5,11 @@
       <p v-if="!info.free_vehicles.length" class="m-card p-4 text-slate-600">Aucun véhicule à votre nom ni de libre. Voyez avec l'agence.</p>
       <div v-else class="m-card p-4 space-y-2">
         <p class="font-semibold">Quel véhicule prenez-vous aujourd'hui ?</p>
-        <ChoiceChips v-model="form.vehicle_id" :options="info.free_vehicles.map((v) => ({ value: v.id, icon: VEHICLE_TYPES[v.type]?.icon, label: v.plate, description: [v.name, km(v.odometer)].filter(Boolean).join(' · ') }))" label="Véhicule" />
-        <p class="text-xs text-slate-500">Il vous est confié pour la journée et rendu à votre retour.</p>
+        <ChoiceChips v-model="form.vehicle_id" :options="info.free_vehicles.map((v) => ({ value: v.id, icon: VEHICLE_TYPES[v.type]?.icon || 'vehicule', label: v.plate, description: [v.name, km(v.odometer)].filter(Boolean).join(' · ') }))" label="Véhicule" />
+        <p class="text-xs text-slate-600">Il vous est confié pour la journée et rendu à votre retour.</p>
       </div>
     </template>
-    <p v-else class="text-sm text-slate-600">{{ VEHICLE_TYPES[info.vehicle.type]?.icon }} <b>{{ info.vehicle.plate }}</b> · {{ moment === 'end' ? 'au retour' : 'avant de partir' }}</p>
+    <p v-else class="text-sm text-slate-600"><Icone :nom="VEHICLE_TYPES[info.vehicle.type]?.icon || 'vehicule'" taille="petite" class="inline" /> <b>{{ info.vehicle.plate }}</b> · {{ moment === 'end' ? 'au retour' : 'avant de partir' }}</p>
 
     <template v-if="info.vehicle || form.vehicle_id">
       <div class="m-card p-4">
@@ -17,12 +17,12 @@
         <div class="mt-2 flex gap-3">
           <label class="grid h-20 w-24 shrink-0 cursor-pointer place-items-center overflow-hidden rounded-xl bg-slate-800 text-center text-xs text-emerald-300">
             <img v-if="previews.odometer" :src="previews.odometer" alt="Photo du compteur" class="h-full w-full object-cover">
-            <span v-else>📷<br>Photo{{ info.settings.check_odometer_photo ? ' *' : '' }}</span>
+            <span v-else class="grid justify-items-center gap-1"><Icone nom="photo" />Photo{{ info.settings.check_odometer_photo ? ' *' : '' }}</span>
             <input type="file" accept="image/*" capture="environment" class="hidden" @change="addPhoto('odometer', $event)">
           </label>
           <div class="flex-1">
             <input v-model.number="form.odometer" type="number" inputmode="numeric" min="0" class="m-input text-2xl font-bold" aria-label="Kilométrage du compteur" :placeholder="String(lastKm)">
-            <p class="mt-1 text-xs text-slate-500">{{ form.odometer && form.odometer >= lastKm ? `+${(form.odometer - lastKm).toLocaleString('fr-FR')} km depuis le dernier relevé` : `Dernier relevé : ${km(lastKm)}` }}</p>
+            <p class="mt-1 text-xs text-slate-600">{{ form.odometer && form.odometer >= lastKm ? `+${(form.odometer - lastKm).toLocaleString('fr-FR')} km depuis le dernier relevé` : `Dernier relevé : ${km(lastKm)}` }}</p>
           </div>
         </div>
       </div>
@@ -38,7 +38,7 @@
         <p class="font-semibold">Contrôle rapide</p>
         <div class="mt-2 space-y-1.5">
           <div v-for="i in info.settings.check_items" :key="i.value" class="flex items-center justify-between rounded-xl px-3 py-2 ring-1 ring-slate-200">
-            <span>{{ i.icon }} {{ i.label }}</span>
+            <span><Icone :nom="i.icon || 'controle'" taille="petite" class="inline" /> {{ i.label }}</span>
             <span class="flex gap-1">
               <button type="button" :class="['tap rounded-lg px-2.5 py-1 text-sm font-semibold', form.items[i.value] === 'ok' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600']" @click="form.items[i.value] = 'ok'">OK</button>
               <button type="button" :class="['tap rounded-lg px-2.5 py-1 text-sm font-semibold', form.items[i.value] === 'problem' ? 'bg-red-600 text-white' : 'bg-slate-100 text-slate-600']" @click="form.items[i.value] = 'problem'">Problème</button>
@@ -47,14 +47,14 @@
         </div>
         <template v-if="problems">
           <textarea v-model="form.note" rows="2" class="m-input mt-3" placeholder="Qu'est-ce qui ne va pas ? Ex. rétroviseur gauche cassé" />
-          <label class="m-btn-secondary mt-2 cursor-pointer">📷 Photo du problème ({{ photos.length - (photosByKind.odometer ? 1 : 0) }})<input type="file" accept="image/*" capture="environment" class="hidden" @change="addPhoto('problem', $event)"></label>
+          <label class="m-btn-secondary mt-2 cursor-pointer"><Icone nom="photo" />Photo du problème ({{ photos.length - (photosByKind.odometer ? 1 : 0) }})<input type="file" accept="image/*" capture="environment" class="hidden" @change="addPhoto('problem', $event)"></label>
           <p class="mt-2 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-800">L'agence est prévenue ; vous pouvez partir si le véhicule roule sans danger.</p>
         </template>
       </div>
 
       <p v-if="error" class="text-sm text-red-600">{{ error }}</p>
-      <button type="button" class="m-btn-success py-4 text-lg" :disabled="busy || !canSend" @click="send">
-        {{ busy ? 'Envoi…' : moment === 'end' ? '✓ J\'ai rendu le véhicule' : info.vehicle ? '✓ C\'est bon, je commence' : '✓ Je prends ce véhicule et je commence' }}
+      <button type="button" class="m-btn bg-action text-white py-4 text-lg" :disabled="busy || !canSend" @click="send">
+        <Icone v-if="!busy" nom="valider" />{{ busy ? 'Envoi…' : moment === 'end' ? 'J\'ai rendu le véhicule' : info.vehicle ? 'C\'est bon, je commence' : 'Je prends ce véhicule et je commence' }}
       </button>
     </template>
   </div>
@@ -62,6 +62,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'

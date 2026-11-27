@@ -1,8 +1,9 @@
 <template>
-  <span :class="['shrink-0 grid place-items-center rounded-xl font-bold text-white', small ? 'h-8 w-8 text-xs' : 'h-11 w-11 text-sm', STYLE[type]?.bg || 'bg-slate-500']">{{ STYLE[type]?.text || '?' }}</span>
+  <span :class="['shrink-0 grid place-items-center rounded-xl font-bold text-white', small ? 'h-8 w-8 text-xs' : 'h-11 w-11 text-sm', STYLE[type]?.bg || 'bg-slate-500']"><Icone v-if="STYLE[type]?.icon" :nom="STYLE[type].icon" :taille="small ? 'petite' : 'normale'" /><template v-else>{{ STYLE[type]?.text || '?' }}</template></span>
 </template>
 
 <script setup>
+import Icone from '../ui/Icone.vue'
 // Pastille de couleur d'un moyen de paiement (Wave, Orange Money, MTN, Moov, banque)
 defineProps({ type: { type: String, required: true }, small: { type: Boolean, default: false } })
 
@@ -11,6 +12,6 @@ const STYLE = {
   orange_money: { bg: 'bg-orange-500', text: 'OM' },
   mtn_momo: { bg: 'bg-yellow-400 !text-slate-900', text: 'MTN' },
   moov_money: { bg: 'bg-blue-700', text: 'Moov' },
-  bank: { bg: 'bg-slate-700', text: '🏦' },
+  bank: { bg: 'bg-slate-700', icon: 'banque' },
 }
 </script>

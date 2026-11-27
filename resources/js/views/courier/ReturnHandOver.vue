@@ -1,14 +1,14 @@
 <template>
   <div v-if="slip" class="space-y-4">
     <section class="m-card p-4 space-y-1">
-      <p class="text-xs text-slate-500">Bon de retour {{ slip.reference }}</p>
-      <p class="text-lg font-semibold">🏪 {{ slip.merchant.business_name }}</p>
+      <p class="text-xs text-slate-600">Bon de retour {{ slip.reference }}</p>
+      <p class="text-lg font-semibold"><Icone nom="marchand" taille="normale" class="inline" /> {{ slip.merchant.business_name }}</p>
       <a :href="telLink(slip.merchant.phone)" class="text-blue-600">{{ slip.merchant.phone }}</a>
       <p class="text-sm text-slate-600">{{ [slip.merchant.zone, slip.merchant.address].filter(Boolean).join(' · ') }}</p>
     </section>
 
     <p v-if="slip.status !== 'open'" class="rounded-xl bg-emerald-50 text-emerald-900 p-4">
-      ✅ {{ slip.status_label }}<span v-if="slip.handed_at"> le {{ dateTime(slip.handed_at) }}, reçu par {{ slip.received_by_name }}</span>.
+      <Icone nom="livre" taille="normale" class="inline" /> {{ slip.status_label }}<span v-if="slip.handed_at"> le {{ dateTime(slip.handed_at) }}, reçu par {{ slip.received_by_name }}</span>.
     </p>
 
     <form v-else class="space-y-4" @submit.prevent="submit">
@@ -19,7 +19,7 @@
             <input v-model="selected" type="checkbox" :value="o.id" class="h-5 w-5">
             <span class="flex-1 min-w-0">
               <span class="block font-medium truncate">{{ o.recipient_name || o.recipient_phone }}</span>
-              <span class="block text-xs text-slate-500">{{ o.tracking_code }} · {{ o.incident || o.status_label }}</span>
+              <span class="block text-xs text-slate-600">{{ o.tracking_code }} · {{ o.incident || o.status_label }}</span>
             </span>
           </label>
         </div>
@@ -39,13 +39,13 @@
       <div>
         <p class="m-label">Ou photo de la remise (bon signé)</p>
         <PhotoCapture class="m-btn-secondary" scan="returns" @captured="form.photo = $event">
-          📷 {{ form.photo ? 'Photo prise ✓ (en reprendre une)' : 'Photographier le bon signé' }}
+          <Icone :nom="form.photo ? 'valider' : 'photo'" />{{ form.photo ? 'Photo prise (en reprendre une)' : 'Photographier le bon signé' }}
         </PhotoCapture>
       </div>
 
       <p v-if="error" class="text-sm text-red-600">{{ error }}</p>
       <button class="m-btn-primary" :disabled="busy || !selected.length || !form.received_by_name || (!form.signature && !form.photo)">
-        ✅ Valider la remise de {{ selected.length }} colis
+        <Icone nom="valider" />Valider la remise de {{ selected.length }} colis
       </button>
     </form>
   </div>
@@ -54,6 +54,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import { onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'

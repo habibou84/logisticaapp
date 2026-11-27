@@ -6,10 +6,10 @@
     </div>
 
     <ul v-if="expenses.length" class="space-y-2">
-      <li v-for="e in expenses" :key="e.id" :class="['flex justify-between gap-2', e.cancelled_at ? 'line-through text-gray-400' : '']">
+      <li v-for="e in expenses" :key="e.id" :class="['flex justify-between gap-2', e.cancelled_at ? 'line-through text-slate-500' : '']">
         <span>
           {{ e.description }}
-          <span class="block text-xs text-gray-500">
+          <span class="block text-xs text-slate-600">
             {{ e.paid_by === 'courier' ? `Payé par ${e.courier_name || 'le livreur'}${e.refunded ? ' (remboursé)' : ''}` : 'Payé par l\'agence' }}
             · {{ e.billed_to === 'merchant' ? 'facturé au client' : 'à la charge de l\'agence' }}
           </span>
@@ -22,7 +22,7 @@
         </span>
       </li>
     </ul>
-    <p v-else-if="!form.open" class="text-gray-500">Aucun frais.</p>
+    <p v-else-if="!form.open" class="text-slate-600">Aucun frais.</p>
 
     <form v-if="form.open" class="space-y-2 border-t pt-3" @submit.prevent="save">
       <div class="grid grid-cols-2 gap-2">

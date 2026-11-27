@@ -264,20 +264,20 @@ class Fleet
             foreach ($this->latestDocuments($v) as $doc) {
                 $state = $this->documentState($doc, $s);
                 if (in_array($state['state'], ['expired', 'soon'], true)) {
-                    $alerts[] = ['kind' => 'document', 'icon' => VehicleCatalog::DOCUMENTS[$doc->kind]['icon'] ?? '📄', 'state' => $state['state'],
+                    $alerts[] = ['kind' => 'document', 'icon' => VehicleCatalog::DOCUMENTS[$doc->kind]['icon'] ?? 'document', 'state' => $state['state'],
                         'vehicle_id' => $v->id, 'title' => $v->plate, 'label' => VehicleCatalog::DOCUMENTS[$doc->kind]['label'] ?? $doc->label,
                         'days' => $state['days'], 'date' => $doc->ends_on?->toDateString(), 'document_id' => $doc->id];
                 }
             }
             foreach ($this->maintenance($v, $s) as $item) {
                 if ($item['state'] !== 'ok') {
-                    $alerts[] = ['kind' => 'maintenance', 'icon' => $item['icon'] ?? '🔧', 'state' => $item['state'] === 'due' ? 'expired' : 'soon',
+                    $alerts[] = ['kind' => 'maintenance', 'icon' => $item['icon'] ?? 'atelier', 'state' => $item['state'] === 'due' ? 'expired' : 'soon',
                         'vehicle_id' => $v->id, 'title' => $v->plate, 'label' => $item['label'],
                         'km' => $item['remaining_km'], 'days' => $item['remaining_days'], 'date' => $item['due_on']];
                 }
             }
             if (in_array($v->status, ['broken', 'maintenance', 'immobilized'], true)) {
-                $alerts[] = ['kind' => 'status', 'icon' => '⛔', 'state' => 'expired', 'vehicle_id' => $v->id, 'title' => $v->plate,
+                $alerts[] = ['kind' => 'status', 'icon' => 'refus', 'state' => 'expired', 'vehicle_id' => $v->id, 'title' => $v->plate,
                     'label' => Vehicle::STATUSES[$v->status], 'date' => $v->updated_at?->toDateString()];
             }
         }
@@ -288,7 +288,7 @@ class Fleet
             foreach ($licenses as $doc) {
                 $state = $this->documentState($doc, $s);
                 if (in_array($state['state'], ['expired', 'soon'], true)) {
-                    $alerts[] = ['kind' => 'license', 'icon' => '🪪', 'state' => $state['state'], 'courier_id' => $doc->courier_id,
+                    $alerts[] = ['kind' => 'license', 'icon' => 'permis', 'state' => $state['state'], 'courier_id' => $doc->courier_id,
                         'title' => $doc->courier?->user?->name, 'label' => 'Permis de conduire', 'days' => $state['days'], 'date' => $doc->ends_on?->toDateString()];
                 }
             }
@@ -299,7 +299,7 @@ class Fleet
             foreach (VehicleLease::forCompany($companyId)->where('status', 'active')->with(['vehicle', 'courier.user'])->get() as $lease) {
                 $b = $leases->balance($lease);
                 if ($b['late'] > 0) {
-                    $alerts[] = ['kind' => 'lease', 'icon' => '💸', 'state' => 'expired', 'vehicle_id' => $lease->vehicle_id,
+                    $alerts[] = ['kind' => 'lease', 'icon' => 'argent', 'state' => 'expired', 'vehicle_id' => $lease->vehicle_id,
                         'title' => $lease->vehicle?->plate, 'label' => ($lease->kind === 'purchase' ? 'Location-vente' : 'Location').' en retard', 'courier' => $lease->courier?->user?->name,
                         'amount' => $b['late'], 'lease_id' => $lease->id];
                 }

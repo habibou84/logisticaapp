@@ -5,7 +5,7 @@
     <div>
       <p class="font-semibold text-emerald-900">{{ credit ? 'Avoir' : 'Facture' }} normalisé{{ credit ? '' : 'e' }} électronique · DGI</p>
       <p>N° FNE : <span class="font-mono font-semibold">{{ fne.reference }}</span></p>
-      <p v-if="fne.certified_at" class="text-xs text-gray-600">Certifié{{ credit ? '' : 'e' }} le {{ dateTime(fne.certified_at) }}</p>
+      <p v-if="fne.certified_at" class="text-xs text-slate-600">Certifié{{ credit ? '' : 'e' }} le {{ dateTime(fne.certified_at) }}</p>
       <a v-if="fne.verification_url" :href="fne.verification_url" target="_blank" rel="noopener" class="no-print text-xs text-blue-600">Vérifier sur la FNE</a>
     </div>
   </div>

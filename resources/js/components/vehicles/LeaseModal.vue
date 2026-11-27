@@ -3,7 +3,7 @@
     <form class="space-y-3" @submit.prevent="save">
       <div class="grid grid-cols-2 gap-2">
         <button v-for="k in KINDS" :key="k.value" type="button" :class="['rounded-lg border px-3 py-2 text-left text-sm', form.kind === k.value ? 'border-slate-900 bg-slate-50' : 'border-slate-200']" @click="form.kind = k.value">
-          <span class="block font-semibold">{{ k.label }}</span><span class="block text-xs text-gray-500">{{ k.hint }}</span>
+          <span class="block font-semibold">{{ k.label }}</span><span class="block text-xs text-slate-600">{{ k.hint }}</span>
         </button>
       </div>
       <div>

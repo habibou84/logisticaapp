@@ -10,7 +10,7 @@
     <div class="grid gap-4 lg:grid-cols-2">
       <section class="card p-4">
         <h2 class="font-semibold">Coût par course, par véhicule</h2>
-        <p class="text-xs text-slate-500"><span class="text-amber-500">■</span> carburant <span class="ml-2 text-sky-500">■</span> entretien <span class="ml-2 text-red-500">■</span> réparations, sinistres <span class="ml-2 text-slate-400">■</span> autres</p>
+        <p class="text-xs text-slate-600"><span class="text-amber-500">■</span> carburant <span class="ml-2 text-sky-500">■</span> entretien <span class="ml-2 text-red-500">■</span> réparations, sinistres <span class="ml-2 text-slate-400">■</span> autres</p>
         <ul class="mt-3 space-y-3">
           <li v-for="v in data.vehicles" :key="v.id" class="text-sm">
             <div class="flex justify-between"><RouterLink :to="`/admin/vehicules/${v.id}`"><b class="font-mono">{{ v.plate }}</b> · {{ v.name || VEHICLE_TYPES[v.type]?.label }}</RouterLink>
@@ -19,14 +19,14 @@
               <div v-for="part in parts(v)" :key="part.key" :class="part.color" :style="{ width: `${part.width}%` }" :title="`${part.label} : ${money(part.value)}`" />
             </div>
           </li>
-          <li v-if="!data.vehicles.length" class="text-slate-500">Aucun véhicule.</li>
+          <li v-if="!data.vehicles.length" class="text-slate-600">Aucun véhicule.</li>
         </ul>
       </section>
 
       <section class="card overflow-x-auto p-4">
         <h2 class="font-semibold">Distance et consommation</h2>
         <table class="mt-2 w-full text-left text-sm">
-          <thead class="text-xs uppercase text-slate-500"><tr><th class="p-2">Véhicule</th><th class="p-2">Livreur</th><th class="p-2">Compteur</th><th class="p-2">GPS</th><th class="p-2">Conso.</th><th class="p-2" /></tr></thead>
+          <thead class="text-xs uppercase text-slate-600"><tr><th class="p-2">Véhicule</th><th class="p-2">Livreur</th><th class="p-2">Compteur</th><th class="p-2">GPS</th><th class="p-2">Conso.</th><th class="p-2" /></tr></thead>
           <tr v-for="v in data.vehicles" :key="v.id" class="border-t border-slate-100">
             <td class="p-2 whitespace-nowrap font-mono">{{ v.plate }}</td>
             <td class="p-2">{{ v.courier || '—' }}</td>
@@ -37,7 +37,7 @@
               <span v-else-if="v.consumption" class="rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-800">normal</span></td>
           </tr>
         </table>
-        <p class="mt-2 text-xs text-slate-500">
+        <p class="mt-2 text-xs text-slate-600">
           Compteur : relevés des états des lieux, des pleins et du carnet, comparés au trajet GPS de l'application (écart signalé au-delà de {{ data.gps_gap_percent }} %).
           Consommation comparée à celle du véhicule les 90 jours d'avant (alerte au-delà de {{ data.fuel_anomaly_percent }} %).
         </p>

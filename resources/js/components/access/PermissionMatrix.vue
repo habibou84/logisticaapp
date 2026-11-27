@@ -1,12 +1,12 @@
 <template>
   <div class="card overflow-x-auto">
     <table class="w-full text-sm">
-      <thead class="bg-slate-50 text-left text-gray-600">
+      <thead class="bg-slate-50 text-left text-slate-600">
         <tr>
           <th class="p-2 sticky left-0 bg-slate-50 min-w-56">Droit</th>
           <th v-for="r in roles" :key="r.value" class="p-2 text-center align-bottom">
-            <span class="block text-xs font-semibold text-gray-800 whitespace-nowrap">{{ r.label }}</span>
-            <span v-if="r.custom" class="text-[10px] text-indigo-700">sur mesure</span>
+            <span class="block text-xs font-semibold text-slate-800 whitespace-nowrap">{{ r.label }}</span>
+            <span v-if="r.custom" class="text-xs text-indigo-700">sur mesure</span>
           </th>
         </tr>
       </thead>

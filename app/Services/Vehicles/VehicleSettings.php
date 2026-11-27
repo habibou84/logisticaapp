@@ -135,7 +135,7 @@ class VehicleSettings
                 return array_values(array_map(fn ($i) => [
                     'key' => ($i['key'] ?? '') ?: Str::slug((string) $i['label'], '_'),
                     'label' => trim((string) $i['label']),
-                    'icon' => ($i['icon'] ?? '') ?: '🔧',
+                    'icon' => ($i['icon'] ?? '') ?: 'atelier',
                     'every_km' => isset($i['every_km']) && $i['every_km'] !== '' ? (int) $i['every_km'] : null,
                     'every_months' => isset($i['every_months']) && $i['every_months'] !== '' ? (int) $i['every_months'] : null,
                 ], $items));

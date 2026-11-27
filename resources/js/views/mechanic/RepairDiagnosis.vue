@@ -8,7 +8,7 @@
         <button v-for="c in mechanicSetup.categories" :key="c.key" type="button" :aria-pressed="form.category === c.key"
                 :class="['tap rounded-xl border-[1.5px] px-1 py-2.5 text-center text-xs font-semibold', form.category === c.key ? 'border-[var(--app-color)] bg-orange-50 text-orange-900' : 'border-slate-200 bg-white text-slate-700']"
                 @click="form.category = c.key">
-          <span class="block text-xl" aria-hidden="true">{{ c.icon }}</span>{{ c.label }}
+          <span class="mb-0.5 grid place-items-center text-xl" aria-hidden="true"><Icone :nom="c.icon || 'atelier'" /></span>{{ c.label }}
         </button>
       </div>
     </fieldset>
@@ -47,6 +47,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import { onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'

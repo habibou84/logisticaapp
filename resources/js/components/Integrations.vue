@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-6">
-    <p class="text-sm text-gray-600">
+    <p class="text-sm text-slate-600">
       Connectez une boutique en ligne ou un logiciel : il crée les courses et suit leur livraison automatiquement.
       <a href="/developpeurs/api" target="_blank" class="text-blue-600 underline">Documentation de l'API</a>
     </p>
@@ -31,7 +31,7 @@
         <fieldset>
           <legend class="label">Autorisations</legend>
           <label v-for="s in scopes" :key="s.value" class="flex items-center gap-2 text-sm py-0.5">
-            <input v-model="keyForm.scopes" type="checkbox" :value="s.value"> {{ s.label }} <code class="text-xs text-gray-500">{{ s.value }}</code>
+            <input v-model="keyForm.scopes" type="checkbox" :value="s.value"> {{ s.label }} <code class="text-xs text-slate-600">{{ s.value }}</code>
           </label>
         </fieldset>
         <div>
@@ -45,9 +45,9 @@
       <div class="divide-y">
         <div v-for="k in keys" :key="k.id" :class="['py-3 flex flex-wrap items-center justify-between gap-2', k.is_active ? '' : 'opacity-50']">
           <div class="min-w-0">
-            <p class="font-medium">{{ k.name }} <span v-if="staff && !merchantId && k.merchant_name" class="text-xs text-gray-500">· {{ k.merchant_name }}</span></p>
-            <p class="text-xs text-gray-500 font-mono">{{ k.masked_key }}</p>
-            <p class="text-xs text-gray-500">
+            <p class="font-medium">{{ k.name }} <span v-if="staff && !merchantId && k.merchant_name" class="text-xs text-slate-600">· {{ k.merchant_name }}</span></p>
+            <p class="text-xs text-slate-600 font-mono">{{ k.masked_key }}</p>
+            <p class="text-xs text-slate-600">
               {{ k.scopes.join(', ') }} ·
               {{ k.revoked_at ? `révoquée le ${dateTime(k.revoked_at)}` : k.last_used_at ? `utilisée le ${dateTime(k.last_used_at)}` : 'jamais utilisée' }}
               <span v-if="k.expires_at && !k.revoked_at"> · expire le {{ date(k.expires_at) }}</span>
@@ -55,7 +55,7 @@
           </div>
           <button v-if="!k.revoked_at" type="button" class="btn-secondary text-red-600" @click="revoke(k)">Révoquer</button>
         </div>
-        <p v-if="ready && !keys.length" class="py-3 text-sm text-gray-500">Aucune clé.</p>
+        <p v-if="ready && !keys.length" class="py-3 text-sm text-slate-600">Aucune clé.</p>
       </div>
     </section>
 
@@ -64,7 +64,7 @@
       <div class="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 class="font-semibold">Webhooks</h2>
-          <p class="text-xs text-gray-500">Votre site est prévenu à chaque événement (signature HMAC-SHA256).</p>
+          <p class="text-xs text-slate-600">Votre site est prévenu à chaque événement (signature HMAC-SHA256).</p>
         </div>
         <button type="button" class="btn-primary" :disabled="!ready" @click="openHookForm()">+ Nouvelle adresse</button>
       </div>
@@ -77,7 +77,7 @@
         <fieldset>
           <legend class="label">Événements</legend>
           <label v-for="e in events" :key="e.value" class="flex items-center gap-2 text-sm py-0.5">
-            <input v-model="hookForm.events" type="checkbox" :value="e.value"> {{ e.label }} <code class="text-xs text-gray-500">{{ e.value }}</code>
+            <input v-model="hookForm.events" type="checkbox" :value="e.value"> {{ e.label }} <code class="text-xs text-slate-600">{{ e.value }}</code>
           </label>
         </fieldset>
         <div>
@@ -96,8 +96,8 @@
           <div class="flex flex-wrap items-start justify-between gap-2">
             <div class="min-w-0">
               <p class="font-medium break-all">{{ h.url }}</p>
-              <p class="text-xs text-gray-500">
-                <span :class="h.is_active ? 'text-emerald-700' : 'text-gray-500'">{{ h.is_active ? 'Active' : 'Désactivée' }}</span>
+              <p class="text-xs text-slate-600">
+                <span :class="h.is_active ? 'text-emerald-700' : 'text-slate-600'">{{ h.is_active ? 'Active' : 'Désactivée' }}</span>
                 · {{ h.events.join(', ') }}
                 <span v-if="staff && !merchantId && h.merchant_name"> · {{ h.merchant_name }}</span>
               </p>
@@ -116,13 +116,13 @@
           </div>
 
           <div v-if="log.id === h.id" class="rounded-lg bg-slate-50 p-2 text-sm">
-            <p v-if="!log.items.length" class="text-gray-500 p-1">Aucun envoi pour le moment.</p>
+            <p v-if="!log.items.length" class="text-slate-600 p-1">Aucun envoi pour le moment.</p>
             <div v-for="d in log.items" :key="d.id" class="border-b last:border-0 py-1.5">
               <div class="flex flex-wrap items-center justify-between gap-2">
                 <span>
                   <span :class="['rounded-full px-2 py-0.5 text-xs', DELIVERY_STATUS[d.status].class]">{{ DELIVERY_STATUS[d.status].label }}</span>
                   <code class="ml-1 text-xs">{{ d.event }}</code>
-                  <span class="text-xs text-gray-500"> · {{ dateTime(d.created_at) }} · {{ d.attempts }} tentative(s){{ d.response_code ? ` · HTTP ${d.response_code}` : '' }}</span>
+                  <span class="text-xs text-slate-600"> · {{ dateTime(d.created_at) }} · {{ d.attempts }} tentative(s){{ d.response_code ? ` · HTTP ${d.response_code}` : '' }}</span>
                 </span>
                 <span class="flex gap-1">
                   <button type="button" class="text-xs text-blue-600 underline" @click="log.open = log.open === d.id ? null : d.id">Contenu</button>
@@ -134,7 +134,7 @@
             </div>
           </div>
         </div>
-        <p v-if="ready && !hooks.length" class="py-3 text-sm text-gray-500">Aucune adresse.</p>
+        <p v-if="ready && !hooks.length" class="py-3 text-sm text-slate-600">Aucune adresse.</p>
       </div>
     </section>
   </div>

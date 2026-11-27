@@ -50,7 +50,7 @@
               avec le prix et crée la course après confirmation. Menu : nouvelle course, point du jour, suivi d'un colis.
             </p>
             <p :class="['mt-1', s.ai_parser ? 'text-emerald-700' : 'text-slate-600']">
-              {{ s.ai_parser ? '✨ Les messages libres sont compris par Claude.' : 'Les messages sont lus par des règles (numéros, montants, communes, format « Nom : … »).' }}
+              <Icone v-if="s.ai_parser" nom="ia" taille="petite" class="inline" /> {{ s.ai_parser ? 'Les messages libres sont compris par Claude.' : 'Les messages sont lus par des règles (numéros, montants, communes, format « Nom : … »).' }}
             </p>
           </div>
           <RouterLink to="/admin/whatsapp/simulateur" class="btn-secondary shrink-0">Essayer le robot</RouterLink>
@@ -67,6 +67,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import { onMounted, ref } from 'vue'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import SwitchButton from '../../components/ui/SwitchButton.vue'

@@ -10,11 +10,11 @@
         <KpiTile title="Chiffre d'affaires" kind="money" :value="data.pareto.total" />
       </div>
       <p v-if="data.pareto.top_share >= 30" class="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">
-        ⚠️ Un seul client fait {{ data.pareto.top_share.toLocaleString('fr-FR') }} % du chiffre d'affaires : son départ pèserait lourd.
+        <Icone nom="alerte" taille="petite" class="inline align-text-bottom" /> Un seul client fait {{ data.pareto.top_share.toLocaleString('fr-FR') }} % du chiffre d'affaires : son départ pèserait lourd.
       </p>
       <ul class="space-y-1.5 text-sm">
         <li v-for="r in data.pareto.rows.slice(0, 15)" :key="r.id">
-          <div class="flex justify-between gap-2"><span>{{ r.name }}</span><span class="whitespace-nowrap font-semibold">{{ money(r.revenue) }} · {{ r.share.toLocaleString('fr-FR') }} % <span class="font-normal text-slate-500">(cumul {{ r.cumulative.toLocaleString('fr-FR') }} %)</span></span></div>
+          <div class="flex justify-between gap-2"><span>{{ r.name }}</span><span class="whitespace-nowrap font-semibold">{{ money(r.revenue) }} · {{ r.share.toLocaleString('fr-FR') }} % <span class="font-normal text-slate-600">(cumul {{ r.cumulative.toLocaleString('fr-FR') }} %)</span></span></div>
           <div class="mt-1 h-2 rounded bg-slate-100"><div :class="['h-2 rounded', r.cumulative <= 80 ? 'bg-blue-600' : 'bg-slate-300']" :style="{ width: `${r.share}%` }" /></div>
         </li>
       </ul>
@@ -22,15 +22,15 @@
 
     <!-- Clients en baisse -->
     <section class="card space-y-2 p-4">
-      <h2 class="font-semibold">📉 Clients en baisse <span class="text-sm font-normal text-slate-500">· 30 derniers jours contre la moyenne des 3 mois d'avant</span></h2>
-      <p v-if="!data.decline.length" class="text-sm text-slate-500">Aucun client en baisse de plus de 20 %.</p>
+      <h2 class="font-semibold"><Icone nom="baisse" class="inline align-text-bottom" /> Clients en baisse <span class="text-sm font-normal text-slate-600">· 30 derniers jours contre la moyenne des 3 mois d'avant</span></h2>
+      <p v-if="!data.decline.length" class="text-sm text-slate-600">Aucun client en baisse de plus de 20 %.</p>
       <ul v-else class="divide-y text-sm">
         <li v-for="c in data.decline" :key="c.id" class="flex flex-wrap items-center justify-between gap-2 py-2">
-          <span class="min-w-[12rem] flex-1"><b>{{ c.name }}</b><span class="block text-xs text-slate-500">{{ c.contact_name || '' }} {{ c.phone || '' }}</span></span>
+          <span class="min-w-[12rem] flex-1"><b>{{ c.name }}</b><span class="block text-xs text-slate-600">{{ c.contact_name || '' }} {{ c.phone || '' }}</span></span>
           <span>{{ c.recent }} course(s) contre {{ c.average }} par mois · <b class="text-red-700">{{ c.change }} %</b></span>
           <span v-if="c.phone" class="flex gap-2">
-            <a :href="`tel:${c.phone}`" class="btn-secondary py-1">📞 Appeler</a>
-            <a :href="`https://wa.me/${c.phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Bonjour ${c.contact_name || ''}, nous n'avons pas eu de vos nouvelles ces dernières semaines : avez-vous des courses à nous confier ?`)}`" target="_blank" rel="noopener" class="btn-secondary py-1">💬 WhatsApp</a>
+            <a :href="`tel:${c.phone}`" class="btn-secondary py-1"><Icone nom="appeler" taille="petite" />Appeler</a>
+            <a :href="`https://wa.me/${c.phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Bonjour ${c.contact_name || ''}, nous n'avons pas eu de vos nouvelles ces dernières semaines : avez-vous des courses à nous confier ?`)}`" target="_blank" rel="noopener" class="btn-secondary py-1"><Icone nom="message" taille="petite" />WhatsApp</a>
           </span>
         </li>
       </ul>
@@ -39,7 +39,7 @@
     <!-- Fidélité par mois d'arrivée -->
     <section class="card overflow-x-auto">
       <h2 class="p-4 pb-1 font-semibold">Fidélité des nouveaux clients</h2>
-      <p class="px-4 pb-2 text-xs text-slate-500">Part des clients arrivés un mois qui envoient encore des courses 1, 2, 3 et 6 mois après.</p>
+      <p class="px-4 pb-2 text-xs text-slate-600">Part des clients arrivés un mois qui envoient encore des courses 1, 2, 3 et 6 mois après.</p>
       <table class="w-full text-sm">
         <thead class="bg-slate-50 text-left text-slate-600">
           <tr><th class="p-2">Arrivés en</th><th class="p-2 text-right">Clients</th><th v-for="o in OFFSETS" :key="o" class="p-2 text-right">{{ o }} mois après</th></tr>
@@ -50,7 +50,7 @@
             <td class="p-2 text-right">{{ c.size }}</td>
             <td v-for="o in OFFSETS" :key="o" class="p-2 text-right" :style="cellStyle(c.retention[o])">{{ c.retention[o] === null ? '' : `${c.retention[o]} %` }}</td>
           </tr>
-          <tr v-if="!data.cohorts.some((x) => x.size)"><td colspan="6" class="p-6 text-center text-slate-500">Aucun nouveau client sur les 12 derniers mois.</td></tr>
+          <tr v-if="!data.cohorts.some((x) => x.size)"><td colspan="6" class="p-6 text-center text-slate-600">Aucun nouveau client sur les 12 derniers mois.</td></tr>
         </tbody>
       </table>
     </section>
@@ -72,6 +72,7 @@
 </template>
 
 <script setup>
+import Icone from '../ui/Icone.vue'
 import { money } from '../../utils/format'
 import KpiTile from './KpiTile.vue'
 import SortableTable from './SortableTable.vue'

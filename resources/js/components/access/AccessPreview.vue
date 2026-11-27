@@ -1,7 +1,7 @@
 <template>
   <Modal :open="!!userId" wide :title="data ? `Ce que voit ${data.name}` : 'Ce que voit ce compte'" @close="$emit('close')">
     <p v-if="error" class="field-error">{{ error }}</p>
-    <p v-else-if="!data" class="text-sm text-gray-500">Chargement…</p>
+    <p v-else-if="!data" class="text-sm text-slate-600">Chargement…</p>
     <div v-else class="space-y-4">
       <p class="text-sm">
         Rôle <strong>{{ data.role_label || '—' }}</strong>
@@ -10,7 +10,7 @@
       </p>
 
       <div class="rounded-lg bg-slate-50 p-3 text-sm space-y-1">
-        <p class="font-semibold">Périmètre <span class="font-normal text-gray-500">({{ data.scope.from_role ? 'celui du rôle' : 'propre au compte' }})</span></p>
+        <p class="font-semibold">Périmètre <span class="font-normal text-slate-600">({{ data.scope.from_role ? 'celui du rôle' : 'propre au compte' }})</span></p>
         <p>Activités : {{ data.scope.activities.length ? data.scope.activities.map(activityLabel).join(', ') : 'toutes' }}</p>
         <p>Zones : {{ data.scope.zones.length ? data.scope.zones.join(', ') : 'toutes' }}</p>
         <p v-if="data.scope.hubs.length">Dépôts : {{ data.scope.hubs.join(', ') }}</p>
@@ -19,10 +19,10 @@
       <div v-if="data.space === 'staff'" class="grid sm:grid-cols-[14rem_1fr] gap-4">
         <!-- Son menu, tel qu'il l'aura -->
         <nav class="rounded-lg bg-slate-900 text-slate-100 p-3 text-sm space-y-2" aria-label="Menu de ce compte">
-          <p v-for="i in menu.top" :key="i.to">{{ i.icon }} {{ i.label }}</p>
+          <p v-for="i in menu.top" :key="i.to" class="flex items-center gap-1.5"><Icone :nom="i.icon" taille="petite" /> {{ i.label }}</p>
           <div v-for="g in menu.groups" :key="g.id">
-            <p class="text-[11px] uppercase tracking-wide text-slate-400 mt-2">{{ g.label }}</p>
-            <p v-for="i in g.items" :key="i.to" class="pl-1">{{ i.icon }} {{ i.label }}</p>
+            <p class="text-xs uppercase tracking-wide text-slate-400 mt-2">{{ g.label }}</p>
+            <p v-for="i in g.items" :key="i.to" class="flex items-center gap-1.5 pl-1"><Icone :nom="i.icon" taille="petite" /> {{ i.label }}</p>
           </div>
         </nav>
         <div class="space-y-2">
@@ -37,12 +37,13 @@
           </div>
         </div>
       </div>
-      <p v-else class="text-sm text-gray-600">Compte {{ data.space === 'courier' ? 'livreur : application livreur, ses missions' : data.space === 'mechanic' ? 'mécanicien : application mécanicien, ses pannes' : 'client : espace client' }}.</p>
+      <p v-else class="text-sm text-slate-600">Compte {{ data.space === 'courier' ? 'livreur : application livreur, ses missions' : data.space === 'mechanic' ? 'mécanicien : application mécanicien, ses pannes' : 'client : espace client' }}.</p>
     </div>
   </Modal>
 </template>
 
 <script setup>
+import Icone from '../ui/Icone.vue'
 import { computed, ref, watch } from 'vue'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import Modal from '../Modal.vue'

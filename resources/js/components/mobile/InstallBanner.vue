@@ -13,7 +13,7 @@
           <li>Faites défiler et touchez <strong>« Sur l'écran d'accueil »</strong>.</li>
           <li>Touchez <strong>Ajouter</strong>, puis ouvrez l'application depuis son icône.</li>
         </ol>
-        <p v-if="!inSafari" class="mt-1 text-xs text-slate-500">Option absente ? Ouvrez cette page dans <strong>Safari</strong>.</p>
+        <p v-if="!inSafari" class="mt-1 text-xs text-slate-600">Option absente ? Ouvrez cette page dans <strong>Safari</strong>.</p>
       </template>
 
       <p v-else-if="mode === 'in-app'" class="text-slate-600">

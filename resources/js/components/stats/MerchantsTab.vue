@@ -9,22 +9,22 @@
 
     <div class="grid gap-4 lg:grid-cols-2">
       <section class="card p-4 space-y-3">
-        <h2 class="font-semibold">Top clients <span class="text-sm font-normal text-slate-500">· courses créées</span></h2>
+        <h2 class="font-semibold">Top clients <span class="text-sm font-normal text-slate-600">· courses créées</span></h2>
         <BarList :items="top" empty="Aucune course sur la période." />
       </section>
 
       <section class="card p-4 space-y-3">
-        <h2 class="font-semibold">À relancer <span class="text-sm font-normal text-slate-500">· plus de course depuis {{ data.inactive_days }} jours</span></h2>
+        <h2 class="font-semibold">À relancer <span class="text-sm font-normal text-slate-600">· plus de course depuis {{ data.inactive_days }} jours</span></h2>
         <ul v-if="data.inactive.length" class="max-h-72 divide-y overflow-y-auto text-sm">
           <li v-for="m in data.inactive" :key="m.id" class="flex items-center justify-between gap-2 py-2">
             <div>
               <p class="font-medium">{{ m.name }}</p>
-              <p class="text-xs text-slate-500">{{ m.contact_name }} · dernière course il y a {{ m.days }} jours</p>
+              <p class="text-xs text-slate-600">{{ m.contact_name }} · dernière course il y a {{ m.days }} jours</p>
             </div>
-            <a v-if="m.phone" :href="whatsappLink(m.phone)" target="_blank" rel="noopener" class="whitespace-nowrap rounded-lg bg-emerald-50 px-3 py-1.5 text-emerald-800 hover:bg-emerald-100">💬 Écrire</a>
+            <a v-if="m.phone" :href="whatsappLink(m.phone)" target="_blank" rel="noopener" class="inline-flex items-center gap-1 whitespace-nowrap rounded-lg bg-emerald-50 px-3 py-1.5 text-emerald-800 hover:bg-emerald-100"><Icone nom="message" taille="petite" />Écrire</a>
           </li>
         </ul>
-        <p v-else class="text-sm text-slate-500">Tous vos clients commandent régulièrement. 👏</p>
+        <p v-else class="text-sm text-slate-600">Tous vos clients commandent régulièrement. <Icone nom="bravo" taille="petite" class="inline align-text-bottom" /></p>
       </section>
     </div>
 
@@ -34,11 +34,12 @@
         <span v-else>—</span>
       </template>
     </SortableTable>
-    <p class="text-xs text-slate-500">Réussite : livrées parmi les courses terminées (livrées, retournées, perdues). Un taux bas peut signaler des clients injoignables ou des produits refusés. À reverser : solde actuel, tous mois confondus.</p>
+    <p class="text-xs text-slate-600">Réussite : livrées parmi les courses terminées (livrées, retournées, perdues). Un taux bas peut signaler des clients injoignables ou des produits refusés. À reverser : solde actuel, tous mois confondus.</p>
   </div>
 </template>
 
 <script setup>
+import Icone from '../ui/Icone.vue'
 import { computed } from 'vue'
 import { money, whatsappLink } from '../../utils/format'
 import BarList from './BarList.vue'

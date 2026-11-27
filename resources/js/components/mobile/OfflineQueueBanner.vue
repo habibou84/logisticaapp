@@ -1,15 +1,15 @@
 <template>
   <!-- Actions faites hors connexion : en attente d'envoi, ou refusées au retour du réseau -->
   <button v-if="offlineQueue.pending.length" type="button" class="block w-full bg-sky-600 text-white text-center text-sm font-medium py-1.5" @click="sendNow">
-    {{ offlineQueue.syncing ? 'Envoi en cours…' : `⏳ ${offlineQueue.pending.length} action${offlineQueue.pending.length > 1 ? 's' : ''} en attente d'envoi` }}
+    <Icone v-if="!offlineQueue.syncing" nom="sablier" taille="petite" class="inline" /> {{ offlineQueue.syncing ? 'Envoi en cours…' : `${offlineQueue.pending.length} action${offlineQueue.pending.length > 1 ? 's' : ''} en attente d'envoi` }}
     <span v-if="pwa.online && !offlineQueue.syncing" class="underline ml-1">Envoyer</span>
   </button>
   <button v-if="photoQueue.count" type="button" class="block w-full bg-sky-600 text-white text-center text-sm font-medium py-1.5" @click="syncPhotoQueue">
-    {{ photoQueue.syncing ? 'Envoi des photos…' : `📷 ${photoQueue.count} photo${photoQueue.count > 1 ? 's' : ''} en attente d'envoi` }}
+    <Icone v-if="!photoQueue.syncing" nom="photo" taille="petite" class="inline" /> {{ photoQueue.syncing ? 'Envoi des photos…' : `${photoQueue.count} photo${photoQueue.count > 1 ? 's' : ''} en attente d'envoi` }}
     <span v-if="pwa.online && !photoQueue.syncing" class="underline ml-1">Envoyer</span>
   </button>
   <button v-if="offlineQueue.rejected.length" type="button" class="block w-full bg-red-600 text-white text-center text-sm font-medium py-1.5" @click="open = true">
-    ⚠️ {{ offlineQueue.rejected.length }} action{{ offlineQueue.rejected.length > 1 ? 's' : '' }} refusée{{ offlineQueue.rejected.length > 1 ? 's' : '' }} : voir
+    <Icone nom="alerte" taille="petite" class="inline" /> {{ offlineQueue.rejected.length }} action{{ offlineQueue.rejected.length > 1 ? 's' : '' }} refusée{{ offlineQueue.rejected.length > 1 ? 's' : '' }} : voir
   </button>
 
   <BottomSheet :open="open" title="Actions refusées" @close="open = false">
@@ -26,6 +26,7 @@
 </template>
 
 <script setup>
+import Icone from '../ui/Icone.vue'
 import { ref, watch } from 'vue'
 import BottomSheet from './BottomSheet.vue'
 import { dismissRejected, offlineQueue, syncOfflineQueue } from '../../composables/useOfflineQueue'

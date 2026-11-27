@@ -1,7 +1,7 @@
 <template>
   <RouterLink :to="`/mecanicien/pannes/${repair.id}`" :class="['tap m-card block border-l-4 p-3.5 active:bg-slate-50', SEVERITY_BORDERS[repair.severity] || 'border-l-slate-300']">
     <div class="flex items-start gap-3">
-      <span class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-slate-100 text-xl" aria-hidden="true">{{ repair.icon || '🛠️' }}</span>
+      <span class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-slate-100 text-xl" aria-hidden="true"><Icone :nom="repair.icon || 'atelier'" taille="grande" /></span>
       <div class="min-w-0 flex-1">
         <p class="font-semibold leading-snug">{{ repair.category_label ? `${repair.category_label}${repair.part ? ' · ' + repair.part : ''}` : repair.title }}</p>
         <p class="truncate text-sm text-slate-600">
@@ -10,15 +10,16 @@
       </div>
       <span :class="['shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold', badge.class]">{{ badge.label }}</span>
     </div>
-    <div class="mt-2 flex items-center gap-2 text-xs text-slate-500">
-      <span v-if="repair.distance_km !== null">📍 {{ repair.distance_km }} km</span>
-      <span v-else-if="repair.source === 'manual'">🏠 Créée par l'équipe</span>
+    <div class="mt-2 flex items-center gap-2 text-xs text-slate-600">
+      <span v-if="repair.distance_km !== null" class="inline-flex items-center gap-1"><Icone nom="adresse" taille="petite" />{{ repair.distance_km }} km</span>
+      <span v-else-if="repair.source === 'manual'" class="inline-flex items-center gap-1"><Icone nom="entreprise" taille="petite" />Créée par l'équipe</span>
       <span class="ml-auto font-mono">{{ footer }}</span>
     </div>
   </RouterLink>
 </template>
 
 <script setup>
+import Icone from '../ui/Icone.vue'
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import { SEVERITY_STYLES } from '../../composables/useFieldEvents'

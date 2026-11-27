@@ -123,7 +123,7 @@ class ClientSpaceTest extends TestCase
         $this->send()->assertCreated(); // 5/5 : 100 %
         $this->send()->assertCreated(); // au-delà : déjà prévenu
         Notification::assertSentToTimes($this->merchantUser, ClientBillingAlert::class, 2);
-        Notification::assertSentTo($this->merchantUser, ClientBillingAlert::class, fn ($n) => $n->title === '📦 Forfait du mois épuisé');
+        Notification::assertSentTo($this->merchantUser, ClientBillingAlert::class, fn ($n) => $n->title === 'Forfait du mois épuisé');
     }
 
     public function test_forfait_count_is_hidden_from_the_client_by_default(): void

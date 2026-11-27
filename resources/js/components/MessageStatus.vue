@@ -1,13 +1,14 @@
 <template>
-  <span :class="['inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap', CLASSES[message.status]]" :title="message.error || ''">
-    {{ PREFIX[message.channel] || '' }}{{ message.channel === 'push' && message.status === 'sent' ? 'Notifiée' : message.status_label }}
+  <span :class="['inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap', CLASSES[message.status]]" :title="message.error || ''">
+    <Icone v-if="message.channel === 'push'" nom="mobile" taille="petite" />{{ PREFIX[message.channel] || '' }}{{ message.channel === 'push' && message.status === 'sent' ? 'Notifiée' : message.status_label }}
   </span>
 </template>
 
 <script setup>
+import Icone from './ui/Icone.vue'
 defineProps({ message: { type: Object, required: true } })
 
-const PREFIX = { sms: 'SMS · ', push: '📱 ' }
+const PREFIX = { sms: 'SMS · ' }
 
 const CLASSES = {
   queued: 'bg-slate-100 text-slate-700',

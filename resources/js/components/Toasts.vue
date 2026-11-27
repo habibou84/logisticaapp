@@ -15,7 +15,7 @@
         @touchend="end(toast)"
         @touchcancel="end(toast)"
       >
-        <span :class="['mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full text-xs font-bold text-white', dots[toast.type]]" aria-hidden="true">{{ icons[toast.type] }}</span>
+        <span :class="['mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full text-xs font-bold text-white', dots[toast.type]]" aria-hidden="true"><Icone :nom="icons[toast.type]" taille="petite" /></span>
         <button type="button" class="min-w-0 flex-1 text-left" @click="open(toast)">
           <p v-if="toast.title" class="flex items-center gap-1.5 font-semibold leading-snug">
             <span class="truncate">{{ toast.title }}</span>
@@ -23,19 +23,20 @@
           </p>
           <p class="line-clamp-2 leading-snug opacity-90">{{ toast.message }}</p>
         </button>
-        <button type="button" class="-my-1 grid h-9 w-9 shrink-0 place-items-center rounded-full text-lg leading-none opacity-60 hover:bg-black/5 hover:opacity-100" aria-label="Fermer l'alerte" @click.stop="toasts.dismiss(toast.id)">×</button>
+        <button type="button" class="-my-1 grid h-9 w-9 shrink-0 place-items-center rounded-full text-lg leading-none opacity-60 hover:bg-black/5 hover:opacity-100" aria-label="Fermer l'alerte" @click.stop="toasts.dismiss(toast.id)"><Icone nom="fermer" taille="petite" /></button>
       </div>
     </TransitionGroup>
 
     <div v-if="hidden || toasts.items.length > 1" class="pointer-events-auto flex items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white/95 px-3 py-1.5 text-xs text-slate-700 shadow">
       <button v-if="hidden" type="button" class="font-semibold text-blue-700" @click="showAll">+ {{ hidden }} autre{{ hidden > 1 ? 's' : '' }} alerte{{ hidden > 1 ? 's' : '' }}</button>
       <span v-else />
-      <button type="button" class="font-medium text-slate-500 hover:text-slate-800" @click="toasts.clear()">Tout fermer</button>
+      <button type="button" class="font-medium text-slate-600 hover:text-slate-800" @click="toasts.clear()">Tout fermer</button>
     </div>
   </div>
 </template>
 
 <script setup>
+import Icone from './ui/Icone.vue'
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToastStore } from '../stores/toasts'
@@ -51,7 +52,8 @@ const classes = {
   error: 'bg-red-50 border-red-200 text-red-900',
 }
 const dots = { info: 'bg-blue-500', success: 'bg-emerald-500', error: 'bg-red-500' }
-const icons = { info: 'i', success: '✓', error: '!' }
+// Un nom du dictionnaire donne l'icône, un autre texte s'affiche tel quel
+const icons = { info: 'i', success: 'valider', error: '!' }
 
 // Téléphone : 2 alertes visibles au plus ; ordinateur : 4
 const phone = ref(false)

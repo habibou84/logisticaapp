@@ -12,7 +12,7 @@
         <label class="label" for="nc-password">Mot de passe (facultatif, 8 caractères min.)</label>
         <div class="flex">
           <input id="nc-password" v-model="data.password" :type="showPassword ? 'text' : 'password'" class="input rounded-r-none" autocomplete="new-password" placeholder="Vide : un lien de connexion à envoyer par WhatsApp">
-          <button type="button" class="rounded-r-lg border border-l-0 border-slate-300 px-3" :aria-label="showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'" @click="showPassword = !showPassword">{{ showPassword ? '🙈' : '👁️' }}</button>
+          <button type="button" class="rounded-r-lg border border-l-0 border-slate-300 px-3" :aria-label="showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'" @click="showPassword = !showPassword"><Icone :nom="showPassword ? 'masquer' : 'voir'" /></button>
         </div>
         <p class="mt-1 text-xs text-slate-600">Sans mot de passe, vous recevez un lien personnel à envoyer par WhatsApp : le livreur arrive connecté dans son application.</p>
       </div>
@@ -22,7 +22,7 @@
 
     <div v-else class="space-y-3 text-sm">
       <p>Envoyez ce lien à <strong>{{ invitation.user.name }}</strong> ({{ invitation.user.phone }}). Il est personnel, ne sert qu'une fois et expire le {{ dateTime(invitation.expires_at) }}.</p>
-      <a :href="invitation.whatsapp_link" target="_blank" rel="noopener" class="flex w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] py-3 font-semibold text-white hover:bg-[#1ebe5b]">💬 Envoyer par WhatsApp</a>
+      <a :href="invitation.whatsapp_link" target="_blank" rel="noopener" class="flex w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] py-3 font-semibold text-white hover:bg-[#1ebe5b]"><Icone nom="message" />Envoyer par WhatsApp</a>
       <div class="flex gap-2">
         <input :value="invitation.url" readonly class="input flex-1 text-xs" aria-label="Lien de connexion" @focus="$event.target.select()">
         <button type="button" class="btn-secondary" @click="copy">Copier</button>
@@ -33,6 +33,7 @@
 </template>
 
 <script setup>
+import Icone from './ui/Icone.vue'
 import { reactive, ref, watch } from 'vue'
 import http, { apiErrorMessage } from '../bootstrap/axios'
 import { useToastStore } from '../stores/toasts'

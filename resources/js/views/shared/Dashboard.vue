@@ -27,27 +27,27 @@
     <!-- Distribution et MAD : ce qui demande l'attention sur les contrats -->
     <section v-if="contracts" class="card p-4 space-y-3">
       <div class="flex flex-wrap items-center justify-between gap-2">
-        <h2 class="font-semibold">📑 Contrats</h2>
+        <h2 class="flex items-center gap-1.5 font-semibold"><Icone nom="contrat" />Contrats</h2>
         <RouterLink to="/admin/contrats" class="text-sm text-blue-600">Tous les contrats</RouterLink>
       </div>
       <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
         <RouterLink to="/admin/contrats" :class="['rounded-xl border p-3 hover:shadow', contracts.forfaits.length ? 'border-amber-300 bg-amber-50' : 'border-slate-200']">
-          <p class="text-sm text-gray-600">Forfaits à 80 % ou plus</p>
+          <p class="text-sm text-slate-600">Forfaits à 80 % ou plus</p>
           <p class="text-2xl font-bold">{{ contracts.forfaits.length }}</p>
         </RouterLink>
         <RouterLink :to="{ path: '/admin/contrats', query: { activity: 'distribution' } }" :class="['rounded-xl border p-3 hover:shadow', contracts.lateLots.length ? 'border-red-300 bg-red-50' : 'border-slate-200']">
-          <p class="text-sm text-gray-600">Lots avec du retard</p>
+          <p class="text-sm text-slate-600">Lots avec du retard</p>
           <p class="text-2xl font-bold">{{ contracts.lateLots.length }}</p>
         </RouterLink>
         <RouterLink v-if="contracts.invoices" to="/admin/factures" :class="['rounded-xl border p-3 hover:shadow', contracts.invoices.overdue ? 'border-red-300 bg-red-50' : 'border-slate-200']">
-          <p class="text-sm text-gray-600">Factures en retard</p>
+          <p class="text-sm text-slate-600">Factures en retard</p>
           <p class="text-2xl font-bold">{{ money(contracts.invoices.overdue) }}</p>
-          <p class="text-xs text-gray-500">À encaisser : {{ money(contracts.invoices.to_collect) }}</p>
+          <p class="text-xs text-slate-600">À encaisser : {{ money(contracts.invoices.to_collect) }}</p>
         </RouterLink>
         <RouterLink to="/admin/planning" class="rounded-xl border border-slate-200 p-3 hover:shadow">
-          <p class="text-sm text-gray-600">Livreurs en MAD</p>
+          <p class="text-sm text-slate-600">Livreurs en MAD</p>
           <p class="text-2xl font-bold">{{ contracts.madCouriers }}</p>
-          <p class="text-xs text-gray-500">{{ contracts.madClients }} client(s)</p>
+          <p class="text-xs text-slate-600">{{ contracts.madClients }} client(s)</p>
         </RouterLink>
       </div>
       <ul v-if="contracts.forfaits.length || contracts.lateLots.length" class="text-sm divide-y">
@@ -70,7 +70,7 @@
         :to="{ path: '/admin/courses', query: { queue: q.value } }"
         :class="['card p-4 hover:shadow', q.count ? q.accent : '']"
       >
-        <p class="text-sm text-gray-600">{{ q.label }}</p>
+        <p class="text-sm text-slate-600">{{ q.label }}</p>
         <p class="text-2xl font-bold">{{ q.count ?? '—' }}</p>
       </RouterLink>
     </div>
@@ -78,35 +78,35 @@
     <!-- En attente d'un livreur (dispatch) : ramassage et livraison, retards, attente la plus longue -->
     <section v-if="!isMerchant && auth.can('orders.dispatch') && dispatchCounts.loaded" class="card p-4 space-y-3">
       <div class="flex flex-wrap items-center justify-between gap-2">
-        <h2 class="font-semibold">🛵 En attente d'un livreur</h2>
+        <h2 class="flex items-center gap-1.5 font-semibold"><Icone nom="livreur" />En attente d'un livreur</h2>
         <span class="flex flex-wrap gap-3 text-sm">
-          <RouterLink v-if="auth.can('settings.manage')" to="/admin/reglages/alertes" class="text-gray-500">⚙️ Délais d'alerte</RouterLink>
+          <RouterLink v-if="auth.can('settings.manage')" to="/admin/reglages/alertes" class="inline-flex items-center gap-1 text-slate-600"><Icone nom="reglages" taille="petite" />Délais d'alerte</RouterLink>
           <RouterLink :to="{ path: '/admin/courses', query: { queue: 'unassigned' } }" class="text-blue-600">Tout voir et assigner</RouterLink>
         </span>
       </div>
       <p v-if="cutoff?.passed && cutoff.count" class="rounded-lg bg-red-600 px-3 py-2 text-sm font-medium text-white">
-        🕒 Il est plus de {{ cutoff.time }} : {{ cutoff.count }} course{{ cutoff.count > 1 ? 's' : '' }} du jour
+        <Icone nom="heure" taille="petite" class="inline align-[-0.15em]" /> Il est plus de {{ cutoff.time }} : {{ cutoff.count }} course{{ cutoff.count > 1 ? 's' : '' }} du jour
         {{ cutoff.count > 1 ? 'n\'ont' : 'n\'a' }} toujours pas de livreur et risque{{ cutoff.count > 1 ? 'nt' : '' }} de ne pas être livrée{{ cutoff.count > 1 ? 's' : '' }} aujourd'hui.
       </p>
       <!-- Ramassages de courses à livrer un autre jour : à faire, sans retard de livraison -->
       <p v-if="cutoff?.passed && cutoff.later" class="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">
-        📦 Et {{ cutoff.later }} course{{ cutoff.later > 1 ? 's' : '' }} à ramasser pour un autre jour : pas de retard de livraison.
+        <Icone nom="course" taille="petite" class="inline align-[-0.15em]" /> Et {{ cutoff.later }} course{{ cutoff.later > 1 ? 's' : '' }} à ramasser pour un autre jour : pas de retard de livraison.
       </p>
-      <p v-else-if="cutoff && !cutoff.passed" class="text-xs text-gray-500">Heure limite du jour : {{ cutoff.time }}.</p>
-      <p v-if="!waitingTotal" class="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">✓ Toutes les courses à ramasser et à livrer ont un livreur.</p>
+      <p v-else-if="cutoff && !cutoff.passed" class="text-xs text-slate-600">Heure limite du jour : {{ cutoff.time }}.</p>
+      <p v-if="!waitingTotal" class="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800"><Icone nom="valider" taille="petite" class="inline align-[-0.15em]" /> Toutes les courses à ramasser et à livrer ont un livreur.</p>
       <div v-else class="grid sm:grid-cols-2 gap-3">
         <RouterLink
           v-for="w in waiting" :key="w.stage"
           :to="{ path: '/admin/courses', query: { queue: 'unassigned', awaiting: w.stage } }"
           :class="['rounded-xl border p-4 hover:shadow transition', w.late ? 'border-red-300 bg-red-50' : w.count ? 'border-amber-300 bg-amber-50' : 'border-slate-200']"
         >
-          <p class="text-sm text-gray-600">{{ w.label }}</p>
+          <p class="text-sm text-slate-600">{{ w.label }}</p>
           <p class="mt-1 flex items-baseline gap-2">
             <span class="text-3xl font-bold">{{ w.count }}</span>
-            <span v-if="w.late" class="rounded-full bg-red-600 px-2 py-0.5 text-xs font-semibold text-white">⏰ {{ w.late }} en retard</span>
+            <span v-if="w.late" class="inline-flex items-center gap-1 rounded-full bg-red-600 px-2 py-0.5 text-xs font-semibold text-white"><Icone nom="retard" taille="petite" />{{ w.late }} en retard</span>
           </p>
-          <p v-if="w.count" :class="['text-sm mt-1', w.late ? 'text-red-700 font-medium' : 'text-gray-600']">
-            La plus ancienne : {{ duration(w.oldest_minutes) }}<span v-if="w.threshold_minutes" class="text-gray-500 font-normal"> · alerte après {{ duration(w.threshold_minutes) }}</span>
+          <p v-if="w.count" :class="['text-sm mt-1', w.late ? 'text-red-700 font-medium' : 'text-slate-600']">
+            La plus ancienne : {{ duration(w.oldest_minutes) }}<span v-if="w.threshold_minutes" class="text-slate-600 font-normal"> · alerte après {{ duration(w.threshold_minutes) }}</span>
           </p>
           <p v-else class="text-sm mt-1 text-emerald-700">Aucune en attente</p>
         </RouterLink>
@@ -115,37 +115,37 @@
 
     <!-- Livraisons de la période : courses à livrer ces jours-là (date prévue, sinon jour de création) -->
     <div v-if="summary" class="flex flex-wrap items-baseline justify-between gap-2">
-      <h2 class="font-semibold">🚚 {{ isOneDay ? (period.from === today() ? 'Livraisons du jour' : `Livraisons du ${date(period.from)}`) : 'Livraisons de la période' }}</h2>
-      <p class="text-xs text-gray-500">Selon la date de livraison prévue (une course reportée compte le jour de sa nouvelle date)</p>
+      <h2 class="flex items-center gap-1.5 font-semibold"><Icone nom="livraison" />{{ isOneDay ? (period.from === today() ? 'Livraisons du jour' : `Livraisons du ${date(period.from)}`) : 'Livraisons de la période' }}</h2>
+      <p class="text-xs text-slate-600">Selon la date de livraison prévue (une course reportée compte le jour de sa nouvelle date)</p>
     </div>
     <div v-if="summary" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
-      <StatCard title="Total" :value="summary.counts.total" icon="📦" />
-      <StatCard title="Livrés" :value="summary.counts.delivered" icon="✅" />
-      <StatCard title="En cours" :value="summary.counts.in_progress" icon="🚚" />
-      <StatCard title="Non livrés" :value="summary.counts.failed" icon="⚠️" />
-      <StatCard title="Reportés" :value="summary.counts.rescheduled" icon="📅" />
-      <StatCard title="Retournés" :value="summary.counts.returned + summary.counts.returning" icon="↩️" />
-      <StatCard title="Annulés" :value="summary.counts.cancelled" icon="✖️" />
+      <StatCard title="Total" :value="summary.counts.total" icon="course" />
+      <StatCard title="Livrés" :value="summary.counts.delivered" icon="livre" />
+      <StatCard title="En cours" :value="summary.counts.in_progress" icon="livraison" />
+      <StatCard title="Non livrés" :value="summary.counts.failed" icon="alerte" />
+      <StatCard title="Reportés" :value="summary.counts.rescheduled" icon="date" />
+      <StatCard title="Retournés" :value="summary.counts.returned + summary.counts.returning" icon="retour" />
+      <StatCard title="Annulés" :value="summary.counts.cancelled" icon="annulation" />
     </div>
 
     <!-- Argent encaissé et reversé : e-commerce seulement (la distribution et la MAD sont facturées au mois) -->
     <div v-if="summary && showsMoney" class="grid md:grid-cols-4 xl:grid-cols-5 gap-3">
-      <StatCard title="Montant encaissé" :value="money(summary.amounts.collected)" icon="💰" />
-      <StatCard title="Frais de livraison retenus" :value="money(summary.amounts.fees)" icon="🧾" />
-      <StatCard v-if="summary.amounts.shipping_fees" title="Frais d'expédition" :value="money(summary.amounts.shipping_fees)" icon="🚌" />
-      <StatCard v-if="summary.amounts.other_fees" title="Autres frais" :value="money(summary.amounts.other_fees)" icon="💸" />
-      <StatCard :title="isMerchant ? 'Net à recevoir' : 'Net à reverser'" :value="money(summary.amounts.net_to_merchant)" icon="🏦" />
-      <StatCard title="Taux de livraison" :value="summary.delivery_rate === null ? '—' : `${summary.delivery_rate} %`" icon="📈" />
+      <StatCard title="Montant encaissé" :value="money(summary.amounts.collected)" icon="argent" />
+      <StatCard title="Frais de livraison retenus" :value="money(summary.amounts.fees)" icon="recette" />
+      <StatCard v-if="summary.amounts.shipping_fees" title="Frais d'expédition" :value="money(summary.amounts.shipping_fees)" icon="expedition" />
+      <StatCard v-if="summary.amounts.other_fees" title="Autres frais" :value="money(summary.amounts.other_fees)" icon="frais" />
+      <StatCard :title="isMerchant ? 'Net à recevoir' : 'Net à reverser'" :value="money(summary.amounts.net_to_merchant)" icon="reverser" />
+      <StatCard title="Taux de livraison" :value="summary.delivery_rate === null ? '—' : `${summary.delivery_rate} %`" icon="tendance" />
     </div>
 
     <!-- Nouvelles courses : l'activité des clients, selon le jour de création -->
     <section v-if="!isMerchant && created" class="card p-4">
       <div class="flex flex-wrap items-center justify-between gap-2">
-        <h2 class="font-semibold">🆕 Nouvelles courses {{ isOneDay ? (period.from === today() ? 'du jour' : `du ${date(period.from)}`) : 'de la période' }}</h2>
+        <h2 class="flex items-center gap-1.5 font-semibold"><Icone nom="nouveau" />Nouvelles courses {{ isOneDay ? (period.from === today() ? 'du jour' : `du ${date(period.from)}`) : 'de la période' }}</h2>
         <RouterLink :to="{ path: '/admin/courses', query: { date_basis: 'created' } }" class="text-sm text-blue-600">Voir par date de création</RouterLink>
       </div>
-      <p class="mt-2 text-sm text-gray-700">
-        <strong class="text-2xl text-gray-900 align-middle">{{ created.counts.total }}</strong>
+      <p class="mt-2 text-sm text-slate-700">
+        <strong class="text-2xl text-slate-900 align-middle">{{ created.counts.total }}</strong>
         course{{ created.counts.total > 1 ? 's' : '' }} créée{{ created.counts.total > 1 ? 's' : '' }}<template v-if="createdLater">,
           dont <strong>{{ createdLater }}</strong> à livrer plus tard</template>.
       </p>
@@ -164,13 +164,14 @@
             <StatusBadge :status="o.status" :label="o.status_label" />
           </RouterLink>
         </li>
-        <li v-if="!recent.length" class="p-4 text-sm text-gray-500">Aucune course pour le moment.</li>
+        <li v-if="!recent.length" class="p-4 text-sm text-slate-600">Aucune course pour le moment.</li>
       </ul>
     </div>
   </div>
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import http from '../../bootstrap/axios'
 import StatCard from '../../components/StatCard.vue'

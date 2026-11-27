@@ -2,7 +2,7 @@
   <div class="space-y-2">
     <div class="flex flex-wrap gap-2">
       <button type="button" :class="buttonClass" :disabled="locating" @click="useMyPosition">
-        {{ locating ? 'Localisation…' : gpsLabel }}
+        <Icone v-if="!locating" nom="position" />{{ locating ? 'Localisation…' : gpsText }}
       </button>
       <form v-if="allowLink" class="flex flex-1 min-w-56 gap-2" @submit.prevent="useLink">
         <input v-model.trim="link" class="input flex-1" placeholder="Coller un lien Google Maps ou « 5.36, -3.97 »" aria-label="Lien Google Maps">
@@ -17,15 +17,17 @@
         Touchez la carte à l'emplacement exact, ou utilisez votre position.
       </p>
     </div>
-    <p v-if="hasPoint" class="text-xs text-slate-500">Déplacez le repère ou touchez la carte pour corriger.</p>
+    <p v-if="hasPoint" class="text-xs text-slate-600">Déplacez le repère ou touchez la carte pour corriger.</p>
   </div>
 </template>
 
 <script setup>
+import Icone from './ui/Icone.vue'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import http, { apiErrorMessage } from '../bootstrap/axios'
+import { svgIcone } from '../utils/iconesSvg'
 
 /**
  * Choix d'un point sur la carte : position GPS du téléphone, lien Google Maps collé,
@@ -34,7 +36,7 @@ import http, { apiErrorMessage } from '../bootstrap/axios'
 const props = defineProps({
   modelValue: { type: Object, default: null },
   allowLink: { type: Boolean, default: false },
-  gpsLabel: { type: String, default: '📍 Utiliser ma position actuelle' },
+  gpsLabel: { type: String, default: 'Utiliser ma position actuelle' },
   buttonClass: { type: String, default: 'btn-secondary' },
   height: { type: String, default: 'h-64' },
 })
@@ -42,11 +44,14 @@ const emit = defineEmits(['update:modelValue'])
 
 const ABIDJAN = [5.345, -4.024]
 // Repère en forme d'épingle, pointe sur la position
+// Libellé du bouton sans l'ancien emoji en tête (l'icône de la charte le remplace)
+const gpsText = computed(() => props.gpsLabel.replace(/^[^\p{L}]+/u, ''))
+
 const PIN = L.divIcon({
   className: '',
   iconSize: [32, 40],
   iconAnchor: [16, 40],
-  html: '<div class="location-pin"><span>📦</span></div>',
+  html: `<div class="location-pin"><span style="color:#fff">${svgIcone('course', 16)}</span></div>`,
 })
 const mapEl = ref(null)
 const locating = ref(false)

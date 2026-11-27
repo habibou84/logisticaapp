@@ -4,7 +4,7 @@
       <div>
         <label class="label" for="d-kind">Papier</label>
         <select id="d-kind" v-model="form.kind" class="input">
-          <option v-for="k in kinds" :key="k.value" :value="k.value">{{ k.icon }} {{ k.label }}</option>
+          <option v-for="k in kinds" :key="k.value" :value="k.value">{{ k.label }}</option>
         </select>
       </div>
       <div v-if="form.kind === 'other'"><label class="label" for="d-label">Nom du papier</label><input id="d-label" v-model="form.label" class="input"></div>
@@ -14,13 +14,13 @@
         <div><label class="label" for="d-start">Début</label><input id="d-start" v-model="form.starts_on" type="date" class="input"></div>
         <div>
           <label class="label" for="d-end">Fin</label><input id="d-end" v-model="form.ends_on" type="date" class="input">
-          <p class="text-xs text-gray-500 mt-1">Vide : sans fin (carte grise).</p>
+          <p class="text-xs text-slate-600 mt-1">Vide : sans fin (carte grise).</p>
         </div>
         <div><label class="label" for="d-cost">Coût (F)</label><input id="d-cost" v-model.number="form.cost" type="number" min="0" class="input"></div>
         <div>
           <label class="label" for="d-file">Photo ou PDF</label>
           <input id="d-file" ref="input" type="file" accept="image/*,application/pdf" class="text-sm" @change="pick">
-          <p v-if="photo?.meta?.scanned" class="text-xs text-green-700 mt-1">📄 Document scanné{{ photo.original ? ', original gardé' : '' }}</p>
+          <p v-if="photo?.meta?.scanned" class="text-xs text-green-700 mt-1"><Icone nom="document" taille="petite" class="inline align-text-bottom" /> Document scanné{{ photo.original ? ', original gardé' : '' }}</p>
         </div>
       </div>
       <p v-if="error" class="field-error">{{ error }}</p>
@@ -34,6 +34,7 @@
 </template>
 
 <script setup>
+import Icone from '../ui/Icone.vue'
 import { computed, reactive, ref, watch } from 'vue'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import Modal from '../Modal.vue'

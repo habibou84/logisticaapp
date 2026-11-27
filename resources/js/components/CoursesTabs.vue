@@ -7,7 +7,7 @@
       :aria-current="c.active ? 'page' : undefined"
     >
       <span class="flex items-center gap-2">
-        <span aria-hidden="true">{{ c.icon }}</span>
+        <Icone :nom="c.icon" />
         <span class="flex-1 font-bold leading-tight">{{ c.label }}</span>
         <span v-if="c.badge" class="grid h-6 min-w-6 place-items-center rounded-full bg-red-600 px-1.5 text-xs font-bold text-white">{{ c.badge > 99 ? '99+' : c.badge }}</span>
       </span>
@@ -25,6 +25,7 @@
 </template>
 
 <script setup>
+import Icone from './ui/Icone.vue'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import http from '../bootstrap/axios'
@@ -80,7 +81,7 @@ const cards = computed(() => {
 
   return [
     {
-      to: '/admin/courses', label: 'Courses', icon: '📦', permission: 'orders.view', active: route.path === '/admin/courses',
+      to: '/admin/courses', label: 'Courses', icon: 'course', permission: 'orders.view', active: route.path === '/admin/courses',
       number: all, unit: isToday ? 'du jour' : `le ${new Date(`${day.date}T12:00:00`).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}`,
       progress: all ? Math.round((100 * delivered) / all) : 0,
       lines: [`${delivered} livrée${s(delivered)} · ${day?.on_the_way ?? 0} en chemin`],
@@ -88,7 +89,7 @@ const cards = computed(() => {
       alertClass: 'bg-red-50 text-red-800', badge: toAssign + toConfirm,
     },
     {
-      to: '/admin/activite', label: 'Activité des livreurs', icon: '🛵', permission: ACTIVITY_TABS.map((t) => t.permission), active: route.path.startsWith('/admin/activite'),
+      to: '/admin/activite', label: 'Activité des livreurs', icon: 'livreur', permission: ACTIVITY_TABS.map((t) => t.permission), active: route.path.startsWith('/admin/activite'),
       number: activity.value ? mission : null, unit: 'en mission', numberClass: 'text-blue-700',
       lines: activity.value
         ? [`${plural(free, 'libre', 'libres')} maintenant${end ? ` · fin estimée ${hour(end)}` : ''}`, ...(mine.value.includes('ecommerce') ? [`${money(cash)} chez les livreurs`] : [])]
@@ -100,14 +101,14 @@ const cards = computed(() => {
       alertClass: 'bg-amber-50 text-amber-900', badge: watch,
     },
     {
-      to: '/admin/retours', label: 'Retours clients', icon: '📮', permission: 'orders.dispatch', active: route.path === '/admin/retours',
+      to: '/admin/retours', label: 'Retours clients', icon: 'retour', permission: 'orders.dispatch', active: route.path === '/admin/retours',
       number: r?.to_return ?? null, unit: 'colis à rendre',
       lines: r ? [`${r.to_assign || 0} à mettre sur un bon · ${r.assigned || 0} confié${s(r.assigned || 0)} à un livreur`, ...(r.merchants ? [`chez ${plural(r.merchants, 'client', 'clients')}`] : [])] : [],
       alert: r?.oldest_days ? `Le plus ancien attend depuis ${plural(r.oldest_days, 'jour', 'jours')}` : '',
       alertClass: 'bg-amber-50 text-amber-900', badge: r?.to_assign || 0,
     },
     {
-      to: '/admin/courses/en-retard', label: 'Courses en retard', icon: '⏳', permission: 'orders.dispatch', active: route.path === '/admin/courses/en-retard',
+      to: '/admin/courses/en-retard', label: 'Courses en retard', icon: 'retard', permission: 'orders.dispatch', active: route.path === '/admin/courses/en-retard',
       highlight: { number: toDecide, unit: 'à décider', label: `${picked.value[0].toUpperCase()}${picked.value.slice(1)}s, date de livraison dépassée` },
       lines: [`${late} jamais ${picked.value}${s(late)} · à reporter`],
       badge: late + toDecide,

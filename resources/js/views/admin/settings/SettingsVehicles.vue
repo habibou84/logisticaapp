@@ -1,5 +1,5 @@
 <template>
-  <SettingsPage icon="🏍️" title="Véhicules" intro="Ce que l'application suit pour le parc, et ce qu'elle fait toute seule.">
+  <SettingsPage icon="vehicule" title="Véhicules" intro="Ce que l'application suit pour le parc, et ce qu'elle fait toute seule.">
     <template v-if="form?.vehicle_settings">
       <div class="grid gap-4 lg:grid-cols-2">
         <section class="card p-4 space-y-3">
@@ -9,7 +9,7 @@
             <div class="flex flex-wrap gap-2">
               <button v-for="m in CHECK_MODES" :key="m.value" type="button" :class="['rounded-md px-3 py-1.5 text-sm', s.check_mode === m.value ? 'bg-slate-900 text-white' : 'border border-slate-300']" @click="s.check_mode = m.value">{{ m.label }}</button>
             </div>
-            <p class="mt-1 text-xs text-gray-500">Compteur, essence, contrôle rapide ; un problème prévient l'équipe sans empêcher de partir.</p>
+            <p class="mt-1 text-xs text-slate-600">Compteur, essence, contrôle rapide ; un problème prévient l'équipe sans empêcher de partir.</p>
           </div>
           <template v-if="s.check_mode !== 'never'">
             <Opt v-model="s.check_before_service" label="Obligatoire avant de se mettre en service" hint="Le livreur ne peut pas passer « en service » sans l'avoir fait." />
@@ -18,7 +18,7 @@
             <div>
               <p class="label">Points du contrôle rapide</p>
               <div class="grid grid-cols-2 gap-1">
-                <label v-for="i in catalog.check_items" :key="i.value" class="flex items-center gap-2 text-sm"><input v-model="s.check_items" type="checkbox" :value="i.value"> {{ i.icon }} {{ i.label }}</label>
+                <label v-for="i in catalog.check_items" :key="i.value" class="flex items-center gap-2 text-sm"><input v-model="s.check_items" type="checkbox" :value="i.value"> <Icone v-if="i.icon" :nom="i.icon" taille="petite" />{{ i.label }}</label>
               </div>
             </div>
           </template>
@@ -44,15 +44,15 @@
           <details class="rounded border border-slate-200 p-2">
             <summary class="cursor-pointer text-sm font-medium">Plans d'entretien proposés pour les nouveaux véhicules</summary>
             <div v-for="type in ['moto', 'tricycle', 'voiture', 'velo']" :key="type" class="mt-3 space-y-1">
-              <p class="text-sm font-semibold">{{ VEHICLE_TYPES[type].icon }} {{ VEHICLE_TYPES[type].label }}</p>
+              <p class="flex items-center gap-1.5 text-sm font-semibold"><Icone :nom="VEHICLE_TYPES[type].icon" taille="petite" />{{ VEHICLE_TYPES[type].label }}</p>
               <div v-for="(p, i) in s.default_plans[type]" :key="i" class="grid grid-cols-[3rem_1fr_5.5rem_4.5rem_1.5rem] items-center gap-1">
-                <input v-model="p.icon" class="input px-1 text-center" :aria-label="`Icône ${p.label}`">
+                <IconePicker v-model="p.icon" :label="`Icône ${p.label}`" />
                 <input v-model="p.label" class="input" :aria-label="`Entretien ${i + 1} (${type})`">
                 <input v-model.number="p.every_km" type="number" min="1" class="input" placeholder="km" :aria-label="`km (${p.label})`">
                 <input v-model.number="p.every_months" type="number" min="1" class="input" placeholder="mois" :aria-label="`mois (${p.label})`">
-                <button type="button" class="text-red-600" :aria-label="`Retirer ${p.label}`" @click="s.default_plans[type].splice(i, 1)">✕</button>
+                <button type="button" class="text-red-600" :aria-label="`Retirer ${p.label}`" @click="s.default_plans[type].splice(i, 1)"><Icone nom="fermer" taille="petite" class="inline" /></button>
               </div>
-              <button type="button" class="text-xs text-blue-600" @click="s.default_plans[type].push({ icon: '🔧', label: '', every_km: null, every_months: null })">+ Ligne</button>
+              <button type="button" class="text-xs text-blue-600" @click="s.default_plans[type].push({ icon: 'atelier', label: '', every_km: null, every_months: null })">+ Ligne</button>
             </div>
           </details>
         </section>
@@ -62,7 +62,7 @@
           <div class="flex flex-wrap gap-2">
             <button v-for="m in FUEL_MODES" :key="m.value" type="button" :class="['rounded-md px-3 py-1.5 text-sm text-left', s.fuel_mode === m.value ? 'bg-slate-900 text-white' : 'border border-slate-300']" @click="s.fuel_mode = m.value">{{ m.label }}</button>
           </div>
-          <p class="text-xs text-gray-500">{{ FUEL_MODES.find((m) => m.value === s.fuel_mode)?.hint }}</p>
+          <p class="text-xs text-slate-600">{{ FUEL_MODES.find((m) => m.value === s.fuel_mode)?.hint }}</p>
           <template v-if="s.fuel_mode === 'allowance'">
             <p class="text-sm">Dotation : <input v-model.number="s.fuel_allowance" type="number" min="0" step="100" class="input px-1 text-center" style="display:inline-block;width:6.5rem" aria-label="Dotation par jour"> F par jour travaillé, ajoutée à la paie</p>
             <Opt v-model="s.fuel_allowance_excess_refund" label="Rembourser ce qui dépasse la dotation du jour" hint="Sur les pleins déclarés avec un reçu." />
@@ -76,7 +76,7 @@
           <h2 class="font-semibold">Argent et paie</h2>
           <Opt v-model="s.leases" label="Location-vente et location des véhicules" hint="Versements par jour, semaine ou mois, retenus sur la paie ou payés en caisse." />
           <p v-if="s.leases" class="text-sm pl-6">Retard : rappel au livreur après <input v-model.number="s.lease_late_courier_days" type="number" min="0" class="input px-1 text-center" style="display:inline-block;width:4.0rem" aria-label="Jours avant le rappel au livreur"> jours, au responsable après <input v-model.number="s.lease_late_manager_days" type="number" min="0" class="input px-1 text-center" style="display:inline-block;width:4.0rem" aria-label="Jours avant l'alerte au responsable"> jours</p>
-          <p class="text-sm">Indemnité véhicule personnel : <input v-model.number="s.personal_allowance" type="number" min="0" step="100" class="input px-1 text-center" style="display:inline-block;width:6.5rem" aria-label="Indemnité par jour"> F par jour travaillé <span class="text-xs text-gray-500">(0 : aucune)</span></p>
+          <p class="text-sm">Indemnité véhicule personnel : <input v-model.number="s.personal_allowance" type="number" min="0" step="100" class="input px-1 text-center" style="display:inline-block;width:6.5rem" aria-label="Indemnité par jour"> F par jour travaillé <span class="text-xs text-slate-600">(0 : aucune)</span></p>
           <Opt v-model="s.fines_charge_courier" label="Amendes retenues au livreur qui avait le véhicule" hint="Retrouvé par l'historique des remises ; décochable amende par amende." />
           <Opt v-model="s.damage_charge_courier" label="Part des dégâts d'un sinistre retenue au livreur responsable" />
           <p v-if="s.damage_charge_courier" class="text-sm pl-6">Plafond : <input v-model.number="s.damage_cap_month" type="number" min="0" step="1000" class="input px-1 text-center" style="display:inline-block;width:7.5rem" aria-label="Plafond par mois"> F par mois</p>
@@ -90,6 +90,8 @@
 </template>
 
 <script setup>
+import IconePicker from '../../../components/ui/IconePicker.vue'
+import Icone from '../../../components/ui/Icone.vue'
 import { computed, defineComponent, h, onMounted, ref, watch } from 'vue'
 import http from '../../../bootstrap/axios'
 import SettingsPage from '../../../components/settings/SettingsPage.vue'
@@ -103,7 +105,7 @@ const Opt = defineComponent({
   emits: ['update:modelValue'],
   setup: (props, { emit }) => () => h('label', { class: 'flex items-start gap-2 text-sm' }, [
     h('input', { type: 'checkbox', class: 'mt-1', checked: props.modelValue, onChange: (e) => emit('update:modelValue', e.target.checked) }),
-    h('span', [props.label, props.hint ? h('span', { class: 'block text-xs text-gray-500' }, props.hint) : null]),
+    h('span', [props.label, props.hint ? h('span', { class: 'block text-xs text-slate-600' }, props.hint) : null]),
   ]),
 })
 

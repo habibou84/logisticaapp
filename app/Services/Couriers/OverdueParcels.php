@@ -67,7 +67,7 @@ class OverdueParcels
                 Notification::send($admins, new OrderAlert(
                     $parcels->first(),
                     'parcel_maybe_lost',
-                    "🚨 Colis peut-être perdu{$this->plural($parcels->count())} chez {$name}",
+                    "Colis peut-être perdu{$this->plural($parcels->count())} chez {$name}",
                     $parcels->pluck('tracking_code')->take(5)->implode(', ')." : chez le livreur depuis {$days} jour(s). Retrouvez le colis ou déclarez-le perdu.",
                     ['custody' => true, 'severity' => 'alert', 'courier_id' => (int) $courierId, 'count' => $parcels->count(), 'href' => '/admin/colis-livreurs'],
                 ));
@@ -114,7 +114,7 @@ class OverdueParcels
                 Notification::send($recipients, new OrderAlert(
                     $oldest,
                     'parcel_overdue',
-                    $count > 1 ? "📦 {$count} colis toujours chez {$name}" : "📦 Colis {$oldest->tracking_code} toujours chez {$name}",
+                    $count > 1 ? "{$count} colis toujours chez {$name}" : "Colis {$oldest->tracking_code} toujours chez {$name}",
                     "Non rendu{$this->plural($count)} au dépôt depuis plus de {$age} : ".$parcels->pluck('tracking_code')->take(5)->implode(', ').($count > 5 ? '…' : '').'.',
                     ['custody' => true, 'severity' => 'alert', 'courier_id' => (int) $courierId, 'count' => $count, 'href' => '/admin/colis-livreurs'],
                 ));

@@ -48,7 +48,7 @@ class PlanningDigestNotice extends Notification implements ShouldQueue
      */
     public function toArray(object $notifiable): array
     {
-        return ['kind' => 'planning_digest', 'title' => '📅 Votre journée', 'body' => 'Aujourd\'hui : '.implode(' · ', $this->lines), 'date' => $this->date, 'href' => '/livreur'];
+        return ['kind' => 'planning_digest', 'title' => 'Votre journée', 'body' => 'Aujourd\'hui : '.implode(' · ', $this->lines), 'date' => $this->date, 'href' => '/livreur'];
     }
 
     public function toBroadcast(object $notifiable): BroadcastMessage

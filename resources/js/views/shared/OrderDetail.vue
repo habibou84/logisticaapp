@@ -7,18 +7,18 @@
       <span v-if="order.activity" :class="['text-xs rounded-full px-2 py-0.5 font-medium', activityBadge(order.activity)]">{{ order.activity_label }}</span>
       <!-- Délai interne (équipe) : échéance, risque, dépassement -->
       <span v-if="order.internal_due_at" :class="['text-xs rounded-full px-2 py-0.5 font-medium', order.internal_late ? 'bg-red-100 text-red-700' : order.internal_risk ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-600']">
-        {{ order.internal_late ? '⏰ Délai interne dépassé' : order.internal_risk ? '⚠️ Risque de retard' : '⏱ Délai interne' }} · {{ dateTime(order.internal_due_at) }}
+        <Icone :nom="order.internal_late ? 'rappel' : order.internal_risk ? 'alerte' : 'chrono'" taille="petite" class="inline align-[-0.15em]" /> {{ order.internal_late ? 'Délai interne dépassé' : order.internal_risk ? 'Risque de retard' : 'Délai interne' }} · {{ dateTime(order.internal_due_at) }}
       </span>
       <span v-if="order.return_requested && !['returned', 'return_assigned', 'returning'].includes(order.status)" class="text-xs rounded-full bg-rose-100 text-rose-700 px-2 py-0.5">{{ order.return_cause_label || 'Retour à organiser' }}</span>
       <!-- Demande d'un agent du client : elle attend l'accord de son chef de service -->
-      <span v-if="order.approval?.awaiting" class="text-xs rounded-full bg-amber-100 text-amber-800 px-2 py-0.5" title="Ni validable ni assignable avant l'accord du client">✋ Attend le chef de service du client</span>
-      <span v-if="order.follow_up" :class="['text-xs rounded-full px-2 py-0.5', order.follow_up.holds ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700']">{{ order.follow_up.holds ? '⏸' : '📌' }} {{ order.follow_up.label }}</span>
-      <RouterLink v-if="order.renewed_from" :to="`/admin/courses/${order.renewed_from.id}`" class="text-xs rounded-full bg-blue-50 text-blue-700 px-2 py-0.5">🔁 Reconduite de {{ order.renewed_from.tracking_code }}</RouterLink>
+      <span v-if="order.approval?.awaiting" class="text-xs rounded-full bg-amber-100 text-amber-800 px-2 py-0.5" title="Ni validable ni assignable avant l'accord du client"><Icone nom="main" taille="petite" class="inline align-[-0.15em]" /> Attend le chef de service du client</span>
+      <span v-if="order.follow_up" :class="['text-xs rounded-full px-2 py-0.5', order.follow_up.holds ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700']"><Icone :nom="order.follow_up.holds ? 'pause' : 'epingle'" taille="petite" class="inline align-[-0.15em]" /> {{ order.follow_up.label }}</span>
+      <RouterLink v-if="order.renewed_from" :to="`/admin/courses/${order.renewed_from.id}`" class="text-xs rounded-full bg-blue-50 text-blue-700 px-2 py-0.5"><Icone nom="repeter" taille="petite" class="inline align-[-0.15em]" /> Reconduite de {{ order.renewed_from.tracking_code }}</RouterLink>
       <div class="ml-auto flex gap-2">
         <!-- Client sous contrat : prestation exceptionnelle sur la facture du mois -->
-        <button v-if="canSupplement" type="button" class="btn-secondary" @click="supplementOpen = true">➕ Supplément</button>
+        <button v-if="canSupplement" type="button" class="btn-secondary" @click="supplementOpen = true"><Icone nom="ajouter" />Supplément</button>
         <RouterLink :to="`/etiquette/${order.id}`" target="_blank" class="btn-secondary" :title="order.label?.printed_at ? `Imprimée le ${dateTime(order.label.printed_at)} (${order.label.print_count} fois)` : 'Étiquette pas encore imprimée'">
-          🖨️ Étiquette <span :class="order.label?.printed_at ? 'text-emerald-700' : 'text-amber-700'">{{ order.label?.printed_at ? '✓' : '·' }}</span>
+          <Icone nom="imprimer" />Étiquette <span :class="order.label?.printed_at ? 'text-emerald-700' : 'text-amber-700'"><Icone v-if="order.label?.printed_at" nom="valider" taille="petite" /><template v-else>·</template></span>
         </RouterLink>
       </div>
     </div>
@@ -28,7 +28,7 @@
       v-if="order.to_reschedule && isStaff" to="/admin/courses/en-retard?onglet=pas-ramassees"
       class="card flex items-center gap-3 border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 hover:bg-amber-100"
     >
-      <span class="text-xl" aria-hidden="true">⏰</span>
+      <Icone nom="retard" taille="grande" />
       <span class="flex-1">
         <b>À reporter</b> : pas ramassé à la date prévue, caché chez les livreurs.
         {{ order.reschedule ? `Nouvelle date demandée au client (jusqu'au ${order.reschedule.max_date.split('-').reverse().slice(0, 2).join('/')}).` : 'Demandez une nouvelle date ou choisissez-la.' }}
@@ -40,9 +40,9 @@
       <div class="lg:col-span-2 space-y-4">
         <div class="grid sm:grid-cols-2 gap-4">
           <div v-if="order.from_warehouse" class="card p-4 text-sm space-y-1">
-            <h2 class="font-semibold mb-2">🏬 Départ de l'entrepôt · {{ order.pickup.hub_name }}</h2>
+            <h2 class="flex items-center gap-1.5 font-semibold mb-2"><Icone nom="depot" />Départ de l'entrepôt · {{ order.pickup.hub_name }}</h2>
             <p>{{ order.pickup.zone_name }} · {{ order.pickup.address || '—' }}</p>
-            <p v-if="order.pickup.landmark" class="text-gray-600">Repère : {{ order.pickup.landmark }}</p>
+            <p v-if="order.pickup.landmark" class="text-slate-600">Repère : {{ order.pickup.landmark }}</p>
             <p :class="order.prepared_at ? 'text-emerald-700' : 'text-amber-700'">
               {{ order.prepared_at ? `Préparée le ${dateTime(order.prepared_at)}` : 'À préparer : pas de ramassage chez le client' }}
             </p>
@@ -51,7 +51,7 @@
             <h2 class="font-semibold mb-2">{{ isCollect(order.activity) ? 'Collecte' : 'Ramassage' }} · {{ order.pickup.zone_name }}</h2>
             <p>{{ order.pickup.contact_name }} · <a :href="telLink(order.pickup.phone)" class="text-blue-600">{{ order.pickup.phone }}</a></p>
             <p>{{ order.pickup.address || '—' }}</p>
-            <p v-if="order.pickup.landmark" class="text-gray-600">Repère : {{ order.pickup.landmark }}</p>
+            <p v-if="order.pickup.landmark" class="text-slate-600">Repère : {{ order.pickup.landmark }}</p>
             <p v-if="order.pickup_courier" class="pt-1">{{ isCollect(order.activity) ? 'Livreur de la collecte' : 'Ramasseur' }} : <strong>{{ order.pickup_courier.name }}</strong></p>
           </div>
           <div class="card p-4 text-sm space-y-1">
@@ -59,10 +59,10 @@
             <p>{{ order.recipient.name || '—' }} · <a :href="telLink(order.recipient.phone)" class="text-blue-600">{{ order.recipient.phone }}</a></p>
             <p v-if="order.recipient.phone2">2e numéro : <a :href="telLink(order.recipient.phone2)" class="text-blue-600">{{ order.recipient.phone2 }}</a></p>
             <p>{{ order.delivery.address || '—' }}</p>
-            <p v-if="order.delivery.landmark" class="text-gray-600">Repère : {{ order.delivery.landmark }}</p>
+            <p v-if="order.delivery.landmark" class="text-slate-600">Repère : {{ order.delivery.landmark }}</p>
             <p v-if="order.delivery.scheduled_date">
               {{ order.status === 'delivered' ? 'Livrée le' : 'Date de livraison :' }} {{ date(order.delivery.scheduled_date) }} {{ order.delivery.time_slot && order.status !== 'delivered' ? `(${order.delivery.time_slot}h)` : '' }}
-              <span v-if="order.delivery.first_date && order.delivery.first_date !== order.delivery.scheduled_date" class="block text-xs text-gray-500">Prévue d'abord le {{ date(order.delivery.first_date) }}</span>
+              <span v-if="order.delivery.first_date && order.delivery.first_date !== order.delivery.scheduled_date" class="block text-xs text-slate-600">Prévue d'abord le {{ date(order.delivery.first_date) }}</span>
             </p>
             <p v-if="order.delivery_courier" class="pt-1">Livreur : <strong>{{ order.delivery_courier.name }}</strong></p>
             <button v-if="canEditDelivery" class="text-blue-600 text-xs underline pt-1" @click="openEdit">Modifier la livraison</button>
@@ -70,13 +70,13 @@
         </div>
 
         <p v-if="order.status === 'lost'" class="rounded-lg bg-red-50 ring-1 ring-red-200 px-4 py-2 text-sm text-red-900">
-          🚨 Colis déclaré perdu le {{ dateTime(order.lost_at) }}<span v-if="order.lost_reason"> : {{ order.lost_reason }}</span>
+          <Icone nom="alerte" taille="petite" class="inline align-[-0.15em]" /> Colis déclaré perdu le {{ dateTime(order.lost_at) }}<span v-if="order.lost_reason"> : {{ order.lost_reason }}</span>
         </p>
 
         <!-- Annulée ou refusée : par qui et pourquoi -->
         <div v-if="order.cancellation" class="rounded-lg bg-slate-50 ring-1 ring-slate-200 px-4 py-3 text-sm space-y-0.5">
           <p class="font-semibold">
-            {{ order.cancellation.rejected ? '⛔ Refusée' : '❌ Annulée' }} le {{ dateTime(order.cancellation.cancelled_at) }}
+            <Icone :nom="order.cancellation.rejected ? 'refus' : 'annulation'" taille="petite" class="inline align-[-0.15em]" /> {{ order.cancellation.rejected ? 'Refusée' : 'Annulée' }} le {{ dateTime(order.cancellation.cancelled_at) }}
             par {{ order.cancellation.by === 'merchant' ? `le client${order.cancellation.name ? ` (${order.cancellation.name})` : ''}` : (order.cancellation.name || 'l\'entreprise') + (order.cancellation.role ? ` (${order.cancellation.role})` : '') }}
           </p>
           <p v-if="order.cancellation.reason_label">Motif : {{ order.cancellation.reason_label }}</p>
@@ -85,46 +85,46 @@
 
         <!-- Livrée hors connexion avec un code client incorrect -->
         <div v-if="order.delivery_code_unverified_at" class="rounded-lg bg-orange-50 ring-1 ring-orange-200 px-4 py-3 text-sm text-orange-900 space-y-2">
-          <p>⚠️ Livrée hors connexion avec un <strong>code client incorrect</strong> : vérifiez la livraison auprès du destinataire.</p>
+          <p><Icone nom="alerte" taille="petite" class="inline align-[-0.15em]" /> Livrée hors connexion avec un <strong>code client incorrect</strong> : vérifiez la livraison auprès du destinataire.</p>
           <button v-if="auth.can('orders.dispatch')" class="btn-secondary" @click="verifyDeliveryCode">Livraison vérifiée</button>
         </div>
 
         <!-- Garde du colis (personnel uniquement) -->
         <p v-if="order.held_by" class="rounded-lg bg-amber-50 ring-1 ring-amber-200 px-4 py-2 text-sm text-amber-900">
-          🎒 Colis chez <strong>{{ order.held_by.name }}</strong> depuis le {{ dateTime(order.held_by.since) }}
+          <Icone nom="en-main" taille="petite" class="inline align-[-0.15em]" /> Colis chez <strong>{{ order.held_by.name }}</strong> depuis le {{ dateTime(order.held_by.since) }}
           <span v-if="['delivery_failed', 'rescheduled'].includes(order.status)"> · pas encore rendu au dépôt</span>
         </p>
 
         <div class="card p-4 text-sm grid sm:grid-cols-4 gap-3">
-          <div v-if="!order.billed_monthly"><p class="text-gray-500">Articles</p><p class="font-semibold">{{ money(order.amounts.items_amount) }}</p></div>
+          <div v-if="!order.billed_monthly"><p class="text-slate-600">Articles</p><p class="font-semibold">{{ money(order.amounts.items_amount) }}</p></div>
           <div v-if="order.billing">
-            <p class="text-gray-500">Facture du mois</p>
+            <p class="text-slate-600">Facture du mois</p>
             <p class="font-semibold">{{ order.billing.basis === 'forfait' ? 'Forfait' : money(order.billing.amount) }}</p>
           </div>
           <div v-else>
-            <p class="text-gray-500">Frais ({{ order.amounts.fee_payer === 'recipient' ? 'client' : 'marchand' }})</p>
+            <p class="text-slate-600">Frais ({{ order.amounts.fee_payer === 'recipient' ? 'client' : 'marchand' }})</p>
             <p class="font-semibold">{{ money(order.amounts.total_fees) }}</p>
           </div>
           <template v-if="order.billed_monthly">
-            <div><p class="text-gray-500">À encaisser</p><p class="font-semibold">Rien</p></div>
+            <div><p class="text-slate-600">À encaisser</p><p class="font-semibold">Rien</p></div>
             <!-- Preuve de remise : nom relevé par le livreur ; signature et photo dans l'historique -->
             <div class="sm:col-span-2">
-              <p class="text-gray-500">Reçu par</p>
+              <p class="text-slate-600">Reçu par</p>
               <p class="font-semibold">{{ order.received_by_name || (order.status === 'delivered' ? 'Non précisé' : '—') }}</p>
-              <p v-if="order.proof" class="text-xs text-gray-500">Demandé au livreur : {{ proofLabel || 'rien' }}</p>
+              <p v-if="order.proof" class="text-xs text-slate-600">Demandé au livreur : {{ proofLabel || 'rien' }}</p>
             </div>
           </template>
           <template v-else>
-            <div><p class="text-gray-500">À encaisser</p><p class="font-semibold text-lg">{{ money(order.amounts.cod_amount) }}</p></div>
-            <div><p class="text-gray-500">Encaissé</p><p class="font-semibold">{{ money(order.amounts.collected_amount) }}</p></div>
+            <div><p class="text-slate-600">À encaisser</p><p class="font-semibold text-lg">{{ money(order.amounts.cod_amount) }}</p></div>
+            <div><p class="text-slate-600">Encaissé</p><p class="font-semibold">{{ money(order.amounts.collected_amount) }}</p></div>
           </template>
           <div v-if="order.billing" class="sm:col-span-4 rounded bg-indigo-50 text-indigo-900 p-2">
-            📄 {{ shipmentLabel(order.package) }}<template v-if="order.package.delivery_delay"> en {{ order.package.delivery_delay.replace('h', ' h') }}</template> ·
+            <Icone nom="contrat" taille="petite" class="inline align-[-0.15em]" /> {{ shipmentLabel(order.package) }}<template v-if="order.package.delivery_delay"> en {{ order.package.delivery_delay.replace('h', ' h') }}</template> ·
             {{ order.billing.label }} : sur la facture du mois du client.
-            <span v-if="order.package.declared_value" class="block">💰 Valeur déclarée : <strong>{{ money(order.package.declared_value) }}</strong></span>
+            <span v-if="order.package.declared_value" class="block"><Icone nom="argent" taille="petite" class="inline align-[-0.15em]" /> Valeur déclarée : <strong>{{ money(order.package.declared_value) }}</strong></span>
           </div>
           <div v-if="order.is_shipping" class="sm:col-span-4 rounded bg-indigo-50 text-indigo-900 p-2">
-            🚌 <strong>Expédition</strong> ·
+            <Icone nom="expedition" taille="petite" class="inline align-[-0.15em]" /> <strong>Expédition</strong> ·
             <template v-if="order.shipping.carrier">
               déposé chez {{ order.shipping.carrier }}<span v-if="order.shipping.reference"> (ticket {{ order.shipping.reference }})</span>,
               frais {{ money(order.shipping.fee) }} facturés au client
@@ -132,16 +132,16 @@
             <template v-else>frais du transporteur facturés au client au réel<span v-if="order.shipping.fee_estimate"> (≈ {{ money(order.shipping.fee_estimate) }})</span></template>
           </div>
           <div v-if="order.delivery_code" class="sm:col-span-2">
-            <p class="text-gray-500">Code de livraison (à transmettre au client)</p>
+            <p class="text-slate-600">Code de livraison (à transmettre au client)</p>
             <p class="font-mono text-lg tracking-widest">{{ order.delivery_code }}</p>
           </div>
           <div class="sm:col-span-2">
-            <p class="text-gray-500">Colis</p>
+            <p class="text-slate-600">Colis</p>
             <p>{{ order.package.description || '—' }}<span v-if="order.package.is_express"> · Express</span><span v-if="order.package.is_fragile"> · Fragile</span><span v-if="order.package.weight_kg"> · {{ order.package.weight_kg }} kg</span></p>
-            <p v-if="order.package.merchant_note" class="text-gray-600">Instruction : {{ order.package.merchant_note }}</p>
+            <p v-if="order.package.merchant_note" class="text-slate-600">Instruction : {{ order.package.merchant_note }}</p>
           </div>
-          <div><p class="text-gray-500">Tentatives</p><p>{{ order.attempts_count }} / {{ order.max_attempts }}</p></div>
-          <div v-if="order.merchant"><p class="text-gray-500">Client</p><p>{{ order.merchant.business_name }}</p></div>
+          <div><p class="text-slate-600">Tentatives</p><p>{{ order.attempts_count }} / {{ order.max_attempts }}</p></div>
+          <div v-if="order.merchant"><p class="text-slate-600">Client</p><p>{{ order.merchant.business_name }}</p></div>
         </div>
 
         <div v-if="order.items?.length" class="card p-4 text-sm">
@@ -152,7 +152,7 @@
                 <strong>{{ item.quantity }} ×</strong> {{ item.label }}
                 <span v-if="item.stock_state" :class="['ml-1 text-xs rounded-full px-2 py-0.5', STOCK_STATES[item.stock_state].class]">{{ STOCK_STATES[item.stock_state].label }}</span>
               </span>
-              <span class="text-gray-600">{{ item.unit_price ? money(item.unit_price * item.quantity) : '' }}</span>
+              <span class="text-slate-600">{{ item.unit_price ? money(item.unit_price * item.quantity) : '' }}</span>
             </li>
           </ul>
         </div>
@@ -173,18 +173,18 @@
         <div v-if="isDispatcher && !isFinal" class="card p-4 space-y-3">
           <h2 class="font-semibold">Dispatch</h2>
           <p v-if="order.merchant_decision" class="rounded-lg bg-indigo-50 px-3 py-2 text-sm text-indigo-900">
-            🧑‍💼 {{ order.merchant_decision.by || 'Le client' }} a décidé : {{ order.merchant_decision.kind === 'redeliver' ? `relivrer le ${date(order.merchant_decision.date)}` : 'faire revenir le colis' }}
+            <Icone nom="client" taille="petite" class="inline align-[-0.15em]" /> {{ order.merchant_decision.by || 'Le client' }} a décidé : {{ order.merchant_decision.kind === 'redeliver' ? `relivrer le ${date(order.merchant_decision.date)}` : 'faire revenir le colis' }}
           </p>
-          <button v-if="order.needs_decision" class="btn-primary w-full" @click="deciding = true">🧭 Décider de la suite</button>
-          <button v-else-if="order.decision_editable" class="btn-secondary w-full" @click="deciding = true">🧭 Modifier la décision</button>
-          <button v-if="canDeclareLost" class="btn-secondary w-full text-red-700" @click="losing = true">🚨 Déclarer le colis perdu</button>
+          <button v-if="order.needs_decision" class="btn-primary w-full" @click="deciding = true"><Icone nom="decider" />Décider de la suite</button>
+          <button v-else-if="order.decision_editable" class="btn-secondary w-full" @click="deciding = true"><Icone nom="decider" />Modifier la décision</button>
+          <button v-if="canDeclareLost" class="btn-secondary w-full text-red-700" @click="losing = true"><Icone nom="alerte" />Déclarer le colis perdu</button>
           <div class="flex gap-2 flex-wrap">
             <button v-if="order.status === 'pending'" class="btn-success" @click="quickMove('confirmed')">Valider</button>
             <button v-if="order.status === 'pending'" class="btn-secondary" @click="openStatus(['rejected'])">Refuser</button>
           </div>
           <!-- Livreurs actuels : retirables (erreur d'assignation, livreur indisponible) -->
           <div v-for="a in activeAssignments" :key="a.id" class="flex items-center justify-between gap-2 rounded bg-slate-50 px-3 py-2 text-sm">
-            <span>{{ a.type_label }} : <strong>{{ a.courier_name }}</strong> <span class="text-gray-500">· {{ ASSIGNMENT_STATUS[a.status] }}</span></span>
+            <span>{{ a.type_label }} : <strong>{{ a.courier_name }}</strong> <span class="text-slate-600">· {{ ASSIGNMENT_STATUS[a.status] }}</span></span>
             <button v-if="canUnassign(a)" class="text-red-700 font-medium whitespace-nowrap" @click="unassign(a)">Retirer</button>
           </div>
           <div v-for="type in assignableTypes" :key="type" class="space-y-1">
@@ -208,8 +208,8 @@
 
         <div v-if="warehouseActions.length" class="card p-4 space-y-2">
           <h2 class="font-semibold">Entrepôt</h2>
-          <button v-if="warehouseActions.includes('prepare')" class="btn-success w-full" @click="quickMove('at_hub', 'Commande préparée.')">📦 Commande préparée</button>
-          <button v-if="warehouseActions.includes('restock')" class="btn-secondary w-full" @click="restock">↩️ Remettre en stock</button>
+          <button v-if="warehouseActions.includes('prepare')" class="btn-success w-full" @click="quickMove('at_hub', 'Commande préparée.')"><Icone nom="course" />Commande préparée</button>
+          <button v-if="warehouseActions.includes('restock')" class="btn-secondary w-full" @click="restock"><Icone nom="retour" />Remettre en stock</button>
         </div>
 
         <div v-if="isMerchant && !isFinal" class="card p-4 space-y-2">
@@ -240,7 +240,7 @@
           <ul class="space-y-2">
             <li v-for="a in order.assignments" :key="a.id" class="flex justify-between gap-2">
               <span>{{ a.type_label }} · {{ a.courier_name }}</span>
-              <span class="text-gray-500">{{ ASSIGNMENT_STATUS[a.status] }}</span>
+              <span class="text-slate-600">{{ ASSIGNMENT_STATUS[a.status] }}</span>
             </li>
           </ul>
         </div>
@@ -274,10 +274,11 @@
     <SupplementsModal :open="supplementOpen" :merchant="order?.merchant" :activity="order?.activity" :order="order" @close="supplementOpen = false" />
   </div>
   <p v-else-if="error" class="text-red-600">{{ error }}</p>
-  <p v-else class="text-gray-500">Chargement…</p>
+  <p v-else class="text-slate-600">Chargement…</p>
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import SearchSelect from '../../components/SearchSelect.vue'
 import { madSuffix } from '../../utils/mad'
 import { computed, onMounted, reactive, ref, watch } from 'vue'

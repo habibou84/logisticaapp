@@ -40,7 +40,7 @@ class MerchantMessagesTest extends TestCase
         $order = $this->createOrder();
 
         Notification::assertSentTo($this->merchantUser, OrderAlert::class, fn (OrderAlert $n) => $n->kind === 'confirmed'
-            && $n->title === "✅ Course {$order->tracking_code} reçue et validée"
+            && $n->title === "Course {$order->tracking_code} reçue et validée"
             && str_contains($n->body, 'Livraison aujourd\'hui pour Jean Kouadio (Yopougon)'));
         $this->assertSame(0, $this->confirmationsSent());
 

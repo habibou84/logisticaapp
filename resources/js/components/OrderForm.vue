@@ -33,7 +33,7 @@
 
     <section class="card p-4 space-y-3">
       <h3 class="font-semibold">{{ form.to_department_id ? 'Livraison' : 'Destinataire et livraison' }}</h3>
-      <p v-if="form.to_department_id" class="text-sm text-gray-600">Courrier interne : adresse et responsable du département destinataire.</p>
+      <p v-if="form.to_department_id" class="text-sm text-slate-600">Courrier interne : adresse et responsable du département destinataire.</p>
       <div class="grid sm:grid-cols-2 gap-3">
         <template v-if="!form.to_department_id">
         <!-- Annuaire des destinations (distribution, MAD) -->
@@ -60,7 +60,7 @@
           <input id="name" v-model="form.recipient_name" :class="['input', mark('recipient_name')]" @input="touched('recipient_name')">
         </div>
         <div v-if="duplicates.length" class="sm:col-span-2 rounded bg-amber-50 border border-amber-200 text-amber-900 text-sm px-3 py-2">
-          ⚠️ Déjà {{ duplicates.length }} course(s) pour ce destinataire chez ce client ces dernières 24 h :
+          <Icone nom="alerte" taille="petite" class="inline align-text-bottom" /> Déjà {{ duplicates.length }} course(s) pour ce destinataire chez ce client ces dernières 24 h :
           <RouterLink v-for="d in duplicates" :key="d.id" :to="`${auth.homeRoute}/courses/${d.id}`" target="_blank" class="underline ml-1">
             {{ d.tracking_code }} ({{ d.status_label }}, {{ d.delivery_zone_name }}, {{ money(d.cod_amount) }})
           </RouterLink>
@@ -69,7 +69,7 @@
           <label class="label" for="zone">Commune / quartier de livraison * <span v-if="parsed.delivery_zone_id" class="check">à vérifier</span></label>
           <ZoneSelect id="zone" v-model="form.delivery_zone_id" :zones="zones" required :input-class="['input', mark('delivery_zone_id')]" @update:model-value="touched('delivery_zone_id')" />
           <div v-if="zoneChoices.length > 1" class="flex flex-wrap items-center gap-2 mt-1 text-sm">
-            <span class="text-gray-600">Ou peut-être :</span>
+            <span class="text-slate-600">Ou peut-être :</span>
             <button
               v-for="z in zoneChoices" :key="z.id" type="button"
               :class="['rounded-full px-3 py-0.5 ring-1', form.delivery_zone_id === z.id ? 'bg-slate-900 text-white ring-slate-900' : 'bg-white ring-slate-300']"
@@ -103,8 +103,8 @@
               <option value="16-20">Soir (16h-20h)</option>
             </select>
           </div>
-          <p v-if="closed" class="text-xs text-gray-500 mt-1">🌙 {{ closedReason }} : le ramassage peut quand même se faire aujourd'hui.</p>
-          <p v-if="dateSummary" class="text-sm font-medium mt-1">{{ dateSummary }}</p>
+          <p v-if="closed" class="text-xs text-slate-600 mt-1"><Icone nom="jour-ferme" taille="petite" class="inline align-text-bottom" /> {{ closedReason }} : le ramassage peut quand même se faire aujourd'hui.</p>
+          <p v-if="dateSummary" class="text-sm font-medium mt-1"><Icone v-if="form.delivery_scheduled_date" nom="date" taille="petite" class="inline align-text-bottom" /> {{ dateSummary }}</p>
           <p v-if="errors.when" class="field-error">{{ errors.when[0] }}</p>
           <p v-if="errors.delivery_scheduled_date" class="field-error">{{ errors.delivery_scheduled_date[0] }}</p>
         </div>
@@ -122,7 +122,7 @@
       <div>
         <h3 class="font-semibold">Envoi</h3>
         <!-- Ce qui attend le livreur : preuve de remise (réglages), livreurs attitrés (MAD) -->
-        <p v-if="proofText" class="text-sm text-gray-600">À la remise, le livreur relèvera : {{ proofText }}.</p>
+        <p v-if="proofText" class="text-sm text-slate-600">À la remise, le livreur relèvera : {{ proofText }}.</p>
         <p v-if="billingPlan.couriers?.length" class="text-sm text-violet-800">
           Confiée à {{ billingPlan.couriers.length > 1 ? 'ses livreurs attitrés' : 'son livreur attitré' }} : {{ billingPlan.couriers.map((c) => c.name).join(', ') }} (aux jours et horaires de la mise à disposition).
         </p>
@@ -132,7 +132,7 @@
         <label class="label" for="lot">Lot</label>
         <select id="lot" v-model="form.billing_plan_id" class="input">
           <option v-if="contractPlan" :value="null">{{ contractPlan.formula_label }} (contrat du mois)</option>
-          <option v-for="l in lots" :key="l.id" :value="l.id">📦 {{ l.lot_name }} · {{ l.lot_quantity }} colis</option>
+          <option v-for="l in lots" :key="l.id" :value="l.id">{{ l.lot_name }} · {{ l.lot_quantity }} colis</option>
         </select>
         <p v-if="errors.billing_plan_id" class="field-error">{{ errors.billing_plan_id[0] }}</p>
       </div>
@@ -187,7 +187,7 @@
         <div>
           <label class="label" for="declared">Valeur du colis (F CFA)</label>
           <input id="declared" v-model.number="form.declared_value" type="number" min="0" step="1000" inputmode="numeric" class="input" placeholder="Facultatif">
-          <p class="text-xs text-gray-500 mt-1">Sert en cas de perte ou de dommage.</p>
+          <p class="text-xs text-slate-600 mt-1">Sert en cas de perte ou de dommage.</p>
           <p v-if="errors.declared_value" class="field-error">{{ errors.declared_value[0] }}</p>
         </div>
       </div>
@@ -197,11 +197,11 @@
         <div class="grid sm:grid-cols-2 gap-2">
           <label :class="['flex items-start gap-2 rounded-lg p-2.5 text-sm ring-1 cursor-pointer', form.is_express ? 'ring-2 ring-red-500 bg-red-50' : 'ring-slate-300']">
             <input v-model="form.is_express" type="checkbox" class="mt-1">
-            <span><b class="block">⚡ Express</b><span class="text-xs text-gray-600">Livré en priorité, supplément selon le contrat</span></span>
+            <span><b class="flex items-center gap-1"><Icone nom="rapide" taille="petite" />Express</b><span class="text-xs text-slate-600">Livré en priorité, supplément selon le contrat</span></span>
           </label>
           <label :class="['flex items-start gap-2 rounded-lg p-2.5 text-sm ring-1 cursor-pointer', form.is_fragile ? 'ring-2 ring-red-500 bg-red-50' : 'ring-slate-300']">
             <input v-model="form.is_fragile" type="checkbox" class="mt-1">
-            <span><b class="block">🥚 Fragile</b><span class="text-xs text-gray-600">À manipuler avec soin, signalé au livreur et sur l'étiquette</span></span>
+            <span><b class="flex items-center gap-1"><Icone nom="fragile" taille="petite" />Fragile</b><span class="text-xs text-slate-600">À manipuler avec soin, signalé au livreur et sur l'étiquette</span></span>
           </label>
         </div>
       </div>
@@ -231,7 +231,7 @@
     </section>
 
     <details class="card p-4" :open="moreOpen" @toggle="moreOpen = $event.target.open">
-      <summary class="font-semibold cursor-pointer">Plus d'options <span class="text-sm font-normal text-gray-500">(second numéro{{ billingPlan ? '' : ', express, fragile, contenu' }}, référence{{ products.length || hubs.length ? ', articles du stock' : '' }}, {{ pickupWord(form.activity) }})</span></summary>
+      <summary class="font-semibold cursor-pointer">Plus d'options <span class="text-sm font-normal text-slate-600">(second numéro{{ billingPlan ? '' : ', express, fragile, contenu' }}, référence{{ products.length || hubs.length ? ', articles du stock' : '' }}, {{ pickupWord(form.activity) }})</span></summary>
       <div class="space-y-4 mt-3">
         <div class="grid sm:grid-cols-2 gap-3">
           <div>
@@ -249,8 +249,8 @@
             <input id="desc" v-model="form.description" :class="['input', mark('description')]" placeholder="Ex. : 2 robes, 1 sac" @input="touched('description')">
           </div>
           <template v-if="!billingPlan">
-            <label class="flex items-center gap-2 text-sm"><input v-model="form.is_express" type="checkbox"> ⚡ Express</label>
-            <label class="flex items-center gap-2 text-sm"><input v-model="form.is_fragile" type="checkbox"> 🥚 Fragile</label>
+            <label class="flex items-center gap-2 text-sm"><input v-model="form.is_express" type="checkbox"> <span class="inline-flex items-center gap-1"><Icone nom="rapide" taille="petite" />Express</span></label>
+            <label class="flex items-center gap-2 text-sm"><input v-model="form.is_fragile" type="checkbox"> <span class="inline-flex items-center gap-1"><Icone nom="fragile" taille="petite" />Fragile</span></label>
           </template>
         </div>
 
@@ -259,7 +259,7 @@
             <h4 class="font-semibold">Articles du stock</h4>
             <select v-model="form.pickup_hub_id" class="input w-auto" aria-label="Provenance des articles">
               <option :value="null">Chez le client (ramassage)</option>
-              <option v-for="h in hubs" :key="h.id" :value="h.id">🏬 {{ h.name }} (préparée à l'entrepôt)</option>
+              <option v-for="h in hubs" :key="h.id" :value="h.id">{{ h.name }} (préparée à l'entrepôt)</option>
             </select>
           </div>
           <p v-if="form.pickup_hub_id" class="text-sm rounded bg-sky-50 text-sky-900 p-2">
@@ -275,18 +275,18 @@
             <input v-else v-model="item.label" class="input" placeholder="Article libre (hors stock)" :aria-label="`Article ${i + 1}`">
             <input v-model.number="item.quantity" type="number" min="1" class="input" :aria-label="`Quantité ${i + 1}`">
             <input v-model.number="item.unit_price" type="number" min="0" step="50" class="input" placeholder="Prix" :aria-label="`Prix unitaire ${i + 1}`">
-            <button type="button" class="btn-secondary px-2" :aria-label="`Retirer l'article ${i + 1}`" @click="items.splice(i, 1)">✕</button>
+            <button type="button" class="btn-secondary px-2" :aria-label="`Retirer l'article ${i + 1}`" @click="items.splice(i, 1)"><Icone nom="fermer" taille="petite" /></button>
           </div>
           <p v-if="errors.items || errors.pickup_hub_id" class="field-error">{{ (errors.items || errors.pickup_hub_id)[0] }}</p>
           <div class="flex flex-wrap gap-2">
             <button type="button" class="btn-secondary" :disabled="!products.length" @click="items.push({ product_id: null, quantity: 1, unit_price: 0 })">+ Produit du stock</button>
             <button v-if="!form.pickup_hub_id" type="button" class="btn-secondary" @click="items.push({ label: '', quantity: 1, unit_price: 0 })">+ Article libre</button>
           </div>
-          <p v-if="items.length" class="text-sm text-gray-600">Total des articles : <strong>{{ money(itemsTotal) }}</strong> (reporté dans le montant à encaisser, modifiable)</p>
+          <p v-if="items.length" class="text-sm text-slate-600">Total des articles : <strong>{{ money(itemsTotal) }}</strong> (reporté dans le montant à encaisser, modifiable)</p>
         </div>
 
         <div v-if="!form.pickup_hub_id" class="grid sm:grid-cols-2 gap-3 border-t pt-3">
-          <p class="sm:col-span-2 text-sm text-gray-600">Lieu de ramassage, s'il diffère de l'adresse habituelle du client :</p>
+          <p class="sm:col-span-2 text-sm text-slate-600">Lieu de ramassage, s'il diffère de l'adresse habituelle du client :</p>
           <div>
             <label class="label" for="pzone">Zone de {{ pickupWord(form.activity) }}</label>
             <SearchSelect
@@ -307,13 +307,13 @@
         <p v-if="quoteError" class="text-red-600">{{ quoteError }}</p>
         <template v-else-if="quote?.billing">
           <p>Facture du mois : <strong>{{ quote.billing.label }}<template v-if="quote.billing.units > 1"> × {{ quote.billing.units }}</template></strong><template v-if="quote.billing.amount"> · {{ money(quote.billing.amount) }}</template></p>
-          <p class="text-gray-600">Rien à encaisser auprès du destinataire</p>
+          <p class="text-slate-600">Rien à encaisser auprès du destinataire</p>
         </template>
         <template v-else-if="quote">
           <p>Frais de livraison : <strong>{{ money(quote.total) }}</strong></p>
-          <p class="text-gray-600">À encaisser auprès du destinataire : <strong>{{ money(codAmount) }}</strong></p>
+          <p class="text-slate-600">À encaisser auprès du destinataire : <strong>{{ money(codAmount) }}</strong></p>
         </template>
-        <p v-else class="text-gray-500">Choisissez la zone pour voir le tarif.</p>
+        <p v-else class="text-slate-600">Choisissez la zone pour voir le tarif.</p>
       </div>
       <div class="flex flex-wrap gap-2">
         <button type="button" class="btn-secondary" :disabled="saving" title="Gardu client pour enchaîner les saisies" @click="submit(true)">Enregistrer et nouvelle</button>
@@ -324,6 +324,7 @@
 </template>
 
 <script setup>
+import Icone from './ui/Icone.vue'
 import SearchSelect from './SearchSelect.vue'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import http, { apiErrorMessage } from '../bootstrap/axios'

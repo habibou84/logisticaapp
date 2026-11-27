@@ -2,15 +2,15 @@
   <!-- Pointage d'arrivée : lieu du jour (agence, client MAD ou première étape du parcours), distance en direct -->
   <div v-if="state?.place && !state.shift" class="rounded-2xl bg-white p-4 ring-2 ring-[var(--app-color)] space-y-3">
     <div class="flex items-start gap-3">
-      <span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-slate-100 text-xl">📍</span>
+      <span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-slate-100 text-xl text-slate-600"><Icone nom="position" /></span>
       <div class="min-w-0 flex-1">
         <p class="font-semibold">Pointer mon arrivée</p>
         <p class="text-sm text-slate-700">
           <template v-if="state.place.stops.length">Étape 1 du parcours « {{ state.place.routine }} » : </template>
           <strong>{{ state.place.label }}</strong>
         </p>
-        <p v-if="state.place.address" class="text-sm text-slate-500">{{ state.place.address }}</p>
-        <p class="text-sm text-slate-500">
+        <p v-if="state.place.address" class="text-sm text-slate-600">{{ state.place.address }}</p>
+        <p class="text-sm text-slate-600">
           <template v-if="state.place.expected_at">Attendu à {{ hm(state.place.expected_at) }}</template>
           <template v-if="state.place.merchant"> · MAD chez {{ state.place.merchant }}</template>
         </p>
@@ -22,12 +22,12 @@
       <p :class="['rounded-xl px-3 py-2 text-sm', near ? 'bg-emerald-50 text-emerald-800' : 'bg-slate-50 text-slate-700']">
         <template v-if="gpsError">{{ gpsError }}</template>
         <template v-else-if="here === null">Recherche de votre position…</template>
-        <template v-else-if="near">✅ Vous êtes sur place ({{ meters(here.distance) }}, GPS ± {{ here.accuracy }} m).</template>
+        <template v-else-if="near"><Icone nom="livre" taille="petite" class="inline" /> Vous êtes sur place ({{ meters(here.distance) }}, GPS ± {{ here.accuracy }} m).</template>
         <template v-else>Vous êtes à {{ meters(here.distance) }} du lieu. Il faut être à moins de {{ state.place.radius }} m pour pointer.</template>
         <span v-if="here && here.accuracy > state.settings.min_accuracy" class="block text-xs">GPS imprécis (± {{ here.accuracy }} m) : sortez à découvert et attendez quelques secondes.</span>
       </p>
       <div class="flex gap-2">
-        <button type="button" class="m-btn-primary" :disabled="busy || (here !== null && !near)" @click="clockIn">{{ busy ? 'Pointage…' : '✋ Pointer mon arrivée' }}</button>
+        <button type="button" class="m-btn-primary" :disabled="busy || (here !== null && !near)" @click="clockIn"><Icone v-if="!busy" nom="main" />{{ busy ? 'Pointage…' : 'Pointer mon arrivée' }}</button>
         <a :href="directionsLink(state.place.lat, state.place.lng)" target="_blank" rel="noopener" class="m-btn-secondary w-auto px-4">Itinéraire</a>
       </div>
     </template>
@@ -35,7 +35,7 @@
 
   <!-- Pointé : heure, et le parcours à suivre -->
   <div v-else-if="state?.shift" class="rounded-2xl bg-emerald-50 p-4 ring-1 ring-emerald-200 text-emerald-900">
-    <p class="font-semibold">✅ Pointé à {{ hm(state.shift.clocked_in_at) }}<template v-if="state.shift.place_label"> · {{ state.shift.place_label }}</template></p>
+    <p class="font-semibold"><Icone nom="livre" taille="normale" class="inline" /> Pointé à {{ hm(state.shift.clocked_in_at) }}<template v-if="state.shift.place_label"> · {{ state.shift.place_label }}</template></p>
     <p v-if="state.shift.late_minutes" class="text-sm">{{ state.shift.late_minutes }} min de retard</p>
     <p v-if="state.shift.method === 'manual'" class="text-sm">Pointé par {{ state.shift.recorded_by || 'l\'équipe' }}</p>
     <ol v-if="state.place?.stops?.length" class="mt-3 space-y-2">
@@ -43,7 +43,7 @@
         <span class="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-emerald-600 text-xs font-bold text-white">{{ s.position }}</span>
         <span class="min-w-0 flex-1">
           <strong>{{ s.action_label }}</strong> · {{ s.label }}<template v-if="s.expected_time"> · vers {{ s.expected_time }}</template>
-          <span v-if="s.address" class="block text-slate-500">{{ s.address }}</span>
+          <span v-if="s.address" class="block text-slate-600">{{ s.address }}</span>
           <span v-if="s.instructions" class="block text-slate-600">« {{ s.instructions }} »</span>
         </span>
         <a v-if="s.lat" :href="directionsLink(s.lat, s.lng)" target="_blank" rel="noopener" class="self-center font-semibold text-[var(--app-color)]">Aller</a>
@@ -53,6 +53,7 @@
 </template>
 
 <script setup>
+import Icone from '../ui/Icone.vue'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import { useToastStore } from '../../stores/toasts'

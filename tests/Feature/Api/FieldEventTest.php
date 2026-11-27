@@ -139,8 +139,8 @@ class FieldEventTest extends TestCase
     {
         Sanctum::actingAs($this->admin);
         $types = [
-            ['key' => 'breakdown', 'label' => 'Panne', 'icon' => '🛵', 'severity' => 'blocking', 'photo' => true, 'gps' => true, 'excuse' => false, 'active' => true],
-            ['label' => 'Pneu crevé', 'icon' => '🛞', 'severity' => 'hindrance', 'active' => true],
+            ['key' => 'breakdown', 'label' => 'Panne', 'icon' => 'atelier', 'severity' => 'blocking', 'photo' => true, 'gps' => true, 'excuse' => false, 'active' => true],
+            ['label' => 'Pneu crevé', 'icon' => 'pneu', 'severity' => 'hindrance', 'active' => true],
             ['key' => 'other', 'label' => 'Autre', 'severity' => 'info', 'active' => false],
         ];
         $saved = $this->patchJson("/api/v1/companies/{$this->company->id}", ['field_event_settings' => ['types' => $types, 'pause_courier' => false]])

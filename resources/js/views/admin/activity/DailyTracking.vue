@@ -4,7 +4,7 @@
     <div class="flex flex-wrap items-center gap-3">
       <span v-if="isToday" class="flex items-center gap-1.5 text-sm font-semibold text-emerald-700"><span class="h-2 w-2 rounded-full bg-emerald-600 animate-pulse" aria-hidden="true" /> En direct</span>
       <span v-else class="text-sm font-semibold text-slate-700">{{ isFuture ? 'Prévu le' : 'Journée du' }} {{ dayLabel }}</span>
-      <span class="text-sm text-gray-600">Colis dont la livraison est prévue ce jour-là</span>
+      <span class="text-sm text-slate-600">Colis dont la livraison est prévue ce jour-là</span>
       <span class="flex-1" />
       <label class="flex items-center gap-2 text-sm font-medium">Jour
         <input v-model="day" type="date" class="input w-auto" :max="maxIso" @change="changeDay">
@@ -26,31 +26,31 @@
     <!-- Chiffres de l'équipe -->
     <div class="grid grid-cols-2 lg:grid-cols-6 gap-3">
       <div class="card p-3">
-        <p class="text-sm text-gray-600">{{ isToday ? 'Livreurs actifs' : isFuture ? 'Livreurs prévus' : 'Livreurs au travail' }}</p>
-        <p class="text-2xl font-bold">{{ totals.active ?? '—' }} <span class="text-sm font-normal text-gray-600">sur {{ totals.couriers ?? '—' }}</span></p>
+        <p class="text-sm text-slate-600">{{ isToday ? 'Livreurs actifs' : isFuture ? 'Livreurs prévus' : 'Livreurs au travail' }}</p>
+        <p class="text-2xl font-bold">{{ totals.active ?? '—' }} <span class="text-sm font-normal text-slate-600">sur {{ totals.couriers ?? '—' }}</span></p>
       </div>
       <div class="card p-3">
-        <p class="text-sm text-gray-600">{{ isFuture ? 'Livraisons prévues' : 'Livrés' }}</p>
+        <p class="text-sm text-slate-600">{{ isFuture ? 'Livraisons prévues' : 'Livrés' }}</p>
         <p v-if="isFuture" class="text-2xl font-bold">{{ totals.deliveries ?? '—' }}</p>
-        <p v-else class="text-2xl font-bold text-emerald-700">{{ totals.delivered ?? '—' }} <span class="text-sm font-normal text-gray-600">sur {{ totals.deliveries ?? '—' }}</span></p>
+        <p v-else class="text-2xl font-bold text-emerald-700">{{ totals.delivered ?? '—' }} <span class="text-sm font-normal text-slate-600">sur {{ totals.deliveries ?? '—' }}</span></p>
         <!-- Distribution : plis et chèques comptés un à un -->
-        <p v-if="totals.units_total > totals.deliveries" class="text-xs text-gray-600">{{ isFuture ? totals.units_total : `${totals.units_done} plis sur ${totals.units_total}` }}{{ isFuture ? ' plis' : '' }}</p>
+        <p v-if="totals.units_total > totals.deliveries" class="text-xs text-slate-600">{{ isFuture ? totals.units_total : `${totals.units_done} plis sur ${totals.units_total}` }}{{ isFuture ? ' plis' : '' }}</p>
       </div>
       <div v-if="!isFuture" class="card p-3">
-        <p class="text-sm text-gray-600">Taux de réussite</p>
+        <p class="text-sm text-slate-600">Taux de réussite</p>
         <p class="text-2xl font-bold">{{ pct(totals.success_rate) }}</p>
-        <p v-if="totals.habit_success_rate !== null && totals.habit_success_rate !== undefined" class="text-xs text-gray-600">habituel {{ totals.habit_success_rate }} %</p>
+        <p v-if="totals.habit_success_rate !== null && totals.habit_success_rate !== undefined" class="text-xs text-slate-600">habituel {{ totals.habit_success_rate }} %</p>
       </div>
       <div v-if="!isFuture" class="card p-3">
-        <p class="text-sm text-gray-600">Échecs</p>
+        <p class="text-sm text-slate-600">Échecs</p>
         <p :class="['text-2xl font-bold', totals.failed ? 'text-red-700' : '']">{{ totals.failed ?? '—' }}</p>
       </div>
       <div v-if="isToday" :class="['card p-3', totals.late_end ? 'bg-orange-50 border-orange-200' : '']">
-        <p :class="['text-sm', totals.late_end ? 'text-orange-800' : 'text-gray-600']">{{ closesAt ? `Risquent de finir après ${closesAt}` : 'Colis en main' }}</p>
+        <p :class="['text-sm', totals.late_end ? 'text-orange-800' : 'text-slate-600']">{{ closesAt ? `Risquent de finir après ${closesAt}` : 'Colis en main' }}</p>
         <p :class="['text-2xl font-bold', totals.late_end ? 'text-orange-800' : '']">{{ closesAt ? `${totals.late_end || 0} livreur${totals.late_end > 1 ? 's' : ''}` : (totals.in_hand ?? '—') }}</p>
       </div>
       <div v-if="isToday" class="card p-3">
-        <p class="text-sm text-gray-600">Fin de journée estimée</p>
+        <p class="text-sm text-slate-600">Fin de journée estimée</p>
         <p class="text-2xl font-bold">{{ totals.estimated_end ? time(totals.estimated_end) : '—' }}</p>
         <div class="mt-1 h-2 rounded-full bg-slate-200" role="progressbar" :aria-valuenow="totals.progress || 0" aria-valuemin="0" aria-valuemax="100" aria-label="Avancement de la journée">
           <div class="h-2 rounded-full bg-emerald-700" :style="{ width: `${totals.progress || 0}%` }" />
@@ -80,7 +80,7 @@
         <div v-for="l in lots" :key="l.id" class="rounded-lg bg-slate-50 p-2 text-sm">
           <p class="font-medium truncate">{{ l.name }} · {{ l.merchant }}</p>
           <Progress label="Livrés" :done="l.delivered" :total="l.included" :warn="l.late > 0" />
-          <p class="text-xs text-gray-600">{{ l.in_progress }} en cours<template v-if="l.late"> · <b class="text-rose-800">{{ l.late }} en retard</b></template><template v-if="l.due_on"> · échéance {{ shortDay(l.due_on) }}</template></p>
+          <p class="text-xs text-slate-600">{{ l.in_progress }} en cours<template v-if="l.late"> · <b class="text-rose-800">{{ l.late }} en retard</b></template><template v-if="l.due_on"> · échéance {{ shortDay(l.due_on) }}</template></p>
         </div>
       </div>
     </details>
@@ -129,10 +129,10 @@
     <div :class="['grid gap-4', selected ? 'xl:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]' : '']">
       <!-- Vue d'ensemble : un livreur par ligne (la carte est dans l'onglet « Carte ») -->
       <div class="card self-start overflow-x-auto">
-        <p v-if="!loaded" class="p-4 text-gray-500">Chargement…</p>
-        <p v-else-if="!visible.length" class="p-4 text-center text-gray-500">Aucun livreur.</p>
+        <p v-if="!loaded" class="p-4 text-slate-600">Chargement…</p>
+        <p v-else-if="!visible.length" class="p-4 text-center text-slate-600">Aucun livreur.</p>
         <table v-else class="stack-table w-full text-sm">
-          <thead class="bg-slate-50 text-left text-xs uppercase text-gray-600">
+          <thead class="bg-slate-50 text-left text-xs uppercase text-slate-600">
             <tr>
               <th class="min-w-[14rem] p-2">Livreur</th>
               <th class="min-w-[9rem] p-2">Livraisons</th>
@@ -154,7 +154,7 @@
                   <span :class="['h-2.5 w-2.5 shrink-0 rounded-full', STATE[c.state].dot]" aria-hidden="true" />
                   <span class="font-semibold">{{ c.name }}</span>
                 </div>
-                <div class="mt-0.5 text-xs text-gray-500">
+                <div class="mt-0.5 text-xs text-slate-600">
                   <span :class="['rounded-full px-1.5 py-0.5', STATE[c.state].chip]">{{ STATE[c.state].label }}</span>
                   <template v-if="c.last_location_at"> · vu {{ ago(c.last_location_at) }}</template>
                   <template v-if="c.zones.length"> · {{ c.zones.slice(0, 2).join(', ') }}</template>
@@ -162,37 +162,37 @@
                 <!-- Mise à disposition : chez quel client, horaire, courses faites pour lui -->
                 <p v-if="c.mad" class="mt-0.5 text-xs text-violet-900">MAD chez <b>{{ c.mad.merchant }}</b><template v-if="c.mad.from"> · {{ c.mad.from }}–{{ c.mad.to }}</template><template v-if="c.mad.total"> · {{ c.mad.done }} / {{ c.mad.total }}</template><template v-if="isToday && !c.mad.reserved_now"> · pas en ce moment</template></p>
                 <p v-if="c.objective" class="mt-0.5 text-xs text-violet-800">Prime {{ money(c.objective.amount) }} : {{ Math.min(c.objective.value, c.objective.threshold) }} / {{ c.objective.threshold }}</p>
-                <p v-if="c.flags.length" class="mt-0.5 text-xs font-semibold text-orange-800">⚠ {{ c.flags.join(' · ') }}</p>
+                <p v-if="c.flags.length" class="mt-0.5 text-xs font-semibold text-orange-800"><Icone nom="alerte" taille="petite" class="inline" /> {{ c.flags.join(' · ') }}</p>
               </td>
               <td data-label="Livraisons" class="p-2">
                 <template v-if="c.deliveries.total">
                   <div class="flex items-baseline justify-between gap-2 text-xs"><b class="text-sm">{{ c.deliveries.done }} / {{ c.deliveries.total }}</b><span v-if="c.late_before" class="text-orange-700">+{{ c.late_before }} d'avant</span></div>
                   <div class="mt-1 h-1.5 rounded-full bg-slate-200"><div :class="['h-1.5 rounded-full', barColor(c)]" :style="{ width: `${share(c.deliveries)}%` }" /></div>
-                  <div v-if="c.deliveries.units_total > c.deliveries.total" class="mt-0.5 text-xs text-gray-500">{{ c.deliveries.units_done }} / {{ c.deliveries.units_total }} plis</div>
-                  <div v-if="paceLine(c)" class="mt-0.5 text-xs text-gray-500">{{ paceLine(c) }}</div>
+                  <div v-if="c.deliveries.units_total > c.deliveries.total" class="mt-0.5 text-xs text-slate-600">{{ c.deliveries.units_done }} / {{ c.deliveries.units_total }} plis</div>
+                  <div v-if="paceLine(c)" class="mt-0.5 text-xs text-slate-600">{{ paceLine(c) }}</div>
                 </template>
-                <span v-else class="text-xs text-gray-400">—</span>
+                <span v-else class="text-xs text-slate-500">—</span>
               </td>
               <td data-label="Ramassages" class="whitespace-nowrap p-2">{{ c.pickups.total ? `${c.pickups.done} / ${c.pickups.total}` : '—' }}</td>
-              <td v-if="!isFuture" data-label="Échecs" :class="['p-2 text-right', c.failed ? 'font-semibold text-red-700' : 'text-gray-400']">{{ c.failed || '—' }}</td>
+              <td v-if="!isFuture" data-label="Échecs" :class="['p-2 text-right', c.failed ? 'font-semibold text-red-700' : 'text-slate-500']">{{ c.failed || '—' }}</td>
               <td v-if="isToday" data-label="En main" class="whitespace-nowrap p-2 text-right">
-                <span v-if="c.parcels_in_hand || c.cash_in_hand">{{ c.parcels_in_hand }} colis<span class="block text-xs text-gray-600">{{ money(c.cash_in_hand) }}</span></span>
-                <span v-else class="text-gray-400">—</span>
+                <span v-if="c.parcels_in_hand || c.cash_in_hand">{{ c.parcels_in_hand }} colis<span class="block text-xs text-slate-600">{{ money(c.cash_in_hand) }}</span></span>
+                <span v-else class="text-slate-500">—</span>
               </td>
               <td v-if="!isFuture" data-label="Fin" class="whitespace-nowrap p-2 text-xs">
                 <template v-if="c.remaining && c.estimated_end"><b :class="c.late_end ? 'text-orange-800' : ''">{{ time(c.estimated_end) }}</b><span v-if="c.late_end" class="block text-orange-800">après {{ closesAt }}</span></template>
-                <template v-else-if="!c.remaining && c.estimated_end"><span class="text-emerald-700">✓ {{ time(c.estimated_end) }}</span></template>
+                <template v-else-if="!c.remaining && c.estimated_end"><span class="text-emerald-700"><Icone nom="valider" taille="petite" class="inline" /> {{ time(c.estimated_end) }}</span></template>
                 <template v-else>—</template>
               </td>
               <td class="whitespace-nowrap p-2 text-right" @click.stop>
-                <a v-if="c.phone" :href="telLink(c.phone)" class="inline-grid h-8 w-8 place-items-center rounded-lg border border-slate-300 hover:bg-slate-100" :title="`Appeler ${c.name}`">📞</a>
-                <RouterLink :to="{ path: '/admin/activite/carte', query: { livreur: c.id, date: day } }" class="ml-1 inline-grid h-8 w-8 place-items-center rounded-lg border border-slate-300 hover:bg-slate-100" :title="`${c.name} sur la carte`">🗺️</RouterLink>
+                <a v-if="c.phone" :href="telLink(c.phone)" class="inline-grid h-8 w-8 place-items-center rounded-lg border border-slate-300 hover:bg-slate-100" :title="`Appeler ${c.name}`" :aria-label="`Appeler ${c.name}`"><Icone nom="appeler" taille="petite" /></a>
+                <RouterLink :to="{ path: '/admin/activite/carte', query: { livreur: c.id, date: day } }" class="ml-1 inline-grid h-8 w-8 place-items-center rounded-lg border border-slate-300 hover:bg-slate-100" :title="`${c.name} sur la carte`" :aria-label="`${c.name} sur la carte`"><Icone nom="carte" taille="petite" /></RouterLink>
                 <RouterLink v-if="isToday && !c.remaining && (c.cash_in_hand > 0 || c.parcels_in_hand > 0) && auth.can('finance.manage')" :to="{ path: '/admin/caisse', query: { verser: c.id } }" class="ml-1 text-xs font-semibold text-emerald-700 hover:underline">Faire le point</RouterLink>
               </td>
             </tr>
           </tbody>
         </table>
-        <p v-if="loaded && visible.length && !selected" class="border-t px-3 py-2 text-xs text-gray-500">Touchez un livreur pour voir ses missions, réassigner une course ou lui envoyer une consigne.</p>
+        <p v-if="loaded && visible.length && !selected" class="border-t px-3 py-2 text-xs text-slate-600">Touchez un livreur pour voir ses missions, réassigner une course ou lui envoyer une consigne.</p>
       </div>
 
       <!-- Détail du livreur choisi -->
@@ -201,24 +201,24 @@
           <div class="flex items-start gap-2">
             <div class="flex-1">
               <h2 class="text-lg font-bold">{{ selected.name }}</h2>
-              <p class="text-sm text-gray-600">{{ STATE[selected.state].label }}<template v-if="selected.zones.length"> · {{ selected.zones.join(', ') }}</template><template v-if="selected.vehicle_type"> · {{ selected.vehicle_type }}</template></p>
+              <p class="text-sm text-slate-600">{{ STATE[selected.state].label }}<template v-if="selected.zones.length"> · {{ selected.zones.join(', ') }}</template><template v-if="selected.vehicle_type"> · {{ selected.vehicle_type }}</template></p>
             </div>
-            <button type="button" class="btn-secondary" aria-label="Fermer le détail" @click="unselect">✕</button>
+            <button type="button" class="btn-secondary" aria-label="Fermer le détail" @click="unselect"><Icone nom="fermer" /></button>
           </div>
           <div class="flex flex-wrap gap-2">
             <a v-if="selected.phone" :href="telLink(selected.phone)" class="btn-primary">Appeler</a>
             <a v-if="selected.phone" :href="whatsappLink(selected.phone)" target="_blank" rel="noopener" class="btn-secondary">WhatsApp</a>
-            <RouterLink :to="{ path: '/admin/activite/carte', query: { livreur: selected.id, date: day } }" class="btn-secondary">🗺️ Voir sur la carte</RouterLink>
+            <RouterLink :to="{ path: '/admin/activite/carte', query: { livreur: selected.id, date: day } }" class="btn-secondary"><Icone nom="carte" /> Voir sur la carte</RouterLink>
             <button v-if="isToday && activeMissions.length" type="button" class="btn-secondary" @click="openConsigne">Envoyer une consigne</button>
             <RouterLink v-if="isToday && (selected.cash_in_hand > 0 || selected.parcels_in_hand > 0) && auth.can('finance.manage')" :to="{ path: '/admin/caisse', query: { verser: selected.id } }" class="btn-secondary">Faire le point</RouterLink>
           </div>
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
-            <div class="rounded-lg bg-slate-50 p-2"><p class="text-gray-600">Livrées</p><p class="text-lg font-bold text-emerald-700">{{ selected.deliveries.done }} / {{ selected.deliveries.total }}</p></div>
-            <div class="rounded-lg bg-slate-50 p-2"><p class="text-gray-600">Ramassées</p><p class="text-lg font-bold">{{ selected.pickups.done }} / {{ selected.pickups.total }}</p></div>
-            <div class="rounded-lg bg-slate-50 p-2"><p class="text-gray-600">{{ isToday ? 'Colis en main' : 'Échecs' }}</p><p class="text-lg font-bold">{{ isToday ? selected.parcels_in_hand : selected.failed }}</p></div>
-            <div class="rounded-lg bg-slate-50 p-2"><p class="text-gray-600">{{ isToday ? 'Argent en main' : 'Réussite' }}</p><p class="text-lg font-bold">{{ isToday ? money(selected.cash_in_hand) : pct(selected.success_rate) }}</p></div>
+            <div class="rounded-lg bg-slate-50 p-2"><p class="text-slate-600">Livrées</p><p class="text-lg font-bold text-emerald-700">{{ selected.deliveries.done }} / {{ selected.deliveries.total }}</p></div>
+            <div class="rounded-lg bg-slate-50 p-2"><p class="text-slate-600">Ramassées</p><p class="text-lg font-bold">{{ selected.pickups.done }} / {{ selected.pickups.total }}</p></div>
+            <div class="rounded-lg bg-slate-50 p-2"><p class="text-slate-600">{{ isToday ? 'Colis en main' : 'Échecs' }}</p><p class="text-lg font-bold">{{ isToday ? selected.parcels_in_hand : selected.failed }}</p></div>
+            <div class="rounded-lg bg-slate-50 p-2"><p class="text-slate-600">{{ isToday ? 'Argent en main' : 'Réussite' }}</p><p class="text-lg font-bold">{{ isToday ? money(selected.cash_in_hand) : pct(selected.success_rate) }}</p></div>
           </div>
-          <p v-if="selected.flags.length" class="rounded-lg bg-orange-50 px-3 py-2 text-sm text-orange-900">⚠ {{ selected.flags.join(' · ') }}</p>
+          <p v-if="selected.flags.length" class="rounded-lg bg-orange-50 px-3 py-2 text-sm text-orange-900"><Icone nom="alerte" taille="petite" class="inline" /> {{ selected.flags.join(' · ') }}</p>
 
           <!-- Consigne au livreur, rattachée à une de ses missions en cours -->
           <form v-if="consigne.open" class="rounded-lg bg-slate-50 p-3 space-y-2" @submit.prevent="sendConsigne">
@@ -234,15 +234,15 @@
               <button type="submit" class="btn-primary" :disabled="consigne.busy || !consigne.body.trim()">Envoyer</button>
               <button type="button" class="btn-secondary" @click="consigne.open = false">Annuler</button>
             </div>
-            <p class="text-xs text-gray-600">Il la reçoit dans son application et peut répondre « lu » ou « compris ».</p>
+            <p class="text-xs text-slate-600">Il la reçoit dans son application et peut répondre « lu » ou « compris ».</p>
             <p v-if="consigne.error" class="text-sm text-red-700" role="alert">{{ consigne.error }}</p>
           </form>
 
           <h3 class="font-semibold">{{ isToday ? 'Missions du jour' : 'Missions de la journée' }}</h3>
-          <p v-if="missionsLoading" class="text-sm text-gray-500">Chargement…</p>
+          <p v-if="missionsLoading" class="text-sm text-slate-600">Chargement…</p>
           <div v-else class="overflow-x-auto">
             <table class="w-full text-sm stack-table">
-              <thead class="bg-slate-50 text-left text-gray-600">
+              <thead class="bg-slate-50 text-left text-slate-600">
                 <tr><th class="p-2">Heure</th><th class="p-2">Course</th><th class="p-2">État</th><th class="p-2 text-right">Montant</th><th v-if="canAct" /></tr>
               </thead>
               <tbody class="divide-y">
@@ -264,7 +264,7 @@
                     <button v-if="!m.completed_at" type="button" class="text-blue-700 hover:underline whitespace-nowrap" :title="`Donner ${m.tracking_code} à un autre livreur`" @click="openReassign(m)">Réassigner</button>
                   </td>
                 </tr>
-                <tr v-if="!missions.length"><td :colspan="canAct ? 5 : 4" class="p-3 text-center text-gray-500">Aucune mission.</td></tr>
+                <tr v-if="!missions.length"><td :colspan="canAct ? 5 : 4" class="p-3 text-center text-slate-600">Aucune mission.</td></tr>
               </tbody>
             </table>
           </div>
@@ -279,18 +279,18 @@
 
     <!-- Donner une course à un autre livreur -->
     <Modal :open="reassign.open" :title="`Donner ${reassign.mission?.tracking_code || ''} à un autre livreur`" @close="reassign.open = false">
-      <p class="text-sm text-gray-600 mb-3">Les plus proches et les moins chargés d'abord. Les deux livreurs sont prévenus.</p>
+      <p class="text-sm text-slate-600 mb-3">Les plus proches et les moins chargés d'abord. Les deux livreurs sont prévenus.</p>
       <div class="space-y-2 max-h-[50vh] overflow-y-auto">
         <label v-for="o in reassignOptions" :key="o.id" :class="['flex items-start gap-3 rounded-lg border p-3 cursor-pointer', reassign.courier_id === o.id ? 'border-emerald-700 ring-1 ring-emerald-700' : '']">
           <input v-model="reassign.courier_id" type="radio" :value="o.id" class="mt-1 h-4 w-4">
           <span class="flex-1 text-sm">
             <b>{{ o.name }}</b> · {{ STATE[o.state].label.toLowerCase() }}<template v-if="o.km !== null"> · {{ o.km.toFixed(1).replace('.', ',') }} km</template>
-            <span class="block text-gray-600">{{ o.remaining }} mission{{ o.remaining > 1 ? 's' : '' }} en cours<template v-if="o.estimated_end && o.remaining"> · fin estimée {{ time(o.estimated_end) }}</template></span>
+            <span class="block text-slate-600">{{ o.remaining }} mission{{ o.remaining > 1 ? 's' : '' }} en cours<template v-if="o.estimated_end && o.remaining"> · fin estimée {{ time(o.estimated_end) }}</template></span>
           </span>
         </label>
-        <p v-if="!reassignOptions.length" class="text-sm text-gray-500">Aucun autre livreur en service.</p>
+        <p v-if="!reassignOptions.length" class="text-sm text-slate-600">Aucun autre livreur en service.</p>
       </div>
-      <p v-if="reassign.mission?.status === 'in_progress'" class="mt-2 text-xs text-gray-600">Si {{ selected?.name }} a déjà le colis, il passera par un relais vers le nouveau livreur.</p>
+      <p v-if="reassign.mission?.status === 'in_progress'" class="mt-2 text-xs text-slate-600">Si {{ selected?.name }} a déjà le colis, il passera par un relais vers le nouveau livreur.</p>
       <p v-if="reassign.error" class="mt-2 text-sm text-red-700" role="alert">{{ reassign.error }}</p>
       <div class="flex justify-end gap-2 mt-4">
         <button type="button" class="btn-secondary" @click="reassign.open = false">Annuler</button>
@@ -301,6 +301,7 @@
 </template>
 
 <script setup>
+import Icone from '../../../components/ui/Icone.vue'
 import { computed, defineComponent, h, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../../bootstrap/axios'

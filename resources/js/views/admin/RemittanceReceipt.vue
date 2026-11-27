@@ -13,7 +13,7 @@
         <div class="flex justify-between gap-4">
           <div>
             <p class="text-lg font-bold">{{ r.company }}</p>
-            <p class="text-sm text-gray-600">Reçu de versement à la caisse</p>
+            <p class="text-sm text-slate-600">Reçu de versement à la caisse</p>
           </div>
           <div class="text-right text-sm">
             <p class="font-mono font-bold">{{ r.reference }}</p>
@@ -47,7 +47,7 @@
           <summary class="cursor-pointer font-semibold">Détail des courses ({{ r.collections.length }})</summary>
           <ul class="mt-1 divide-y">
             <li v-for="c in r.collections" :key="c.id" class="flex justify-between gap-2 py-1">
-              <span><span class="font-mono text-xs">{{ c.tracking_code }}</span> {{ c.recipient_name }} <span class="text-xs text-gray-500">{{ c.method_label }}</span></span>
+              <span><span class="font-mono text-xs">{{ c.tracking_code }}</span> {{ c.recipient_name }} <span class="text-xs text-slate-600">{{ c.method_label }}</span></span>
               <span>{{ money(c.amount_collected) }}</span>
             </li>
           </ul>
@@ -55,15 +55,15 @@
 
         <div v-if="r.parcels_returned.length" class="text-sm">
           <p class="font-semibold">Colis rendus à l'agence ({{ r.parcels_returned.length }})</p>
-          <p class="font-mono text-xs text-gray-700">{{ r.parcels_returned.join(', ') }}</p>
+          <p class="font-mono text-xs text-slate-700">{{ r.parcels_returned.join(', ') }}</p>
         </div>
         <div v-if="r.parcels_kept.length" class="text-sm">
           <p class="font-semibold">Colis gardés par le livreur ({{ r.parcels_kept.length }})</p>
-          <p class="font-mono text-xs text-gray-700">{{ r.parcels_kept.join(', ') }}</p>
+          <p class="font-mono text-xs text-slate-700">{{ r.parcels_kept.join(', ') }}</p>
         </div>
-        <p v-if="r.notes" class="text-sm text-gray-700">Note : {{ r.notes }}</p>
+        <p v-if="r.notes" class="text-sm text-slate-700">Note : {{ r.notes }}</p>
 
-        <div class="grid grid-cols-2 gap-6 pt-6 text-xs text-gray-600">
+        <div class="grid grid-cols-2 gap-6 pt-6 text-xs text-slate-600">
           <div class="border-t border-gray-400 pt-1">Signature du livreur</div>
           <div class="border-t border-gray-400 pt-1">Signature de la caisse</div>
         </div>
@@ -84,7 +84,7 @@
       </section>
     </div>
   </div>
-  <p v-else class="text-gray-500">Chargement…</p>
+  <p v-else class="text-slate-600">Chargement…</p>
 </template>
 
 <script setup>

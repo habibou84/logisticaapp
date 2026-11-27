@@ -14,26 +14,26 @@
     </template>
 
     <template v-else>
-      <p v-if="!plan" class="text-sm text-slate-500">Aucun contrat de mise à disposition en cours.</p>
+      <p v-if="!plan" class="text-sm text-slate-600">Aucun contrat de mise à disposition en cours.</p>
       <p v-else-if="!routines.length" class="rounded-xl bg-slate-50 p-4 text-sm text-slate-600">Aucun parcours : les livreurs pointent au siège{{ plan.merchant_located ? '' : ' (pas encore placé sur la carte)' }}{{ plan.mad_from ? ` à ${plan.mad_from}` : '' }}.</p>
       <div v-for="r in routines" :key="r.id" :class="['space-y-2 rounded-xl p-3 ring-1', r.is_active ? 'ring-slate-200' : 'ring-slate-100 opacity-60']">
         <div class="flex flex-wrap items-start gap-2">
           <div class="min-w-0 flex-1">
-            <p class="font-semibold">{{ r.name }} <span v-if="!r.is_active" class="text-xs font-normal text-slate-500">(inactif)</span></p>
+            <p class="font-semibold">{{ r.name }} <span v-if="!r.is_active" class="text-xs font-normal text-slate-600">(inactif)</span></p>
             <p class="text-sm text-slate-600">{{ daysText(r.days) }} · départ {{ r.starts_at || plan.mad_from || 'sans heure' }} · {{ r.courier || 'tous les livreurs du contrat' }}</p>
-            <p class="text-xs text-slate-500">Modifié {{ r.source === 'merchant' ? 'par le client' : 'par l\'équipe' }}{{ r.updated_by ? ` (${r.updated_by})` : '' }} le {{ dateTime(r.updated_at) }}</p>
+            <p class="text-xs text-slate-600">Modifié {{ r.source === 'merchant' ? 'par le client' : 'par l\'équipe' }}{{ r.updated_by ? ` (${r.updated_by})` : '' }} le {{ dateTime(r.updated_at) }}</p>
           </div>
           <template v-if="canEdit">
             <button type="button" class="text-sm font-semibold text-[var(--app-color,#1f2937)]" @click="editing = r">Modifier</button>
             <button type="button" class="text-sm font-semibold text-red-600" @click="remove(r)">Supprimer</button>
           </template>
         </div>
-        <p v-if="!r.first_located" class="text-xs text-amber-700">⚠️ La première étape n'a pas de position sur la carte : le livreur ne pourra pas pointer par GPS.</p>
+        <p v-if="!r.first_located" class="text-xs text-amber-700"><Icone nom="alerte" taille="petite" class="inline align-text-bottom" /> La première étape n'a pas de position sur la carte : le livreur ne pourra pas pointer par GPS.</p>
         <ol class="space-y-1">
           <li v-for="s in r.stops" :key="s.id" class="flex gap-2 text-sm">
             <span :class="['grid h-6 w-6 shrink-0 place-items-center rounded-full text-xs font-bold text-white', s.position === 1 ? 'bg-emerald-600' : 'bg-slate-400']">{{ s.position }}</span>
             <span><strong>{{ s.action_label }}</strong> · {{ s.label }}<template v-if="s.expected_time"> · vers {{ s.expected_time }}</template>
-              <span v-if="s.instructions" class="text-slate-500"> · « {{ s.instructions }} »</span></span>
+              <span v-if="s.instructions" class="text-slate-600"> · « {{ s.instructions }} »</span></span>
           </li>
         </ol>
       </div>
@@ -43,6 +43,7 @@
 </template>
 
 <script setup>
+import Icone from '../ui/Icone.vue'
 import { onMounted, ref } from 'vue'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import { useToastStore } from '../../stores/toasts'

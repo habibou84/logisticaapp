@@ -2,7 +2,7 @@
   <section v-if="look" class="card p-4 space-y-4">
     <div>
       <h2 class="font-semibold">Apparence des espaces</h2>
-      <p class="text-sm text-gray-600">Couleurs de l'espace client, de l'espace livreur, de l'espace mécanicien et de l'espace équipe, nom et icône des applications installées sur les téléphones. Le logo ci-dessus s'affiche dans chaque espace.</p>
+      <p class="text-sm text-slate-600">Couleurs de l'espace client, de l'espace livreur, de l'espace mécanicien et de l'espace équipe, nom et icône des applications installées sur les téléphones. Le logo ci-dessus s'affiche dans chaque espace.</p>
     </div>
 
     <label class="flex items-center gap-2 text-sm font-medium">
@@ -24,8 +24,8 @@
             <button type="button" class="rounded-md px-3 py-1 text-xs font-semibold text-white" :style="{ backgroundColor: colorOf(s.key) }">Bouton</button>
             <div v-if="s.app" class="flex flex-col items-center ml-auto">
               <img v-if="iconPreview(s.key)" :src="iconPreview(s.key)" alt="" class="h-11 w-11 rounded-xl object-cover shadow">
-              <span v-else class="h-11 w-11 rounded-xl grid place-items-center text-white shadow" :style="{ backgroundColor: colorOf(s.key) }">{{ s.emoji }}</span>
-              <span class="text-[10px] text-slate-700 mt-0.5 max-w-16 truncate">{{ look.spaces[s.key].app_name || look.spaces[s.key].default_app_name || s.defaultName }}</span>
+              <span v-else class="h-11 w-11 rounded-xl grid place-items-center text-white shadow" :style="{ backgroundColor: colorOf(s.key) }"><Icone v-if="s.icon" :nom="s.icon" /></span>
+              <span class="text-xs text-slate-700 mt-0.5 max-w-16 truncate">{{ look.spaces[s.key].app_name || look.spaces[s.key].default_app_name || s.defaultName }}</span>
             </div>
           </div>
         </div>
@@ -42,7 +42,7 @@
               />
               <input v-model="look.spaces[s.key].color" type="color" class="h-7 w-9 cursor-pointer rounded border" :aria-label="`Autre couleur pour ${s.label}`">
             </div>
-            <p v-if="tooLight(look.spaces[s.key].color)" class="mt-1 text-xs text-amber-700">⚠️ Couleur claire : le texte blanc sera difficile à lire. Choisissez une couleur plus foncée.</p>
+            <p v-if="tooLight(look.spaces[s.key].color)" class="mt-1 text-xs text-amber-700"><Icone nom="alerte" taille="petite" class="inline align-text-bottom" /> Couleur claire : le texte blanc sera difficile à lire. Choisissez une couleur plus foncée.</p>
           </div>
         </fieldset>
 
@@ -53,7 +53,7 @@
           </div>
           <fieldset :disabled="look.same && s.key !== 'marchand'" class="space-y-1">
             <p class="label">Icône de l'application</p>
-            <p class="text-xs text-gray-500">{{ look.spaces[s.key].custom_icon ? 'Image carrée envoyée.' : (branding.logo_url ? 'Logo sur la couleur de l\'espace.' : 'Icône standard (envoyez un logo ou une image).') }}</p>
+            <p class="text-xs text-slate-600">{{ look.spaces[s.key].custom_icon ? 'Image carrée envoyée.' : (branding.logo_url ? 'Logo sur la couleur de l\'espace.' : 'Icône standard (envoyez un logo ou une image).') }}</p>
             <div class="flex flex-wrap gap-2">
               <label class="btn-secondary cursor-pointer text-xs">
                 Envoyer une image carrée
@@ -66,7 +66,7 @@
       </div>
     </div>
 
-    <p class="text-xs text-gray-500">
+    <p class="text-xs text-slate-600">
       Téléphones où l'application est déjà installée : le nom et l'icône se mettent à jour d'eux-mêmes sous 24 à 48 h sur Android ; sur iPhone, supprimez puis réinstallez l'application.
       Les applications Android téléchargées (APK) gardent leur icône, mais leurs écrans prennent la couleur et le logo.
     </p>
@@ -76,6 +76,7 @@
 </template>
 
 <script setup>
+import Icone from './ui/Icone.vue'
 import { onMounted, ref } from 'vue'
 import http, { apiErrorMessage } from '../bootstrap/axios'
 import { branding, loadBranding } from '../composables/useBranding'
@@ -85,9 +86,9 @@ import { useToastStore } from '../stores/toasts'
  * Paramètres › Apparence : couleur de chaque espace, nom et icône des applications installables.
  */
 const SPACES = [
-  { key: 'marchand', label: 'Espace client', preview: 'Mes livraisons', app: true, defaultName: 'Nom de l\'entreprise', emoji: '📦' },
-  { key: 'livreur', label: 'Espace livreur', preview: 'Mes missions', app: true, defaultName: 'Livreur', emoji: '🛵' },
-  { key: 'mecanicien', label: 'Espace mécanicien', preview: 'Mes pannes', app: true, defaultName: 'Mécanicien', emoji: '🛠️' },
+  { key: 'marchand', label: 'Espace client', preview: 'Mes livraisons', app: true, defaultName: 'Nom de l\'entreprise', icon: 'course' },
+  { key: 'livreur', label: 'Espace livreur', preview: 'Mes missions', app: true, defaultName: 'Livreur', icon: 'livreur' },
+  { key: 'mecanicien', label: 'Espace mécanicien', preview: 'Mes pannes', app: true, defaultName: 'Mécanicien', icon: 'atelier' },
   { key: 'admin', label: 'Espace équipe', preview: 'Administration', app: false },
 ]
 const PRESETS = ['#ec1d27', '#c02125', '#f26a20', '#1f2937', '#047857', '#1d4ed8', '#7c3aed', '#be123c', '#c2410c', '#0e7490', '#4d7c0f']

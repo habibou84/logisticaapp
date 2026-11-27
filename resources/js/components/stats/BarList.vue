@@ -9,7 +9,7 @@
         <div class="h-2 rounded" :style="{ width: `${(item.count / max) * 100}%`, background: color }" />
       </div>
     </li>
-    <li v-if="!items.length" class="text-sm text-slate-500">{{ empty }}</li>
+    <li v-if="!items.length" class="text-sm text-slate-600">{{ empty }}</li>
   </ul>
 </template>
 

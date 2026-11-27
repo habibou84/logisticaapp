@@ -1,7 +1,7 @@
 <template>
   <Modal :open="open" :title="`Suppléments · ${merchant?.business_name || ''}`" @close="$emit('close')">
     <div class="space-y-4">
-      <p class="text-sm text-gray-600">
+      <p class="text-sm text-slate-600">
         Demandes exceptionnelles du client, ajoutées à part sur sa facture du mois ({{ activityLabel(activity) }}). Le client les voit
         dans son application. Elles ne changent plus une fois la facture du mois émise.
       </p>
@@ -13,17 +13,17 @@
 
       <ul class="divide-y rounded border text-sm">
         <li v-for="s in supplements" :key="s.id" class="p-2 flex flex-wrap items-start gap-2">
-          <span class="text-gray-500 w-12 shrink-0">{{ date(s.performed_on).slice(0, 5) }}</span>
+          <span class="text-slate-600 w-12 shrink-0">{{ date(s.performed_on).slice(0, 5) }}</span>
           <span class="flex-1 min-w-40">
             {{ s.label }}
-            <span v-if="s.order" class="text-xs text-gray-500"> · course {{ s.order.tracking_code }}</span>
-            <span v-if="s.quantity > 1" class="block text-xs text-gray-500">{{ s.quantity }} × {{ money(s.unit_price) }}</span>
+            <span v-if="s.order" class="text-xs text-slate-600"> · course {{ s.order.tracking_code }}</span>
+            <span v-if="s.quantity > 1" class="block text-xs text-slate-600">{{ s.quantity }} × {{ money(s.unit_price) }}</span>
           </span>
           <strong class="whitespace-nowrap">{{ money(s.amount) }}</strong>
-          <span v-if="s.locked" class="text-xs text-gray-500">facturé {{ s.invoice_number || '' }}</span>
+          <span v-if="s.locked" class="text-xs text-slate-600">facturé {{ s.invoice_number || '' }}</span>
           <button v-else-if="canManage" type="button" class="text-xs text-red-600" @click="remove(s)">Retirer</button>
         </li>
-        <li v-if="!supplements.length" class="p-3 text-gray-500">{{ loading ? 'Chargement…' : 'Aucun supplément ce mois-ci.' }}</li>
+        <li v-if="!supplements.length" class="p-3 text-slate-600">{{ loading ? 'Chargement…' : 'Aucun supplément ce mois-ci.' }}</li>
       </ul>
 
       <form v-if="canManage" class="space-y-2 border-t pt-3" @submit.prevent="add">
@@ -36,7 +36,7 @@
           <div><label class="label" for="sp-price">Prix unitaire (F)</label><input id="sp-price" v-model.number="draft.unit_price" type="number" min="0" class="input" required></div>
           <div class="flex items-end"><p class="text-sm">= <strong>{{ money((draft.quantity || 0) * (draft.unit_price || 0)) }}</strong></p></div>
         </div>
-        <p v-if="order" class="text-xs text-gray-500">Lié à la course {{ order.tracking_code }}.</p>
+        <p v-if="order" class="text-xs text-slate-600">Lié à la course {{ order.tracking_code }}.</p>
         <button class="btn-primary" :disabled="saving">{{ saving ? 'Enregistrement…' : 'Ajouter à la facture du mois' }}</button>
       </form>
     </div>

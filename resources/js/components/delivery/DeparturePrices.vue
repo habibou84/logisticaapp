@@ -53,7 +53,7 @@
             <template v-for="c in destinations" :key="c.id">
               <div class="flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2.5">
                 <div class="min-w-32 flex-1">
-                  <p class="font-semibold">{{ c.name }} <span v-if="c.is_shipping" class="ml-1 rounded-full bg-indigo-100 px-1.5 text-xs font-medium text-indigo-800">🚌 expédition</span></p>
+                  <p class="font-semibold">{{ c.name }} <span v-if="c.is_shipping" class="ml-1 rounded-full bg-indigo-100 px-1.5 text-xs font-medium text-indigo-800"><Icone nom="expedition" taille="petite" class="inline align-text-bottom" /> expédition</span></p>
                   <button v-if="childrenOf(c).length" type="button" class="text-xs font-medium text-emerald-700 hover:underline" @click="toggle(c)">
                     {{ opened.has(c.id) ? '▾' : '▸' }} {{ childrenOf(c).length }} quartier{{ childrenOf(c).length > 1 ? 's' : '' }}<template v-if="diffCount(c)"> · {{ diffCount(c) }} à part</template>
                   </button>
@@ -83,6 +83,7 @@
 </template>
 
 <script setup>
+import Icone from '../ui/Icone.vue'
 import { computed, defineComponent, h, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { resolveRoute, routeKey } from '../../utils/routePrices'
 
@@ -217,13 +218,13 @@ const TierPicker = defineComponent({
         })
         : h('button', {
           type: 'button', 'aria-pressed': String(isOther),
-          class: ['border-l border-slate-200 font-semibold tabular-nums', size, isOther ? `bg-orange-50 text-orange-800 ${set === undefined ? 'opacity-60' : ''}` : 'bg-white text-slate-500 hover:bg-slate-50'],
+          class: ['border-l border-slate-200 font-semibold tabular-nums', size, isOther ? `bg-orange-50 text-orange-800 ${set === undefined ? 'opacity-60' : ''}` : 'bg-white text-slate-600 hover:bg-slate-50'],
           onClick: () => { editing.value = otherKey },
         }, isOther ? money(r.price) : 'Autre'))
       const text = hint(r, to)
       return h('div', { class: 'flex flex-col items-end gap-1' }, [
         h('div', { class: 'inline-flex overflow-hidden rounded-lg border border-slate-300' }, buttons),
-        text ? h('span', { class: 'text-xs text-slate-500' }, text) : null,
+        text ? h('span', { class: 'text-xs text-slate-600' }, text) : null,
       ])
     }
   },

@@ -2,25 +2,25 @@
   <article :id="`evenement-${event.id}`" :class="['card border-l-4', BORDERS[event.status === 'resolved' ? 'resolved' : event.severity], highlighted ? 'ring-2 ring-amber-300' : '']">
     <!-- En-tête, toujours visible -->
     <button type="button" class="w-full p-4 text-left flex flex-wrap items-start gap-3" :aria-expanded="expanded" @click="toggle">
-      <span class="text-3xl leading-none" aria-hidden="true">{{ event.icon }}</span>
+      <span class="text-3xl leading-none" aria-hidden="true"><Icone :nom="event.icon || 'alerte'" taille="grande" /></span>
       <span class="min-w-0 flex-1 space-y-1">
         <span class="flex flex-wrap items-center gap-2">
           <span class="font-semibold">{{ event.type_label }}</span>
           <span :class="['rounded-full px-2 py-0.5 text-xs font-medium', SEVERITY_STYLES[event.severity]]">{{ event.severity_label }}</span>
           <span :class="['rounded-full px-2 py-0.5 text-xs font-medium', STATUS_STYLES[event.status]]">{{ statusText }}</span>
-          <span v-if="unread" class="rounded-full bg-sky-600 text-white px-2 py-0.5 text-xs">💬 {{ unread }}</span>
+          <span v-if="unread" class="inline-flex items-center gap-1 rounded-full bg-sky-600 text-white px-2 py-0.5 text-xs"><Icone nom="message" taille="petite" />{{ unread }}</span>
         </span>
-        <span class="block text-sm text-gray-700">
-          🛵 <strong>{{ event.courier?.name }}</strong> · {{ capacityText }} · <span class="text-gray-500">{{ dateTime(event.created_at) }}</span>
+        <span class="block text-sm text-slate-700">
+          <Icone nom="livreur" taille="petite" class="inline align-text-bottom" /> <strong>{{ event.courier?.name }}</strong> · {{ capacityText }} · <span class="text-slate-600">{{ dateTime(event.created_at) }}</span>
         </span>
         <span v-if="event.note" class="block text-sm">« {{ event.note }} »</span>
-        <span class="block text-xs text-gray-500">
+        <span class="block text-xs text-slate-600">
           {{ event.orders.length }} course{{ event.orders.length > 1 ? 's' : '' }} touchée{{ event.orders.length > 1 ? 's' : '' }}
-          <template v-if="event.files.length"> · {{ photoCount ? `📷 ${photoCount}` : '' }}{{ voiceCount ? ` 🎙️ ${voiceCount}` : '' }}</template>
-          <template v-if="event.cost"> · 💸 {{ money(event.cost) }}</template>
+          <template v-if="event.files.length"> · <template v-if="photoCount"><Icone nom="photo" taille="petite" class="inline align-text-bottom" /> {{ photoCount }}</template><template v-if="voiceCount">&nbsp;<Icone nom="micro" taille="petite" class="inline align-text-bottom" /> {{ voiceCount }}</template></template>
+          <template v-if="event.cost"> · <Icone nom="argent" taille="petite" class="inline align-text-bottom" /> {{ money(event.cost) }}</template>
         </span>
       </span>
-      <span class="text-gray-400">{{ expanded ? '▲' : '▼' }}</span>
+      <span class="text-slate-500"><Icone :nom="expanded ? 'monter' : 'descendre'" taille="petite" /></span>
     </button>
 
     <div v-if="expanded" class="border-t px-4 pb-4 pt-3 grid gap-4 lg:grid-cols-[1fr_18rem]">
@@ -34,13 +34,13 @@
         <div v-if="event.lat !== null || media.length" class="flex flex-wrap gap-3 items-start">
           <div v-if="event.lat !== null" class="space-y-1">
             <div ref="mapEl" class="h-36 w-56 rounded-lg ring-1 ring-slate-200 z-0" />
-            <a :href="`https://maps.google.com/?q=${event.lat},${event.lng}`" target="_blank" rel="noopener" class="text-xs text-blue-600">📍 Ouvrir dans Google Maps</a>
+            <a :href="`https://maps.google.com/?q=${event.lat},${event.lng}`" target="_blank" rel="noopener" class="text-xs text-blue-600"><Icone nom="adresse" taille="petite" class="inline align-text-bottom" /> Ouvrir dans Google Maps</a>
           </div>
           <template v-for="m in media" :key="m.id">
             <a v-if="m.kind === 'photo'" :href="m.src" target="_blank" rel="noopener"><img :src="m.src" alt="Photo du livreur" class="h-36 w-36 rounded-lg object-cover ring-1 ring-slate-200"></a>
             <div v-else class="space-y-1">
               <audio :src="m.src" controls class="w-60" />
-              <p class="text-xs text-gray-500">Note vocale{{ m.duration ? ` · ${m.duration} s` : '' }}</p>
+              <p class="text-xs text-slate-600">Note vocale{{ m.duration ? ` · ${m.duration} s` : '' }}</p>
             </div>
           </template>
         </div>
@@ -54,8 +54,8 @@
           <label v-for="o in event.orders" :key="o.id" class="flex items-center gap-2 rounded border border-slate-200 px-2 py-1.5 text-sm">
             <input v-model="selected" type="checkbox" :value="o.id" :disabled="!o.courier_still_assigned" :aria-label="`Choisir ${o.tracking_code}`">
             <RouterLink :to="`/admin/courses/${o.id}`" class="font-mono text-blue-700 whitespace-nowrap">{{ o.tracking_code }}</RouterLink>
-            <span class="min-w-0 truncate text-gray-600">{{ o.merchant }} → {{ o.recipient_name || 'destinataire' }}{{ o.zone ? ` (${o.zone})` : '' }}</span>
-            <span class="ml-auto shrink-0 text-xs text-gray-500">{{ o.status_label }}{{ o.held_by_courier ? ' · colis chez lui' : '' }}{{ o.courier_still_assigned ? '' : ' · confiée à un autre' }}</span>
+            <span class="min-w-0 truncate text-slate-600">{{ o.merchant }} → {{ o.recipient_name || 'destinataire' }}{{ o.zone ? ` (${o.zone})` : '' }}</span>
+            <span class="ml-auto shrink-0 text-xs text-slate-600">{{ o.status_label }}{{ o.held_by_courier ? ' · colis chez lui' : '' }}{{ o.courier_still_assigned ? '' : ' · confiée à un autre' }}</span>
           </label>
         </div>
 
@@ -63,7 +63,7 @@
         <div class="space-y-2">
           <p class="text-sm font-semibold">Échange avec {{ event.courier?.name }}</p>
           <div v-for="m in event.messages" :key="m.id" :class="['max-w-[85%] rounded-lg px-3 py-2 text-sm', m.from_courier ? 'bg-slate-100' : 'ml-auto bg-sky-50']">
-            <p class="text-xs text-gray-500">{{ m.from_courier ? '🛵' : '💬' }} {{ m.sender }} · {{ time(m.created_at) }}</p>
+            <p class="text-xs text-slate-600"><Icone :nom="m.from_courier ? 'livreur' : 'message'" taille="petite" class="inline align-text-bottom" /> {{ m.sender }} · {{ time(m.created_at) }}</p>
             <p class="whitespace-pre-line">{{ m.body }}</p>
           </div>
           <form v-if="event.status !== 'resolved'" class="flex gap-2" @submit.prevent="sendMessage">
@@ -73,20 +73,20 @@
         </div>
 
         <p v-if="event.status === 'resolved'" class="text-sm text-emerald-700">
-          ✓ Réglé le {{ dateTime(event.resolved_at) }}{{ event.resolved_by ? ` par ${event.resolved_by}` : '' }}<span v-if="event.resolution"> : {{ event.resolution }}</span>
+          <Icone nom="valider" taille="petite" class="inline align-text-bottom" /> Réglé le {{ dateTime(event.resolved_at) }}{{ event.resolved_by ? ` par ${event.resolved_by}` : '' }}<span v-if="event.resolution"> : {{ event.resolution }}</span>
         </p>
       </div>
 
       <!-- Actions -->
       <div class="space-y-2">
-        <a v-if="event.courier?.phone" :href="telLink(event.courier.phone)" class="btn-secondary w-full text-center block">📞 Appeler {{ firstName }}</a>
+        <a v-if="event.courier?.phone" :href="telLink(event.courier.phone)" class="btn-secondary w-full"><Icone nom="appeler" />Appeler {{ firstName }}</a>
         <template v-if="event.status !== 'resolved'">
-          <button v-if="event.status === 'open'" type="button" class="btn-primary w-full" :disabled="busy" @click="act('take')">👍 Je m'en occupe</button>
-          <button type="button" class="btn-secondary w-full" :disabled="busy || !selectedMovable.length" @click="openReassign">🔁 Confier {{ selectedMovable.length ? `${selectedMovable.length} course${selectedMovable.length > 1 ? 's' : ''}` : 'des courses' }} à un autre livreur</button>
-          <button v-if="hasPickups" type="button" class="btn-secondary w-full" :disabled="busy" @click="act('release', 'Ramassages retirés au livreur.')">↩️ Retirer ses ramassages</button>
-          <button v-if="event.orders.length" type="button" class="btn-secondary w-full" :disabled="busy" @click="act('notify-clients', null)">📣 Prévenir les clients du retard</button>
+          <button v-if="event.status === 'open'" type="button" class="btn-primary w-full" :disabled="busy" @click="act('take')"><Icone nom="pouce" />Je m'en occupe</button>
+          <button type="button" class="btn-secondary w-full" :disabled="busy || !selectedMovable.length" @click="openReassign"><Icone nom="repeter" />Confier {{ selectedMovable.length ? `${selectedMovable.length} course${selectedMovable.length > 1 ? 's' : ''}` : 'des courses' }} à un autre livreur</button>
+          <button v-if="hasPickups" type="button" class="btn-secondary w-full" :disabled="busy" @click="act('release', 'Ramassages retirés au livreur.')"><Icone nom="retour" />Retirer ses ramassages</button>
+          <button v-if="event.orders.length" type="button" class="btn-secondary w-full" :disabled="busy" @click="act('notify-clients', null)"><Icone nom="remontee" />Prévenir les clients du retard</button>
           <textarea v-model="resolution" rows="2" class="input text-sm" placeholder="Ce qui a été fait (facultatif)" aria-label="Ce qui a été fait" />
-          <button type="button" class="btn-success w-full" :disabled="busy" @click="act('resolve', 'Événement réglé.', { resolution })">✓ Marquer comme réglé</button>
+          <button type="button" class="btn-success w-full" :disabled="busy" @click="act('resolve', 'Événement réglé.', { resolution })"><Icone nom="valider" />Marquer comme réglé</button>
         </template>
         <button v-else type="button" class="btn-secondary w-full text-xs" :disabled="busy" @click="act('reopen')">Rouvrir</button>
       </div>
@@ -94,15 +94,15 @@
 
     <!-- Choix du livreur qui reprend les courses -->
     <Modal :open="reassigning" :title="`Confier ${selectedMovable.length} course(s) à…`" @close="reassigning = false">
-      <p v-if="!candidates" class="text-sm text-gray-500">Recherche des livreurs en service…</p>
-      <p v-else-if="!candidates.length" class="text-sm text-gray-600">Aucun autre livreur en service pour le moment.</p>
+      <p v-if="!candidates" class="text-sm text-slate-600">Recherche des livreurs en service…</p>
+      <p v-else-if="!candidates.length" class="text-sm text-slate-600">Aucun autre livreur en service pour le moment.</p>
       <div v-else class="space-y-2">
-        <p class="text-xs text-gray-500">Livreurs en service, du plus proche au plus loin {{ event.lat !== null ? 'du lieu de l\'événement' : 'de la dernière position connue' }}.</p>
+        <p class="text-xs text-slate-600">Livreurs en service, du plus proche au plus loin {{ event.lat !== null ? 'du lieu de l\'événement' : 'de la dernière position connue' }}.</p>
         <label v-for="c in candidates" :key="c.id" :class="['flex items-center gap-3 rounded border px-3 py-2 cursor-pointer', target === c.id ? 'border-slate-900 bg-slate-50' : 'border-slate-200']">
           <input v-model="target" type="radio" :value="c.id">
           <span class="flex-1">
             <span class="block font-medium">{{ c.name }}</span>
-            <span class="block text-xs text-gray-500">{{ c.distance_km !== null ? `à ${c.distance_km} km` : 'position inconnue' }} · {{ c.active }} mission(s) en cours</span>
+            <span class="block text-xs text-slate-600">{{ c.distance_km !== null ? `à ${c.distance_km} km` : 'position inconnue' }} · {{ c.active }} mission(s) en cours</span>
           </span>
         </label>
         <p v-if="heldCount" class="text-sm rounded bg-amber-50 text-amber-900 px-3 py-2">
@@ -116,6 +116,7 @@
 </template>
 
 <script setup>
+import Icone from './ui/Icone.vue'
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -124,6 +125,8 @@ import { authImage } from '../composables/useAuthImage'
 import { SEVERITY_STYLES } from '../composables/useFieldEvents'
 import { useToastStore } from '../stores/toasts'
 import { dateTime, money, telLink } from '../utils/format'
+import { ICONES } from '../utils/icones'
+import { svgIcone } from '../utils/iconesSvg'
 import Modal from './Modal.vue'
 
 /**
@@ -195,8 +198,11 @@ async function drawMap() {
   if (!mapEl.value || map || props.event.lat === null) return
   map = L.map(mapEl.value, { zoomControl: false, attributionControl: false }).setView([props.event.lat, props.event.lng], 15)
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map)
+  // Repère : l'icône de l'événement (charte), l'ancien emoji tel quel, sinon le triangle d'alerte
+  const icone = props.event.icon
+  const repere = svgIcone(icone, 26) || (icone && !ICONES[icone] ? icone : svgIcone('urgent', 26))
   L.marker([props.event.lat, props.event.lng], {
-    icon: L.divIcon({ className: '', html: `<div style="font-size:26px;line-height:1">${props.event.icon || '⚠️'}</div>`, iconSize: [28, 28], iconAnchor: [14, 14] }),
+    icon: L.divIcon({ className: '', html: `<div style="font-size:26px;line-height:1">${repere}</div>`, iconSize: [28, 28], iconAnchor: [14, 14] }),
   }).addTo(map)
 }
 

@@ -22,7 +22,7 @@
       <div class="grid grid-cols-2 gap-3">
         <a :href="shareLink" target="_blank" class="m-btn-secondary whitespace-nowrap px-3 py-3.5"><StatusIcon name="share" class="h-4 w-4 shrink-0" />Partager</a>
         <RouterLink :to="`/marchand/courses/${created.id}`" class="m-btn-secondary whitespace-nowrap px-3 py-3.5">Voir la course</RouterLink>
-        <RouterLink v-if="clientPrints" :to="`/etiquette/${created.id}`" class="m-btn-secondary whitespace-nowrap px-3 py-3.5">🖨️ Étiquette</RouterLink>
+        <RouterLink v-if="clientPrints" :to="`/etiquette/${created.id}`" class="m-btn-secondary whitespace-nowrap px-3 py-3.5"><Icone nom="imprimer" taille="petite" />Étiquette</RouterLink>
       </div>
     </div>
   </div>
@@ -30,14 +30,14 @@
   <form v-else class="space-y-5 pb-60" :style="lifted ? { paddingBottom: '100vh' } : {}" novalidate autocomplete="off" @submit.prevent="submit" @focusin="liftField" @focusout="lifted = false">
     <div v-if="error" class="rounded-xl bg-red-50 text-red-700 px-4 py-3 text-sm" role="alert">{{ error }}</div>
     <p v-if="fromMessage" class="rounded-xl bg-amber-50 text-amber-900 px-4 py-3 text-sm">
-      ✨ Course remplie d'après le message : vérifiez les champs avant d'envoyer.
+      <Icone nom="ia" taille="petite" class="inline align-[-0.15em]" /> Course remplie d'après le message : vérifiez les champs avant d'envoyer.
     </p>
 
     <!-- Client à plusieurs activités : la course en choisit une (facturation à part) -->
     <section v-if="activityChoices.length > 1" class="m-card p-4 space-y-2" aria-labelledby="step-activity">
       <h2 id="step-activity" class="m-step"><ColorIcon name="colis" :size="34" />Pour quelle activité ?</h2>
       <ChoiceChips v-model="form.activity" :options="activityChoices" :columns="activityChoices.length === 2 ? 2 : 1" label="Activité de la course" />
-      <p v-if="!form.activity" class="text-sm text-slate-500">Choisissez l'activité pour remplir la course.</p>
+      <p v-if="!form.activity" class="text-sm text-slate-600">Choisissez l'activité pour remplir la course.</p>
     </section>
 
     <!-- Le reste de la course une fois l'activité connue -->
@@ -49,17 +49,17 @@
           <p class="m-label">Qui envoie ? <span v-if="departments.settings.value.required" class="text-red-600">*</span></p>
           <ChoiceChips v-model="form.department_id" :options="senderChoices" :columns="senderChoices.length > 3 ? 1 : 2" label="Département qui envoie" />
         </div>
-        <p v-else-if="sender" class="text-sm">🏢 <strong>{{ sender.label }}</strong><span v-if="sender.usage?.quota" class="text-slate-500"> · {{ sender.usage.used }}/{{ sender.usage.quota }} envois ce mois</span></p>
+        <p v-else-if="sender" class="text-sm"><Icone nom="entreprise" taille="petite" class="inline align-[-0.15em]" /> <strong>{{ sender.label }}</strong><span v-if="sender.usage?.quota" class="text-slate-600"> · {{ sender.usage.used }}/{{ sender.usage.quota }} envois ce mois</span></p>
         <p v-if="sender?.usage?.quota && sender.usage.percent >= 80" :class="['rounded-xl px-3 py-2 text-sm', sender.usage.percent >= 100 ? 'bg-red-50 text-red-800' : 'bg-amber-50 text-amber-900']">
           Quota du mois {{ sender.usage.percent >= 100 ? 'atteint' : `utilisé à ${sender.usage.percent} %` }} : {{ sender.usage.used }} envois sur {{ sender.usage.quota }}.
         </p>
         <div v-if="departments.settings.value.requested_by !== 'off'">
-          <label class="m-label" for="requested-by">Demandé par <span v-if="departments.settings.value.requested_by === 'required'" class="text-red-600">*</span><span v-else class="font-normal text-slate-500">(facultatif)</span></label>
+          <label class="m-label" for="requested-by">Demandé par <span v-if="departments.settings.value.requested_by === 'required'" class="text-red-600">*</span><span v-else class="font-normal text-slate-600">(facultatif)</span></label>
           <input id="requested-by" v-model="form.requested_by" class="m-input" maxlength="120" autocomplete="jibiat-off" placeholder="Nom de la personne">
         </div>
         <div v-if="departments.settings.value.internal_mail && departments.all.value.length > 1">
           <p class="m-label">Pour qui ?</p>
-          <ChoiceChips v-model="internal" :options="[{ value: false, label: 'Une personne extérieure', icon: '👤' }, { value: true, label: 'Un autre département', icon: '🏢', description: 'courrier interne' }]" :columns="2" label="Destinataire" />
+          <ChoiceChips v-model="internal" :options="[{ value: false, label: 'Une personne extérieure', icon: 'client' }, { value: true, label: 'Un autre département', icon: 'entreprise', description: 'courrier interne' }]" :columns="2" label="Destinataire" />
           <div v-if="internal" class="mt-3">
             <ChoiceChips v-model="form.to_department_id" :options="targetChoices" :columns="1" label="Département destinataire" />
           </div>
@@ -82,7 +82,7 @@
         </div>
         <!-- Client déjà livré : nom et adresse en un toucher -->
         <div v-for="r in suggestions" :key="r.id" class="rounded-xl bg-emerald-50 ring-1 ring-emerald-200 px-3 py-2.5 flex items-center gap-3 text-sm">
-          <span class="text-xl">👤</span>
+          <Icone nom="client" />
           <span class="min-w-0 flex-1">
             <strong>{{ r.name || 'Destinataire' }}</strong> · {{ localPhone(r.phone) }}
             <span class="block truncate text-slate-600">
@@ -93,11 +93,11 @@
           <button type="button" class="tap shrink-0 rounded-lg px-3 py-2 text-xs font-semibold text-white" :style="{ backgroundColor: 'var(--app-color)' }" @click="pickRecipient(r)">Utiliser</button>
         </div>
         <div v-if="duplicates.length" class="rounded-xl bg-amber-50 text-amber-900 px-4 py-3 text-sm">
-          ⚠️ Vous avez déjà envoyé {{ duplicates.length > 1 ? `${duplicates.length} courses` : 'une course' }} à ce destinataire ces dernières 24 h :
+          <Icone nom="alerte" taille="petite" class="inline align-[-0.15em]" /> Vous avez déjà envoyé {{ duplicates.length > 1 ? `${duplicates.length} courses` : 'une course' }} à ce destinataire ces dernières 24 h :
           <RouterLink v-for="d in duplicates" :key="d.id" :to="`/marchand/courses/${d.id}`" class="underline ml-1">{{ d.tracking_code }} ({{ d.status_label }})</RouterLink>
         </div>
         <div>
-          <label class="m-label" for="name">Nom <span class="font-normal text-slate-500">(facultatif)</span></label>
+          <label class="m-label" for="name">Nom <span class="font-normal text-slate-600">(facultatif)</span></label>
           <input id="name" v-model="form.recipient_name" class="m-input" autocomplete="jibiat-off" placeholder="Ex. : Jean Kouadio">
         </div>
       </section>
@@ -113,7 +113,7 @@
           </p>
           <ZoneSelect id="zone" v-model="form.delivery_zone_id" :zones="zones" mobile :input-class="['m-input', missing.zone ? 'ring-2 ring-red-500' : '']" />
           <p v-if="selectedZone?.is_shipping && !billed" class="mt-2 rounded-xl bg-indigo-50 text-indigo-900 text-sm p-3">
-            🚌 <strong>Expédition</strong> : notre livreur dépose le colis à la gare et paie l'envoi
+            <Icone nom="expedition" taille="petite" class="inline align-[-0.15em]" /> <strong>Expédition</strong> : notre livreur dépose le colis à la gare et paie l'envoi
             <template v-if="selectedZone.shipping_fee_estimate">(environ {{ money(selectedZone.shipping_fee_estimate) }})</template>.
             Ces frais vous sont facturés au réel et déduits de votre point.
           </p>
@@ -142,7 +142,7 @@
         </div>
         <!-- Pli : ce que c'est (liste de l'agence), « Autre » à préciser -->
         <div v-if="form.shipment_type === 'pli' && pliKinds.length">
-          <p class="m-label">Ce pli est <span class="font-normal text-slate-500">(facultatif)</span></p>
+          <p class="m-label">Ce pli est <span class="font-normal text-slate-600">(facultatif)</span></p>
           <div class="flex flex-wrap gap-2">
             <button
               v-for="k in pliKinds" :key="k" type="button"
@@ -164,17 +164,17 @@
           </div>
         </div>
         <div>
-          <label class="m-label" for="weight">Poids <span class="font-normal text-slate-500">(facultatif, kg)</span></label>
+          <label class="m-label" for="weight">Poids <span class="font-normal text-slate-600">(facultatif, kg)</span></label>
           <input id="weight" v-model.number="form.weight_kg" type="number" min="0" step="0.1" inputmode="decimal" class="m-input" placeholder="Ex. : 2,5">
-          <p class="text-xs text-slate-500 mt-1">Au-delà de 5 kg, chaque kilogramme en plus est facturé.</p>
+          <p class="text-xs text-slate-600 mt-1">Au-delà de 5 kg, chaque kilogramme en plus est facturé.</p>
         </div>
         <div v-if="plan && !plan.has_forfait">
           <p class="m-label">Délai de livraison</p>
           <ChoiceChips v-model="form.delivery_delay" :options="DELAYS" :columns="3" label="Délai de livraison" />
         </div>
-        <p v-else-if="plan" class="text-sm text-slate-600">⏱️ Délai du contrat : <strong>{{ plan.delivery_delay.replace('h', ' h') }}</strong></p>
+        <p v-else-if="plan" class="text-sm text-slate-600"><Icone nom="chrono" taille="petite" class="inline align-[-0.15em]" /> Délai du contrat : <strong>{{ plan.delivery_delay.replace('h', ' h') }}</strong></p>
         <div v-if="form.activity === 'mad' && space.space?.couriers?.length" class="rounded-xl bg-slate-50 p-3 text-sm">
-          <p class="font-medium">🛵 Vos livreurs attitrés</p>
+          <p class="flex items-center gap-1.5 font-medium"><Icone nom="livreur" taille="petite" />Vos livreurs attitrés</p>
           <p class="text-slate-600">{{ space.space.couriers.map((c) => `${c.name} (${c.status_label.toLowerCase()})`).join(', ') }}</p>
         </div>
       </section>
@@ -183,7 +183,7 @@
       <section v-else class="m-card p-4 space-y-4" aria-labelledby="step-money">
         <h2 id="step-money" class="m-step"><ColorIcon name="argent" :size="34" />L'argent</h2>
         <button v-if="products.length && !showStock" type="button" class="tap w-full rounded-xl ring-1 ring-slate-200 px-4 py-3 flex items-center justify-between text-sm font-semibold active:bg-slate-50" @click="showStock = true">
-          <span>📦 Prendre des articles de mon stock</span><span class="text-slate-400">›</span>
+          <span class="inline-flex items-center gap-1.5"><Icone nom="course" taille="petite" />Prendre des articles de mon stock</span><span class="text-slate-400">›</span>
         </button>
         <div v-if="products.length && showStock" class="space-y-3">
           <div v-if="stockHubs.length">
@@ -196,7 +196,7 @@
               <div v-for="p in sourceProducts" :key="p.id" class="p-3 flex items-center gap-3">
                 <div class="min-w-0 flex-1">
                   <p class="font-medium truncate">{{ p.name }}</p>
-                  <p class="text-xs text-slate-500">{{ money(p.price) }} · {{ availableAt(p) }} dispo</p>
+                  <p class="text-xs text-slate-600">{{ money(p.price) }} · {{ availableAt(p) }} dispo</p>
                 </div>
                 <div class="flex items-center gap-2">
                   <button type="button" class="tap h-9 w-9 rounded-full bg-slate-100 text-lg font-bold disabled:opacity-40" :disabled="!picked[p.id]" :aria-label="`Retirer un ${p.name}`" @click="pick(p, -1)">−</button>
@@ -204,7 +204,7 @@
                   <button type="button" class="tap h-9 w-9 rounded-full text-white text-lg font-bold disabled:opacity-40" :style="{ backgroundColor: 'var(--app-color)' }" :disabled="(picked[p.id] || 0) >= availableAt(p)" :aria-label="`Ajouter un ${p.name}`" @click="pick(p, 1)">+</button>
                 </div>
               </div>
-              <p v-if="!sourceProducts.length" class="p-3 text-sm text-slate-500">Aucun produit disponible {{ source ? 'à cet entrepôt' : 'chez vous' }}.</p>
+              <p v-if="!sourceProducts.length" class="p-3 text-sm text-slate-600">Aucun produit disponible {{ source ? 'à cet entrepôt' : 'chez vous' }}.</p>
             </div>
           </div>
         </div>
@@ -215,7 +215,7 @@
             <input id="amount" autocomplete="jibiat-off" v-model.number="form.items_amount" type="number" min="0" step="50" inputmode="numeric" class="m-input text-2xl font-bold pr-12">
             <span class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-semibold">F</span>
           </div>
-          <p class="text-xs text-slate-500 mt-1">Prix des articles, sans la livraison. Mettez 0 si le destinataire a déjà payé.</p>
+          <p class="text-xs text-slate-600 mt-1">Prix des articles, sans la livraison. Mettez 0 si le destinataire a déjà payé.</p>
         </div>
         <div id="fee-payer" :class="['rounded-2xl', missing.feePayer ? 'ring-2 ring-red-500 p-2 -mx-2' : '']">
           <p class="m-label">Qui paie la livraison ? <span class="text-red-600">*</span></p>
@@ -224,8 +224,8 @@
             :columns="2"
             label="Payeur des frais"
             :options="[
-              { value: 'recipient', label: 'Le destinataire', icon: '🧍', description: 'ajoutée au montant' },
-              { value: 'merchant', label: 'Moi', icon: '🏪', description: 'déduite de mon paiement' },
+              { value: 'recipient', label: 'Le destinataire', icon: 'client', description: 'ajoutée au montant' },
+              { value: 'merchant', label: 'Moi', icon: 'marchand', description: 'déduite de mon paiement' },
             ]"
           />
           <p v-if="missing.feePayer" class="mt-2 text-sm font-medium text-red-600" role="alert">Choisissez qui paie la livraison : le destinataire ou vous.</p>
@@ -237,7 +237,7 @@
         <h2 id="step-when" class="m-step"><ColorIcon name="calendrier" :size="34" /><span>Quand livrer <span class="text-red-600">*</span></span></h2>
         <div id="when-field" :class="['rounded-2xl', missing.date ? 'ring-2 ring-red-500 p-2 -mx-2' : '']">
           <ChoiceChips v-model="when" :options="deliveryOptions" :columns="3" label="Jour de livraison" />
-          <p v-if="closed" class="mt-2 text-xs text-slate-500">🌙 {{ closedReason }} : le ramassage peut quand même se faire aujourd'hui.</p>
+          <p v-if="closed" class="mt-2 text-xs text-slate-600"><Icone nom="jour-ferme" taille="petite" class="inline align-[-0.15em]" /> {{ closedReason }} : le ramassage peut quand même se faire aujourd'hui.</p>
           <input v-if="when === 'other'" id="date" autocomplete="jibiat-off" v-model="form.delivery_scheduled_date" type="date" :min="minDate" class="m-input mt-2" aria-label="Jour de livraison">
           <p v-if="dateSummary" class="mt-2 text-sm font-semibold text-slate-700">{{ dateSummary }}</p>
           <p v-if="missing.date" class="mt-2 text-sm font-medium text-red-600" role="alert">Choisissez quand livrer la course.</p>
@@ -248,7 +248,7 @@
       <section class="m-card px-4 py-1">
         <button type="button" class="tap w-full flex items-center justify-between rounded-xl py-3 text-[15px] font-semibold text-slate-800" :aria-expanded="showMore" @click="showMore = !showMore">
           <span>{{ showMore ? '−' : '＋' }} Contenu du colis, message au livreur…</span>
-          <span v-if="!showMore && extrasSummary" class="truncate pl-2 text-xs font-normal text-slate-500">{{ extrasSummary }}</span>
+          <span v-if="!showMore && extrasSummary" class="truncate pl-2 text-xs font-normal text-slate-600">{{ extrasSummary }}</span>
         </button>
         <div v-show="showMore" class="space-y-4 pt-1 pb-4">
           <div>
@@ -257,10 +257,10 @@
           </div>
           <div v-if="!billed" class="grid grid-cols-2 gap-2">
             <label :class="['tap flex items-center gap-2 rounded-xl px-4 py-3 ring-1', form.is_express ? 'ring-2 ring-[var(--app-color)]' : 'ring-slate-200 bg-white']">
-              <input v-model="form.is_express" type="checkbox" class="h-5 w-5 accent-[var(--app-color)]"> ⚡ Express
+              <input v-model="form.is_express" type="checkbox" class="h-5 w-5 accent-[var(--app-color)]"> <Icone nom="rapide" taille="petite" />Express
             </label>
             <label :class="['tap flex items-center gap-2 rounded-xl px-4 py-3 ring-1', form.is_fragile ? 'ring-2 ring-[var(--app-color)]' : 'ring-slate-200 bg-white']">
-              <input v-model="form.is_fragile" type="checkbox" class="h-5 w-5 accent-[var(--app-color)]"> 🥚 Fragile
+              <input v-model="form.is_fragile" type="checkbox" class="h-5 w-5 accent-[var(--app-color)]"> <Icone nom="fragile" taille="petite" />Fragile
             </label>
           </div>
           <div>
@@ -280,28 +280,28 @@
           <!-- Distribution, MAD : comment la course sera facturée, et le forfait du mois -->
           <div v-if="billed && quote?.billing" class="text-sm space-y-0.5">
             <div class="flex justify-between gap-3">
-              <span class="text-slate-500">{{ quote.billing.label }}<template v-if="quote.billing.units > 1"> · × {{ quote.billing.units }}</template></span>
+              <span class="text-slate-600">{{ quote.billing.label }}<template v-if="quote.billing.units > 1"> · × {{ quote.billing.units }}</template></span>
               <strong class="whitespace-nowrap">{{ quote.billing.basis === 'forfait' && !quote.billing.amount ? 'forfait' : money(quote.billing.amount) }}</strong>
             </div>
-            <div v-if="usage?.included" class="flex justify-between text-slate-500">
+            <div v-if="usage?.included" class="flex justify-between text-slate-600">
               <span>Forfait de {{ usage.month_label.toLowerCase() }}</span>
               <span>{{ usage.used }} / {{ usage.included }} utilisés</span>
             </div>
-            <p class="text-slate-500">Rien à encaisser · facture du mois</p>
+            <p class="text-slate-600">Rien à encaisser · facture du mois</p>
           </div>
           <div v-else-if="quote && !billed" class="text-sm space-y-0.5">
             <div class="flex justify-between">
-              <span class="text-slate-500">Livraison {{ zoneName }} ({{ form.fee_payer === 'merchant' ? 'à ma charge' : form.fee_payer === 'recipient' ? 'payée par le destinataire' : 'qui paie ?' }})</span>
+              <span class="text-slate-600">Livraison {{ zoneName }} ({{ form.fee_payer === 'merchant' ? 'à ma charge' : form.fee_payer === 'recipient' ? 'payée par le destinataire' : 'qui paie ?' }})</span>
               <strong>{{ money(quote.total) }}</strong>
             </div>
-            <div v-if="quote.is_shipping" class="flex justify-between"><span class="text-slate-500">🚌 Expédition (au réel)</span><strong>≈ {{ money(shippingEstimate) }}</strong></div>
-            <div class="flex justify-between"><span class="text-slate-500">Le livreur encaisse</span><strong>{{ money(codAmount) }}</strong></div>
+            <div v-if="quote.is_shipping" class="flex justify-between"><span class="inline-flex items-center gap-1.5 text-slate-600"><Icone nom="expedition" taille="petite" />Expédition (au réel)</span><strong>≈ {{ money(shippingEstimate) }}</strong></div>
+            <div class="flex justify-between"><span class="text-slate-600">Le livreur encaisse</span><strong>{{ money(codAmount) }}</strong></div>
             <div :class="['flex justify-between font-semibold', merchantNet < 0 ? 'text-slate-700' : 'text-emerald-700']">
               <span>{{ merchantNet < 0 ? 'À votre charge' : 'Vous recevrez' }}</span><span>{{ quote.is_shipping ? '≈ ' : '' }}{{ money(Math.abs(merchantNet)) }}</span>
             </div>
           </div>
           <p v-else-if="quoteError" class="text-sm text-red-600">{{ quoteError }}</p>
-          <p v-else class="text-sm text-slate-500">{{ form.delivery_zone_id ? 'Calcul du prix…' : 'Choisissez la commune pour voir le prix de la livraison.' }}</p>
+          <p v-else class="text-sm text-slate-600">{{ form.delivery_zone_id ? 'Calcul du prix…' : 'Choisissez la commune pour voir le prix de la livraison.' }}</p>
           <button type="submit" class="m-btn-primary" :disabled="saving">{{ saving ? 'Envoi…' : 'Envoyer la course' }}</button>
         </div>
       </div>
@@ -310,6 +310,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import ColorIcon from '../../components/mobile/ColorIcon.vue'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
@@ -338,7 +339,7 @@ const space = useClientSpaceStore()
 const activityChoices = computed(() => space.activities.map((a) => ({
   value: a.value,
   label: a.value === 'mad' ? 'MAD' : a.label,
-  icon: { ecommerce: '🛍️', distribution: '✉️', mad: '🛵' }[a.value],
+  icon: { ecommerce: 'boutique', distribution: 'mail', mad: 'livreur' }[a.value],
   description: { ecommerce: 'montant encaissé', distribution: 'plis, colis, chèques', mad: 'mes livreurs attitrés' }[a.value],
 })))
 // Activité choisie dans le menu ＋ (?activite=), sinon celle regardée en haut de l'accueil (ou la seule du client).
@@ -346,9 +347,9 @@ const activityChoices = computed(() => space.activities.map((a) => ({
 const askedActivity = () => (space.activities.some((a) => a.value === route.query.activite) ? route.query.activite : null)
 const defaultActivity = () => askedActivity() || space.current || null
 const SHIPMENT_TYPES = [
-  { value: 'pli', label: 'Pli', icon: '✉️', description: '0-500 g' },
-  { value: 'colis', label: 'Colis', icon: '📦', description: '0-5 kg' },
-  { value: 'cheque', label: 'Chèque', icon: '🧾', description: 'à livrer' },
+  { value: 'pli', label: 'Pli', icon: 'mail', description: '0-500 g' },
+  { value: 'colis', label: 'Colis', icon: 'course', description: '0-5 kg' },
+  { value: 'cheque', label: 'Chèque', icon: 'recette', description: 'à livrer' },
 ]
 const DELAYS = [
   { value: '24h', label: '24 h' },
@@ -406,10 +407,10 @@ const internal = ref(false)
 const quotaHint = (d) => (d.usage?.quota ? `${d.usage.used}/${d.usage.quota} ce mois` : (d.location || ''))
 const senderChoices = computed(() => [
   ...(departments.settings.value.required ? [] : [{ value: null, label: 'Aucun', icon: '—' }]),
-  ...departments.senders.value.map((d) => ({ value: d.id, label: d.label, icon: '🏢', description: quotaHint(d) })),
+  ...departments.senders.value.map((d) => ({ value: d.id, label: d.label, icon: 'entreprise', description: quotaHint(d) })),
 ])
 const targetChoices = computed(() => departments.all.value.filter((d) => d.id !== form.department_id)
-  .map((d) => ({ value: d.id, label: d.label, icon: '🏢', description: d.location || d.manager_name || '' })))
+  .map((d) => ({ value: d.id, label: d.label, icon: 'entreprise', description: d.location || d.manager_name || '' })))
 const sender = computed(() => departments.all.value.find((d) => d.id === form.department_id))
 // Un seul département possible : choisi d'office
 watch(() => departments.senders.value, (list) => {
@@ -432,8 +433,8 @@ const contractPlan = computed(() => (auth.user?.merchant?.billing_plans || []).f
 // Lots de colis en cours (distribution) ; sans contrat, la course va forcément dans un lot
 const lots = computed(() => (form.activity === 'distribution' ? auth.user?.merchant?.lots || [] : []))
 const lotChoices = computed(() => [
-  ...(contractPlan.value ? [{ value: null, label: contractPlan.value.formula_label, icon: '📄', description: 'contrat du mois' }] : []),
-  ...lots.value.map((l) => ({ value: l.id, label: l.lot_name, icon: '📦', description: `${l.lot_quantity} colis` })),
+  ...(contractPlan.value ? [{ value: null, label: contractPlan.value.formula_label, icon: 'contrat', description: 'contrat du mois' }] : []),
+  ...lots.value.map((l) => ({ value: l.id, label: l.lot_name, icon: 'course', description: `${l.lot_quantity} colis` })),
 ])
 watch([lots, contractPlan], () => {
   if (!lots.value.some((l) => l.id === form.billing_plan_id)) {
@@ -482,8 +483,8 @@ const { when, options: deliveryOptions, closed, closedReason, minDate, summary: 
 // Entrepôts où le client a du stock disponible
 const stockHubs = computed(() => hubs.value.filter((h) => products.value.some((p) => p.levels.some((l) => l.hub_id === h.id && l.available > 0))))
 const sourceOptions = computed(() => [
-  { value: null, label: 'De chez moi', icon: '🏠', description: 'un livreur passe le récupérer' },
-  ...stockHubs.value.map((h) => ({ value: h.id, label: h.name, icon: '🏬', description: 'préparé à l\'entrepôt, sans ramassage' })),
+  { value: null, label: 'De chez moi', icon: 'domicile', description: 'un livreur passe le récupérer' },
+  ...stockHubs.value.map((h) => ({ value: h.id, label: h.name, icon: 'depot', description: 'préparé à l\'entrepôt, sans ramassage' })),
 ])
 const sourceName = computed(() => hubs.value.find((h) => h.id === source.value)?.name)
 const sourceZoneId = computed(() => hubs.value.find((h) => h.id === source.value)?.zone_id)

@@ -92,7 +92,7 @@ export function useRealtime() {
       playAlertSound(n.severity)
       desktopNotify(n.title, n.body, () => router.push(`${auth.homeRoute}/courses/${n.order_id}`))
       fieldReports.received()
-      toasts.push(n.body, alert ? 'error' : 'info', { title: `${alert ? '⚠️' : '📝'} ${n.title}`, to: n.order_id, timeout: alert ? 20000 : 10000 })
+      toasts.push(n.body, alert ? 'error' : 'info', { title: n.title, to: n.order_id, timeout: alert ? 20000 : 10000 })
       return
     }
 

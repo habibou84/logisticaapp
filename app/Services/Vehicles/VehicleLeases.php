@@ -242,7 +242,7 @@ class VehicleLeases
         }
         if ($lease->late_level < 2 && $days >= $s['lease_late_manager_days']) {
             $users = User::forCompany($lease->company_id)->where('status', 'active')->role([Role::Admin->value, Role::ActivityManager->value])->get();
-            Notification::send($users, new VehicleAlert('lease_late', "💸 Location en retard : {$lease->courier?->user?->name}", Money::format($b['late'])." de retard sur {$lease->vehicle?->plate}.", "/admin/vehicules/{$lease->vehicle_id}?onglet=location", 'alert'));
+            Notification::send($users, new VehicleAlert('lease_late', "Location en retard : {$lease->courier?->user?->name}", Money::format($b['late'])." de retard sur {$lease->vehicle?->plate}.", "/admin/vehicules/{$lease->vehicle_id}?onglet=location", 'alert'));
             $lease->forceFill(['late_level' => 2])->save();
             $sent++;
         }

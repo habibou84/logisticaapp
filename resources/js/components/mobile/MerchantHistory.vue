@@ -3,7 +3,7 @@
   <ol class="relative border-l-2 border-slate-200 ml-2 space-y-3">
     <li v-for="item in items" :key="item.id" class="ml-4">
       <span :class="['absolute -left-[7px] mt-1.5 h-3 w-3 rounded-full', item.dot]" />
-      <p class="text-sm font-medium">{{ item.text }} <span class="font-normal text-slate-500">· {{ item.when }}</span></p>
+      <p class="text-sm font-medium">{{ item.text }} <span class="font-normal text-slate-600">· {{ item.when }}</span></p>
       <p v-if="item.detail" class="text-sm text-slate-600">{{ item.detail }}</p>
     </li>
   </ol>

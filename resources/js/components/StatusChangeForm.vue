@@ -17,8 +17,8 @@
           <option v-for="r in g.reasons" :key="r.id" :value="r.id">{{ r.label }}</option>
         </optgroup>
       </select>
-      <p v-if="selectedReason?.photo === 'required'" class="text-xs text-amber-700 mt-1">📷 Ce motif demande une photo du livreur (pièce jointe « photo de l'incident » de moins de 12 h).</p>
-      <p v-if="selectedReason?.triggers_return" class="text-xs text-slate-500 mt-1">↩️ La course part en retour vers le client.</p>
+      <p v-if="selectedReason?.photo === 'required'" class="text-xs text-amber-700 mt-1"><Icone nom="photo" taille="petite" class="inline align-text-bottom" /> Ce motif demande une photo du livreur (pièce jointe « photo de l'incident » de moins de 12 h).</p>
+      <p v-if="selectedReason?.triggers_return" class="text-xs text-slate-600 mt-1"><Icone nom="retour" taille="petite" class="inline align-text-bottom" /> La course part en retour vers le client.</p>
     </div>
 
     <div v-if="showDate">
@@ -28,7 +28,7 @@
 
     <template v-if="form.status === 'delivered'">
       <template v-if="order.is_shipping">
-        <p class="text-sm rounded bg-indigo-50 text-indigo-900 p-2">🚌 Expédition : colis déposé à la gare, frais facturés au client.</p>
+        <p class="text-sm rounded bg-indigo-50 text-indigo-900 p-2"><Icone nom="expedition" taille="petite" class="inline align-text-bottom" /> Expédition : colis déposé à la gare, frais facturés au client.</p>
         <div class="grid grid-cols-2 gap-2">
           <div><label class="label" for="carrier">Compagnie ou gare *</label><input id="carrier" v-model="form.shipping_carrier" class="input" required></div>
           <div><label class="label" for="shipfee">Frais d'expédition (F) *</label><input id="shipfee" v-model.number="form.shipping_fee" type="number" min="0" class="input" required></div>
@@ -83,6 +83,7 @@
 </template>
 
 <script setup>
+import Icone from './ui/Icone.vue'
 import CancelReasonPicker from './CancelReasonPicker.vue'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import http, { apiErrorMessage } from '../bootstrap/axios'

@@ -290,7 +290,7 @@ class AwaitingCourier
                 Notification::send($users, new OrderAlert(
                     $waiting->first()['order'],
                     'unassigned_cutoff',
-                    "⏰ {$company->cutoffFor()} passées : ".($count > 1 ? "{$count} courses du jour" : '1 course du jour').' toujours sans livreur',
+                    "{$company->cutoffFor()} passées : ".($count > 1 ? "{$count} courses du jour" : '1 course du jour').' toujours sans livreur',
                     collect(["{$pickup} à ramasser" => $pickup, "{$delivery} à livrer" => $delivery])->filter()->keys()->implode(' · ')
                         ." : {$codes}. Elles risquent de ne pas être livrées aujourd'hui."
                         // Ramassages de courses prévues un autre jour : à faire, mais sans retard de livraison
@@ -317,7 +317,7 @@ class AwaitingCourier
         $count = $orders->count();
         $what = $stage === self::PICKUP ? 'de ramassage' : 'de livraison';
         $codes = $orders->pluck('order.tracking_code')->take(5)->implode(', ').($count > 5 ? '…' : '');
-        $title = ($escalation ? '🚨 ' : '⏰ ').($count > 1 ? "{$count} courses" : "Course {$orders->first()['order']->tracking_code}")
+        $title = ($count > 1 ? "{$count} courses" : "Course {$orders->first()['order']->tracking_code}")
             ." toujours sans livreur {$what}";
 
         Notification::send($users, new OrderAlert(
@@ -325,7 +325,7 @@ class AwaitingCourier
             'unassigned_'.$stage,
             $title,
             'En attente depuis plus de '.self::duration($minutes)." : {$codes}. Assignez un livreur.",
-            ['severity' => 'alert', 'count' => $count, 'href' => '/admin/courses?queue=unassigned&awaiting='.$stage],
+            ['severity' => 'alert', 'count' => $count, 'escalation' => $escalation, 'href' => '/admin/courses?queue=unassigned&awaiting='.$stage],
         ));
 
         return 1;

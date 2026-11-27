@@ -14,9 +14,9 @@
       <span :class="['grid h-9 w-9 shrink-0 place-items-center rounded-full text-sm font-bold', sidebar ? 'bg-white text-slate-900' : 'bg-[var(--admin-color,#0f172a)] text-white']" aria-hidden="true">{{ initials }}</span>
       <span :class="['min-w-0', sidebar ? 'flex-1' : 'hidden lg:block text-left']">
         <span class="block truncate text-sm font-semibold">{{ auth.user?.name }}</span>
-        <span :class="['block truncate text-xs', sidebar ? 'text-white/70' : 'text-slate-500']">{{ auth.user?.role_label }}</span>
+        <span :class="['block truncate text-xs', sidebar ? 'text-white/70' : 'text-slate-600']">{{ auth.user?.role_label }}</span>
       </span>
-      <span aria-hidden="true" :class="sidebar ? 'text-white/70' : 'text-slate-500'">▾</span>
+      <span aria-hidden="true" :class="sidebar ? 'text-white/70' : 'text-slate-600'">▾</span>
     </button>
 
     <div
@@ -29,16 +29,17 @@
         <p class="truncate text-sm text-slate-600">{{ auth.user?.role_label }}<template v-if="auth.user?.company?.name"> · {{ auth.user.company.name }}</template></p>
       </div>
       <RouterLink to="/admin/mon-compte" role="menuitem" class="flex min-h-11 items-center gap-3 px-4 text-sm hover:bg-slate-50" @click="close">
-        <span aria-hidden="true">👤</span> Mon compte
+        <Icone nom="compte" /> Mon compte
       </RouterLink>
       <button type="button" role="menuitem" class="flex min-h-11 w-full items-center gap-3 border-t border-slate-100 px-4 text-left text-sm font-medium text-red-700 hover:bg-red-50" @click="logout">
-        <span aria-hidden="true">🚪</span> Déconnexion
+        <Icone nom="deconnexion" /> Déconnexion
       </button>
     </div>
   </div>
 </template>
 
 <script setup>
+import Icone from './ui/Icone.vue'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useAuthStore } from '../stores/auth'

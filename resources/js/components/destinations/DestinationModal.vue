@@ -19,7 +19,7 @@
         </div>
         <!-- Numéros d'origine douteux : gardés tels quels, une correction seulement proposée -->
         <div v-if="destination?.phone_check" class="rounded bg-amber-50 p-2 text-sm text-amber-900 space-y-1">
-          <p>⚠️ Numéros d'origine à vérifier : <b>{{ destination.phones_raw }}</b></p>
+          <p><Icone nom="alerte" taille="petite" class="inline align-text-bottom" /> Numéros d'origine à vérifier : <b>{{ destination.phones_raw }}</b></p>
           <p v-for="d in destination.doubtful" :key="d.raw" class="flex flex-wrap items-center gap-2">
             <span class="font-mono">{{ d.raw }}</span>
             <template v-if="d.suggestion">→ peut-être <span class="font-mono">{{ d.suggestion }}</span>
@@ -38,22 +38,22 @@
 
       <!-- Position : confirmée sur place, historique, écart à trancher -->
       <section v-if="destination" class="rounded-lg border border-slate-200 p-3 space-y-2 text-sm">
-        <p class="font-medium">📍 Position</p>
+        <p class="flex items-center gap-1 font-medium"><Icone nom="adresse" taille="petite" />Position</p>
         <p v-if="destination.lat">
           <a :href="mapsLink(destination.lat, destination.lng)" target="_blank" class="text-blue-700">{{ destination.lat }}, {{ destination.lng }}</a>
-          <span class="text-gray-500"> · {{ SOURCES[destination.location_source] || '' }}<template v-if="destination.located_by"> ({{ destination.located_by }})</template><template v-if="destination.located_at"> le {{ dateTime(destination.located_at) }}</template><template v-if="destination.location_accuracy"> · ± {{ destination.location_accuracy }} m</template></span>
+          <span class="text-slate-600"> · {{ SOURCES[destination.location_source] || '' }}<template v-if="destination.located_by"> ({{ destination.located_by }})</template><template v-if="destination.located_at"> le {{ dateTime(destination.located_at) }}</template><template v-if="destination.location_accuracy"> · ± {{ destination.location_accuracy }} m</template></span>
         </p>
-        <p v-else class="text-gray-500">Pas encore de position : le premier livreur sur place l'enregistrera.</p>
+        <p v-else class="text-slate-600">Pas encore de position : le premier livreur sur place l'enregistrera.</p>
         <p v-if="destination.location_conflict" class="rounded bg-red-50 p-2 text-red-800">Positions qui ne concordent pas : choisissez la bonne ci-dessous.</p>
         <ul v-if="destination.locations?.length" class="divide-y">
           <li v-for="l in destination.locations.slice(0, 8)" :key="l.id" class="flex flex-wrap items-center justify-between gap-2 py-1">
             <span><a :href="mapsLink(l.lat, l.lng)" target="_blank" class="text-blue-700">{{ l.lat }}, {{ l.lng }}</a>
-              <span class="text-gray-500"> · {{ l.by || '—' }} · {{ dateTime(l.at) }}<template v-if="l.accuracy"> · ± {{ l.accuracy }} m</template><template v-if="l.distance !== null"> · à {{ l.distance }} m</template></span>
+              <span class="text-slate-600"> · {{ l.by || '—' }} · {{ dateTime(l.at) }}<template v-if="l.accuracy"> · ± {{ l.accuracy }} m</template><template v-if="l.distance !== null"> · à {{ l.distance }} m</template></span>
               <span :class="['ml-1 rounded-full px-1.5 text-xs', OUTCOMES[l.outcome][1]]">{{ OUTCOMES[l.outcome][0] }}</span></span>
             <button v-if="l.outcome === 'conflict' || destination.location_conflict" type="button" class="text-xs text-blue-700" @click="pick(l)">Garder celle-ci</button>
           </li>
         </ul>
-        <button v-if="destination.location_conflict" type="button" class="text-xs text-gray-600 underline" @click="keepCurrent">Garder la position actuelle</button>
+        <button v-if="destination.location_conflict" type="button" class="text-xs text-slate-600 underline" @click="keepCurrent">Garder la position actuelle</button>
       </section>
 
       <!-- Doublons -->
@@ -62,7 +62,7 @@
         <input v-model="dupQuery" class="input" placeholder="Chercher la fiche en double…" @input="searchDuplicates">
         <ul v-if="duplicates.length" class="divide-y">
           <li v-for="d in duplicates" :key="d.id" class="flex items-center justify-between gap-2 py-1">
-            <span>{{ d.label }} <span class="text-gray-500">· {{ d.zone_name || d.city || '' }}</span></span>
+            <span>{{ d.label }} <span class="text-slate-600">· {{ d.zone_name || d.city || '' }}</span></span>
             <button type="button" class="text-xs text-blue-700" @click="merge(d)">Regrouper ici</button>
           </li>
         </ul>
@@ -78,6 +78,7 @@
 </template>
 
 <script setup>
+import Icone from '../ui/Icone.vue'
 import { ref, watch } from 'vue'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import Modal from '../Modal.vue'

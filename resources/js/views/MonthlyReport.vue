@@ -3,8 +3,8 @@
   <div class="report-page mx-auto max-w-4xl bg-white p-6 text-slate-900">
     <div class="no-print mb-4 flex flex-wrap items-center gap-2">
       <input v-model="month" type="month" class="input w-auto" aria-label="Mois" @change="load">
-      <button class="btn-primary" :disabled="loading" @click="print">🖨 Imprimer ou enregistrer en PDF</button>
-      <span class="text-sm text-slate-500">Dans la fenêtre d'impression, choisissez « Enregistrer au format PDF ».</span>
+      <button class="btn-primary" :disabled="loading" @click="print"><Icone nom="imprimer" />Imprimer ou enregistrer en PDF</button>
+      <span class="text-sm text-slate-600">Dans la fenêtre d'impression, choisissez « Enregistrer au format PDF ».</span>
     </div>
 
     <p v-if="loading">Chargement…</p>
@@ -24,9 +24,9 @@
         <h2 class="mb-2 text-lg font-semibold">Chiffres clés</h2>
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <div v-for="k in keyFigures" :key="k.label" class="rounded-lg border p-3">
-            <p class="text-xs text-slate-500">{{ k.label }}</p>
+            <p class="text-xs text-slate-600">{{ k.label }}</p>
             <p class="text-xl font-bold">{{ k.value }}</p>
-            <p v-if="k.hint" class="text-xs text-slate-500">{{ k.hint }}</p>
+            <p v-if="k.hint" class="text-xs text-slate-600">{{ k.hint }}</p>
           </div>
         </div>
       </section>
@@ -73,6 +73,7 @@
 </template>
 
 <script setup>
+import Icone from '../components/ui/Icone.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import http, { apiErrorMessage } from '../bootstrap/axios'

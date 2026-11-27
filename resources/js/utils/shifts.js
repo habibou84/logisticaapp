@@ -43,5 +43,5 @@ export const SHIFT_STATES = {
   late: { label: 'En retard', cls: 'bg-amber-100 text-amber-800' },
   waiting: { label: 'Attendu', cls: 'bg-slate-100 text-slate-700' },
   on_time: { label: 'À l\'heure', cls: 'bg-emerald-100 text-emerald-800' },
-  none: { label: 'Pas prévu', cls: 'bg-slate-50 text-slate-500' },
+  none: { label: 'Pas prévu', cls: 'bg-slate-50 text-slate-600' },
 }

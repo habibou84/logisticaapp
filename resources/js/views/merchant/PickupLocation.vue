@@ -5,12 +5,12 @@
       <p class="text-sm opacity-90 mt-1">Nos livreurs trouvent votre boutique du premier coup, et le bon livreur, le plus proche, est envoyé plus vite.</p>
     </section>
 
-    <p v-if="!loaded" class="text-slate-500">Chargement…</p>
+    <p v-if="!loaded" class="text-slate-600">Chargement…</p>
 
     <template v-else>
       <section class="m-card p-4 space-y-3">
         <div>
-          <h2 class="font-semibold">📍 Position de votre boutique</h2>
+          <h2 class="flex items-center gap-1.5 font-semibold"><Icone nom="adresse" />Position de votre boutique</h2>
           <p class="text-sm text-slate-600">
             Le plus simple : <strong>depuis votre boutique</strong>, touchez le bouton ci-dessous. Sinon, placez le repère sur la carte.
           </p>
@@ -20,10 +20,10 @@
           Position estimée d'après les {{ collect ? 'collectes' : 'ramassages' }} de nos livreurs : vérifiez-la et corrigez-la si besoin.
         </p>
         <p v-else-if="current.pickup_location_source && !changed" class="rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
-          ✓ Position enregistrée{{ current.pickup_located_at ? ` le ${date(current.pickup_located_at)}` : '' }}{{ current.pickup_location_source === 'staff' ? ' par l\'agence' : '' }}.
+          <Icone nom="valider" taille="petite" class="inline align-[-0.15em]" /> Position enregistrée{{ current.pickup_located_at ? ` le ${date(current.pickup_located_at)}` : '' }}{{ current.pickup_location_source === 'staff' ? ' par l\'agence' : '' }}.
         </p>
 
-        <LocationPicker v-model="point" button-class="m-btn-primary" gps-label="📍 Je suis à ma boutique : utiliser ma position" height="h-72" allow-link />
+        <LocationPicker v-model="point" button-class="m-btn-primary" gps-label="Je suis à ma boutique : utiliser ma position" height="h-72" allow-link />
 
         <div>
           <label class="m-label" for="pl-address">Adresse</label>
@@ -35,13 +35,14 @@
         </div>
         <p v-if="error" class="field-error">{{ error }}</p>
         <button type="button" class="m-btn-primary" :disabled="!point || saving" @click="save">{{ saving ? 'Enregistrement…' : 'Enregistrer ce lieu' }}</button>
-        <RouterLink v-if="welcome" to="/marchand" class="block text-center text-sm text-slate-500 underline">Plus tard</RouterLink>
+        <RouterLink v-if="welcome" to="/marchand" class="block text-center text-sm text-slate-600 underline">Plus tard</RouterLink>
       </section>
     </template>
   </div>
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'

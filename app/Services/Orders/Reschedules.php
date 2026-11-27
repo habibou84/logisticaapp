@@ -455,7 +455,7 @@ class Reschedules
         if ($sent > 0) {
             $staff = User::forCompany($company->id)->where('status', 'active')->role([Role::Admin->value, Role::Dispatcher->value])->get();
             Notification::send($staff, new OrderAlert($orders->first(), 'reschedule_evening',
-                "📅 {$orders->count()} colis pas ramassés aujourd'hui",
+                "{$orders->count()} colis pas ramassés aujourd'hui",
                 "Nouvelle date demandée à {$sent} client(s). Les réponses arrivent dans « À reporter ».",
                 ['url' => '/admin/courses/en-retard?onglet=pas-ramassees']));
         }

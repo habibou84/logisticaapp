@@ -3,7 +3,7 @@
   <article class="space-y-4 rounded-2xl bg-white p-4 shadow-soft sm:p-6 print:shadow-none" aria-label="Rapport du mois">
     <header class="flex flex-wrap items-start justify-between gap-2 border-b pb-3">
       <div>
-        <p class="text-xs uppercase tracking-wide text-slate-500">Rapport d'activité</p>
+        <p class="text-xs uppercase tracking-wide text-slate-600">Rapport d'activité</p>
         <h2 class="text-xl font-bold">{{ d.merchant }} · {{ d.label }}</h2>
       </div>
       <span v-if="status" :class="['rounded-full px-2 py-0.5 text-xs font-semibold', status === 'sent' ? 'bg-emerald-100 text-emerald-900' : 'bg-amber-100 text-amber-900']">{{ status === 'sent' ? 'Envoyé' : 'Brouillon à relire' }}</span>

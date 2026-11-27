@@ -6,7 +6,7 @@
         Tous vos arrêts : ramassages, livraisons et retours. L'ordre est calculé à vol d'oiseau depuis votre position : colis express
         d'abord, puis le plus court chemin. Un colis est toujours ramassé avant d'être livré. Changez l'ordre avec les flèches.
       </p>
-      <button type="button" class="m-btn-primary" :disabled="busy" @click="optimize">{{ busy ? 'Calcul…' : '🧭 Organiser depuis ma position' }}</button>
+      <button type="button" class="m-btn-primary" :disabled="busy" @click="optimize"><Icone v-if="!busy" nom="organiser" />{{ busy ? 'Calcul…' : 'Organiser depuis ma position' }}</button>
       <p v-if="route?.unplaced && route.stops.length > route.unplaced" class="rounded-xl bg-amber-50 p-3 text-sm text-amber-900">
         {{ route.unplaced }} nouvel{{ route.unplaced > 1 ? 's' : '' }} arrêt{{ route.unplaced > 1 ? 's' : '' }} pas encore placé{{ route.unplaced > 1 ? 's' : '' }} : réorganisez pour l'inclure.
       </p>
@@ -15,7 +15,7 @@
 
     <p v-if="loading" class="py-8 text-center text-slate-400">Chargement…</p>
     <p v-else-if="error" class="py-8 text-center text-red-600">{{ error }}</p>
-    <p v-else-if="!route?.stops.length" class="m-card p-4 text-center text-slate-500">Aucun arrêt pour le moment.</p>
+    <p v-else-if="!route?.stops.length" class="m-card p-4 text-center text-slate-600">Aucun arrêt pour le moment.</p>
 
     <template v-else>
       <div ref="mapEl" class="h-64 overflow-hidden rounded-2xl ring-1 ring-slate-200" />
@@ -23,7 +23,7 @@
       <!-- Trajet dans Google Maps, par morceaux (nombre d'arrêts limité par trajet) -->
       <div class="flex flex-wrap gap-2">
         <a v-for="(link, i) in mapsLinks" :key="i" :href="link.url" target="_blank" rel="noopener" class="m-btn-secondary w-auto flex-1 px-3 text-center text-sm">
-          🗺️ {{ mapsLinks.length > 1 ? `Arrêts ${link.from} à ${link.to}` : 'Ouvrir le trajet dans Google Maps' }}
+          <Icone nom="trajet" />{{ mapsLinks.length > 1 ? `Arrêts ${link.from} à ${link.to}` : 'Ouvrir le trajet dans Google Maps' }}
         </a>
       </div>
 
@@ -32,19 +32,19 @@
           <span :class="['grid h-8 w-8 shrink-0 place-items-center rounded-full text-sm font-bold text-white', s.is_express ? 'bg-red-600' : 'bg-[var(--app-color)]']">{{ i + 1 }}</span>
           <RouterLink :to="`/livreur/missions/${s.assignment_ids[0]}`" class="min-w-0 flex-1">
             <span class="block font-semibold">{{ [...new Set(s.orders.map((o) => o.recipient))].join(', ') }}</span>
-            <span class="block text-sm font-medium text-slate-800">{{ tasks(s) }}</span>
-            <span class="block text-sm text-slate-600">📍 {{ s.zone }}<template v-if="s.address"> · {{ s.address }}</template></span>
+            <span class="block text-sm font-medium text-slate-800"><template v-for="(t, k) in tasks(s)" :key="t.icon"><template v-if="k"> · </template><Icone :nom="t.icon" taille="petite" class="inline" /> {{ t.text }}</template></span>
+            <span class="block text-sm text-slate-600"><Icone nom="adresse" taille="petite" class="inline" /> {{ s.zone }}<template v-if="s.address"> · {{ s.address }}</template></span>
             <span class="mt-1 flex flex-wrap gap-1.5 text-xs">
-              <span v-if="s.is_express" class="rounded-full bg-red-100 px-2 py-0.5 font-semibold text-red-700">⚡ Express</span>
+              <span v-if="s.is_express" class="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 font-semibold text-red-700"><Icone nom="rapide" taille="petite" />Express</span>
               <span v-if="s.precision === 'zone'" class="rounded-full bg-amber-100 px-2 py-0.5 text-amber-800">Position approximative (quartier)</span>
               <span v-if="s.precision === 'unknown'" class="rounded-full bg-slate-100 px-2 py-0.5 text-slate-600">Position inconnue</span>
               <span v-if="!s.placed" class="rounded-full bg-sky-100 px-2 py-0.5 text-sky-800">Nouvelle</span>
-              <span v-if="s.leg_meters !== null" class="text-slate-500">{{ meters(s.leg_meters) }}</span>
+              <span v-if="s.leg_meters !== null" class="text-slate-600">{{ meters(s.leg_meters) }}</span>
             </span>
           </RouterLink>
           <span class="flex flex-col">
-            <button type="button" class="px-2 py-1 text-lg text-slate-500 disabled:opacity-30" :disabled="busy || i === 0" :aria-label="`Monter l'arrêt ${i + 1}`" @click="move(i, -1)">↑</button>
-            <button type="button" class="px-2 py-1 text-lg text-slate-500 disabled:opacity-30" :disabled="busy || i === route.stops.length - 1" :aria-label="`Descendre l'arrêt ${i + 1}`" @click="move(i, 1)">↓</button>
+            <button type="button" class="px-2 py-1 text-lg text-slate-600 disabled:opacity-30" :disabled="busy || i === 0" :aria-label="`Monter l'arrêt ${i + 1}`" @click="move(i, -1)">↑</button>
+            <button type="button" class="px-2 py-1 text-lg text-slate-600 disabled:opacity-30" :disabled="busy || i === route.stops.length - 1" :aria-label="`Descendre l'arrêt ${i + 1}`" @click="move(i, 1)">↓</button>
           </span>
         </li>
       </ol>
@@ -53,6 +53,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -63,13 +64,13 @@ import { meters } from '../../utils/shifts'
 
 const toasts = useToastStore()
 
-// Ce qu'il y a à faire à cet arrêt : « 📦 Ramasser 2 colis · 🛵 Livrer »
-const TASKS = { pickup: ['📦', 'Ramasser'], delivery: ['🛵', 'Livrer'], return: ['↩️', 'Rendre'] }
+// Ce qu'il y a à faire à cet arrêt : « Ramasser 2 colis · Livrer », chacun avec son icône
+const TASKS = { pickup: ['ramasser', 'Ramasser'], delivery: ['livrer', 'Livrer'], return: ['retourner', 'Rendre'] }
 function tasks(stop) {
   return Object.entries(TASKS).map(([type, [icon, verb]]) => {
     const n = stop.orders.filter((o) => o.type === type).length
-    return n ? `${icon} ${verb}${n > 1 ? ` ${n} colis` : ''}` : null
-  }).filter(Boolean).join(' · ')
+    return n ? { icon, text: `${verb}${n > 1 ? ` ${n} colis` : ''}` } : null
+  }).filter(Boolean)
 }
 const route = ref(null)
 const loading = ref(true)

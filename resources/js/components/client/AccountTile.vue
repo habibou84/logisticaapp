@@ -9,7 +9,7 @@
     <span v-else :class="['grid h-9 w-9 place-items-center rounded-lg', TONES[tone]]" aria-hidden="true"><StatusIcon :name="icon" class="h-5 w-5" /></span>
     <span class="mt-2 block truncate text-sm text-slate-600">{{ label }}</span>
     <span class="block truncate text-lg font-bold leading-snug">{{ value }}</span>
-    <span v-if="sub" :class="['block truncate text-xs', subClass || 'text-slate-500']">{{ sub }}</span>
+    <span v-if="sub" :class="['block truncate text-xs', subClass || 'text-slate-600']">{{ sub }}</span>
     <span v-if="percent !== null" class="mt-2 block h-1.5 overflow-hidden rounded-full bg-slate-100" role="progressbar" :aria-valuenow="Math.min(100, percent)" aria-valuemin="0" aria-valuemax="100">
       <span class="block h-full rounded-full" :class="percent >= 100 ? 'bg-red-500' : percent >= 80 ? 'bg-amber-500' : 'bg-[var(--app-color)]'" :style="{ width: `${Math.min(100, percent)}%` }" />
     </span>

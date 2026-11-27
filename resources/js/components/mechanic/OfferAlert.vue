@@ -1,14 +1,14 @@
 <template>
   <!-- Panne proposée : plein écran, sonnerie, réponse en un geste -->
   <div class="fixed inset-0 z-50 flex flex-col bg-gradient-to-b from-red-700 to-red-900 px-5 pb-6 text-white" :style="{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))', paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }" role="alertdialog" aria-labelledby="offer-title">
-    <div class="mx-auto mt-6 mb-4 grid h-20 w-20 place-items-center rounded-full bg-white/15 text-4xl ring-[10px] ring-white/10" aria-hidden="true">{{ repair.icon || '🛠️' }}</div>
+    <div class="mx-auto mt-6 mb-4 grid h-20 w-20 place-items-center rounded-full bg-white/15 text-4xl ring-[10px] ring-white/10" aria-hidden="true"><Icone :nom="repair.icon || 'atelier'" taille="grande" /></div>
     <p class="text-center text-xs font-semibold uppercase tracking-widest text-white/80">Nouvelle panne · {{ repair.severity_label }}</p>
     <h2 id="offer-title" class="mt-1 text-center text-3xl font-extrabold leading-tight">{{ repair.title }}</h2>
 
     <div class="mt-5 space-y-1.5 rounded-2xl bg-white/10 p-4 text-[15px]">
-      <p v-if="repair.courier">👤 {{ repair.courier.name }}</p>
-      <p v-if="repair.vehicle">🛵 {{ [repair.vehicle.plate, repair.vehicle.name].filter(Boolean).join(' · ') }}</p>
-      <p v-if="repair.distance_km !== null">📍 à {{ repair.distance_km }} km</p>
+      <p v-if="repair.courier"><Icone nom="livreur" taille="petite" class="inline" /> {{ repair.courier.name }}</p>
+      <p v-if="repair.vehicle"><Icone nom="moto" taille="petite" class="inline" /> {{ [repair.vehicle.plate, repair.vehicle.name].filter(Boolean).join(' · ') }}</p>
+      <p v-if="repair.distance_km !== null"><Icone nom="adresse" taille="petite" class="inline" /> à {{ repair.distance_km }} km</p>
       <p v-if="repair.note">« {{ repair.note }} »</p>
     </div>
 
@@ -21,6 +21,7 @@
 </template>
 
 <script setup>
+import Icone from '../ui/Icone.vue'
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'

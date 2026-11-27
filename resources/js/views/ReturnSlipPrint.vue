@@ -1,9 +1,9 @@
 <template>
   <div v-if="slip" class="slip-page p-4 max-w-3xl mx-auto">
     <div class="no-print mb-4 flex flex-wrap gap-2 items-center">
-      <button class="btn-primary" @click="print">🖨️ Imprimer</button>
+      <button class="btn-primary" @click="print"><Icone nom="imprimer" />Imprimer</button>
       <button class="btn-secondary" @click="$router.back()">← Retour</button>
-      <span class="text-sm text-gray-500">Format A4 · à faire signer par le client à la remise</span>
+      <span class="text-sm text-slate-600">Format A4 · à faire signer par le client à la remise</span>
     </div>
 
     <div class="bg-white text-black border border-black p-6 space-y-4">
@@ -73,7 +73,7 @@
         </div>
       </section>
       <img v-if="photo" :src="photo" alt="Photo de la remise" class="no-print max-h-64 rounded border">
-      <button v-if="slip.photo_original_url" type="button" class="no-print text-sm text-gray-600 underline" @click="openOriginal">Voir l'original de la photo</button>
+      <button v-if="slip.photo_original_url" type="button" class="no-print text-sm text-slate-600 underline" @click="openOriginal">Voir l'original de la photo</button>
     </div>
   </div>
   <p v-else-if="error" class="p-4 text-red-600">{{ error }}</p>
@@ -81,6 +81,7 @@
 </template>
 
 <script setup>
+import Icone from '../components/ui/Icone.vue'
 import { printPage } from '../native/print'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'

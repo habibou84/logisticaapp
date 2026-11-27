@@ -4,29 +4,29 @@
     <div class="flex flex-wrap items-end justify-between gap-3">
       <div>
         <h1 class="text-xl font-bold">Atelier</h1>
-        <p class="text-sm text-gray-600">Pannes des livreurs confiées automatiquement au mécanicien en service le plus proche. Attribuez à la main celles qui restent sans mécanicien.</p>
+        <p class="text-sm text-slate-600">Pannes des livreurs confiées automatiquement au mécanicien en service le plus proche. Attribuez à la main celles qui restent sans mécanicien.</p>
       </div>
       <button v-if="auth.can('repairs.manage')" type="button" class="btn-primary" @click="createOpen = true">+ Nouvelle intervention</button>
     </div>
 
     <!-- Indicateurs du jour -->
     <div v-if="auth.can('repairs.manage') && counts" class="grid grid-cols-2 gap-3 md:grid-cols-5">
-      <div class="card p-3"><p class="text-xs text-gray-500">Pannes du jour</p><p class="text-2xl font-bold tabular-nums">{{ counts.today }}</p></div>
-      <div :class="['card p-3', counts.searching ? 'ring-2 ring-red-300' : '']"><p class="text-xs text-gray-500">Sans mécanicien</p><p :class="['text-2xl font-bold tabular-nums', counts.searching ? 'text-red-700' : '']">{{ counts.searching }}</p></div>
-      <div class="card p-3"><p class="text-xs text-gray-500">Temps de réponse moyen</p><p class="text-2xl font-bold tabular-nums">{{ minutes(averages.response) }}</p></div>
-      <div class="card p-3"><p class="text-xs text-gray-500">Temps d'arrivée moyen</p><p class="text-2xl font-bold tabular-nums">{{ minutes(averages.arrival) }}</p></div>
-      <div class="card p-3"><p class="text-xs text-gray-500">Immobilisation moyenne</p><p class="text-2xl font-bold tabular-nums">{{ minutes(averages.downtime) }}</p></div>
+      <div class="card p-3"><p class="text-xs text-slate-600">Pannes du jour</p><p class="text-2xl font-bold tabular-nums">{{ counts.today }}</p></div>
+      <div :class="['card p-3', counts.searching ? 'ring-2 ring-red-300' : '']"><p class="text-xs text-slate-600">Sans mécanicien</p><p :class="['text-2xl font-bold tabular-nums', counts.searching ? 'text-red-700' : '']">{{ counts.searching }}</p></div>
+      <div class="card p-3"><p class="text-xs text-slate-600">Temps de réponse moyen</p><p class="text-2xl font-bold tabular-nums">{{ minutes(averages.response) }}</p></div>
+      <div class="card p-3"><p class="text-xs text-slate-600">Temps d'arrivée moyen</p><p class="text-2xl font-bold tabular-nums">{{ minutes(averages.arrival) }}</p></div>
+      <div class="card p-3"><p class="text-xs text-slate-600">Immobilisation moyenne</p><p class="text-2xl font-bold tabular-nums">{{ minutes(averages.downtime) }}</p></div>
     </div>
 
     <!-- Achats sur place à accorder (administrateur) -->
     <section v-if="auth.can('repairs.purchases') && purchases.length" class="card space-y-3 p-4 ring-2 ring-orange-200">
-      <h2 class="font-semibold">🛒 Achats sur place à accorder · {{ purchases.length }}</h2>
+      <h2 class="flex items-center gap-1.5 font-semibold"><Icone nom="achat" taille="petite" /> Achats sur place à accorder · {{ purchases.length }}</h2>
       <div v-for="p in purchases" :key="p.id" class="flex flex-wrap items-center gap-3 border-t border-slate-100 pt-3 text-sm">
         <div class="min-w-0 flex-1">
           <p class="font-medium">{{ p.quantity }} × {{ p.label }} · environ {{ money(p.estimated_amount) }}</p>
-          <p class="text-gray-600">{{ p.mechanic }} · {{ p.repair_title }}{{ p.vehicle ? ` · ${p.vehicle}` : '' }}{{ p.courier ? ` · ${p.courier}` : '' }}{{ p.reason ? ` · « ${p.reason} »` : '' }}</p>
+          <p class="text-slate-600">{{ p.mechanic }} · {{ p.repair_title }}{{ p.vehicle ? ` · ${p.vehicle}` : '' }}{{ p.courier ? ` · ${p.courier}` : '' }}{{ p.reason ? ` · « ${p.reason} »` : '' }}</p>
         </div>
-        <label class="flex items-center gap-1 text-gray-600" :for="`max-${p.id}`">Jusqu'à
+        <label class="flex items-center gap-1 text-slate-600" :for="`max-${p.id}`">Jusqu'à
           <input :id="`max-${p.id}`" v-model.number="maxAmounts[p.id]" type="number" min="1" class="input w-28" :placeholder="String(p.estimated_amount)"> F
         </label>
         <button type="button" class="btn bg-emerald-600 text-white hover:bg-emerald-500" :disabled="busy" @click="decide(p, true)">Accorder</button>
@@ -44,13 +44,13 @@
 
       <div class="card overflow-x-auto">
         <table class="w-full min-w-[56rem] text-left text-sm">
-          <thead class="text-xs uppercase text-gray-500">
+          <thead class="text-xs uppercase text-slate-600">
             <tr><th class="p-3">N°</th><th class="p-3">Panne</th><th class="p-3">Véhicule · livreur</th><th class="p-3">Mécanicien</th><th class="p-3">Étape</th><th class="p-3">Reçue</th><th class="p-3">Arrivée</th><th class="p-3">Coût</th></tr>
           </thead>
           <tbody>
             <tr v-for="r in repairs" :key="r.id" class="cursor-pointer border-t border-slate-100 hover:bg-slate-50" @click="open(r.id)">
               <td class="p-3 font-mono">{{ r.number }}</td>
-              <td class="p-3"><span class="mr-1">{{ r.icon }}</span>{{ r.category_label ? `${r.category_label}${r.part ? ' · ' + r.part : ''}` : r.title }}</td>
+              <td class="p-3"><Icone v-if="r.icon" :nom="r.icon" taille="petite" class="mr-1 inline" />{{ r.category_label ? `${r.category_label}${r.part ? ' · ' + r.part : ''}` : r.title }}</td>
               <td class="p-3">{{ [r.vehicle?.plate, r.courier?.name].filter(Boolean).join(' · ') || '—' }}</td>
               <td class="p-3">
                 <span v-if="r.mechanic">{{ r.mechanic.name }}</span>
@@ -61,13 +61,13 @@
               <td class="p-3 font-mono text-xs">{{ r.arrived_at ? clock(r.arrived_at) : '—' }}</td>
               <td class="p-3 tabular-nums">{{ r.status === 'done' ? money(r.total) : '—' }}</td>
             </tr>
-            <tr v-if="!loading && !repairs.length"><td colspan="8" class="p-8 text-center text-gray-500">{{ tab === 'waiting' ? 'Aucune panne en attente de mécanicien. 👍' : 'Aucune intervention ici.' }}</td></tr>
+            <tr v-if="!loading && !repairs.length"><td colspan="8" class="p-8 text-center text-slate-600"><template v-if="tab === 'waiting'">Aucune panne en attente de mécanicien. <Icone nom="pouce" taille="petite" class="inline" /></template><template v-else>Aucune intervention ici.</template></td></tr>
           </tbody>
         </table>
       </div>
       <div v-if="meta.last_page > 1" class="flex justify-center gap-2">
         <button type="button" class="btn-secondary" :disabled="page <= 1" @click="page--">Précédentes</button>
-        <span class="self-center text-sm text-gray-600">Page {{ page }} sur {{ meta.last_page }}</span>
+        <span class="self-center text-sm text-slate-600">Page {{ page }} sur {{ meta.last_page }}</span>
         <button type="button" class="btn-secondary" :disabled="page >= meta.last_page" @click="page++">Suivantes</button>
       </div>
     </template>
@@ -84,14 +84,14 @@
         <p v-if="current.note" class="rounded bg-slate-50 p-2">« {{ current.note }} »</p>
 
         <table class="w-full">
-          <tr v-for="s in timeline" :key="s.label" class="border-t border-slate-100"><td class="py-1.5 text-gray-600">{{ s.label }}</td><td class="py-1.5 text-right font-mono">{{ s.at ? dateTime(s.at) : '—' }}</td></tr>
+          <tr v-for="s in timeline" :key="s.label" class="border-t border-slate-100"><td class="py-1.5 text-slate-600">{{ s.label }}</td><td class="py-1.5 text-right font-mono">{{ s.at ? dateTime(s.at) : '—' }}</td></tr>
         </table>
-        <p v-if="current.arrival_lat !== null"><a :href="mapsLink(current.arrival_lat, current.arrival_lng)" target="_blank" rel="noopener" class="text-blue-700">📍 Position à l'arrivée</a></p>
+        <p v-if="current.arrival_lat !== null"><a :href="mapsLink(current.arrival_lat, current.arrival_lng)" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-blue-700"><Icone nom="adresse" taille="petite" /> Position à l'arrivée</a></p>
 
         <div v-if="current.category" class="space-y-1">
           <p class="font-semibold">Diagnostic</p>
           <p>{{ current.category_label }}{{ current.part ? ` · ${current.part}` : '' }} · {{ current.decision_label }}</p>
-          <p v-if="current.diagnosis" class="text-gray-600">{{ current.diagnosis }}</p>
+          <p v-if="current.diagnosis" class="text-slate-600">{{ current.diagnosis }}</p>
         </div>
         <div v-if="current.status === 'done'" class="space-y-1">
           <p class="font-semibold">Clôture · cause : {{ current.cause_label }}</p>
@@ -102,7 +102,7 @@
           <p :class="current.courier_can_resume ? 'text-emerald-700' : 'text-amber-700'">{{ current.courier_can_resume ? 'Le livreur a pu repartir.' : 'Le livreur n\'est pas reparti : à organiser.' }}</p>
         </div>
         <div v-if="photos.length" class="flex flex-wrap gap-2">
-          <figure v-for="p in photos" :key="p.id" class="text-center text-xs text-gray-500">
+          <figure v-for="p in photos" :key="p.id" class="text-center text-xs text-slate-600">
             <img :src="p.src" :alt="`Photo ${p.kind === 'before' ? 'avant' : 'après'}`" class="h-24 w-24 rounded object-cover">
             <figcaption>{{ p.kind === 'before' ? 'avant' : 'après' }}</figcaption>
           </figure>
@@ -121,7 +121,7 @@
             </select>
             <button type="button" class="btn-primary shrink-0" :disabled="busy || !assignTo" @click="assign">Confier</button>
           </div>
-          <p v-if="!mechanics.length" class="text-gray-500">Aucun mécanicien : créez un compte « Mécanicien » dans Utilisateurs.</p>
+          <p v-if="!mechanics.length" class="text-slate-600">Aucun mécanicien : créez un compte « Mécanicien » dans Utilisateurs.</p>
         </div>
         <button v-if="['searching', 'offered', 'accepted', 'en_route'].includes(current.status)" type="button" class="btn-secondary text-red-700" :disabled="busy" @click="cancel">Annuler l'intervention</button>
       </div>
@@ -130,7 +130,7 @@
     <!-- Nouvelle intervention -->
     <Modal :open="createOpen" title="Nouvelle intervention" @close="createOpen = false">
       <form class="space-y-3" @submit.prevent="create">
-        <p class="text-sm text-gray-600">Problème vu au dépôt ou au contrôle de départ : elle est proposée au mécanicien en service le plus proche, ou à celui que vous choisissez.</p>
+        <p class="text-sm text-slate-600">Problème vu au dépôt ou au contrôle de départ : elle est proposée au mécanicien en service le plus proche, ou à celui que vous choisissez.</p>
         <div><label class="label" for="new-title">Panne</label><input id="new-title" v-model="draft.title" class="input" maxlength="160" required placeholder="Ex. : frein avant mou"></div>
         <div v-if="vehicles.length">
           <label class="label" for="new-vehicle">Véhicule</label>
@@ -152,6 +152,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import PageTabs from '../../components/PageTabs.vue'
 import { FLEET_TABS } from '../../utils/pageTabs'
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'

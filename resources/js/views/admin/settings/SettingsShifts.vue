@@ -1,5 +1,5 @@
 <template>
-  <SettingsPage icon="✋" title="Pointage des livreurs" intro="Chaque livreur pointe son arrivée sur son lieu de début, et seulement sur place. Le pointage le met en service. En MAD : chez le client, ou à la première étape de son parcours (fiche du contrat). Distribution et e-commerce : à l'agence.">
+  <SettingsPage icon="main" title="Pointage des livreurs" intro="Chaque livreur pointe son arrivée sur son lieu de début, et seulement sur place. Le pointage le met en service. En MAD : chez le client, ou à la première étape de son parcours (fiche du contrat). Distribution et e-commerce : à l'agence.">
     <template v-if="form?.shift_settings">
       <div class="grid gap-4 lg:grid-cols-2">
         <section class="card p-4 space-y-3">
@@ -15,7 +15,7 @@
           </label>
           <div>
             <p class="label">Position sur la carte</p>
-            <LocationPicker v-model="point" allow-link height="h-56" gps-label="📍 Je suis à l'agence : utiliser ma position" />
+            <LocationPicker v-model="point" allow-link height="h-56" gps-label="Je suis à l'agence : utiliser ma position" />
             <p v-if="!point" class="mt-1 text-xs text-amber-700">Sans position, les livreurs ne peuvent pas pointer à l'agence.</p>
           </div>
           <div class="flex flex-wrap items-end gap-4">
@@ -35,15 +35,15 @@
           <h2 class="font-semibold">Règles</h2>
           <p class="text-sm">Distance autorisée autour du lieu : <Num v-model="s.radius" :min="10" :max="2000" label="Distance (m)" /> m</p>
           <p class="text-sm">Précision GPS demandée : ± <Num v-model="s.min_accuracy" :min="5" :max="500" label="Précision (m)" /> m</p>
-          <p class="text-xs text-gray-500">
+          <p class="text-xs text-slate-600">
             Le téléphone se trompe souvent de quelques dizaines de mètres : le livreur est accepté si sa distance au lieu,
             moins l'imprécision de son GPS, reste dans la distance autorisée. Une position moins précise est refusée
             (« sortez à découvert et attendez quelques secondes »).
           </p>
           <p class="text-sm">Pointage possible <Num v-model="s.early_minutes" :min="0" :max="600" label="Minutes avant" /> min avant l'heure prévue</p>
           <p class="text-sm">Retard noté au-delà de <Num v-model="s.late_tolerance" :min="0" :max="240" label="Tolérance (min)" /> min</p>
-          <p class="text-sm">Dispatch prévenu si pas de pointage <Num v-model="s.alert_minutes" :min="0" :max="600" label="Alerte (min)" /> min après l'heure <span class="text-gray-500">(0 : jamais)</span></p>
-          <p class="text-xs text-gray-500">Un responsable peut toujours pointer un livreur à la main, avec un motif (Activité des livreurs › Pointages).</p>
+          <p class="text-sm">Dispatch prévenu si pas de pointage <Num v-model="s.alert_minutes" :min="0" :max="600" label="Alerte (min)" /> min après l'heure <span class="text-slate-600">(0 : jamais)</span></p>
+          <p class="text-xs text-slate-600">Un responsable peut toujours pointer un livreur à la main, avec un motif (Activité des livreurs › Pointages).</p>
         </section>
       </div>
       <SaveBar :dirty="dirty" :saving="saving" :error="error" @save="save" @reset="reset" />

@@ -41,7 +41,7 @@
 
       <div class="card overflow-x-auto">
         <table class="w-full text-sm">
-          <thead class="bg-slate-50 text-left text-gray-600">
+          <thead class="bg-slate-50 text-left text-slate-600">
             <tr>
               <th class="p-2">Produit</th><th class="p-2">Client</th>
               <th v-for="h in hubs" :key="h.id" class="p-2 text-right">{{ h.name }}</th>
@@ -53,7 +53,7 @@
             <tr v-for="p in products" :key="p.id" :class="p.is_low ? 'bg-amber-50' : ''">
               <td class="p-2">
                 <p class="font-medium">{{ p.name }}</p>
-                <p class="text-xs text-gray-500">{{ p.sku || 'sans référence' }} · {{ money(p.price) }}<span v-if="p.low_stock_threshold !== null"> · seuil {{ p.low_stock_threshold }}</span></p>
+                <p class="text-xs text-slate-600">{{ p.sku || 'sans référence' }} · {{ money(p.price) }}<span v-if="p.low_stock_threshold !== null"> · seuil {{ p.low_stock_threshold }}</span></p>
               </td>
               <td class="p-2">{{ p.merchant?.business_name }}</td>
               <td v-for="h in hubs" :key="h.id" class="p-2 text-right whitespace-nowrap">
@@ -62,8 +62,8 @@
                 </template>
                 <span v-else class="text-gray-300">—</span>
               </td>
-              <td class="p-2 text-right text-gray-600">{{ level(p, null)?.on_hand ?? '—' }}</td>
-              <td :class="['p-2 text-right font-semibold', p.is_low ? 'text-amber-700' : '']">{{ p.available }}<span v-if="p.is_low"> ⚠️</span></td>
+              <td class="p-2 text-right text-slate-600">{{ level(p, null)?.on_hand ?? '—' }}</td>
+              <td :class="['p-2 text-right font-semibold', p.is_low ? 'text-amber-700' : '']">{{ p.available }}<Icone v-if="p.is_low" nom="alerte" taille="petite" class="ml-1 inline" /></td>
               <td class="p-2 text-right whitespace-nowrap space-x-1">
                 <button class="btn-success px-2 py-1 text-xs" :disabled="!hubs.length" @click="openMove(p, 'receipt')">Entrée</button>
                 <button class="btn-secondary px-2 py-1 text-xs" :disabled="!hubs.length" @click="openMove(p, 'withdrawal')">Retrait</button>
@@ -71,7 +71,7 @@
                 <button class="btn-secondary px-2 py-1 text-xs" @click="openProduct(p)">Modifier</button>
               </td>
             </tr>
-            <tr v-if="!products.length"><td :colspan="5 + hubs.length" class="p-6 text-center text-gray-500">Aucun produit.</td></tr>
+            <tr v-if="!products.length"><td :colspan="5 + hubs.length" class="p-6 text-center text-slate-600">Aucun produit.</td></tr>
           </tbody>
         </table>
       </div>
@@ -105,26 +105,26 @@
       </div>
       <div class="card overflow-x-auto">
         <table class="w-full text-sm">
-          <thead class="bg-slate-50 text-left text-gray-600">
+          <thead class="bg-slate-50 text-left text-slate-600">
             <tr><th class="p-2">Date</th><th class="p-2">Produit</th><th class="p-2">Emplacement</th><th class="p-2">Mouvement</th><th class="p-2 text-right">Quantité</th><th class="p-2 text-right">Stock après</th><th class="p-2">Course / note</th><th class="p-2">Par</th></tr>
           </thead>
           <tbody class="divide-y">
             <tr v-for="m in movements" :key="m.id">
               <td class="p-2 whitespace-nowrap text-xs">{{ dateTime(m.created_at) }}</td>
-              <td class="p-2">{{ m.product?.name }}<div class="text-xs text-gray-500">{{ m.product?.merchant_name }}</div></td>
+              <td class="p-2">{{ m.product?.name }}<div class="text-xs text-slate-600">{{ m.product?.merchant_name }}</div></td>
               <td class="p-2">{{ m.location?.label }}</td>
               <td class="p-2">{{ m.type_label }}</td>
-              <td :class="['p-2 text-right font-semibold', m.on_hand_change > 0 ? 'text-emerald-700' : m.on_hand_change < 0 ? 'text-rose-700' : 'text-gray-500']">
+              <td :class="['p-2 text-right font-semibold', m.on_hand_change > 0 ? 'text-emerald-700' : m.on_hand_change < 0 ? 'text-rose-700' : 'text-slate-600']">
                 {{ movementQuantity(m) }}
               </td>
               <td class="p-2 text-right">{{ m.on_hand_after }}</td>
               <td class="p-2">
                 <RouterLink v-if="m.order" :to="`/admin/courses/${m.order.id}`" class="text-blue-600 font-mono text-xs">{{ m.order.tracking_code }}</RouterLink>
-                <span class="text-gray-600"> {{ m.note }}</span>
+                <span class="text-slate-600"> {{ m.note }}</span>
               </td>
               <td class="p-2 text-xs">{{ m.user_name || 'Système' }}</td>
             </tr>
-            <tr v-if="!movements.length"><td colspan="8" class="p-6 text-center text-gray-500">Aucun mouvement.</td></tr>
+            <tr v-if="!movements.length"><td colspan="8" class="p-6 text-center text-slate-600">Aucun mouvement.</td></tr>
           </tbody>
         </table>
       </div>
@@ -133,18 +133,18 @@
 
     <!-- Commandes à préparer -->
     <template v-if="tab === 'prepare'">
-      <div v-if="!toPrepare.length" class="card p-6 text-center text-gray-500">Aucune commande à préparer.</div>
+      <div v-if="!toPrepare.length" class="card p-6 text-center text-slate-600">Aucune commande à préparer.</div>
       <div class="grid md:grid-cols-2 gap-3">
         <div v-for="o in toPrepare" :key="o.id" class="card p-4 space-y-2 text-sm">
           <div class="flex justify-between gap-2">
             <RouterLink :to="`/admin/courses/${o.id}`" class="font-mono font-semibold text-blue-700">{{ o.tracking_code }}</RouterLink>
-            <span class="text-gray-500">{{ o.pickup.hub_name }}</span>
+            <span class="text-slate-600">{{ o.pickup.hub_name }}</span>
           </div>
           <p>{{ o.merchant?.business_name }} → {{ o.delivery.zone_name }} · {{ o.recipient.name || o.recipient.phone }}</p>
           <ul class="rounded bg-slate-50 p-2 space-y-0.5">
             <li v-for="item in o.items" :key="item.id"><strong>{{ item.quantity }} ×</strong> {{ item.label }}</li>
           </ul>
-          <button class="btn-success w-full" @click="prepare(o)">📦 Commande préparée</button>
+          <button class="btn-success w-full" @click="prepare(o)"><Icone nom="course" /> Commande préparée</button>
         </div>
       </div>
     </template>
@@ -153,19 +153,19 @@
     <template v-if="tab === 'hubs'">
       <div class="card overflow-x-auto">
         <table class="w-full text-sm">
-          <thead class="bg-slate-50 text-left text-gray-600">
+          <thead class="bg-slate-50 text-left text-slate-600">
             <tr><th class="p-2">Entrepôt</th><th class="p-2">Zone</th><th class="p-2">Adresse</th><th class="p-2">Téléphone</th><th class="p-2">État</th><th /></tr>
           </thead>
           <tbody class="divide-y">
             <tr v-for="h in allHubs" :key="h.id">
               <td class="p-2 font-medium">{{ h.name }}</td>
               <td class="p-2">{{ h.zone_name }}</td>
-              <td class="p-2">{{ h.address || '—' }}<div v-if="h.landmark" class="text-xs text-gray-500">{{ h.landmark }}</div></td>
+              <td class="p-2">{{ h.address || '—' }}<div v-if="h.landmark" class="text-xs text-slate-600">{{ h.landmark }}</div></td>
               <td class="p-2">{{ h.phone || '—' }}</td>
               <td class="p-2">{{ h.is_active ? 'Actif' : 'Fermé' }}</td>
               <td class="p-2 text-right"><button v-if="canSettings" class="btn-secondary px-2 py-1 text-xs" @click="openHub(h)">Modifier</button></td>
             </tr>
-            <tr v-if="!allHubs.length"><td colspan="6" class="p-6 text-center text-gray-500">Aucun entrepôt.</td></tr>
+            <tr v-if="!allHubs.length"><td colspan="6" class="p-6 text-center text-slate-600">Aucun entrepôt.</td></tr>
           </tbody>
         </table>
       </div>
@@ -173,27 +173,27 @@
 
     <!-- Contrats de stockage -->
     <template v-if="tab === 'contracts'">
-      <p class="text-sm text-gray-600">
+      <p class="text-sm text-slate-600">
         Le stockage est facturé le 1er de chaque mois pour le mois écoulé (écriture « Frais de stockage » déduite du prochain reversement).
       </p>
       <div class="card overflow-x-auto">
         <table class="w-full text-sm">
-          <thead class="bg-slate-50 text-left text-gray-600">
+          <thead class="bg-slate-50 text-left text-slate-600">
             <tr><th class="p-2">Client</th><th class="p-2">Entrepôt</th><th class="p-2">Tarif</th><th class="p-2">Période</th><th class="p-2">Dernières facturations</th><th /></tr>
           </thead>
           <tbody class="divide-y">
-            <tr v-for="c in contracts" :key="c.id" :class="c.is_active ? '' : 'text-gray-400'">
+            <tr v-for="c in contracts" :key="c.id" :class="c.is_active ? '' : 'text-slate-500'">
               <td class="p-2 font-medium">{{ c.merchant?.business_name }}</td>
               <td class="p-2">{{ c.hub_name || 'Tous' }}</td>
               <td class="p-2">{{ c.description }}</td>
               <td class="p-2 whitespace-nowrap">du {{ date(c.starts_on) }}<span v-if="c.ends_on"> au {{ date(c.ends_on) }}</span></td>
               <td class="p-2 text-xs">
                 <span v-for="ch in c.charges" :key="ch.id" class="mr-2 whitespace-nowrap">{{ monthLabel(ch.period) }} : {{ money(ch.amount) }}</span>
-                <span v-if="!c.charges?.length" class="text-gray-400">—</span>
+                <span v-if="!c.charges?.length" class="text-slate-500">—</span>
               </td>
               <td class="p-2 text-right"><button v-if="canContracts" class="btn-secondary px-2 py-1 text-xs" @click="openContract(c)">Modifier</button></td>
             </tr>
-            <tr v-if="!contracts.length"><td colspan="6" class="p-6 text-center text-gray-500">Aucun contrat : le stockage est gratuit.</td></tr>
+            <tr v-if="!contracts.length"><td colspan="6" class="p-6 text-center text-slate-600">Aucun contrat : le stockage est gratuit.</td></tr>
           </tbody>
         </table>
       </div>
@@ -211,7 +211,7 @@
         <div>
           <label class="label" for="mv-qty">{{ move.action === 'count' ? 'Quantité comptée' : 'Quantité' }}</label>
           <input id="mv-qty" v-model.number="move.quantity" type="number" :min="move.action === 'count' ? 0 : 1" class="input" required>
-          <p v-if="move.action === 'count' && level(move.product, move.hub_id)" class="text-xs text-gray-500 mt-1">
+          <p v-if="move.action === 'count' && level(move.product, move.hub_id)" class="text-xs text-slate-600 mt-1">
             Stock théorique : {{ level(move.product, move.hub_id).on_hand }} (dont {{ level(move.product, move.hub_id).reserved }} réservé(s))
           </p>
         </div>
@@ -257,7 +257,7 @@
           <select id="h-zone" v-model="hub.form.zone_id" class="input" required>
             <option v-for="z in zones" :key="z.id" :value="z.id">{{ z.full_name }}</option>
           </select>
-          <p class="text-xs text-gray-500 mt-1">Point de départ des livraisons : sert au calcul du tarif.</p>
+          <p class="text-xs text-slate-600 mt-1">Point de départ des livraisons : sert au calcul du tarif.</p>
         </div>
         <div><label class="label" for="h-address">Adresse</label><input id="h-address" v-model="hub.form.address" class="input"></div>
         <div><label class="label" for="h-landmark">Repère</label><input id="h-landmark" v-model="hub.form.landmark" class="input"></div>
@@ -313,6 +313,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import SearchSelect from '../../components/SearchSelect.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'

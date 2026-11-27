@@ -20,11 +20,11 @@
           <p v-if="errors.code" class="field-error">{{ errors.code }}</p>
         </div>
       </div>
-      <p class="-mt-2 text-xs text-gray-500">Le code est proposé à partir du nom ; il apparaît sur les étiquettes et les factures.</p>
+      <p class="-mt-2 text-xs text-slate-600">Le code est proposé à partir du nom ; il apparaît sur les étiquettes et les factures.</p>
 
       <!-- Responsable : un compte du client, ou un nom saisi -->
       <div>
-        <p class="label">Responsable <span class="font-normal text-gray-400">(facultatif)</span></p>
+        <p class="label">Responsable <span class="font-normal text-slate-500">(facultatif)</span></p>
         <div v-if="accounts.length && !typedManager" class="space-y-2">
           <button
             v-for="u in accounts.slice(0, showAllAccounts ? undefined : 4)" :key="u.id" type="button"
@@ -32,10 +32,10 @@
             :aria-pressed="managerId === u.id" @click="chooseManager(u)"
           >
             <span class="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-800">{{ initials(u.name) }}</span>
-            <span class="min-w-0 flex-1"><b class="block truncate text-sm">{{ u.name }}</b><span class="text-xs text-gray-500">{{ u.owner ? 'propriétaire du compte' : (u.role_label || 'compte de votre équipe') }}</span></span>
-            <span :class="['grid h-6 w-6 place-items-center rounded-lg border-2 text-sm', managerId === u.id ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-slate-300']">{{ managerId === u.id ? '✓' : '' }}</span>
+            <span class="min-w-0 flex-1"><b class="block truncate text-sm">{{ u.name }}</b><span class="text-xs text-slate-600">{{ u.owner ? 'propriétaire du compte' : (u.role_label || 'compte de votre équipe') }}</span></span>
+            <span :class="['grid h-6 w-6 place-items-center rounded-lg border-2 text-sm', managerId === u.id ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-slate-300']"><Icone v-if="managerId === u.id" nom="valider" taille="petite" /></span>
           </button>
-          <p class="text-xs text-gray-500">
+          <p class="text-xs text-slate-600">
             <button v-if="accounts.length > 4 && !showAllAccounts" type="button" class="font-semibold text-blue-600" @click="showAllAccounts = true">Voir les {{ accounts.length }} comptes</button>
             <template v-if="accounts.length > 4 && !showAllAccounts"> · </template>
             Pas dans la liste ? <button type="button" class="font-semibold text-blue-600" @click="typeManager">Saisir un nom</button>
@@ -48,7 +48,7 @@
       </div>
 
       <div>
-        <label class="label" for="d-phone">Téléphone du responsable <span class="font-normal text-gray-400">(facultatif)</span></label>
+        <label class="label" for="d-phone">Téléphone du responsable <span class="font-normal text-slate-500">(facultatif)</span></label>
         <input id="d-phone" v-model="form.phone" :class="['input rounded-xl py-2.5', errors.phone && '!border-red-400 !bg-red-50']" inputmode="tel" placeholder="ex. 07 00 00 00 00">
         <p v-if="errors.phone" class="field-error">{{ errors.phone }}</p>
       </div>
@@ -58,10 +58,10 @@
         <p class="label">Où se trouve-t-il ?</p>
         <div class="grid grid-cols-2 gap-2">
           <button type="button" :class="choiceClass(!ownAddress)" :aria-pressed="!ownAddress" @click="ownAddress = false">
-            <b class="block text-sm">🏢 Dans nos locaux</b><span class="text-xs text-gray-500">même adresse que {{ staff ? 'le client' : 'vous' }}</span>
+            <b class="flex items-center gap-1 text-sm"><Icone nom="entreprise" taille="petite" />Dans nos locaux</b><span class="text-xs text-slate-600">même adresse que {{ staff ? 'le client' : 'vous' }}</span>
           </button>
           <button type="button" :class="choiceClass(ownAddress)" :aria-pressed="ownAddress" @click="ownAddress = true">
-            <b class="block text-sm">📍 Sur un autre site</b><span class="text-xs text-gray-500">collecte et remise sur place</span>
+            <b class="flex items-center gap-1 text-sm"><Icone nom="adresse" taille="petite" />Sur un autre site</b><span class="text-xs text-slate-600">collecte et remise sur place</span>
           </button>
         </div>
       </div>
@@ -76,14 +76,14 @@
           <input id="d-address" v-model="form.pickup_address" :class="['input rounded-xl py-2.5', errors.pickup_address && '!border-red-400 !bg-red-50']" maxlength="500" placeholder="ex. Avenue Chardy, immeuble Alpha 2000">
           <p v-if="errors.pickup_address" class="field-error">{{ errors.pickup_address }}</p>
         </div>
-        <div><label class="label" for="d-landmark">Repère <span class="font-normal text-gray-400">(facultatif)</span></label><input id="d-landmark" v-model="form.pickup_landmark" class="input rounded-xl py-2.5" maxlength="255" placeholder="ex. en face de la pharmacie"></div>
+        <div><label class="label" for="d-landmark">Repère <span class="font-normal text-slate-500">(facultatif)</span></label><input id="d-landmark" v-model="form.pickup_landmark" class="input rounded-xl py-2.5" maxlength="255" placeholder="ex. en face de la pharmacie"></div>
         <div>
-          <p class="label">Position <span class="font-normal text-gray-400">(conseillée)</span></p>
-          <LocationPicker v-model="point" height="h-48" gps-label="📍 Je suis sur place : utiliser ma position" />
+          <p class="label">Position <span class="font-normal text-slate-500">(conseillée)</span></p>
+          <LocationPicker v-model="point" height="h-48" gps-label="Je suis sur place : utiliser ma position" />
         </div>
       </template>
       <div>
-        <label class="label" for="d-location">Bâtiment, étage, bureau <span class="font-normal text-gray-400">(facultatif)</span></label>
+        <label class="label" for="d-location">Bâtiment, étage, bureau <span class="font-normal text-slate-500">(facultatif)</span></label>
         <input id="d-location" v-model="form.location" class="input rounded-xl py-2.5" maxlength="255" placeholder="ex. Bâtiment A, 3e étage, bureau 302">
       </div>
 
@@ -91,31 +91,31 @@
       <div class="border-t border-slate-100 pt-3">
         <button type="button" class="flex w-full items-center justify-between text-left font-semibold text-slate-700" :aria-expanded="moreOpen" @click="moreOpen = !moreOpen">
           Plus d'options
-          <span class="text-xs font-normal text-gray-500">{{ moreOpen ? 'masquer ⌃' : 'centre de coûts, quota, e-mail ›' }}</span>
+          <span class="text-xs font-normal text-slate-600">{{ moreOpen ? 'masquer ⌃' : 'centre de coûts, quota, e-mail ›' }}</span>
         </button>
         <div v-if="moreOpen" class="mt-3 space-y-4">
           <div>
-            <label class="label" for="d-cc">Centre de coûts <span class="font-normal text-gray-400">(facultatif)</span></label>
+            <label class="label" for="d-cc">Centre de coûts <span class="font-normal text-slate-500">(facultatif)</span></label>
             <input id="d-cc" v-model="form.cost_center" class="input rounded-xl py-2.5" maxlength="60" placeholder="ex. CC-100">
-            <p class="mt-1 text-xs text-gray-500">Le code de {{ staff ? 'sa' : 'votre' }} comptabilité. Il apparaît sur la facture de ce département.</p>
+            <p class="mt-1 text-xs text-slate-600">Le code de {{ staff ? 'sa' : 'votre' }} comptabilité. Il apparaît sur la facture de ce département.</p>
           </div>
           <div>
-            <label class="label" for="d-quota">Envois prévus par mois <span class="font-normal text-gray-400">(facultatif)</span></label>
+            <label class="label" for="d-quota">Envois prévus par mois <span class="font-normal text-slate-500">(facultatif)</span></label>
             <input id="d-quota" v-model.number="form.monthly_quota" type="number" min="1" inputmode="numeric" class="input rounded-xl py-2.5" placeholder="ex. 50 · vide : pas de limite">
-            <p class="mt-1 text-xs text-gray-500">{{ staff ? 'Le client est prévenu' : 'Vous êtes prévenu' }} à 80 % et à 100 %.</p>
+            <p class="mt-1 text-xs text-slate-600">{{ staff ? 'Le client est prévenu' : 'Vous êtes prévenu' }} à 80 % et à 100 %.</p>
           </div>
           <div>
-            <label class="label" for="d-email">E-mail du département <span class="font-normal text-gray-400">(facultatif)</span></label>
+            <label class="label" for="d-email">E-mail du département <span class="font-normal text-slate-500">(facultatif)</span></label>
             <input id="d-email" v-model="form.email" type="email" :class="['input rounded-xl py-2.5', errors.email && '!border-red-400 !bg-red-50']" maxlength="190" placeholder="ex. finance@entreprise.ci">
             <p v-if="errors.email" class="field-error">{{ errors.email }}</p>
           </div>
           <label class="flex items-start gap-3 text-sm">
             <input v-model="form.is_main" type="checkbox" class="mt-1">
-            <span><b>Département principal</b><span class="block text-xs text-gray-500">Il reçoit la facture des envois qui ne sont rattachés à aucun département.</span></span>
+            <span><b>Département principal</b><span class="block text-xs text-slate-600">Il reçoit la facture des envois qui ne sont rattachés à aucun département.</span></span>
           </label>
           <label v-if="department" class="flex items-start gap-3 text-sm">
             <input v-model="form.active" type="checkbox" class="mt-1">
-            <span><b>Actif</b><span class="block text-xs text-gray-500">Désactivé, il reste sur les anciennes courses mais ne se choisit plus.</span></span>
+            <span><b>Actif</b><span class="block text-xs text-slate-600">Désactivé, il reste sur les anciennes courses mais ne se choisit plus.</span></span>
           </label>
           <div v-if="staff"><label class="label" for="d-notes">Notes (internes à l'agence)</label><textarea id="d-notes" v-model="form.notes" rows="2" class="input rounded-xl py-2.5" /></div>
         </div>
@@ -130,32 +130,33 @@
     <!-- Étape 2 : qui travaille dans ce département -->
     <div v-else class="space-y-3">
       <p class="flex items-center gap-2 rounded-2xl bg-emerald-50 px-3 py-2.5 text-sm text-emerald-900">
-        ✅ <span><b>Département ajouté.</b> Choisissez maintenant qui envoie pour lui.</span>
+        <Icone nom="livre" /> <span><b>Département ajouté.</b> Choisissez maintenant qui envoie pour lui.</span>
       </p>
       <div v-for="u in people" :key="u.id" :class="['rounded-2xl border-2 px-3 py-2', members[u.id] ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200']">
         <label class="flex items-center gap-3">
           <span class="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-800">{{ initials(u.name) }}</span>
-          <span class="min-w-0 flex-1"><b class="block truncate text-sm">{{ u.name }}</b><span class="text-xs text-gray-500">{{ u.role_label || 'compte' }}<template v-if="otherDepartments(u)"> · {{ otherDepartments(u) }}</template></span></span>
+          <span class="min-w-0 flex-1"><b class="block truncate text-sm">{{ u.name }}</b><span class="text-xs text-slate-600">{{ u.role_label || 'compte' }}<template v-if="otherDepartments(u)"> · {{ otherDepartments(u) }}</template></span></span>
           <input v-model="members[u.id]" type="checkbox" class="h-5 w-5" :aria-label="`${u.name} travaille dans ce département`">
         </label>
         <label v-if="settings.head_approval && members[u.id]" class="ml-11 mt-1 flex items-center gap-2 text-xs font-semibold text-emerald-800">
           <input v-model="heads[u.id]" type="checkbox"> Chef de service (valide les demandes des agents)
         </label>
       </div>
-      <p class="text-xs text-gray-500">
+      <p class="text-xs text-slate-600">
         {{ settings.staff_own_only ? 'Les comptes cochés ne voient que les courses de leurs départements.' : 'Les comptes cochés envoient pour ce département.' }}
         Les propriétaires et gestionnaires voient déjà tout.
       </p>
       <p v-if="error" class="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">{{ error }}</p>
       <div class="sticky bottom-0 -mx-5 border-t border-slate-100 bg-white px-5 pb-1 pt-3">
         <button type="button" class="btn-primary w-full py-3" :disabled="busy" @click="savePeople">{{ busy ? 'Enregistrement…' : chosenCount ? `Enregistrer · ${chosenCount} compte${chosenCount > 1 ? 's' : ''}` : 'Terminer' }}</button>
-        <button type="button" class="mt-2 w-full py-1 text-sm text-gray-600" @click="finish">Plus tard</button>
+        <button type="button" class="mt-2 w-full py-1 text-sm text-slate-600" @click="finish">Plus tard</button>
       </div>
     </div>
   </BottomSheet>
 </template>
 
 <script setup>
+import Icone from '../ui/Icone.vue'
 import { computed, ref, watch } from 'vue'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import BottomSheet from '../mobile/BottomSheet.vue'

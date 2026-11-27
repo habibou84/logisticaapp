@@ -1,25 +1,25 @@
 <template>
   <div class="overflow-x-auto">
     <table class="w-full text-sm">
-      <thead class="bg-slate-50 text-left text-gray-600">
+      <thead class="bg-slate-50 text-left text-slate-600">
         <tr><th class="p-2">Date</th><th class="p-2">Opération</th><th class="p-2">Course</th><th class="p-2 text-right">Montant</th><th v-if="hasBalance" class="p-2 text-right">Solde</th><th v-if="showPayout" class="p-2">Paiement</th></tr>
       </thead>
       <tbody v-for="g in groups" :key="g.key" class="divide-y">
         <tr v-if="byDay" class="bg-slate-100">
-          <td :colspan="columns - 1" class="p-2 text-xs font-semibold text-slate-700">{{ g.label }}<span v-if="g.courses" class="font-normal text-gray-500"> · {{ g.courses }} course(s)</span></td>
+          <td :colspan="columns - 1" class="p-2 text-xs font-semibold text-slate-700">{{ g.label }}<span v-if="g.courses" class="font-normal text-slate-600"> · {{ g.courses }} course(s)</span></td>
           <td :class="['p-2 text-right text-xs font-semibold whitespace-nowrap', signedClass(g.total)]">{{ money(g.total) }}</td>
         </tr>
         <tr v-for="e in g.entries" :key="e.id">
           <td class="p-2 text-xs whitespace-nowrap">{{ dateTime(e.created_at) }}</td>
-          <td class="p-2">{{ e.type_label }}<span v-if="e.description && e.type === 'adjustment'" class="block text-xs text-gray-500">{{ e.description }}</span></td>
-          <td class="p-2 text-xs"><span class="font-mono">{{ e.order?.tracking_code || '—' }}</span><span v-if="e.order?.recipient_name" class="block text-gray-500">{{ e.order.recipient_name }}</span></td>
+          <td class="p-2">{{ e.type_label }}<span v-if="e.description && e.type === 'adjustment'" class="block text-xs text-slate-600">{{ e.description }}</span></td>
+          <td class="p-2 text-xs"><span class="font-mono">{{ e.order?.tracking_code || '—' }}</span><span v-if="e.order?.recipient_name" class="block text-slate-600">{{ e.order.recipient_name }}</span></td>
           <td :class="['p-2 text-right font-medium whitespace-nowrap', signedClass(e.amount)]">{{ money(e.amount) }}</td>
-          <td v-if="hasBalance" class="p-2 text-right whitespace-nowrap text-gray-700">{{ e.balance === null || e.balance === undefined ? '' : money(e.balance) }}</td>
+          <td v-if="hasBalance" class="p-2 text-right whitespace-nowrap text-slate-700">{{ e.balance === null || e.balance === undefined ? '' : money(e.balance) }}</td>
           <td v-if="showPayout" class="p-2 text-xs font-mono">{{ e.payout?.reference || '—' }}</td>
         </tr>
       </tbody>
       <tbody v-if="!entries.length">
-        <tr><td :colspan="6" class="p-4 text-center text-gray-500">Aucune écriture.</td></tr>
+        <tr><td :colspan="6" class="p-4 text-center text-slate-600">Aucune écriture.</td></tr>
       </tbody>
     </table>
   </div>

@@ -3,7 +3,7 @@
     <div class="text-center space-y-3 text-white">
       <BrandLogo size="lg" :with-name="false" dark class="justify-center" />
       <p class="text-2xl font-bold">{{ branding.name }}</p>
-      <p class="text-white/80">🛠️ Espace mécanicien</p>
+      <p class="text-white/80"><Icone nom="atelier" taille="petite" class="inline align-[-0.15em]" /> Espace mécanicien</p>
     </div>
     <div class="mt-8 w-full max-w-sm mx-auto rounded-3xl bg-white p-6 shadow-2xl">
       <LoginForm tone="mechanic" />
@@ -15,6 +15,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import { onMounted } from 'vue'
 import BrandLogo from '../../components/auth/BrandLogo.vue'
 import LoginForm from '../../components/auth/LoginForm.vue'

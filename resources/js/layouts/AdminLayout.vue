@@ -15,9 +15,9 @@
         <RouterLink
           v-if="auth.can('orders.create')"
           to="/admin/courses/nouvelle"
-          class="mb-3 flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 font-semibold hover:bg-emerald-500"
+          class="mb-3 flex items-center justify-center gap-2 rounded-lg bg-action px-3 py-2.5 font-semibold hover:brightness-110"
         >
-          ➕ Nouvelle course
+          <Icone nom="ajouter" /> Nouvelle course
         </RouterLink>
         <SidebarItem v-for="item in menu.top" :key="item.to" :icon="item.icon" :label="item.label" :to="item.to" :badge="item.badge || 0" />
         <SidebarGroup
@@ -40,14 +40,14 @@
     <div class="flex-1 flex flex-col min-w-0">
       <header class="flex items-center justify-between bg-white shadow px-4 py-2 gap-2 print:hidden">
         <div class="flex items-center gap-2">
-          <button class="md:hidden p-2 rounded bg-[var(--admin-color,#0f172a)] text-white" aria-label="Menu" @click="sidebarOpen = true">☰</button>
+          <button class="md:hidden p-2 rounded bg-[var(--admin-color,#0f172a)] text-white" aria-label="Menu" @click="sidebarOpen = true"><Icone nom="menu" /></button>
           <button
             v-if="auth.can('orders.view')"
             class="md:hidden p-2 rounded hover:bg-black/5 text-lg"
             aria-label="Rechercher une course"
             :aria-expanded="searchOpen"
             @click="searchOpen = !searchOpen"
-          >🔍</button>
+          ><Icone nom="chercher" /></button>
           <form class="hidden md:block" @submit.prevent="quickSearch">
             <input v-model="search" type="search" placeholder="Code, téléphone…" class="input w-64" aria-label="Rechercher une course">
           </form>
@@ -72,7 +72,7 @@
         class="flex flex-wrap items-center justify-between gap-2 bg-amber-50 px-4 py-2 text-sm text-amber-900 print:hidden"
       >
         <span>
-          🧭 Mise en route : {{ setup.essentials.done }} étape(s) essentielle(s) sur {{ setup.essentials.total }}.
+          <Icone nom="mise-en-route" taille="petite" class="inline" /> Mise en route : {{ setup.essentials.done }} étape(s) essentielle(s) sur {{ setup.essentials.total }}.
           <template v-if="setupNext">Prochaine : {{ setupNext.title }}.</template>
         </span>
         <span class="font-medium underline">Continuer la mise en route</span>
@@ -81,7 +81,7 @@
       <!-- Réglage ouvert depuis la mise en route : y revenir en un geste -->
       <div v-if="setupReturn" class="flex items-center justify-between gap-2 bg-slate-800 px-4 py-2 text-sm text-white print:hidden">
         <RouterLink to="/admin/mise-en-route" class="font-medium underline">← Revenir à la mise en route</RouterLink>
-        <button type="button" class="rounded px-2 hover:bg-white/20" aria-label="Fermer" @click="closeSetupReturn">✕</button>
+        <button type="button" class="rounded px-2 hover:bg-white/20" aria-label="Fermer" @click="closeSetupReturn"><Icone nom="fermer" taille="petite" class="inline" /></button>
       </div>
 
       <main :class="['flex-1 overflow-y-auto p-4 md:p-6 print:overflow-visible', tabs.length ? 'pb-20 md:pb-6' : '']">
@@ -93,9 +93,9 @@
     <RouterLink
       v-if="auth.can('orders.create') && route.path !== '/admin/courses/nouvelle' && !route.path.startsWith('/admin/reglages')"
       to="/admin/courses/nouvelle"
-      class="md:hidden fixed right-4 bottom-20 z-20 grid h-14 w-14 place-items-center rounded-full bg-emerald-600 text-3xl leading-none text-white shadow-lg print:hidden"
+      class="md:hidden fixed right-4 bottom-20 z-20 grid h-14 w-14 place-items-center rounded-full bg-action text-white shadow-flottante print:hidden"
       aria-label="Nouvelle course"
-    >+</RouterLink>
+    ><Icone nom="ajouter" taille="grande" /></RouterLink>
 
     <!-- Téléphone : barre d'onglets ; les écrans les plus utilisés à un toucher -->
     <nav v-if="tabs.length" class="md:hidden fixed inset-x-0 bottom-0 z-30 border-t bg-white pb-safe print:hidden" aria-label="Navigation principale">
@@ -107,13 +107,13 @@
           :class="['tap relative flex flex-col items-center gap-0.5 py-2 text-[11px] font-medium', isActive(t) ? 'text-slate-900' : 'text-slate-500']"
           :aria-current="isActive(t) ? 'page' : undefined"
         >
-          <span class="text-xl leading-none" aria-hidden="true">{{ t.icon }}</span>
+          <Icone :nom="t.icon" taille="grande" />
           <span class="truncate max-w-full">{{ t.label }}</span>
           <span v-if="t.badge" class="absolute top-1 left-1/2 ml-2 min-w-5 h-5 px-1 rounded-full bg-red-600 text-white text-[10px] grid place-items-center">{{ t.badge > 99 ? '99+' : t.badge }}</span>
           <span v-if="isActive(t)" class="absolute inset-x-4 top-0 h-0.5 rounded-full bg-[var(--admin-color,#0f172a)]" aria-hidden="true" />
         </RouterLink>
         <button class="tap flex flex-col items-center gap-0.5 py-2 text-[11px] font-medium text-slate-500" aria-label="Menu complet" @click="sidebarOpen = true">
-          <span class="text-xl leading-none" aria-hidden="true">☰</span>
+          <Icone nom="menu" taille="grande" />
           <span>Menu</span>
         </button>
       </div>
@@ -123,6 +123,7 @@
 </template>
 
 <script setup>
+import Icone from '../components/ui/Icone.vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import http from '../bootstrap/axios'
@@ -265,17 +266,17 @@ const menu = computed(() => filterMenu((p) => auth.can(p), myActivities(auth.use
 
 // Barre d'onglets du téléphone : dispatch (courses, carte, alertes) ou, sans dispatch, les écrans de ses droits
 const tabs = computed(() => {
-  const home = { to: '/admin', icon: '🏠', label: 'Accueil', exact: true }
+  const home = { to: '/admin', icon: 'accueil', label: 'Accueil', exact: true }
   const candidates = isDispatch.value
     ? [
-        { to: '/admin/courses', icon: '📦', label: 'Courses', badge: dispatchCounts.counts.late.total },
-        { to: '/admin/activite', icon: '🛵', label: 'Livreurs', badge: fieldReports.badge },
+        { to: '/admin/courses', icon: 'course', label: 'Courses', badge: dispatchCounts.counts.late.total },
+        { to: '/admin/activite', icon: 'livreur', label: 'Livreurs', badge: fieldReports.badge },
       ].filter((t) => !t.permission || auth.can(t.permission))
     : [
-        { to: '/admin/courses', icon: '📦', label: 'Courses', permission: 'orders.view' },
-        { to: '/admin/caisse', icon: '💰', label: 'Caisse', permission: 'finance.view' },
-        { to: '/admin/marchands', icon: '🏪', label: 'Clients', permission: 'merchants.view' },
-        { to: '/admin/statistiques', icon: '📊', label: 'Stats', permission: 'orders.view' },
+        { to: '/admin/courses', icon: 'course', label: 'Courses', permission: 'orders.view' },
+        { to: '/admin/caisse', icon: 'caisse', label: 'Caisse', permission: 'finance.view' },
+        { to: '/admin/marchands', icon: 'clients', label: 'Clients', permission: 'merchants.view' },
+        { to: '/admin/statistiques', icon: 'statistiques', label: 'Stats', permission: 'orders.view' },
       ].filter((t) => auth.can(t.permission))
   return [home, ...candidates.slice(0, 3)]
 })

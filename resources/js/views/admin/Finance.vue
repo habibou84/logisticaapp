@@ -29,30 +29,30 @@
       <!-- 1. En ce moment : toutes dates confondues, ne dépend pas de la date choisie -->
       <section v-if="cash" class="space-y-2">
         <div class="flex flex-wrap items-baseline gap-x-2">
-          <h2 class="font-semibold">💼 En ce moment</h2>
-          <span class="text-xs text-gray-500">toutes dates confondues · ne dépend pas de la date choisie plus bas</span>
+          <h2 class="flex items-center gap-1.5 font-semibold"><Icone nom="travail" taille="petite" /> En ce moment</h2>
+          <span class="text-xs text-slate-600">toutes dates confondues · ne dépend pas de la date choisie plus bas</span>
         </div>
         <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <div class="card p-4">
-            <p class="text-sm text-gray-600">🛵 Total chez les livreurs</p>
+            <p class="flex items-center gap-1 text-sm text-slate-600"><Icone nom="livreur" taille="petite" /> Total chez les livreurs</p>
             <p class="text-2xl font-bold tabular-nums">{{ money(cash.totals.cash_in_hands) }}</p>
-            <p class="text-xs text-gray-500">toutes dates de livraison · {{ couriersWithMoney }} livreur{{ couriersWithMoney > 1 ? 's' : '' }}</p>
+            <p class="text-xs text-slate-600">toutes dates de livraison · {{ couriersWithMoney }} livreur{{ couriersWithMoney > 1 ? 's' : '' }}</p>
             <p v-if="cash.totals.owed_to_couriers" class="text-xs text-violet-700">La caisse leur doit {{ money(cash.totals.owed_to_couriers) }} (à part)</p>
           </div>
           <div class="card p-4">
-            <p class="text-sm text-gray-600">💵 Encaissé aujourd'hui</p>
+            <p class="flex items-center gap-1 text-sm text-slate-600"><Icone nom="argent" taille="petite" /> Encaissé aujourd'hui</p>
             <p class="text-2xl font-bold tabular-nums">{{ money(cash.totals.collected_today) }}</p>
-            <p class="text-xs text-gray-500">chez les clients, depuis minuit</p>
+            <p class="text-xs text-slate-600">chez les clients, depuis minuit</p>
           </div>
           <div class="card p-4">
-            <p class="text-sm text-gray-600">🏦 Reçu des livreurs aujourd'hui</p>
+            <p class="flex items-center gap-1 text-sm text-slate-600"><Icone nom="banque" taille="petite" /> Reçu des livreurs aujourd'hui</p>
             <p class="text-2xl font-bold tabular-nums">{{ money(cash.totals.received_today) }}</p>
-            <p class="text-xs text-gray-500">versements à la caisse</p>
+            <p class="text-xs text-slate-600">versements à la caisse</p>
           </div>
           <button type="button" :class="['card p-4 text-left', cash.totals.watched ? 'border-orange-300 bg-orange-50' : '']" @click="filters.watchOnly = !filters.watchOnly">
-            <p :class="['text-sm', cash.totals.watched ? 'text-orange-800' : 'text-gray-600']">{{ cash.totals.watched ? '⚠️ ' : '' }}À surveiller</p>
+            <p :class="['text-sm', cash.totals.watched ? 'text-orange-800' : 'text-slate-600']"><Icone v-if="cash.totals.watched" nom="alerte" taille="petite" class="mr-1 inline" />À surveiller</p>
             <p :class="['text-2xl font-bold', cash.totals.watched ? 'text-orange-800' : '']">{{ cash.totals.watched }} livreur{{ cash.totals.watched > 1 ? 's' : '' }}</p>
-            <p :class="['text-xs', cash.totals.watched ? 'text-orange-800' : 'text-gray-500']">{{ alertText }}</p>
+            <p :class="['text-xs', cash.totals.watched ? 'text-orange-800' : 'text-slate-600']">{{ alertText }}</p>
           </button>
         </div>
       </section>
@@ -61,43 +61,43 @@
       <section class="card">
         <div class="space-y-3 border-b p-4">
           <div class="flex flex-wrap items-center gap-2">
-            <h2 class="flex-1 font-semibold">📊 Point par date de livraison</h2>
+            <h2 class="flex-1 font-semibold"><Icone nom="statistiques" taille="petite" class="inline" /> Point par date de livraison</h2>
             <button v-if="days" type="button" class="btn-secondary" @click="exportDays">Exporter</button>
           </div>
           <div class="rounded-xl bg-slate-50 p-2">
             <DeliveryDatePicker :period="period" :periods="PERIODS" label="Courses livrées" :summary="periodLabel" @choose="choosePeriod" @changed="periodChanged" />
           </div>
           <p class="text-sm">
-            <span class="font-semibold text-slate-800">📅 Date choisie : <span class="text-amber-700">{{ period.key === 'all' ? 'toutes les dates' : chosenDate }}</span></span>
-            <span class="block text-xs text-gray-500">S'applique au point ci-dessous et à la liste des livreurs.{{ period.key === 'all' ? ' « Tout » : 31 derniers jours pour le point.' : '' }}</span>
+            <span class="font-semibold text-slate-800"><Icone nom="date" taille="petite" class="inline" /> Date choisie : <span class="text-amber-700">{{ period.key === 'all' ? 'toutes les dates' : chosenDate }}</span></span>
+            <span class="block text-xs text-slate-600">S'applique au point ci-dessous et à la liste des livreurs.{{ period.key === 'all' ? ' « Tout » : 31 derniers jours pour le point.' : '' }}</span>
           </p>
         </div>
         <template v-if="days">
           <div class="grid grid-cols-2 gap-3 p-4 lg:grid-cols-4">
             <div class="rounded-xl bg-slate-50 p-3">
-              <p class="text-xs text-gray-500">Encaissé chez les clients</p>
+              <p class="text-xs text-slate-600">Encaissé chez les clients</p>
               <p class="text-xl font-bold tabular-nums">{{ money(days.totals.collected) }}</p>
-              <p class="text-xs text-gray-500">{{ days.totals.delivered }} course{{ days.totals.delivered > 1 ? 's' : '' }} livrée{{ days.totals.delivered > 1 ? 's' : '' }}</p>
+              <p class="text-xs text-slate-600">{{ days.totals.delivered }} course{{ days.totals.delivered > 1 ? 's' : '' }} livrée{{ days.totals.delivered > 1 ? 's' : '' }}</p>
             </div>
             <div class="rounded-xl bg-slate-50 p-3">
-              <p class="text-xs text-gray-500">Déjà à la caisse</p>
+              <p class="text-xs text-slate-600">Déjà à la caisse</p>
               <p class="text-xl font-bold tabular-nums text-emerald-700">{{ money(days.totals.at_desk) }}</p>
-              <p class="text-xs text-gray-500">reçu des livreurs</p>
+              <p class="text-xs text-slate-600">reçu des livreurs</p>
             </div>
             <div :class="['rounded-xl p-3', days.totals.with_couriers ? 'bg-amber-50' : 'bg-slate-50']">
-              <p :class="['text-xs', days.totals.with_couriers ? 'text-amber-800' : 'text-gray-500']">Encore chez les livreurs</p>
+              <p :class="['text-xs', days.totals.with_couriers ? 'text-amber-800' : 'text-slate-600']">Encore chez les livreurs</p>
               <p :class="['text-xl font-bold tabular-nums', days.totals.with_couriers ? 'text-amber-800' : '']">{{ money(days.totals.with_couriers) }}</p>
-              <p :class="['text-xs', days.totals.with_couriers ? 'text-amber-800' : 'text-emerald-700']">{{ days.totals.with_couriers ? 'à recevoir' : '✓ tout est arrivé' }}</p>
+              <p :class="['text-xs', days.totals.with_couriers ? 'text-amber-800' : 'text-emerald-700']"><Icone v-if="!days.totals.with_couriers" nom="valider" taille="petite" class="mr-1 inline" />{{ days.totals.with_couriers ? 'à recevoir' : 'tout est arrivé' }}</p>
             </div>
             <div class="rounded-xl bg-slate-50 p-3">
-              <p class="text-xs text-gray-500">À reverser aux clients</p>
+              <p class="text-xs text-slate-600">À reverser aux clients</p>
               <p class="text-xl font-bold tabular-nums">{{ money(days.totals.net_to_merchants) }}</p>
-              <p class="text-xs text-gray-500">après {{ money(days.totals.fees) }} de frais</p>
+              <p class="text-xs text-slate-600">après {{ money(days.totals.fees) }} de frais</p>
             </div>
           </div>
           <!-- Une ligne par jour quand plusieurs dates sont choisies -->
           <table v-if="days.days.length > 1" class="w-full text-sm stack-table">
-            <thead class="bg-slate-50 text-left text-gray-600">
+            <thead class="bg-slate-50 text-left text-slate-600">
               <tr><th class="p-2">Date de livraison</th><th class="p-2 text-right">Livrées</th><th class="p-2 text-right">Encaissé</th><th class="p-2 text-right">Déjà à la caisse</th><th class="p-2 text-right">Chez les livreurs</th><th class="p-2 text-right">Frais de livraison</th><th class="p-2 text-right">À reverser</th></tr>
             </thead>
             <tbody class="divide-y">
@@ -117,15 +117,15 @@
               </tr>
             </tbody>
           </table>
-          <p v-else-if="!days.days.length" class="px-4 pb-4 text-sm text-gray-500">Aucune course livrée à ces dates.</p>
+          <p v-else-if="!days.days.length" class="px-4 pb-4 text-sm text-slate-600">Aucune course livrée à ces dates.</p>
         </template>
       </section>
 
       <!-- 3. Argent par livreur : une ligne simple, le détail par date en dépliant -->
       <section class="card">
         <div class="flex flex-wrap items-center gap-2 border-b p-4">
-          <h2 class="basis-full font-semibold sm:basis-auto sm:flex-1">🛵 Argent par livreur <span class="text-sm font-normal text-gray-500">· {{ period.key === 'all' ? 'toutes dates' : `courses livrées ${periodLabel}` }}</span></h2>
-          <input id="cash-search" v-model="filters.search" type="search" class="input w-full sm:!w-56" placeholder="🔍 Nom ou téléphone" aria-label="Chercher un livreur">
+          <h2 class="basis-full font-semibold sm:basis-auto sm:flex-1"><Icone nom="livreur" taille="petite" class="inline" /> Argent par livreur <span class="text-sm font-normal text-slate-600">· {{ period.key === 'all' ? 'toutes dates' : `courses livrées ${periodLabel}` }}</span></h2>
+          <input id="cash-search" v-model="filters.search" type="search" class="input w-full sm:!w-56" placeholder="Nom ou téléphone" aria-label="Chercher un livreur">
           <button type="button" :class="['rounded-full px-3 py-1 text-xs ring-1', filters.withMoney ? 'bg-slate-900 text-white ring-slate-900' : 'bg-white ring-slate-300']" :aria-pressed="filters.withMoney" @click="filters.withMoney = !filters.withMoney">Avec argent ou colis</button>
           <button type="button" :class="['rounded-full px-3 py-1 text-xs ring-1', filters.watchOnly ? 'bg-orange-600 text-white ring-orange-600' : 'bg-white ring-slate-300']" :aria-pressed="filters.watchOnly" @click="filters.watchOnly = !filters.watchOnly">À surveiller</button>
           <button type="button" class="btn-secondary" @click="exportCash">Exporter</button>
@@ -138,7 +138,7 @@
             <tr>
               <th class="p-3">Livreur</th>
               <th v-if="period.key !== 'all'" class="p-3 text-right">Date choisie<span class="block text-xs font-semibold text-amber-700 first-letter:uppercase">{{ chosenDate }}</span></th>
-              <th class="p-3 text-right" title="Encaissé + avances − frais payés">Total à remettre<span class="block text-xs font-normal text-slate-500">toutes dates</span></th>
+              <th class="p-3 text-right" title="Encaissé + avances − frais payés">Total à remettre<span class="block text-xs font-normal text-slate-600">toutes dates</span></th>
               <th class="hidden p-3 xl:table-cell">Colis</th>
               <th class="hidden p-3 xl:table-cell">Garde l'argent depuis</th>
               <th class="p-3" />
@@ -148,20 +148,20 @@
             <template v-for="c in visibleCouriers" :key="c.courier_id">
               <tr :class="['cursor-pointer align-top hover:bg-slate-50', c.watch ? 'bg-orange-50/60' : '']" @click="toggleCourier(c)">
                 <td class="p-3">
-                  <p class="font-semibold"><span class="inline-block w-4 text-gray-400">{{ opened.has(c.courier_id) ? '▾' : '▸' }}</span>{{ c.name }}</p>
-                  <p class="pl-4 text-xs text-gray-500">{{ c.phone }}</p>
-                  <p v-if="c.watch" class="ml-4 mt-1 inline-block rounded bg-orange-100 px-1.5 py-0.5 text-xs font-medium text-orange-800">⚠️ {{ c.watch }}</p>
+                  <p class="font-semibold"><span class="inline-block w-4 text-slate-500">{{ opened.has(c.courier_id) ? '▾' : '▸' }}</span>{{ c.name }}</p>
+                  <p class="pl-4 text-xs text-slate-600">{{ c.phone }}</p>
+                  <p v-if="c.watch" class="ml-4 mt-1 inline-block rounded bg-orange-100 px-1.5 py-0.5 text-xs font-medium text-orange-800"><Icone nom="alerte" taille="petite" class="inline" /> {{ c.watch }}</p>
                 </td>
                 <td v-if="period.key !== 'all'" class="p-3 text-right">
-                  <template v-if="periodAmount(c)"><p class="font-semibold tabular-nums">{{ money(periodAmount(c)) }}</p><p class="text-xs text-gray-500">{{ countLabel(periodCount(c)) }}</p></template>
-                  <template v-else><p class="text-gray-300">—</p><p class="text-xs text-gray-400">rien à ces dates</p></template>
+                  <template v-if="periodAmount(c)"><p class="font-semibold tabular-nums">{{ money(periodAmount(c)) }}</p><p class="text-xs text-slate-600">{{ countLabel(periodCount(c)) }}</p></template>
+                  <template v-else><p class="text-gray-300">—</p><p class="text-xs text-slate-500">rien à ces dates</p></template>
                 </td>
                 <td class="p-3 text-right">
-                  <template v-if="c.cash_in_hand < 0"><p class="font-semibold text-violet-700">La caisse lui doit {{ money(-c.cash_in_hand) }}</p><p class="text-xs text-gray-500">frais payés de sa poche</p></template>
-                  <template v-else><p class="text-lg font-bold tabular-nums">{{ money(c.cash_in_hand) }}</p><p class="text-xs text-gray-500">{{ spreadLabel(c) }}</p></template>
+                  <template v-if="c.cash_in_hand < 0"><p class="font-semibold text-violet-700">La caisse lui doit {{ money(-c.cash_in_hand) }}</p><p class="text-xs text-slate-600">frais payés de sa poche</p></template>
+                  <template v-else><p class="text-lg font-bold tabular-nums">{{ money(c.cash_in_hand) }}</p><p class="text-xs text-slate-600">{{ spreadLabel(c) }}</p></template>
                 </td>
-                <td class="hidden p-3 xl:table-cell"><span v-if="c.parcels_in_hand" class="rounded-full bg-slate-100 px-2 py-0.5 text-xs">📦 {{ c.parcels_in_hand }}</span><span v-else class="text-gray-300">—</span></td>
-                <td class="hidden p-3 text-xs text-gray-600 xl:table-cell">{{ c.oldest_collected_at ? dateTime(c.oldest_collected_at) : '—' }}</td>
+                <td class="hidden p-3 xl:table-cell"><span v-if="c.parcels_in_hand" class="rounded-full bg-slate-100 px-2 py-0.5 text-xs"><Icone nom="course" taille="petite" class="inline" /> {{ c.parcels_in_hand }}</span><span v-else class="text-gray-300">—</span></td>
+                <td class="hidden p-3 text-xs text-slate-600 xl:table-cell">{{ c.oldest_collected_at ? dateTime(c.oldest_collected_at) : '—' }}</td>
                 <td class="whitespace-nowrap p-3 text-right" @click.stop>
                   <template v-if="canManage">
                     <button v-if="c.cash_in_hand < 0" type="button" class="rounded-lg border border-violet-400 px-3 py-1.5 text-violet-700" @click="openRemit(c)">Rembourser</button>
@@ -176,7 +176,7 @@
                 </td>
               </tr>
             </template>
-            <tr v-if="cash && !visibleCouriers.length"><td :colspan="period.key !== 'all' ? 6 : 5" class="p-4 text-center text-gray-500">Aucun livreur à afficher.</td></tr>
+            <tr v-if="cash && !visibleCouriers.length"><td :colspan="period.key !== 'all' ? 6 : 5" class="p-4 text-center text-slate-600">Aucun livreur à afficher.</td></tr>
             <tr v-else-if="visibleCouriers.length > 1" class="bg-slate-100 font-semibold">
               <td class="p-3">Total · {{ visibleCouriers.length }} livreurs</td>
               <td v-if="period.key !== 'all'" class="p-3 text-right tabular-nums">{{ money(visibleTotals.period) }}</td>
@@ -192,26 +192,26 @@
             <button type="button" class="flex w-full items-start gap-2 text-left" @click="toggleCourier(c)">
               <span class="min-w-0 flex-1">
                 <span class="block font-semibold">{{ c.name }}</span>
-                <span class="block text-xs text-gray-500">{{ c.phone }}<template v-if="c.parcels_in_hand"> · 📦 {{ c.parcels_in_hand }} colis</template></span>
+                <span class="block text-xs text-slate-600">{{ c.phone }}<template v-if="c.parcels_in_hand"> · <Icone nom="course" taille="petite" class="inline" /> {{ c.parcels_in_hand }} colis</template></span>
               </span>
               <span class="text-right">
                 <template v-if="c.cash_in_hand < 0"><span class="block font-semibold text-violet-700">La caisse lui doit {{ money(-c.cash_in_hand) }}</span></template>
-                <template v-else><span class="block text-lg font-bold tabular-nums">{{ money(c.cash_in_hand) }}</span><span class="block text-xs text-gray-500">total, {{ spreadLabel(c) }}</span></template>
+                <template v-else><span class="block text-lg font-bold tabular-nums">{{ money(c.cash_in_hand) }}</span><span class="block text-xs text-slate-600">total, {{ spreadLabel(c) }}</span></template>
               </span>
             </button>
-            <p v-if="c.watch" class="inline-block rounded bg-orange-100 px-1.5 py-0.5 text-xs font-medium text-orange-800">⚠️ {{ c.watch }}</p>
+            <p v-if="c.watch" class="inline-block rounded bg-orange-100 px-1.5 py-0.5 text-xs font-medium text-orange-800"><Icone nom="alerte" taille="petite" class="inline" /> {{ c.watch }}</p>
             <div v-if="period.key !== 'all' && periodAmount(c)" class="flex justify-between rounded-lg bg-amber-50 px-3 py-2 text-sm">
               <span class="first-letter:uppercase">{{ periodLabel }} · {{ countLabel(periodCount(c)) }}</span><span class="font-semibold tabular-nums">{{ money(periodAmount(c)) }}</span>
             </div>
             <CourierCashDetail v-if="opened.has(c.courier_id)" :courier="c" :in-period="inPeriod" :period-key="period.key" :period-label="periodLabel" :can-manage="canManage" :short-day="dayLabel" @remit-all="openRemit(c, true)" @advance="openAdvance(c)" />
-            <button v-else type="button" class="text-xs text-gray-600" @click="toggleCourier(c)">▸ Détail par date</button>
+            <button v-else type="button" class="text-xs text-slate-600" @click="toggleCourier(c)">▸ Détail par date</button>
             <div v-if="canManage" class="flex gap-2">
               <button v-if="c.cash_in_hand < 0" type="button" class="flex-1 rounded-lg border border-violet-400 py-2 text-violet-700" @click="openRemit(c)">Rembourser</button>
               <button v-else-if="c.pending_collections || c.advances || c.expenses" type="button" class="btn-primary flex-1" @click="openRemit(c)">Recevoir</button>
               <button v-else-if="c.parcels_in_hand" type="button" class="btn-primary flex-1" @click="openRemit(c)">Recevoir les colis</button>
             </div>
           </div>
-          <p v-if="cash && !visibleCouriers.length" class="p-4 text-center text-sm text-gray-500">Aucun livreur à afficher.</p>
+          <p v-if="cash && !visibleCouriers.length" class="p-4 text-center text-sm text-slate-600">Aucun livreur à afficher.</p>
         </div>
       </section>
 
@@ -222,30 +222,30 @@
             <option value="received">Jour du versement</option>
             <option value="delivery">Date de livraison des courses</option>
           </select>
-          <label class="text-xs text-gray-600">Du <input v-model="remitFilter.from" type="date" class="input w-auto py-1" @change="loadRemittances"></label>
-          <label class="text-xs text-gray-600">au <input v-model="remitFilter.to" type="date" class="input w-auto py-1" @change="loadRemittances"></label>
+          <label class="text-xs text-slate-600">Du <input v-model="remitFilter.from" type="date" class="input w-auto py-1" @change="loadRemittances"></label>
+          <label class="text-xs text-slate-600">au <input v-model="remitFilter.to" type="date" class="input w-auto py-1" @change="loadRemittances"></label>
           <button type="button" class="btn-secondary" @click="exportRemittances">Exporter</button>
         </div>
         <table class="w-full text-sm stack-table">
-          <thead class="bg-slate-50 text-left text-gray-600">
+          <thead class="bg-slate-50 text-left text-slate-600">
             <tr><th class="p-2">Date</th><th class="p-2">Livreur</th><th class="p-2 text-right">Attendu</th><th class="p-2 text-right">Reçu</th><th class="p-2 text-right">Écart</th><th class="p-2">Colis</th><th class="p-2">Reçu par</th><th /></tr>
           </thead>
           <tbody class="divide-y">
-            <tr v-for="r in remittances" :key="r.id" :class="r.cancelled_at ? 'text-gray-400 line-through' : ''">
+            <tr v-for="r in remittances" :key="r.id" :class="r.cancelled_at ? 'text-slate-500 line-through' : ''">
               <td class="p-2 text-xs">{{ dateTime(r.received_at) }}<span v-if="r.cancelled_at" class="block no-underline font-semibold text-red-700">Annulé</span></td>
-              <td data-label="Livreur" class="p-2">{{ r.courier_name }}<span v-if="r.days?.length" class="block text-xs text-gray-500">courses du {{ r.days.map((d) => d.day ? shortDay(d.day) : 'sans date').join(', ') }}</span></td>
+              <td data-label="Livreur" class="p-2">{{ r.courier_name }}<span v-if="r.days?.length" class="block text-xs text-slate-600">courses du {{ r.days.map((d) => d.day ? shortDay(d.day) : 'sans date').join(', ') }}</span></td>
               <td data-label="Attendu" class="p-2 text-right">{{ money(r.amount_expected) }}</td>
               <td data-label="Reçu" class="p-2 text-right">{{ money(r.amount_received) }}</td>
               <td data-label="Écart" :class="['p-2 text-right font-medium', signedClass(r.difference)]">{{ r.difference ? money(r.difference) : '—' }}</td>
               <td data-label="Colis" class="p-2 text-xs">
-                <span v-if="r.parcels_returned.length" class="block text-emerald-700" :title="r.parcels_returned.join(', ')">✓ {{ r.parcels_returned.length }} rendu{{ r.parcels_returned.length > 1 ? 's' : '' }}</span>
-                <span v-if="r.parcels_kept.length" class="block text-amber-700" :title="r.parcels_kept.join(', ')">⚠ {{ r.parcels_kept.length }} gardé{{ r.parcels_kept.length > 1 ? 's' : '' }} : {{ r.parcels_kept.join(', ') }}</span>
-                <span v-if="!r.parcels_returned.length && !r.parcels_kept.length" class="text-gray-400">—</span>
+                <span v-if="r.parcels_returned.length" class="block text-emerald-700" :title="r.parcels_returned.join(', ')"><Icone nom="valider" taille="petite" class="inline" /> {{ r.parcels_returned.length }} rendu{{ r.parcels_returned.length > 1 ? 's' : '' }}</span>
+                <span v-if="r.parcels_kept.length" class="block text-amber-700" :title="r.parcels_kept.join(', ')"><Icone nom="alerte" taille="petite" class="inline" /> {{ r.parcels_kept.length }} gardé{{ r.parcels_kept.length > 1 ? 's' : '' }} : {{ r.parcels_kept.join(', ') }}</span>
+                <span v-if="!r.parcels_returned.length && !r.parcels_kept.length" class="text-slate-500">—</span>
               </td>
-              <td data-label="Reçu par" class="p-2 text-xs">{{ r.received_by }}<span v-if="r.notes" class="block text-gray-500">{{ r.notes }}</span></td>
+              <td data-label="Reçu par" class="p-2 text-xs">{{ r.received_by }}<span v-if="r.notes" class="block text-slate-600">{{ r.notes }}</span></td>
               <td class="p-2 text-right"><RouterLink :to="`/admin/caisse/versements/${r.id}`" class="text-blue-600 no-underline">Reçu ›</RouterLink></td>
             </tr>
-            <tr v-if="!remittances.length"><td colspan="8" class="p-4 text-center text-gray-500">Aucun versement sur cette période.</td></tr>
+            <tr v-if="!remittances.length"><td colspan="8" class="p-4 text-center text-slate-600">Aucun versement sur cette période.</td></tr>
           </tbody>
         </table>
       </div>
@@ -256,29 +256,29 @@
       <!-- 1. En ce moment : toutes dates confondues -->
       <section class="space-y-2">
         <div class="flex flex-wrap items-baseline gap-x-2">
-          <h2 class="font-semibold">💼 En ce moment</h2>
-          <span class="text-xs text-gray-500">toutes dates confondues · ne dépend pas de la date choisie plus bas</span>
+          <h2 class="flex items-center gap-1.5 font-semibold"><Icone nom="travail" taille="petite" /> En ce moment</h2>
+          <span class="text-xs text-slate-600">toutes dates confondues · ne dépend pas de la date choisie plus bas</span>
         </div>
         <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <div class="card p-4">
-            <p class="text-sm text-gray-600">🏪 Total à payer</p>
+            <p class="flex items-center gap-1 text-sm text-slate-600"><Icone nom="clients" taille="petite" /> Total à payer</p>
             <p class="text-2xl font-bold tabular-nums">{{ money(merchantTotals.unpaid) }}</p>
-            <p class="text-xs text-gray-500">toutes dates · {{ merchantTotals.count }} client{{ merchantTotals.count > 1 ? 's' : '' }}</p>
+            <p class="text-xs text-slate-600">toutes dates · {{ merchantTotals.count }} client{{ merchantTotals.count > 1 ? 's' : '' }}</p>
           </div>
           <div class="card p-4">
-            <p class="text-sm text-gray-600">🏦 Prêt à payer</p>
+            <p class="flex items-center gap-1 text-sm text-slate-600"><Icone nom="banque" taille="petite" /> Prêt à payer</p>
             <p class="text-2xl font-bold tabular-nums text-emerald-700">{{ money(merchantTotals.available) }}</p>
-            <p class="text-xs text-gray-500">argent déjà à la caisse</p>
+            <p class="text-xs text-slate-600">argent déjà à la caisse</p>
           </div>
           <div class="card p-4">
-            <p class="text-sm text-gray-600">🛵 En attente</p>
+            <p class="flex items-center gap-1 text-sm text-slate-600"><Icone nom="livreur" taille="petite" /> En attente</p>
             <p class="text-2xl font-bold tabular-nums text-amber-700">{{ money(merchantTotals.pending) }}</p>
-            <p class="text-xs text-gray-500">encore chez les livreurs</p>
+            <p class="text-xs text-slate-600">encore chez les livreurs</p>
           </div>
           <div :class="['card p-4', merchantTotals.unverified ? 'border-red-200 bg-red-50' : '']">
-            <p :class="['text-sm', merchantTotals.unverified ? 'text-red-800' : 'text-gray-600']">{{ merchantTotals.unverified ? '⚠️ ' : '' }}Sans moyen vérifié</p>
+            <p :class="['text-sm', merchantTotals.unverified ? 'text-red-800' : 'text-slate-600']"><Icone v-if="merchantTotals.unverified" nom="alerte" taille="petite" class="mr-1 inline" />Sans moyen vérifié</p>
             <p :class="['text-2xl font-bold', merchantTotals.unverified ? 'text-red-800' : '']">{{ merchantTotals.unverified }} client{{ merchantTotals.unverified > 1 ? 's' : '' }}</p>
-            <p :class="['text-xs', merchantTotals.unverified ? 'text-red-800' : 'text-gray-500']">à vérifier avant de payer</p>
+            <p :class="['text-xs', merchantTotals.unverified ? 'text-red-800' : 'text-slate-600']">à vérifier avant de payer</p>
           </div>
         </div>
       </section>
@@ -287,27 +287,27 @@
       <section class="card">
         <div class="space-y-3 border-b p-4">
           <div class="flex flex-wrap items-center gap-2">
-            <h2 class="flex-1 font-semibold">📊 Point par date de livraison</h2>
+            <h2 class="flex-1 font-semibold"><Icone nom="statistiques" taille="petite" class="inline" /> Point par date de livraison</h2>
             <button type="button" class="btn-secondary" @click="exportMerchants">Exporter</button>
           </div>
           <div class="rounded-xl bg-slate-50 p-2">
             <DeliveryDatePicker :period="period" :periods="PERIODS" label="Courses livrées" :summary="periodLabel" @choose="choosePeriod" @changed="periodChanged" />
           </div>
           <p class="text-sm">
-            <span class="font-semibold text-slate-800">📅 Date choisie : <span class="text-amber-700">{{ period.key === 'all' ? 'toutes les dates' : chosenDate }}</span></span>
-            <span class="block text-xs text-gray-500">{{ period.key === 'all' ? '« Payer » paie tout ce qui est arrivé à la caisse.' : '« Payer » ne paie que les courses de cette date ; « Payer tout » dans le détail.' }}</span>
+            <span class="font-semibold text-slate-800"><Icone nom="date" taille="petite" class="inline" /> Date choisie : <span class="text-amber-700">{{ period.key === 'all' ? 'toutes les dates' : chosenDate }}</span></span>
+            <span class="block text-xs text-slate-600">{{ period.key === 'all' ? '« Payer » paie tout ce qui est arrivé à la caisse.' : '« Payer » ne paie que les courses de cette date ; « Payer tout » dans le détail.' }}</span>
           </p>
         </div>
         <div class="grid grid-cols-2 gap-3 p-4 lg:grid-cols-4">
           <div class="rounded-xl bg-slate-50 p-3">
-            <p class="text-xs text-gray-500">Encaissé chez les clients</p>
+            <p class="text-xs text-slate-600">Encaissé chez les clients</p>
             <p class="text-xl font-bold tabular-nums">{{ days ? money(days.totals.collected) : '—' }}</p>
-            <p class="text-xs text-gray-500">{{ days ? `${days.totals.delivered} course${days.totals.delivered > 1 ? 's' : ''} livrée${days.totals.delivered > 1 ? 's' : ''}` : '' }}</p>
+            <p class="text-xs text-slate-600">{{ days ? `${days.totals.delivered} course${days.totals.delivered > 1 ? 's' : ''} livrée${days.totals.delivered > 1 ? 's' : ''}` : '' }}</p>
           </div>
           <div class="rounded-xl bg-slate-50 p-3">
-            <p class="text-xs text-gray-500">Frais de livraison</p>
+            <p class="text-xs text-slate-600">Frais de livraison</p>
             <p class="text-xl font-bold tabular-nums">{{ days ? money(-days.totals.fees) : '—' }}</p>
-            <p class="text-xs text-gray-500">gardés par l'entreprise</p>
+            <p class="text-xs text-slate-600">gardés par l'entreprise</p>
           </div>
           <div class="rounded-xl bg-emerald-50 p-3">
             <p class="text-xs text-emerald-800">Prêt à payer</p>
@@ -315,9 +315,9 @@
             <p class="text-xs text-emerald-800">argent à la caisse</p>
           </div>
           <div :class="['rounded-xl p-3', merchantPeriod.pending ? 'bg-amber-50' : 'bg-slate-50']">
-            <p :class="['text-xs', merchantPeriod.pending ? 'text-amber-800' : 'text-gray-500']">En attente</p>
+            <p :class="['text-xs', merchantPeriod.pending ? 'text-amber-800' : 'text-slate-600']">En attente</p>
             <p :class="['text-xl font-bold tabular-nums', merchantPeriod.pending ? 'text-amber-800' : '']">{{ money(merchantPeriod.pending) }}</p>
-            <p :class="['text-xs', merchantPeriod.pending ? 'text-amber-800' : 'text-gray-500']">chez les livreurs</p>
+            <p :class="['text-xs', merchantPeriod.pending ? 'text-amber-800' : 'text-slate-600']">chez les livreurs</p>
           </div>
         </div>
       </section>
@@ -325,12 +325,12 @@
       <!-- 3. À payer par client -->
       <section class="card">
         <div class="flex flex-wrap items-center gap-2 border-b p-4">
-          <h2 class="basis-full font-semibold sm:basis-auto sm:flex-1">🏪 À payer par client <span class="text-sm font-normal text-gray-500">· {{ period.key === 'all' ? 'toutes dates' : `courses livrées ${periodLabel}` }}</span></h2>
-          <input id="merchant-search" v-model="filters.merchant" type="search" class="input w-full sm:!w-56" placeholder="🔍 Nom de la boutique" aria-label="Chercher un client">
+          <h2 class="basis-full font-semibold sm:basis-auto sm:flex-1"><Icone nom="clients" taille="petite" class="inline" /> À payer par client <span class="text-sm font-normal text-slate-600">· {{ period.key === 'all' ? 'toutes dates' : `courses livrées ${periodLabel}` }}</span></h2>
+          <input id="merchant-search" v-model="filters.merchant" type="search" class="input w-full sm:!w-56" placeholder="Nom de la boutique" aria-label="Chercher un client">
           <button type="button" :class="['rounded-full px-3 py-1 text-xs ring-1', !filters.allMerchants ? 'bg-slate-900 text-white ring-slate-900' : 'bg-white ring-slate-300']" :aria-pressed="!filters.allMerchants" @click="filters.allMerchants = !filters.allMerchants; load()">Avec un solde</button>
         </div>
         <div v-if="canManage && payableMerchants.length" class="flex flex-wrap items-center gap-3 border-b bg-emerald-50 px-4 py-2 text-sm">
-          <span class="flex-1">☑️ {{ batch.merchants.length }} client{{ batch.merchants.length > 1 ? 's' : '' }} coché{{ batch.merchants.length > 1 ? 's' : '' }} · <b class="tabular-nums">{{ money(selectedMerchantsTotal) }}</b><span class="text-xs text-gray-600"> · grisés : moyen de paiement à vérifier</span></span>
+          <span class="flex-1"><Icone nom="selection" taille="petite" class="inline" /> {{ batch.merchants.length }} client{{ batch.merchants.length > 1 ? 's' : '' }} coché{{ batch.merchants.length > 1 ? 's' : '' }} · <b class="tabular-nums">{{ money(selectedMerchantsTotal) }}</b><span class="text-xs text-slate-600"> · grisés : moyen de paiement à vérifier</span></span>
           <button type="button" class="btn-primary" :disabled="!batch.merchants.length || batch.busy" @click="prepareSelected">Préparer {{ batch.merchants.length > 1 ? `les ${batch.merchants.length} paiements` : 'le paiement' }}</button>
         </div>
 
@@ -341,27 +341,27 @@
               <th v-if="canManage" class="w-8 p-3"><input type="checkbox" aria-label="Tout cocher" :checked="payableMerchants.length > 0 && batch.merchants.length === payableMerchants.length" @change="toggleAllMerchants($event.target.checked)"></th>
               <th class="p-3">Client</th>
               <th v-if="period.key !== 'all'" class="p-3 text-right">Date choisie<span class="block text-xs font-semibold text-amber-700 first-letter:uppercase">{{ chosenDate }}</span></th>
-              <th class="p-3 text-right">Total à payer<span class="block text-xs font-normal text-slate-500">toutes dates</span></th>
+              <th class="p-3 text-right">Total à payer<span class="block text-xs font-normal text-slate-600">toutes dates</span></th>
               <th class="p-3">Payer avec</th>
               <th class="p-3" />
             </tr>
           </thead>
           <tbody class="divide-y">
-            <tr v-for="m in visibleMerchants" :key="m.merchant_id" :class="['align-top', canManage && m.available > 0 && !merchantPayable(m) ? 'bg-slate-50 text-gray-600' : '']">
+            <tr v-for="m in visibleMerchants" :key="m.merchant_id" :class="['align-top', canManage && m.available > 0 && !merchantPayable(m) ? 'bg-slate-50 text-slate-600' : '']">
               <td v-if="canManage" class="p-3"><input v-model="batch.merchants" type="checkbox" :value="m.merchant_id" :disabled="!merchantPayable(m)" :aria-label="`Choisir ${m.business_name}`"></td>
               <td class="p-3">
                 <p class="font-semibold text-slate-900">{{ m.business_name }}
-                  <span v-if="m.premium" class="ml-1 whitespace-nowrap rounded-full bg-amber-100 px-2 text-xs font-bold text-amber-800">⭐ {{ m.premium.name }}<template v-if="m.premium.payout_label"> · payer {{ m.premium.payout_label.toLowerCase() }}</template></span>
+                  <span v-if="m.premium" class="ml-1 whitespace-nowrap rounded-full bg-amber-100 px-2 text-xs font-bold text-amber-800"><Icone nom="premium" taille="petite" class="inline" /> {{ m.premium.name }}<template v-if="m.premium.payout_label"> · payer {{ m.premium.payout_label.toLowerCase() }}</template></span>
                 </p>
-                <p class="text-xs text-gray-500">{{ m.last_paid_at ? `dernier paiement : ${dateTime(m.last_paid_at)}` : 'jamais payé' }}</p>
+                <p class="text-xs text-slate-600">{{ m.last_paid_at ? `dernier paiement : ${dateTime(m.last_paid_at)}` : 'jamais payé' }}</p>
               </td>
               <td v-if="period.key !== 'all'" class="p-3 text-right">
                 <template v-if="m.unpaid_total">
                   <p class="font-semibold tabular-nums">{{ money(m.unpaid_total) }}</p>
                   <p v-if="m.pending_cash" class="text-xs text-amber-700">dont {{ money(m.pending_cash) }} chez un livreur</p>
-                  <p v-else class="text-xs text-gray-500">{{ countLabel(m.period_count) }} · ✓ tout à la caisse</p>
+                  <p v-else class="text-xs text-slate-600">{{ countLabel(m.period_count) }} · <Icone nom="valider" taille="petite" class="inline" /> tout à la caisse</p>
                 </template>
-                <template v-else><p class="text-gray-300">—</p><p class="text-xs text-gray-400">rien à cette date</p></template>
+                <template v-else><p class="text-gray-300">—</p><p class="text-xs text-slate-500">rien à cette date</p></template>
               </td>
               <td class="p-3 text-right">
                 <p class="text-lg font-bold tabular-nums">{{ money(m.all.unpaid_total) }}</p>
@@ -371,9 +371,9 @@
                 <RouterLink :to="{ path: '/admin/marchands', query: { id: m.merchant_id, onglet: 'paiement' } }" class="hover:underline">
                   <template v-if="m.payment_method">
                     {{ m.payment_method.summary }}
-                    <span :class="m.payment_method.status === 'verified' ? 'text-emerald-700' : 'text-amber-700'">{{ m.payment_method.status === 'verified' ? '✔' : '⏳' }}</span>
+                    <span :class="m.payment_method.status === 'verified' ? 'text-emerald-700' : 'text-amber-700'"><Icone :nom="m.payment_method.status === 'verified' ? 'valider' : 'sablier'" taille="petite" class="inline" /></span>
                   </template>
-                  <template v-else>⚠️ Aucun moyen de paiement</template>
+                  <template v-else><Icone nom="alerte" taille="petite" class="inline" /> Aucun moyen de paiement</template>
                   <span v-if="m.payment_methods_pending" class="ml-1 whitespace-nowrap rounded-full bg-amber-100 px-2 text-amber-800">{{ m.payment_methods_pending }} à vérifier</span>
                 </RouterLink>
               </td>
@@ -382,7 +382,7 @@
                 <button v-if="canManage && m.available > 0" type="button" class="btn-primary" :disabled="!merchantPayable(m)" @click="preparePayout(m)">Payer</button>
               </td>
             </tr>
-            <tr v-if="!visibleMerchants.length"><td :colspan="canManage ? 6 : 5" class="p-4 text-center text-gray-500">Aucun montant à payer.</td></tr>
+            <tr v-if="!visibleMerchants.length"><td :colspan="canManage ? 6 : 5" class="p-4 text-center text-slate-600">Aucun montant à payer.</td></tr>
             <tr v-else-if="visibleMerchants.length > 1" class="bg-slate-100 font-semibold">
               <td v-if="canManage" /><td class="p-3">Total · {{ visibleMerchants.length }} clients</td>
               <td v-if="period.key !== 'all'" class="p-3 text-right tabular-nums">{{ money(visibleMerchants.reduce((n, m) => n + m.unpaid_total, 0)) }}</td>
@@ -399,9 +399,9 @@
               <input v-if="canManage" v-model="batch.merchants" type="checkbox" class="mt-1" :value="m.merchant_id" :disabled="!merchantPayable(m)" :aria-label="`Choisir ${m.business_name}`">
               <div class="min-w-0 flex-1">
                 <p class="font-semibold">{{ m.business_name }}</p>
-                <p class="text-xs text-gray-500">{{ m.payment_method ? m.payment_method.summary : '⚠️ Aucun moyen de paiement' }}</p>
+                <p class="text-xs text-slate-600"><Icone v-if="!m.payment_method" nom="alerte" taille="petite" class="mr-1 inline" />{{ m.payment_method ? m.payment_method.summary : 'Aucun moyen de paiement' }}</p>
               </div>
-              <div class="text-right"><p class="text-lg font-bold tabular-nums">{{ money(m.all.unpaid_total) }}</p><p class="text-xs text-gray-500">total</p></div>
+              <div class="text-right"><p class="text-lg font-bold tabular-nums">{{ money(m.all.unpaid_total) }}</p><p class="text-xs text-slate-600">total</p></div>
             </div>
             <div v-if="period.key !== 'all' && m.unpaid_total" class="flex justify-between rounded-lg bg-amber-50 px-3 py-2 text-sm">
               <span class="first-letter:uppercase">{{ chosenDate }} · {{ countLabel(m.period_count) }}</span><span class="font-semibold tabular-nums">{{ money(m.unpaid_total) }}</span>
@@ -411,7 +411,7 @@
               <button v-if="canManage && m.available > 0" type="button" class="btn-primary flex-1" :disabled="!merchantPayable(m)" @click="preparePayout(m)">Payer</button>
             </div>
           </div>
-          <p v-if="!visibleMerchants.length" class="p-4 text-center text-sm text-gray-500">Aucun montant à payer.</p>
+          <p v-if="!visibleMerchants.length" class="p-4 text-center text-sm text-slate-600">Aucun montant à payer.</p>
         </div>
       </section>
     </template>
@@ -445,20 +445,20 @@
       <div v-if="courierPayout.data" class="space-y-3 text-sm">
         <p>
           {{ courierPayout.data.courier_name }} · {{ date(courierPayout.data.period_start) }} → {{ date(courierPayout.data.period_end) }}
-          <span v-if="courierPayout.data.automatic" class="ml-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-gray-600">fin de période</span>
+          <span v-if="courierPayout.data.automatic" class="ml-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">fin de période</span>
         </p>
         <ul class="border rounded divide-y max-h-64 overflow-y-auto">
           <li v-for="e in courierPayout.data.earnings" :key="e.id" class="flex justify-between gap-2 p-2">
             <span>
-              {{ e.type_label }} <span class="text-gray-500">{{ e.tracking_code || e.description }}</span>
-              <span v-if="e.detail" class="block text-xs text-gray-500">{{ e.detail }}</span>
+              {{ e.type_label }} <span class="text-slate-600">{{ e.tracking_code || e.description }}</span>
+              <span v-if="e.detail" class="block text-xs text-slate-600">{{ e.detail }}</span>
             </span>
             <span :class="['whitespace-nowrap', signedClass(e.amount)]">{{ money(e.amount) }}</span>
           </li>
         </ul>
         <div class="space-y-0.5">
-          <p class="flex justify-between text-gray-600"><span>Gains (courses, salaire, primes)</span><span>{{ money(payslipTotals.gains) }}</span></p>
-          <p v-if="payslipTotals.deductions" class="flex justify-between text-gray-600"><span>Retenues</span><span class="text-red-600">− {{ money(payslipTotals.deductions) }}</span></p>
+          <p class="flex justify-between text-slate-600"><span>Gains (courses, salaire, primes)</span><span>{{ money(payslipTotals.gains) }}</span></p>
+          <p v-if="payslipTotals.deductions" class="flex justify-between text-slate-600"><span>Retenues</span><span class="text-red-600">− {{ money(payslipTotals.deductions) }}</span></p>
           <p class="text-lg flex justify-between"><span>Total à payer</span><strong>{{ money(courierPayout.data.amount) }}</strong></p>
         </div>
         <PayForm
@@ -476,6 +476,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'

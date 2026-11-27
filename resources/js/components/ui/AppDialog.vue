@@ -8,7 +8,7 @@
           @keydown.esc="cancel"
         >
           <div class="mb-1 flex items-start gap-3">
-            <span :class="['grid h-10 w-10 shrink-0 place-items-center rounded-full text-[20px]', state.danger ? 'bg-red-50' : 'bg-blue-50']" aria-hidden="true">{{ state.kind === 'prompt' ? '✏️' : (state.danger ? '⚠️' : '❓') }}</span>
+            <span :class="['grid h-10 w-10 shrink-0 place-items-center rounded-full text-[20px]', state.danger ? 'bg-red-50' : 'bg-blue-50']" aria-hidden="true"><Icone :nom="state.kind === 'prompt' ? 'modifier' : (state.danger ? 'alerte' : 'aide')" :class="state.danger ? 'text-critique' : 'text-info'" /></span>
             <div class="min-w-0 flex-1 pt-1.5">
               <h2 v-if="state.title" id="app-dialog-title" class="text-[17px] font-bold leading-snug text-slate-900">{{ state.title }}</h2>
               <p v-if="state.message" class="mt-1 whitespace-pre-line text-[15px] text-slate-600">{{ state.message }}</p>
@@ -32,6 +32,7 @@
 </template>
 
 <script setup>
+import Icone from './Icone.vue'
 import { nextTick, ref, watch } from 'vue'
 import { closeDialog, dialogState as state } from '../../composables/useDialog'
 

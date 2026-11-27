@@ -9,13 +9,13 @@
       <button type="button" class="rounded-full px-2 py-1 ring-1 ring-slate-300" @click="set([])">Aucune</button>
     </div>
     <div v-for="g in groups" :key="g.label">
-      <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 mt-1">{{ g.label }} ({{ g.zones.filter((z) => model.includes(z.id)).length }}/{{ g.zones.length }})</p>
+      <p class="text-xs font-semibold uppercase tracking-wide text-slate-600 mt-1">{{ g.label }} ({{ g.zones.filter((z) => model.includes(z.id)).length }}/{{ g.zones.length }})</p>
       <div class="grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-1">
         <label v-for="z in g.zones.filter(matches)" :key="z.id" class="flex items-center gap-2 text-sm">
           <input v-model="model" type="checkbox" :value="z.id"> {{ z.name }}
         </label>
       </div>
-      <p v-if="!g.zones.length" class="text-xs text-gray-500">{{ g.empty }}</p>
+      <p v-if="!g.zones.length" class="text-xs text-slate-600">{{ g.empty }}</p>
     </div>
   </div>
 </template>

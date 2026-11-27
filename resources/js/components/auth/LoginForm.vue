@@ -31,7 +31,7 @@
           required
           :class="['w-full rounded-xl border border-slate-300 bg-white px-4 py-3 pr-12 text-base focus:outline-none focus:ring-2 focus:border-transparent', ring]"
         >
-        <button type="button" class="absolute inset-y-0 right-0 px-3 text-slate-500" :aria-label="showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'" @click="showPassword = !showPassword">
+        <button type="button" class="absolute inset-y-0 right-0 px-3 text-slate-600" :aria-label="showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'" @click="showPassword = !showPassword">
           <StatusIcon :name="showPassword ? 'eye-off' : 'eye'" class="h-5 w-5" />
         </button>
       </span>

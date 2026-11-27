@@ -20,24 +20,25 @@
 
     <div class="mt-8 space-y-4">
       <div v-for="c in shown" :key="c.id" class="flex items-center gap-4 text-xl lg:text-2xl">
-        <span :class="['w-40 lg:w-72 shrink-0 truncate font-bold', c.flags.length ? 'text-orange-400' : c.state === 'offline' ? 'text-slate-400' : '']">{{ c.name }}<template v-if="c.flags.length"> ⚠</template></span>
+        <span :class="['w-40 lg:w-72 shrink-0 truncate font-bold', c.flags.length ? 'text-orange-400' : c.state === 'offline' ? 'text-slate-400' : '']">{{ c.name }}<Icone v-if="c.flags.length" nom="alerte" class="ml-2 inline" /></span>
         <!-- En MAD : chez quel client, sans barre d'avancement -->
         <span v-if="c.mad && !c.deliveries.total" class="flex-1 truncate rounded-full bg-violet-900/60 px-4 py-1 text-lg text-violet-200">En MAD chez {{ c.mad.merchant }}<template v-if="c.mad.from"> · {{ c.mad.from }}–{{ c.mad.to }}</template></span>
         <div v-else class="h-4 flex-1 rounded-full bg-slate-700">
           <div :class="['h-4 rounded-full', c.flags.length ? 'bg-orange-400' : c.state === 'offline' ? 'bg-slate-500' : c.mad ? 'bg-violet-400' : 'bg-emerald-400']" :style="{ width: `${barWidth(c)}%` }" />
         </div>
         <span class="w-28 lg:w-44 shrink-0 text-right tabular-nums">
-          <template v-if="c.deliveries.total">{{ c.deliveries.done }} / {{ c.deliveries.total }}<template v-if="c.deliveries.done === c.deliveries.total"> ✓</template></template>
+          <template v-if="c.deliveries.total">{{ c.deliveries.done }} / {{ c.deliveries.total }}<Icone v-if="c.deliveries.done === c.deliveries.total" nom="valider" class="ml-1 inline" /></template>
           <span v-if="c.deliveries.units_total > c.deliveries.total" class="block text-base text-slate-400">{{ c.deliveries.units_done }} / {{ c.deliveries.units_total }} plis</span>
         </span>
       </div>
       <p v-if="!shown.length" class="text-xl text-slate-400">Aucune livraison prévue aujourd'hui.</p>
     </div>
-    <p class="mt-8 text-sm text-slate-500">Se met à jour tout seul.</p>
+    <p class="mt-8 text-sm text-slate-600">Se met à jour tout seul.</p>
   </div>
 </template>
 
 <script setup>
+import Icone from '../../../components/ui/Icone.vue'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import http from '../../../bootstrap/axios'

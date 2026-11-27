@@ -1,12 +1,12 @@
 <template>
-  <SettingsPage icon="📝" title="Motifs et notes de suivi" intro="Ce que le livreur choisit quand il ne livre pas ou ne ramasse pas, et les notes de suivi de l'équipe. Les motifs communs se règlent ou se désactivent ; ajoutez les vôtres.">
+  <SettingsPage icon="note" title="Motifs et notes de suivi" intro="Ce que le livreur choisit quand il ne livre pas ou ne ramasse pas, et les notes de suivi de l'équipe. Les motifs communs se règlent ou se désactivent ; ajoutez les vôtres.">
     <div class="flex flex-wrap gap-2">
       <button v-for="t in TABS" :key="t.key" type="button" class="px-3 py-1.5 rounded-full text-sm border"
-        :class="tab === t.key ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700'" @click="tab = t.key; editing = null">
+        :class="tab === t.key ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-700'" @click="tab = t.key; editing = null">
         {{ t.label }} <span class="opacity-70">{{ countFor(t.key) }}</span>
       </button>
     </div>
-    <p class="text-sm text-gray-600">{{ currentTab.help }}</p>
+    <p class="text-sm text-slate-600">{{ currentTab.help }}</p>
 
     <div class="flex flex-wrap gap-2 items-center">
       <select v-if="tab !== 'follow_up'" v-model="activity" class="input w-auto" aria-label="Activité">
@@ -22,16 +22,16 @@
     <ReasonEditor v-if="editing && !editing.id" :model="editing" :tab="tab" :saving="saving" :error="error" @save="save" @cancel="editing = null" />
 
     <section v-for="g in groups" :key="g.key" class="card divide-y">
-      <h2 v-if="tab !== 'follow_up'" class="px-4 py-2 font-semibold text-sm bg-gray-50">{{ g.icon }} {{ g.label }}</h2>
+      <h2 v-if="tab !== 'follow_up'" class="px-4 py-2 font-semibold text-sm bg-gray-50"><Icone v-if="g.icon" :nom="g.icon" taille="petite" class="inline" /> {{ g.label }}</h2>
       <div v-for="r in g.reasons" :key="r.id">
         <div class="px-4 py-2.5 flex items-start gap-3 cursor-pointer hover:bg-gray-50" :class="{ 'opacity-50': !r.is_active }" @click="edit(r)">
           <div class="flex-1 min-w-0">
             <p class="font-medium">{{ r.label }} <span v-if="r.company_id" class="text-xs text-blue-600">· le vôtre</span></p>
             <p class="flex flex-wrap gap-1 mt-0.5">
-              <span v-for="t in tags(r)" :key="t" class="text-[11px] rounded bg-gray-100 text-gray-700 px-1.5">{{ t }}</span>
+              <span v-for="t in tags(r)" :key="t.label" class="inline-flex items-center gap-1 text-xs rounded bg-gray-100 text-slate-700 px-1.5"><Icone v-if="t.icon" :nom="t.icon" taille="petite" />{{ t.label }}</span>
             </p>
           </div>
-          <label class="flex items-center gap-1 text-xs text-gray-600" @click.stop>
+          <label class="flex items-center gap-1 text-xs text-slate-600" @click.stop>
             <input type="checkbox" :checked="r.is_active" @change="toggle(r)"> Actif
           </label>
         </div>
@@ -39,11 +39,12 @@
           class="border-t bg-gray-50" @save="save" @cancel="editing = null" @delete="remove(r)" />
       </div>
     </section>
-    <p v-if="!groups.length && !loadError" class="text-sm text-gray-500">Aucun motif.</p>
+    <p v-if="!groups.length && !loadError" class="text-sm text-slate-600">Aucun motif.</p>
   </SettingsPage>
 </template>
 
 <script setup>
+import Icone from '../../../components/ui/Icone.vue'
 import { computed, onMounted, ref } from 'vue'
 import http, { apiErrorMessage } from '../../../bootstrap/axios'
 import SettingsPage from '../../../components/settings/SettingsPage.vue'
@@ -85,17 +86,17 @@ const groups = computed(() => {
 
 function tags(r) {
   const t = []
-  if (r.applies_to === 'both') t.push('Ramassage et livraison')
-  if (r.applies_to !== 'follow_up') t.push(r.activities?.length ? r.activities.map(activityShort).join(', ') : 'Toutes activités')
-  if (r.counts_as_attempt) t.push('Compte une tentative')
-  if (r.triggers_return) t.push('↩️ Retour au client')
-  if (r.requires_date) t.push('📅 Date')
-  if (r.requires_note) t.push('✏️ Note obligatoire')
-  if (r.photo === 'required') t.push('📷 Photo obligatoire')
-  if (r.photo === 'optional') t.push('📷 Photo possible')
-  if (r.destination_effect) t.push(`📇 ${DESTINATION_EFFECTS[r.destination_effect]}`)
-  if (r.holds) t.push('⏸ Met en attente')
-  if (r.visible_to_client) t.push('👁 Vu du client')
+  if (r.applies_to === 'both') t.push({ label: 'Ramassage et livraison' })
+  if (r.applies_to !== 'follow_up') t.push({ label: r.activities?.length ? r.activities.map(activityShort).join(', ') : 'Toutes activités' })
+  if (r.counts_as_attempt) t.push({ label: 'Compte une tentative' })
+  if (r.triggers_return) t.push({ icon: 'retour', label: 'Retour au client' })
+  if (r.requires_date) t.push({ icon: 'date', label: 'Date' })
+  if (r.requires_note) t.push({ icon: 'modifier', label: 'Note obligatoire' })
+  if (r.photo === 'required') t.push({ icon: 'photo', label: 'Photo obligatoire' })
+  if (r.photo === 'optional') t.push({ icon: 'photo', label: 'Photo possible' })
+  if (r.destination_effect) t.push({ icon: 'annuaire', label: DESTINATION_EFFECTS[r.destination_effect] })
+  if (r.holds) t.push({ icon: 'pause', label: 'Met en attente' })
+  if (r.visible_to_client) t.push({ icon: 'voir', label: 'Vu du client' })
   return t
 }
 

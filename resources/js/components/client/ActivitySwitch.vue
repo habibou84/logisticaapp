@@ -2,9 +2,9 @@
   <!-- Client à plusieurs activités : on regarde l'une d'elles, ou toutes -->
   <div v-if="menu && choices.length > 1">
     <button type="button" class="tap flex h-11 w-full items-center gap-2 rounded-xl bg-white px-3 text-sm font-semibold ring-1 ring-slate-200 active:bg-slate-50" aria-haspopup="dialog" @click="open = true">
-      <StatusIcon name="sliders" class="h-4 w-4 shrink-0 text-slate-500" />
+      <StatusIcon name="sliders" class="h-4 w-4 shrink-0 text-slate-600" />
       <span class="flex-1 truncate text-left">{{ activeLabel }}</span>
-      <StatusIcon name="down" class="h-4 w-4 shrink-0 text-slate-500" />
+      <StatusIcon name="down" class="h-4 w-4 shrink-0 text-slate-600" />
     </button>
     <BottomSheet :open="open" title="Activité" @close="open = false">
       <div class="m-card divide-y" role="radiogroup" aria-label="Activité affichée">

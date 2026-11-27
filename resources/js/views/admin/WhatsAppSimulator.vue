@@ -4,7 +4,7 @@
       <h1 class="text-xl font-bold">Simulateur WhatsApp</h1>
       <RouterLink to="/admin/whatsapp" class="btn-secondary">Paramètres WhatsApp</RouterLink>
     </div>
-    <p class="text-sm text-gray-600">
+    <p class="text-sm text-slate-600">
       Écrivez au bot comme un client depuis son téléphone : demande de course, commande de client transférée,
       suivi d'un colis… Les courses confirmées ici sont réellement créées (source « whatsapp »).
     </p>
@@ -13,7 +13,7 @@
       <!-- Conversation -->
       <div class="card flex flex-col h-[70vh] overflow-hidden">
         <div class="flex items-center gap-3 border-b p-3 bg-emerald-700 text-white">
-          <span class="text-2xl">💬</span>
+          <Icone nom="message" taille="grande" />
           <div class="min-w-0">
             <p class="font-semibold truncate">{{ companyName }}</p>
             <p class="text-xs opacity-80 truncate">vu par {{ sender?.label || 'choisissez un expéditeur' }}</p>
@@ -21,7 +21,7 @@
         </div>
 
         <div ref="scroller" class="flex-1 overflow-y-auto p-4 space-y-3 bg-[#efeae2]">
-          <p v-if="!log.length" class="text-center text-sm text-gray-500 py-10">Envoyez « Bonjour » pour commencer.</p>
+          <p v-if="!log.length" class="text-center text-sm text-slate-600 py-10">Envoyez « Bonjour » pour commencer.</p>
           <div v-for="(m, i) in log" :key="i" :class="['flex', m.from === 'me' ? 'justify-end' : 'justify-start']">
             <div :class="['max-w-[85%] rounded-lg px-3 py-2 shadow-sm text-sm', m.from === 'me' ? 'bg-[#d9fdd3]' : 'bg-white']">
               <p class="whitespace-pre-line" v-html="formatText(m.text)" />
@@ -30,7 +30,7 @@
                   v-for="b in m.buttons"
                   :key="b.id"
                   type="button"
-                  class="w-full py-2 text-center text-sky-700 font-medium hover:bg-sky-50 disabled:text-gray-400"
+                  class="w-full py-2 text-center text-sky-700 font-medium hover:bg-sky-50 disabled:text-slate-500"
                   :disabled="sending || i !== log.length - 1"
                   @click="send(b.title, b.id)"
                 >
@@ -39,7 +39,7 @@
               </div>
             </div>
           </div>
-          <p v-if="sending" class="text-xs text-gray-500">Le bot écrit…</p>
+          <p v-if="sending" class="text-xs text-slate-600">Le bot écrit…</p>
         </div>
 
         <form class="flex gap-2 border-t p-3 bg-white" @submit.prevent="send(draft)">
@@ -63,7 +63,7 @@
           <select id="sender" v-model="senderKey" class="input" @change="log = []">
             <option v-for="s in senders" :key="s.key" :value="s.key">{{ s.label }}</option>
           </select>
-          <p class="text-xs text-gray-500">Numéro WhatsApp du client, ou un numéro inconnu pour voir le refus.</p>
+          <p class="text-xs text-slate-600">Numéro WhatsApp du client, ou un numéro inconnu pour voir le refus.</p>
         </div>
 
         <div class="card p-4 space-y-2 text-sm">
@@ -73,7 +73,7 @@
           </button>
         </div>
 
-        <p v-if="!settings?.ai_parser" class="text-xs text-gray-500">
+        <p v-if="!settings?.ai_parser" class="text-xs text-slate-600">
           Analyse par règles. Ajoutez <code>ANTHROPIC_API_KEY</code> dans <code>.env</code> pour que Claude comprenne aussi les messages sans format.
         </p>
       </aside>
@@ -82,6 +82,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import { computed, nextTick, onMounted, ref } from 'vue'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import { useAuthStore } from '../../stores/auth'

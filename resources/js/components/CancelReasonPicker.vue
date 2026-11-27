@@ -16,11 +16,12 @@
       <label class="label" :for="noteId">Précision {{ modelValue === 'other' ? '*' : '(facultatif)' }}</label>
       <textarea :id="noteId" :value="note" rows="2" :class="mobile ? 'm-input' : 'input'" maxlength="500" :required="modelValue === 'other'" @input="$emit('update:note', $event.target.value)" />
     </div>
-    <p v-if="info && !info.merchant" class="rounded-lg bg-blue-50 px-3 py-2 text-xs text-blue-900">📣 Le client est prévenu avec ce motif et votre nom.</p>
+    <p v-if="info && !info.merchant" class="rounded-lg bg-blue-50 px-3 py-2 text-xs text-blue-900"><Icone nom="remontee" taille="petite" class="inline align-text-bottom" /> Le client est prévenu avec ce motif et votre nom.</p>
   </div>
 </template>
 
 <script setup>
+import Icone from './ui/Icone.vue'
 import { onMounted, ref } from 'vue'
 import http from '../bootstrap/axios'
 

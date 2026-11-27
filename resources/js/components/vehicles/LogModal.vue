@@ -1,8 +1,8 @@
 <template>
-  <Modal :open="open" :title="`${kindInfo?.icon || ''} ${title}`" @close="$emit('close')">
+  <Modal :open="open" :title="title" @close="$emit('close')">
     <form class="space-y-3" @submit.prevent="save">
       <div class="flex flex-wrap gap-1.5">
-        <button v-for="k in catalog.log_kinds" :key="k.value" type="button" :class="['rounded-full px-3 py-1 text-sm', form.kind === k.value ? 'bg-slate-900 text-white' : 'bg-slate-100']" @click="form.kind = k.value">{{ k.icon }} {{ k.label }}</button>
+        <button v-for="k in catalog.log_kinds" :key="k.value" type="button" :class="['rounded-full px-3 py-1 text-sm', form.kind === k.value ? 'bg-slate-900 text-white' : 'bg-slate-100']" @click="form.kind = k.value"><Icone v-if="k.icon" :nom="k.icon" taille="petite" class="inline align-text-bottom" /> {{ k.label }}</button>
       </div>
       <div class="grid grid-cols-2 gap-3">
         <div><label class="label" for="l-date">Date</label><input id="l-date" v-model="form.done_on" type="date" class="input"></div>
@@ -25,16 +25,16 @@
         </div>
         <div v-if="form.kind === 'claim' && settings.damage_charge_courier">
           <label class="label" for="l-share">Part retenue au livreur (F)</label><input id="l-share" v-model.number="form.courier_share" type="number" min="0" class="input">
-          <p class="text-xs text-gray-500 mt-1">Dans la limite de {{ money(settings.damage_cap_month) }} par mois.</p>
+          <p class="text-xs text-slate-600 mt-1">Dans la limite de {{ money(settings.damage_cap_month) }} par mois.</p>
         </div>
       </div>
       <label v-if="form.kind === 'fine' && settings.fines_charge_courier" class="flex items-center gap-2 text-sm"><input v-model="form.charge_courier" type="checkbox"> Retenir l'amende sur la paie du livreur</label>
-      <p v-if="form.kind === 'fuel' && form.paid_by === 'courier'" class="text-xs text-gray-500">{{ FUEL_NOTE[settings.fuel_mode] }}</p>
+      <p v-if="form.kind === 'fuel' && form.paid_by === 'courier'" class="text-xs text-slate-600">{{ FUEL_NOTE[settings.fuel_mode] }}</p>
 
       <div v-if="form.kind === 'maintenance' && plan.length">
         <p class="label">Entretien du plan fait</p>
         <div class="flex flex-wrap gap-x-4 gap-y-1">
-          <label v-for="p in plan" :key="p.key" class="flex items-center gap-1.5 text-sm"><input v-model="form.plan_keys" type="checkbox" :value="p.key"> {{ p.icon }} {{ p.label }}</label>
+          <label v-for="p in plan" :key="p.key" class="flex items-center gap-1.5 text-sm"><input v-model="form.plan_keys" type="checkbox" :value="p.key"> <Icone v-if="p.icon" :nom="p.icon" taille="petite" />{{ p.label }}</label>
         </div>
       </div>
       <div>
@@ -52,6 +52,7 @@
 </template>
 
 <script setup>
+import Icone from '../ui/Icone.vue'
 import { computed, reactive, ref, watch } from 'vue'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import Modal from '../Modal.vue'

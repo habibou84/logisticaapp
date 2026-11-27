@@ -17,7 +17,7 @@
     </div>
 
     <p v-if="error" class="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{{ error }}</p>
-    <p v-if="!data && !error" class="py-10 text-center text-slate-500">Chargement…</p>
+    <p v-if="!data && !error" class="py-10 text-center text-slate-600">Chargement…</p>
 
     <template v-if="data">
       <!-- Taux de livraison : le chiffre qui compte -->
@@ -32,7 +32,7 @@
 
       <div class="grid grid-cols-2 gap-3">
         <div v-for="t in tiles" :key="t.label" class="m-card p-4">
-          <p class="text-xs text-slate-500">{{ t.label }}</p>
+          <p class="text-xs text-slate-600">{{ t.label }}</p>
           <p class="text-xl font-bold mt-0.5">{{ t.value }}</p>
           <p v-if="t.hint" :class="['text-xs mt-0.5', t.hintClass || 'text-slate-400']">{{ t.hint }}</p>
         </div>
@@ -50,15 +50,15 @@
       <section v-if="data.shipments?.total" class="m-card p-4 space-y-4">
         <h2 class="font-semibold">Mes envois ({{ data.shipments.total }})</h2>
         <div>
-          <p class="text-xs font-bold uppercase tracking-wide text-slate-500 mb-2">Par type</p>
+          <p class="text-xs font-bold uppercase tracking-wide text-slate-600 mb-2">Par type</p>
           <BarList :items="data.shipments.types.filter((i) => i.count)" :color="SERIES[0]" />
         </div>
         <div>
-          <p class="text-xs font-bold uppercase tracking-wide text-slate-500 mb-2">Par destination</p>
+          <p class="text-xs font-bold uppercase tracking-wide text-slate-600 mb-2">Par destination</p>
           <BarList :items="data.shipments.destinations.filter((i) => i.count)" :color="SERIES[2]" />
         </div>
         <div v-if="data.shipments.delays.some((i) => i.count)">
-          <p class="text-xs font-bold uppercase tracking-wide text-slate-500 mb-2">Par délai</p>
+          <p class="text-xs font-bold uppercase tracking-wide text-slate-600 mb-2">Par délai</p>
           <BarList :items="data.shipments.delays.filter((i) => i.count)" :color="SERIES[1]" />
         </div>
       </section>
@@ -78,8 +78,8 @@
 
       <section class="m-card p-4 space-y-3">
         <h2 class="font-semibold">Pourquoi des livraisons échouent</h2>
-        <BarList :items="data.failure_reasons" :color="SERIES[1]" empty="Aucun échec sur la période. 👏" />
-        <p v-if="data.failure_reasons.length" class="text-xs text-slate-500">
+        <BarList :items="data.failure_reasons" :color="SERIES[1]" empty="Aucun échec sur la période." />
+        <p v-if="data.failure_reasons.length" class="text-xs text-slate-600">
           Astuce : un destinataire injoignable ou absent revient souvent à un numéro mal noté. Vérifiez-le avant de créer la course.
         </p>
       </section>
@@ -95,7 +95,7 @@
             </span>
           </li>
         </ul>
-        <p v-else class="text-sm text-slate-500">Aucune livraison sur la période.</p>
+        <p v-else class="text-sm text-slate-600">Aucune livraison sur la période.</p>
       </section>
 
       <section class="m-card p-4 space-y-2 text-sm">

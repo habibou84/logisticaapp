@@ -1,5 +1,5 @@
 <template>
-  <SettingsPage icon="🏢" title="Entreprise et marque" intro="Ce que voient vos clients, vos livreurs et votre équipe : nom, coordonnées, logo, couleurs, adresse de l'espace.">
+  <SettingsPage icon="entreprise" title="Entreprise et marque" intro="Ce que voient vos clients, vos livreurs et votre équipe : nom, coordonnées, logo, couleurs, adresse de l'espace.">
     <section v-if="form" class="card p-4 space-y-3">
       <h2 class="font-semibold">Identité</h2>
       <div class="grid sm:grid-cols-2 gap-3">
@@ -18,7 +18,7 @@
     <section v-if="payments.form.value" class="card p-4 space-y-3">
       <div>
         <h2 class="font-semibold">Paiement des factures clients</h2>
-        <p class="text-sm text-gray-600">
+        <p class="text-sm text-slate-600">
           Les moyens que vous acceptez : comptes bancaires, comptes Mobile Money, chèque, espèces… Ceux « proposés aux clients »
           sont imprimés sur les factures du mois et affichés dans l'application du client, avec un bouton pour copier l'IBAN ou le numéro.
         </p>
@@ -37,7 +37,7 @@
       <div class="flex flex-wrap items-center gap-4">
         <div class="h-20 w-40 rounded-lg border border-dashed border-slate-300 grid place-items-center bg-slate-50 overflow-hidden">
           <img v-if="logoUrl" :src="logoUrl" alt="Logo actuel" class="max-h-20 max-w-40 object-contain">
-          <span v-else class="text-xs text-gray-500">Aucun logo</span>
+          <span v-else class="text-xs text-slate-600">Aucun logo</span>
         </div>
         <div class="space-y-2">
           <label class="btn-secondary cursor-pointer inline-block">
@@ -45,7 +45,7 @@
             <input type="file" accept="image/png,image/jpeg,image/webp" class="sr-only" :disabled="uploading" @change="uploadLogo">
           </label>
           <button v-if="logoUrl" type="button" class="btn-secondary text-red-700 ml-2" @click="removeLogo">Retirer</button>
-          <p class="text-xs text-gray-500">PNG, JPEG ou WebP, 2 Mo au plus. Fond transparent conseillé (PNG).</p>
+          <p class="text-xs text-slate-600">PNG, JPEG ou WebP, 2 Mo au plus. Fond transparent conseillé (PNG).</p>
         </div>
       </div>
       <MoreHelp>Affiché sur la page d'accueil des clients (adresse du site), les pages de connexion, l'en-tête de chaque espace et l'icône des applications.</MoreHelp>
@@ -58,7 +58,7 @@
       <h2 class="font-semibold">Guide vidéo</h2>
       <label class="flex items-start gap-2 text-sm">
         <input v-model="guide.form.value.guide_videos" type="checkbox" class="mt-1">
-        <span>Afficher « Bien démarrer » sur le tableau de bord des administrateurs<span class="block text-gray-500">Neuf vidéos : les étapes essentielles de la mise en route et le planning des livreurs. Chacun peut aussi la masquer pour lui ; elle reste toujours dans Mise en route.</span></span>
+        <span>Afficher « Bien démarrer » sur le tableau de bord des administrateurs<span class="block text-slate-600">Neuf vidéos : les étapes essentielles de la mise en route et le planning des livreurs. Chacun peut aussi la masquer pour lui ; elle reste toujours dans Mise en route.</span></span>
       </label>
       <SaveBar :dirty="guide.dirty.value" :saving="guide.saving.value" :error="guide.error.value" @save="guide.save" @reset="guide.reset" />
     </section>

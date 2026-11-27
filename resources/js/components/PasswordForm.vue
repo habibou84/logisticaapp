@@ -2,7 +2,7 @@
   <section class="space-y-3">
     <div class="flex items-start justify-between gap-3">
       <div>
-        <p class="font-medium">🔑 {{ hasPassword ? 'Mon mot de passe' : 'Définir un mot de passe' }}</p>
+        <p class="flex items-center gap-1.5 font-medium"><Icone nom="cle" />{{ hasPassword ? 'Mon mot de passe' : 'Définir un mot de passe' }}</p>
         <p class="text-sm text-slate-600">
           {{ hasPassword
             ? 'Changez-le quand vous voulez : vos autres appareils seront déconnectés.'
@@ -39,6 +39,7 @@
 </template>
 
 <script setup>
+import Icone from './ui/Icone.vue'
 import { computed, reactive, ref } from 'vue'
 import http, { apiErrorMessage } from '../bootstrap/axios'
 import { useAuthStore } from '../stores/auth'

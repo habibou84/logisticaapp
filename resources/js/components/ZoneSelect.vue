@@ -19,13 +19,14 @@
         :class="[mobile ? 'px-4 py-3 border-b last:border-0 active:bg-slate-50' : 'px-3 py-2 text-sm hover:bg-slate-50', 'cursor-pointer', z.id === modelValue ? 'font-semibold' : '']"
         @mousedown.prevent="pick(z)"
       >
-        <span v-if="z.is_shipping">🚌 </span>{{ z.full_name }}
+        <Icone v-if="z.is_shipping" nom="expedition" taille="petite" class="inline align-text-bottom" /> {{ z.full_name }}
       </li>
     </ul>
   </div>
 </template>
 
 <script setup>
+import Icone from './ui/Icone.vue'
 import { computed, ref, watch } from 'vue'
 
 /**

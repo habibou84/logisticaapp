@@ -16,7 +16,7 @@
       <div v-if="tab !== 'follow_up'">
         <label class="label" for="reason-family">Famille</label>
         <select id="reason-family" v-model="model.family" class="input">
-          <option v-for="(f, key) in REASON_FAMILIES" :key="key" :value="key">{{ f.icon }} {{ f.label }}</option>
+          <option v-for="(f, key) in REASON_FAMILIES" :key="key" :value="key">{{ f.label }}</option>
         </select>
       </div>
     </div>
@@ -33,14 +33,14 @@
     <fieldset class="grid sm:grid-cols-2 gap-2 text-sm">
       <legend class="label">Ce que le motif demande et ce qu'il fait</legend>
       <label class="flex items-start gap-2"><input v-model="model.requires_date" type="checkbox" class="mt-1">
-        <span>Demande une date<span class="block text-gray-500">{{ tab === 'follow_up' ? 'La course est reprogrammée à cette date.' : 'Report : nouvelle date de livraison.' }}</span></span></label>
+        <span>Demande une date<span class="block text-slate-600">{{ tab === 'follow_up' ? 'La course est reprogrammée à cette date.' : 'Report : nouvelle date de livraison.' }}</span></span></label>
       <label class="flex items-start gap-2"><input v-model="model.requires_note" type="checkbox" class="mt-1">
-        <span>Note obligatoire<span class="block text-gray-500">Préciser ce qui se passe (« Autres »).</span></span></label>
+        <span>Note obligatoire<span class="block text-slate-600">Préciser ce qui se passe (« Autres »).</span></span></label>
       <template v-if="tab !== 'follow_up'">
         <label class="flex items-start gap-2"><input v-model="model.counts_as_attempt" type="checkbox" class="mt-1">
-          <span>Compte une tentative<span class="block text-gray-500">Au bout du nombre de tentatives réglé, la course part en retour.</span></span></label>
+          <span>Compte une tentative<span class="block text-slate-600">Au bout du nombre de tentatives réglé, la course part en retour.</span></span></label>
         <label class="flex items-start gap-2"><input v-model="model.triggers_return" type="checkbox" class="mt-1">
-          <span>Retour au client tout de suite<span class="block text-gray-500">Le pli revient, compté comme une course ; elle peut être reconduite.</span></span></label>
+          <span>Retour au client tout de suite<span class="block text-slate-600">Le pli revient, compté comme une course ; elle peut être reconduite.</span></span></label>
         <div>
           <label class="label" for="reason-photo">Photo du livreur</label>
           <select id="reason-photo" v-model="model.photo" class="input">
@@ -52,9 +52,9 @@
       </template>
       <template v-else>
         <label class="flex items-start gap-2"><input v-model="model.holds" type="checkbox" class="mt-1">
-          <span>Met la course en attente<span class="block text-gray-500">Ni attribution automatique, ni file « sans livreur » tant que la note est posée.</span></span></label>
+          <span>Met la course en attente<span class="block text-slate-600">Ni attribution automatique, ni file « sans livreur » tant que la note est posée.</span></span></label>
         <label class="flex items-start gap-2"><input v-model="model.visible_to_client" type="checkbox" class="mt-1">
-          <span>Visible du client<span class="block text-gray-500">La note apparaît dans son suivi de la course.</span></span></label>
+          <span>Visible du client<span class="block text-slate-600">La note apparaît dans son suivi de la course.</span></span></label>
       </template>
       <div>
         <label class="label" for="reason-effect">Fiche de l'annuaire</label>

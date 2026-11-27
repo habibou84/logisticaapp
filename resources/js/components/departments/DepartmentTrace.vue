@@ -1,20 +1,21 @@
 <template>
   <!-- Départements du client : qui a demandé, qui a remis, qui a livré, qui a reçu -->
   <section v-if="order.department || order.to_department" :class="mobile ? 'm-card p-4 space-y-3' : 'card p-4 space-y-3'">
-    <h2 class="font-semibold">🏢 Qui a fait quoi</h2>
+    <h2 class="flex items-center gap-1.5 font-semibold"><Icone nom="entreprise" />Qui a fait quoi</h2>
     <ol class="relative space-y-3 border-l-2 border-slate-200 pl-4">
       <li v-for="(s, i) in steps" :key="i" class="relative">
         <span :class="['absolute -left-[1.4rem] top-1 h-3 w-3 rounded-full ring-2 ring-white', s.done ? 'bg-emerald-500' : 'bg-slate-300']" aria-hidden="true" />
-        <p class="text-sm"><span class="text-slate-500">{{ s.label }}</span> <strong>{{ s.who || '—' }}</strong><span v-if="s.role" class="text-slate-600"> · {{ s.role }}</span></p>
-        <p v-if="s.where || s.at" class="text-xs text-slate-500">{{ s.where }}<template v-if="s.where && s.at"> · </template>{{ s.at ? dateTime(s.at) : '' }}</p>
+        <p class="text-sm"><span class="text-slate-600">{{ s.label }}</span> <strong>{{ s.who || '—' }}</strong><span v-if="s.role" class="text-slate-600"> · {{ s.role }}</span></p>
+        <p v-if="s.where || s.at" class="text-xs text-slate-600">{{ s.where }}<template v-if="s.where && s.at"> · </template>{{ s.at ? dateTime(s.at) : '' }}</p>
         <a v-if="s.proof" :href="s.proof" target="_blank" class="text-xs text-blue-600">{{ s.proofLabel }}</a>
       </li>
     </ol>
-    <p v-if="order.department?.cost_center" class="text-xs text-slate-500">Centre de coûts : <span class="font-mono">{{ order.department.cost_center }}</span></p>
+    <p v-if="order.department?.cost_center" class="text-xs text-slate-600">Centre de coûts : <span class="font-mono">{{ order.department.cost_center }}</span></p>
   </section>
 </template>
 
 <script setup>
+import Icone from '../ui/Icone.vue'
 import { computed } from 'vue'
 import { dateTime } from '../../utils/format'
 

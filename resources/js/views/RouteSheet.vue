@@ -3,7 +3,7 @@
   <div class="route-page bg-white p-6 text-black">
     <div class="no-print mb-4 flex flex-wrap items-center gap-2">
       <button class="btn-primary" :disabled="!orders.length" @click="print">Imprimer</button>
-      <span class="text-sm text-gray-500">Format A4 paysage · {{ orders.length }} course(s)</span>
+      <span class="text-sm text-slate-600">Format A4 paysage · {{ orders.length }} course(s)</span>
     </div>
 
     <p v-if="loading">Chargement…</p>
@@ -38,14 +38,14 @@
             <td class="cell">
               <strong>{{ o.recipient.name || '—' }}</strong>
               <span class="block">{{ o.recipient.phone }}</span>
-              <span v-if="o.package?.description" class="block text-gray-600">{{ o.package.description }}</span>
+              <span v-if="o.package?.description" class="block text-slate-600">{{ o.package.description }}</span>
             </td>
             <td class="cell">
               <strong>{{ o.delivery.zone_name }}</strong>
               <span class="block">{{ o.delivery.address }}</span>
-              <span v-if="o.delivery.landmark" class="block text-gray-600">Repère : {{ o.delivery.landmark }}</span>
+              <span v-if="o.delivery.landmark" class="block text-slate-600">Repère : {{ o.delivery.landmark }}</span>
             </td>
-            <td class="cell font-mono">{{ o.tracking_code }}<span v-if="o.status === 'delivered'" class="block font-sans text-gray-600">remise : {{ o.received_by_name || 'oui' }}</span></td>
+            <td class="cell font-mono">{{ o.tracking_code }}<span v-if="o.status === 'delivered'" class="block font-sans text-slate-600">remise : {{ o.received_by_name || 'oui' }}</span></td>
             <td class="cell h-14" />
             <td class="cell" />
             <td class="cell" />

@@ -9,10 +9,10 @@
         <span :class="['rounded-full px-2 py-0.5 text-xs font-semibold', vehicle.status === 'active' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800']">{{ vehicle.status_label }}</span>
       </div>
       <div class="grid grid-cols-2 gap-3 text-sm">
-        <div><p class="text-slate-500">Compteur</p><p class="font-semibold">{{ vehicle.odometer ? `${vehicle.odometer.toLocaleString('fr-FR')} km` : '—' }}</p></div>
-        <div><p class="text-slate-500">Livreur</p><p class="font-semibold">{{ vehicle.courier?.name || '—' }}</p></div>
+        <div><p class="text-slate-600">Compteur</p><p class="font-semibold">{{ vehicle.odometer ? `${vehicle.odometer.toLocaleString('fr-FR')} km` : '—' }}</p></div>
+        <div><p class="text-slate-600">Livreur</p><p class="font-semibold">{{ vehicle.courier?.name || '—' }}</p></div>
       </div>
-      <a v-if="vehicle.courier?.phone" :href="telLink(vehicle.courier.phone)" class="m-btn-secondary py-3 text-[15px]">📞 Appeler {{ vehicle.courier.name }}</a>
+      <a v-if="vehicle.courier?.phone" :href="telLink(vehicle.courier.phone)" class="m-btn-secondary py-3 text-[15px]"><Icone nom="appeler" />Appeler {{ vehicle.courier.name }}</a>
     </div>
 
     <section v-if="todo.length || vehicle.remarks.length" class="space-y-2">
@@ -31,7 +31,7 @@
       <h2 class="px-1 text-sm font-semibold uppercase tracking-wide text-slate-600">Carnet</h2>
       <div v-if="vehicle.logs.length" class="m-card divide-y">
         <div v-for="l in vehicle.logs" :key="l.id" class="flex items-start gap-3 p-3.5">
-          <span aria-hidden="true">{{ l.icon }}</span>
+          <Icone :nom="l.icon || 'atelier'" class="mt-0.5 text-slate-600" />
           <div class="min-w-0 flex-1">
             <p class="font-semibold leading-snug">{{ l.label || l.kind_label }}</p>
             <p class="text-sm text-slate-600">{{ date(l.done_on) }}{{ l.odometer ? ` · ${l.odometer.toLocaleString('fr-FR')} km` : '' }}</p>
@@ -39,7 +39,7 @@
           <span class="shrink-0 text-sm text-slate-600">{{ l.amount ? money(l.amount) : '' }}</span>
         </div>
       </div>
-      <p v-else class="px-1 text-sm text-slate-500">Rien au carnet pour l'instant.</p>
+      <p v-else class="px-1 text-sm text-slate-600">Rien au carnet pour l'instant.</p>
     </section>
   </div>
   <p v-else-if="error" class="py-10 text-center text-slate-600">{{ error }}</p>
@@ -47,6 +47,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'

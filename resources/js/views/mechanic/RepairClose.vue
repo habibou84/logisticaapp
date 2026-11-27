@@ -8,7 +8,7 @@
       <div v-for="(line, i) in form.parts" :key="i" class="m-card space-y-2 p-3">
         <div class="flex gap-2">
           <input v-model="line.label" class="m-input flex-1 py-2.5" maxlength="120" placeholder="Pièce" :aria-label="`Pièce ${i + 1}`">
-          <button type="button" class="h-11 w-11 shrink-0 rounded-xl bg-slate-100 text-slate-600" :aria-label="`Retirer la pièce ${i + 1}`" @click="form.parts.splice(i, 1)">✕</button>
+          <button type="button" class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-slate-100 text-slate-600" :aria-label="`Retirer la pièce ${i + 1}`" @click="form.parts.splice(i, 1)"><Icone nom="fermer" /></button>
         </div>
         <div class="grid grid-cols-2 gap-2">
           <input v-model.number="line.quantity" class="m-input py-2.5" type="number" min="1" inputmode="numeric" :aria-label="`Quantité, pièce ${i + 1}`" placeholder="Quantité">
@@ -16,18 +16,18 @@
         </div>
       </div>
       <button type="button" class="m-btn-secondary py-3" @click="form.parts.push({ label: '', quantity: 1, unit_price: null })">＋ Ajouter une pièce</button>
-      <p class="text-xs text-slate-500">Le magasin de pièces arrive bientôt : en attendant, indiquez le prix de chaque pièce.</p>
+      <p class="text-xs text-slate-600">Le magasin de pièces arrive bientôt : en attendant, indiquez le prix de chaque pièce.</p>
     </section>
 
     <!-- Achats sur place accordés -->
     <section v-if="approved.length" class="space-y-2">
       <p class="m-label">Achats sur place</p>
       <div v-for="p in approved" :key="p.id" class="m-card space-y-2 p-3">
-        <p class="text-sm font-semibold">{{ p.quantity }} × {{ p.label }} <span class="font-normal text-slate-500">· accordé jusqu'à {{ money(p.max_amount) }}</span></p>
+        <p class="text-sm font-semibold">{{ p.quantity }} × {{ p.label }} <span class="font-normal text-slate-600">· accordé jusqu'à {{ money(p.max_amount) }}</span></p>
         <input v-model.number="paid[p.id]" class="m-input py-2.5" type="number" min="0" inputmode="numeric" :aria-label="`Prix payé pour ${p.label}`" placeholder="Prix payé (F) ; vide si pas acheté">
         <p v-if="Number(paid[p.id]) > p.max_amount" class="text-sm text-red-700">Au-delà du montant accordé ({{ money(p.max_amount) }}) : demandez un nouvel accord pour la différence.</p>
         <PhotoCapture class="m-btn-secondary py-2.5 text-sm" @captured="receipts[p.id] = $event.file">
-          {{ receipts[p.id] ? '✓ Facture photographiée' : '📷 Photographier la facture' }}
+          <Icone :nom="receipts[p.id] ? 'valider' : 'photo'" />{{ receipts[p.id] ? 'Facture photographiée' : 'Photographier la facture' }}
         </PhotoCapture>
       </div>
     </section>
@@ -83,6 +83,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'

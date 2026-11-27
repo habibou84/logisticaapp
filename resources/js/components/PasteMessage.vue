@@ -1,7 +1,7 @@
 <template>
   <section :class="mobile ? 'm-card p-4 space-y-3' : 'card p-4 space-y-3'">
     <button v-if="!open" type="button" :class="mobile ? 'm-btn-secondary' : 'btn-secondary w-full'" @click="open = true">
-      📋 Coller un message (WhatsApp, SMS…) pour remplir la course
+      <Icone nom="coller" />Coller un message (WhatsApp, SMS…) pour remplir la course
     </button>
     <template v-else>
       <label :class="mobile ? 'm-label' : 'label'" for="paste-message">{{ mobile ? 'Collez ici le message de votre client' : 'Message du client ou du destinataire' }}</label>
@@ -16,16 +16,17 @@
       <p v-if="error" class="text-sm text-red-600">{{ error }}</p>
       <div class="flex flex-wrap gap-2">
         <button type="button" :class="mobile ? 'm-btn-primary' : 'btn-primary'" :disabled="busy || !text.trim()" @click="analyse">
-          {{ busy ? 'Analyse…' : '✨ Analyser et remplir' }}
+          <Icone v-if="!busy" nom="ia" />{{ busy ? 'Analyse…' : 'Analyser et remplir' }}
         </button>
         <button type="button" :class="mobile ? 'm-btn-secondary w-auto px-4' : 'btn-secondary'" @click="close">Fermer</button>
       </div>
-      <p class="text-xs text-gray-500">Les champs remplis sont marqués « à vérifier » : relisez-les avant d'enregistrer.</p>
+      <p class="text-xs text-slate-600">Les champs remplis sont marqués « à vérifier » : relisez-les avant d'enregistrer.</p>
     </template>
   </section>
 </template>
 
 <script setup>
+import Icone from './ui/Icone.vue'
 import { nextTick, onMounted, ref, watch } from 'vue'
 import http, { apiErrorMessage } from '../bootstrap/axios'
 

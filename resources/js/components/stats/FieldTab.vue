@@ -10,10 +10,10 @@
     <div class="grid gap-4 lg:grid-cols-2">
       <section class="card p-4 space-y-3">
         <h2 class="font-semibold">Par type</h2>
-        <BarList :items="data.by_type" empty="Aucun événement sur la période. 👏" />
+        <BarList :items="data.by_type" empty="Aucun événement sur la période." />
       </section>
       <section class="card p-4 space-y-3">
-        <h2 class="font-semibold">Zones à problème <span class="text-sm font-normal text-slate-500">· destination des courses touchées</span></h2>
+        <h2 class="font-semibold">Zones à problème <span class="text-sm font-normal text-slate-600">· destination des courses touchées</span></h2>
         <BarList :items="data.by_zone" :color="SERIES[2]" empty="Aucune course touchée." />
       </section>
     </div>
@@ -21,7 +21,7 @@
     <section class="card overflow-x-auto">
       <h2 class="font-semibold p-4 pb-2">Livreurs les plus touchés</h2>
       <table class="w-full text-sm">
-        <thead class="text-left text-slate-500">
+        <thead class="text-left text-slate-600">
           <tr><th class="p-2 pl-4">Livreur</th><th class="p-2">Événements</th><th class="p-2">Dont bloquants</th><th class="p-2">Immobilisation</th><th class="p-2">Dépannages</th><th class="p-2">Types</th></tr>
         </thead>
         <tbody>
@@ -33,7 +33,7 @@
             <td class="p-2">{{ c.cost ? money(c.cost) : '—' }}</td>
             <td class="p-2 text-slate-600">{{ Object.entries(c.types).map(([k, n]) => `${k} (${n})`).join(', ') }}</td>
           </tr>
-          <tr v-if="!data.by_courier.length"><td colspan="6" class="p-4 text-center text-slate-500">Aucun événement sur la période.</td></tr>
+          <tr v-if="!data.by_courier.length"><td colspan="6" class="p-4 text-center text-slate-600">Aucun événement sur la période.</td></tr>
         </tbody>
       </table>
     </section>

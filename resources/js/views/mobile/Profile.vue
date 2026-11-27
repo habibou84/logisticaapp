@@ -46,7 +46,7 @@
       <MenuRow to="/livreur/vehicule" icon="truck" tone="blue" label="Mon véhicule" sub="État des lieux, plein, papiers, entretien" />
       <!-- Aussi en bas de l'écran des missions -->
       <button type="button" class="tap flex w-full items-center gap-3 p-4 text-left active:bg-slate-50" @click="reporting = true">
-        <span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-slate-100 text-xl" aria-hidden="true">⚠️</span>
+        <span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-slate-100 text-xl" aria-hidden="true"><Icone nom="alerte" /></span>
         <span class="flex-1"><span class="block font-semibold">Signaler un problème</span><span class="block text-sm text-slate-600">Panne, accident, contrôle, vol…</span></span>
         <span class="text-xl text-slate-400" aria-hidden="true">›</span>
       </button>
@@ -71,11 +71,12 @@
     </div>
 
     <button class="m-btn-secondary text-red-700" @click="logout"><StatusIcon name="logout" class="h-5 w-5" />Se déconnecter</button>
-    <p class="text-center text-xs text-slate-500">Version {{ installedLabel }}</p>
+    <p class="text-center text-xs text-slate-600">Version {{ installedLabel }}</p>
   </div>
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import FieldEventSheet from '../../components/courier/FieldEventSheet.vue'

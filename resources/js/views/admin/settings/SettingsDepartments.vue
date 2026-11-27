@@ -1,10 +1,10 @@
 <template>
-  <SettingsPage icon="🏢" title="Départements des clients" intro="Pour les clients de distribution et de MAD qui envoient ou reçoivent pour plusieurs départements (une banque : Finance, Marketing, Gestion…). Chaque client peut changer ces réglages sur sa fiche.">
+  <SettingsPage icon="societe" title="Départements des clients" intro="Pour les clients de distribution et de MAD qui envoient ou reçoivent pour plusieurs départements (une banque : Finance, Marketing, Gestion…). Chaque client peut changer ces réglages sur sa fiche.">
     <template v-if="form?.department_settings">
       <section class="card p-4">
         <label class="flex items-start gap-2 text-sm">
           <input v-model="s.enabled" type="checkbox" class="mt-1">
-          <span>Proposer les départements<span class="block text-xs text-gray-500">Clients › Départements : nom, responsable, emplacement, autre site, centre de coûts, quota du mois, comptes rattachés.</span></span>
+          <span>Proposer les départements<span class="block text-xs text-slate-600">Clients › Départements : nom, responsable, emplacement, autre site, centre de coûts, quota du mois, comptes rattachés.</span></span>
         </label>
       </section>
       <div v-if="s.enabled" class="grid gap-4 lg:grid-cols-2">
@@ -13,14 +13,14 @@
           <template v-for="o in DEPARTMENT_OPTIONS.filter((x) => x.group === g)" :key="o.key">
             <label v-if="o.type === 'bool'" class="flex items-start gap-2 text-sm">
               <input v-model="s[o.key]" type="checkbox" class="mt-1">
-              <span>{{ o.label }}<span v-if="o.hint" class="block text-xs text-gray-500">{{ o.hint }}</span></span>
+              <span>{{ o.label }}<span v-if="o.hint" class="block text-xs text-slate-600">{{ o.hint }}</span></span>
             </label>
             <div v-else>
               <label class="block text-sm" :for="`ds-${o.key}`">{{ o.label }}</label>
               <select :id="`ds-${o.key}`" v-model="s[o.key]" class="input mt-1">
                 <option v-for="(label, value) in optionChoices(o)" :key="value" :value="value">{{ label }}</option>
               </select>
-              <p v-if="o.hint" class="mt-0.5 text-xs text-gray-500">{{ o.hint }}</p>
+              <p v-if="o.hint" class="mt-0.5 text-xs text-slate-600">{{ o.hint }}</p>
             </div>
           </template>
         </section>

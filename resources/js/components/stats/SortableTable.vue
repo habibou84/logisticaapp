@@ -24,7 +24,7 @@
             <slot :name="c.key" :row="r">{{ c.format ? c.format(r[c.key], r) : (r[c.key] ?? '—') }}</slot>
           </td>
         </tr>
-        <tr v-if="!rows.length"><td :colspan="columns.length" class="p-6 text-center text-slate-500">{{ empty }}</td></tr>
+        <tr v-if="!rows.length"><td :colspan="columns.length" class="p-6 text-center text-slate-600">{{ empty }}</td></tr>
       </tbody>
     </table>
   </section>

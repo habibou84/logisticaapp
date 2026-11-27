@@ -39,7 +39,7 @@ class FieldEventStats
                 'cost' => (int) $events->sum('cost'),
             ],
             'by_type' => $events->groupBy('type')
-                ->map(fn (Collection $g) => ['label' => trim($g->first()->icon.' '.$g->first()->type_label), 'name' => $g->first()->type_label, 'count' => $g->count()])
+                ->map(fn (Collection $g) => ['label' => $g->first()->type_label, 'name' => $g->first()->type_label, 'count' => $g->count()])
                 ->sortByDesc('count')->values()->all(),
             'by_courier' => $events->groupBy('courier_id')
                 ->map(fn (Collection $g) => [

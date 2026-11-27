@@ -2,14 +2,14 @@
   <div v-if="payout" class="max-w-4xl mx-auto space-y-4">
     <div class="no-print flex flex-wrap items-center gap-2">
       <button class="btn-secondary" @click="router.back()">← Retour</button>
-      <button class="btn-secondary" @click="print">🖨️ Imprimer / PDF</button>
+      <button class="btn-secondary" @click="print"><Icone nom="imprimer" />Imprimer / PDF</button>
     </div>
 
     <!-- Relevé imprimable -->
     <div class="card p-6 space-y-4 statement">
       <div class="flex flex-wrap justify-between gap-4">
         <div>
-          <p class="text-sm text-gray-500">{{ auth.user?.company?.name }}</p>
+          <p class="text-sm text-slate-600">{{ auth.user?.company?.name }}</p>
           <h1 class="text-xl font-bold">Relevé de paiement</h1>
           <p class="font-mono">{{ payout.reference }}</p>
         </div>
@@ -22,14 +22,14 @@
       </div>
 
       <div class="grid grid-cols-2 sm:grid-cols-6 gap-3 text-sm">
-        <div><p class="text-gray-500">Encaissé</p><p class="font-semibold">{{ money(payout.total_collected) }}</p></div>
-        <div><p class="text-gray-500">Frais de livraison</p><p class="font-semibold">− {{ money(payout.total_fees) }}</p></div>
-        <div><p class="text-gray-500">Frais d'expédition</p><p class="font-semibold">− {{ money(payout.total_shipping_fees || 0) }}</p></div>
-        <div><p class="text-gray-500">Autres frais</p><p class="font-semibold">− {{ money(payout.total_other_fees || 0) }}</p></div>
-        <div v-if="payout.total_storage_fees"><p class="text-gray-500">Stockage</p><p class="font-semibold">− {{ money(payout.total_storage_fees) }}</p></div>
-        <div><p class="text-gray-500">Ajustements</p><p class="font-semibold">{{ money(payout.total_adjustments) }}</p></div>
+        <div><p class="text-slate-600">Encaissé</p><p class="font-semibold">{{ money(payout.total_collected) }}</p></div>
+        <div><p class="text-slate-600">Frais de livraison</p><p class="font-semibold">− {{ money(payout.total_fees) }}</p></div>
+        <div><p class="text-slate-600">Frais d'expédition</p><p class="font-semibold">− {{ money(payout.total_shipping_fees || 0) }}</p></div>
+        <div><p class="text-slate-600">Autres frais</p><p class="font-semibold">− {{ money(payout.total_other_fees || 0) }}</p></div>
+        <div v-if="payout.total_storage_fees"><p class="text-slate-600">Stockage</p><p class="font-semibold">− {{ money(payout.total_storage_fees) }}</p></div>
+        <div><p class="text-slate-600">Ajustements</p><p class="font-semibold">{{ money(payout.total_adjustments) }}</p></div>
         <div>
-          <p class="text-gray-500">{{ payout.net_amount >= 0 ? 'Net à reverser' : 'Net dû par le client' }}</p>
+          <p class="text-slate-600">{{ payout.net_amount >= 0 ? 'Net à reverser' : 'Net dû par le client' }}</p>
           <p :class="['font-bold text-lg', signedClass(payout.net_amount)]">{{ money(Math.abs(payout.net_amount)) }}</p>
         </div>
       </div>
@@ -39,7 +39,7 @@
       <p v-if="payout.paid_at" class="text-sm">
         Payé le {{ dateTime(payout.paid_at) }} par {{ payout.method_label }}<span v-if="payout.transaction_ref"> (réf. {{ payout.transaction_ref }})</span>.
       </p>
-      <p v-if="payout.notes" class="text-sm text-gray-600">{{ payout.notes }}</p>
+      <p v-if="payout.notes" class="text-sm text-slate-600">{{ payout.notes }}</p>
     </div>
 
     <div v-if="payout.status === 'draft' && auth.can('finance.manage') && !auth.user?.merchant_id" class="card p-4 no-print space-y-3">
@@ -47,10 +47,11 @@
       <PayForm :method="payMethod" @pay="pay" @cancel="cancel" />
     </div>
   </div>
-  <p v-else class="text-gray-500">Chargement…</p>
+  <p v-else class="text-slate-600">Chargement…</p>
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'

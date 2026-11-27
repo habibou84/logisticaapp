@@ -27,7 +27,7 @@
     <label v-if="assignStage" class="flex items-center gap-1">
       <span aria-hidden="true">{{ assignStage === 'pickup' ? '↑' : '↓' }}</span>
       <select
-        value="" :class="['courier-select', order.awaiting_courier?.late ? 'border-red-300 text-red-700' : 'text-gray-500']" :disabled="busy"
+        value="" :class="['courier-select', order.awaiting_courier?.late ? 'border-red-300 text-red-700' : 'text-slate-600']" :disabled="busy"
         :aria-label="`Assigner ${assignStage === 'pickup' ? 'le ramassage' : 'la livraison'} de ${order.tracking_code}`"
         @change="change(assignStage, $event)"
       >
@@ -36,11 +36,12 @@
       </select>
     </label>
 
-    <div v-if="order.held_by" class="text-amber-700" :title="`Colis chez ${order.held_by.name}`">🎒 {{ order.held_by.name }}</div>
+    <div v-if="order.held_by" class="text-amber-700" :title="`Colis chez ${order.held_by.name}`"><Icone nom="en-main" taille="petite" class="inline align-text-bottom" /> {{ order.held_by.name }}</div>
   </div>
 </template>
 
 <script setup>
+import Icone from './ui/Icone.vue'
 import { computed, ref } from 'vue'
 import http, { apiErrorMessage } from '../bootstrap/axios'
 import { useToastStore } from '../stores/toasts'

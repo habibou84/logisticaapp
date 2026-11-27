@@ -12,7 +12,7 @@
       >
         <div class="flex items-center justify-between border-b px-4 py-3">
           <h2 class="font-semibold">{{ title }}</h2>
-          <button class="text-gray-400 hover:text-gray-700 text-xl leading-none" aria-label="Fermer" @click="$emit('close')">×</button>
+          <button class="text-slate-500 hover:text-slate-700 text-xl leading-none" aria-label="Fermer" @click="$emit('close')"><Icone nom="fermer" /></button>
         </div>
         <div class="p-4">
           <slot />
@@ -23,6 +23,7 @@
 </template>
 
 <script setup>
+import Icone from './ui/Icone.vue'
 defineProps({
   open: { type: Boolean, default: false },
   title: { type: String, default: '' },

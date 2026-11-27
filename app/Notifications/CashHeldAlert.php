@@ -35,7 +35,7 @@ class CashHeldAlert extends Notification implements ShouldQueue
 
         return [
             'kind' => 'cash_held',
-            'title' => "💵 {$name} garde ".Money::format($this->amount),
+            'title' => "{$name} garde ".Money::format($this->amount),
             'body' => $this->reason.'. Recevez son versement à la caisse.',
             'severity' => 'alert',
             'courier_id' => $this->courier->id,

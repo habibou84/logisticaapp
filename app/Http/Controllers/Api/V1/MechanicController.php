@@ -148,7 +148,7 @@ class MechanicController extends Controller
                     'id' => $l->id,
                     'kind' => $l->kind,
                     'kind_label' => VehicleLog::KINDS[$l->kind] ?? $l->kind,
-                    'icon' => VehicleLog::ICONS[$l->kind] ?? '📝',
+                    'icon' => VehicleLog::ICONS[$l->kind] ?? 'note',
                     'label' => $l->label,
                     'done_on' => $l->done_on?->toDateString(),
                     'odometer' => $l->odometer,

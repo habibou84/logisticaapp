@@ -33,7 +33,7 @@ class ShopOrderReceived extends Notification implements ShouldQueue
     {
         return [
             'kind' => 'shop_order',
-            'title' => '🛍️ Nouvelle commande sur votre boutique',
+            'title' => 'Nouvelle commande sur votre boutique',
             'body' => trim("{$this->order->recipient_name} · {$this->order->description} · à encaisser : ".Money::format($this->order->cod_amount)),
             'order_id' => $this->order->id,
             'tracking_code' => $this->order->tracking_code,

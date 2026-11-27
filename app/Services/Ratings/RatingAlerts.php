@@ -42,7 +42,7 @@ class RatingAlerts
                     Notification::send($users, new CourierRatingAlert(
                         $courier,
                         'courier_low_score',
-                        $low ? "⚠️ Note de {$name} : {$score['score']} / 5" : "⚠️ {$name} : {$score['bad_last_7_days']} mauvaises notes en 7 jours",
+                        $low ? "Note de {$name} : {$score['score']} / 5" : "{$name} : {$score['bad_last_7_days']} mauvaises notes en 7 jours",
                         $low
                             ? "Sous le seuil de {$s['alert_below']} / 5. Voir le détail et en parler avec le livreur."
                             : 'Voir les notes et commentaires des clients.',

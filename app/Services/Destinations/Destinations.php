@@ -128,7 +128,7 @@ class Destinations
                 'created_by' => $actor->id,
             ]);
             if ($destination->status === 'pending') {
-                $this->tellStaff($order->company_id, 'destination_pending', "📇 Destination à valider : {$destination->name}",
+                $this->tellStaff($order->company_id, 'destination_pending', "Destination à valider : {$destination->name}",
                     "Ajoutée par la course {$order->tracking_code}.", '/admin/annuaire?filtre=pending');
             }
         } elseif ($settings['auto_update']) {
@@ -196,7 +196,7 @@ class Destinations
         } elseif ($effect === 'check_phone') {
             $destination->forceFill(['phone_check' => true])->save();
         }
-        $this->tellStaff($order->company_id, 'destination_flagged', "📇 {$destination->label()} : {$what}",
+        $this->tellStaff($order->company_id, 'destination_flagged', "{$destination->label()} : {$what}",
             "« {$reason->label} » sur la course {$order->tracking_code}.", "/admin/annuaire?fiche={$destination->id}");
     }
 

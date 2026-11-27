@@ -53,11 +53,11 @@
                     :disabled="busy" @click="changeMode(key)">{{ label }}</button>
           </div>
           <ul v-if="warnings.length" class="space-y-1 text-sm">
-            <li v-for="w in warnings" :key="w" :class="isBlocking(w) ? 'text-red-300' : 'text-amber-300'">⚠️ {{ WARNING_LABELS[w] }}</li>
+            <li v-for="w in warnings" :key="w" :class="isBlocking(w) ? 'text-red-300' : 'text-amber-300'"><Icone nom="alerte" taille="petite" class="inline" /> {{ WARNING_LABELS[w] }}</li>
           </ul>
           <div class="grid grid-cols-2 gap-2">
-            <button type="button" class="m-btn-secondary" @click="$emit('retake')">📷 Reprendre</button>
-            <button type="button" class="m-btn-secondary" :disabled="busy" @click="stage = 'crop'">✂️ Recadrer</button>
+            <button type="button" class="m-btn-secondary" @click="$emit('retake')"><Icone nom="photo" />Reprendre</button>
+            <button type="button" class="m-btn-secondary" :disabled="busy" @click="stage = 'crop'"><Icone nom="recadrer" />Recadrer</button>
           </div>
           <button v-if="!blocked" type="button" class="m-btn-primary w-full" :disabled="busy" @click="finish(false)">Utiliser cette photo</button>
           <template v-else>
@@ -72,6 +72,7 @@
 </template>
 
 <script setup>
+import Icone from '../ui/Icone.vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { loadBitmap, originalPhoto, pixels, shrinkPhoto, toJpeg, toPng } from '../../utils/photos'
 import { BLOCKING, FAR_COVERAGE, WARNING_LABELS, detectDocument, renderDocument } from '../../utils/scanner'

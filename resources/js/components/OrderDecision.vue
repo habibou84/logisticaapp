@@ -7,11 +7,11 @@
           <StatusBadge :status="order.status" :label="order.status_label" />
           <span v-if="order.last_incident" class="ml-2 text-red-700">{{ order.last_incident.label }}</span>
         </p>
-        <p class="text-gray-600">
+        <p class="text-slate-600">
           {{ order.recipient?.name || 'Destinataire' }} · {{ order.recipient?.phone }} · {{ order.delivery?.zone_name }}
           · tentative{{ order.attempts_count > 1 ? 's' : '' }} {{ order.attempts_count }} / {{ order.max_attempts }}
         </p>
-        <p v-if="order.held_by" class="text-amber-800">🎒 Colis encore chez {{ order.held_by.name }}</p>
+        <p v-if="order.held_by" class="text-amber-800"><Icone nom="en-main" taille="petite" class="inline align-text-bottom" /> Colis encore chez {{ order.held_by.name }}</p>
       </div>
 
       <!-- Choix -->
@@ -23,8 +23,8 @@
         >
           <input v-model="form.decision" type="radio" :value="c.value" :disabled="!!c.disabled" class="mt-1">
           <span>
-            <span class="block font-medium">{{ c.icon }} {{ c.label }}</span>
-            <span class="block text-xs text-gray-600">{{ c.disabled || c.help }}</span>
+            <span class="flex items-center gap-1.5 font-medium"><Icone :nom="c.icon" taille="petite" />{{ c.label }}</span>
+            <span class="block text-xs text-slate-600">{{ c.disabled || c.help }}</span>
           </span>
         </label>
       </div>
@@ -53,7 +53,7 @@
         <input id="dec-note" v-model="form.note" class="input" maxlength="500" placeholder="Ex. : le destinataire sera disponible samedi">
       </div>
 
-      <p class="text-xs text-gray-500">{{ merchantInfo }}</p>
+      <p class="text-xs text-slate-600"><Icone v-if="['redeliver', 'return'].includes(form.decision)" nom="whatsapp" taille="petite" class="inline align-text-bottom" /> {{ merchantInfo }}</p>
       <p v-if="error" class="field-error">{{ error }}</p>
       <button class="btn-primary w-full" :disabled="busy || !form.decision">Valider la décision</button>
     </form>
@@ -61,6 +61,7 @@
 </template>
 
 <script setup>
+import Icone from './ui/Icone.vue'
 import SearchSelect from './SearchSelect.vue'
 import { madSuffix } from '../utils/mad'
 import { computed, reactive, ref, watch } from 'vue'
@@ -93,19 +94,19 @@ const choices = computed(() => {
   const maxReached = o.attempts_count >= o.max_attempts
   return [
     {
-      value: 'redeliver', icon: '🛵', label: 'Relivrer',
+      value: 'redeliver', icon: 'livreur', label: 'Relivrer',
       help: 'Nouvelle tentative à la date choisie. Le client est prévenu de la date.',
       disabled: o.return_requested ? 'Le retour de ce colis est déjà demandé.' : (maxReached ? `Nombre maximal de tentatives atteint (${o.max_attempts}).` : null),
     },
     o.from_warehouse
-      ? { value: 'restock', icon: '🏬', label: 'Remettre en stock', help: 'Le colis revient dans le stock de l\'entrepôt.', disabled: o.held_by ? `Le colis est encore chez ${o.held_by.name} : recevez-le d'abord.` : null }
-      : { value: 'return', icon: '↩️', label: 'Retourner au client', help: 'Le colis part dans la file « À retourner ». Le client est prévenu.' },
+      ? { value: 'restock', icon: 'depot', label: 'Remettre en stock', help: 'Le colis revient dans le stock de l\'entrepôt.', disabled: o.held_by ? `Le colis est encore chez ${o.held_by.name} : recevez-le d'abord.` : null }
+      : { value: 'return', icon: 'retour', label: 'Retourner au client', help: 'Le colis part dans la file « À retourner ». Le client est prévenu.' },
   ]
 })
 
 const merchantInfo = computed(() => ({
-  redeliver: '📱 Le client reçoit un WhatsApp avec la nouvelle date.',
-  return: '📱 Le client reçoit un WhatsApp : son colis lui sera retourné.',
+  redeliver: 'Le client reçoit un WhatsApp avec la nouvelle date.',
+  return: 'Le client reçoit un WhatsApp : son colis lui sera retourné.',
   restock: 'Le stock est remis à jour.',
 }[form.decision] || ''))
 

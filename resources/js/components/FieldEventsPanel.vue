@@ -13,13 +13,13 @@
       </div>
       <select v-model="filters.type" class="input w-auto" aria-label="Type d'événement" @change="load(1)">
         <option value="">Tous les types</option>
-        <option v-for="t in types" :key="t.key" :value="t.key">{{ t.icon }} {{ t.label }}</option>
+        <option v-for="t in types" :key="t.key" :value="t.key">{{ t.label }}</option>
       </select>
       <select v-model="filters.courier_id" class="input w-auto" aria-label="Livreur" @change="load(1)">
         <option value="">Tous les livreurs</option>
         <option v-for="c in couriers" :key="c.id" :value="c.id">{{ c.name }}</option>
       </select>
-      <RouterLink v-if="auth.can('field_events.manage')" to="/admin/reglages/evenements-terrain" class="ml-auto text-sm text-blue-600">⚙️ Types et effets automatiques</RouterLink>
+      <RouterLink v-if="auth.can('field_events.manage')" to="/admin/reglages/evenements-terrain" class="ml-auto inline-flex items-center gap-1 text-sm text-blue-600"><Icone nom="reglages" taille="petite" />Types et effets automatiques</RouterLink>
     </div>
 
     <FieldEventCard
@@ -31,12 +31,12 @@
       @updated="updated"
     />
 
-    <div v-if="loaded && !events.length" class="card p-8 text-center text-gray-500">
-      {{ filters.state === 'open' ? '🎉 Aucun événement en cours sur le terrain.' : 'Aucun événement pour ces critères.' }}
+    <div v-if="loaded && !events.length" class="card p-8 text-center text-slate-600">
+      <Icone v-if="filters.state === 'open'" nom="bravo" class="inline align-text-bottom" /> {{ filters.state === 'open' ? 'Aucun événement en cours sur le terrain.' : 'Aucun événement pour ces critères.' }}
     </div>
 
     <div v-if="meta && meta.last_page > 1" class="flex items-center justify-between text-sm">
-      <span class="text-gray-500">Page {{ meta.current_page }} / {{ meta.last_page }} · {{ meta.total }} événement(s)</span>
+      <span class="text-slate-600">Page {{ meta.current_page }} / {{ meta.last_page }} · {{ meta.total }} événement(s)</span>
       <div class="flex gap-2">
         <button class="btn-secondary" :disabled="meta.current_page <= 1" @click="load(meta.current_page - 1)">Précédent</button>
         <button class="btn-secondary" :disabled="meta.current_page >= meta.last_page" @click="load(meta.current_page + 1)">Suivant</button>
@@ -46,6 +46,7 @@
 </template>
 
 <script setup>
+import Icone from './ui/Icone.vue'
 import { nextTick, onMounted, reactive, ref, watch } from 'vue'
 import http from '../bootstrap/axios'
 import { useAuthStore } from '../stores/auth'

@@ -4,7 +4,7 @@
     <header v-if="!nativeApp" class="bg-white/90 backdrop-blur border-b border-slate-200 sticky top-0 z-10">
       <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-3">
         <BrandLogo size="md" />
-        <a href="#suivi" class="shrink-0 rounded-full border border-[var(--app-color)] text-[var(--app-color)] px-4 py-2 text-sm font-semibold hover:bg-slate-50">📍 Suivre un colis</a>
+        <a href="#suivi" class="shrink-0 rounded-full border border-[var(--app-color)] text-[var(--app-color)] px-4 py-2 text-sm font-semibold hover:bg-slate-50"><Icone nom="adresse" taille="petite" class="inline align-[-0.15em]" /> Suivre un colis</a>
       </div>
     </header>
 
@@ -24,7 +24,7 @@
           </p>
           <ul class="grid sm:grid-cols-2 gap-3 max-w-xl">
             <li v-for="b in benefits" :key="b.title" class="flex gap-3 rounded-2xl bg-white/10 p-3">
-              <span class="text-2xl" aria-hidden="true">{{ b.icon }}</span>
+              <Icone :nom="b.icon" taille="grande" />
               <span>
                 <span class="block font-semibold">{{ b.title }}</span>
                 <span class="block text-sm text-white/80">{{ b.text }}</span>
@@ -90,13 +90,13 @@
         </div>
         <div class="space-y-2 text-sm">
           <p class="font-semibold text-white">Nous contacter</p>
-          <p v-if="branding.phone"><a :href="`tel:${branding.phone}`" class="hover:text-white">📞 {{ branding.phone }}</a></p>
-          <p v-if="contactLink"><a :href="contactLink" target="_blank" rel="noopener" class="hover:text-white">💬 WhatsApp</a></p>
-          <p v-if="branding.email"><a :href="`mailto:${branding.email}`" class="hover:text-white">✉️ {{ branding.email }}</a></p>
+          <p v-if="branding.phone"><a :href="`tel:${branding.phone}`" class="hover:text-white"><Icone nom="appeler" taille="petite" class="inline align-[-0.15em]" /> {{ branding.phone }}</a></p>
+          <p v-if="contactLink"><a :href="contactLink" target="_blank" rel="noopener" class="hover:text-white"><Icone nom="message" taille="petite" class="inline align-[-0.15em]" /> WhatsApp</a></p>
+          <p v-if="branding.email"><a :href="`mailto:${branding.email}`" class="hover:text-white"><Icone nom="mail" taille="petite" class="inline align-[-0.15em]" /> {{ branding.email }}</a></p>
         </div>
         <div class="space-y-2 text-sm md:text-right">
           <p>Application mobile : ouvrez ce site sur votre téléphone ; la page vous guide pour l'installer.</p>
-          <p class="text-slate-500">© {{ year }} {{ branding.name }}</p>
+          <p class="text-slate-600">© {{ year }} {{ branding.name }}</p>
         </div>
       </div>
     </footer>
@@ -104,6 +104,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import BrandLogo from '../../components/auth/BrandLogo.vue'
@@ -117,10 +118,10 @@ const trackingCode = ref('')
 const year = new Date().getFullYear()
 
 const benefits = [
-  { icon: '⚡', title: 'Course en 1 minute', text: 'Depuis votre téléphone, WhatsApp ou un fichier Excel.' },
-  { icon: '📍', title: 'Suivi en direct', text: 'Chaque étape, chaque livreur, chaque incident.' },
-  { icon: '💵', title: 'Encaissements reversés', text: 'Relevés clairs et reversements réguliers.' },
-  { icon: '💬', title: 'Clients informés', text: 'Messages WhatsApp à chaque étape importante.' },
+  { icon: 'rapide', title: 'Course en 1 minute', text: 'Depuis votre téléphone, WhatsApp ou un fichier Excel.' },
+  { icon: 'adresse', title: 'Suivi en direct', text: 'Chaque étape, chaque livreur, chaque incident.' },
+  { icon: 'argent', title: 'Encaissements reversés', text: 'Relevés clairs et reversements réguliers.' },
+  { icon: 'message', title: 'Clients informés', text: 'Messages WhatsApp à chaque étape importante.' },
 ]
 
 const steps = [

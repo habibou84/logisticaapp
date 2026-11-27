@@ -1,9 +1,9 @@
 <template>
-  <SettingsPage icon="⭐" title="Notation des livreurs" intro="Qui note les livreurs, comment la note se calcule, ce que voit le livreur et à quoi servent les notes.">
+  <SettingsPage icon="prioritaire" title="Notation des livreurs" intro="Qui note les livreurs, comment la note se calcule, ce que voit le livreur et à quoi servent les notes.">
     <template v-if="form?.rating_settings">
       <section class="card p-4 space-y-3">
         <h2 class="font-semibold">La note finale (sur 5)</h2>
-        <p class="text-sm text-gray-600">
+        <p class="text-sm text-slate-600">
           Trois sources, pondérées : la note automatique (faits enregistrés par l'application), les notes des clients et celles de
           l'équipe. Une source sans notes ne compte pas, les autres se partagent son poids.
         </p>
@@ -18,7 +18,7 @@
           <div>
             <label class="label" for="min-client">Notes de clients avant de compter leur moyenne</label>
             <input id="min-client" v-model.number="r.min_client_ratings" type="number" min="1" max="100" class="input w-28">
-            <p class="text-xs text-gray-500 mt-1">En dessous, « nouveau livreur » côté clients.</p>
+            <p class="text-xs text-slate-600 mt-1">En dessous, « nouveau livreur » côté clients.</p>
           </div>
         </div>
         <div>
@@ -33,7 +33,7 @@
 
       <section class="card p-4 space-y-3">
         <h2 class="font-semibold">Les clients notent</h2>
-        <label class="flex items-start gap-2 text-sm"><input v-model="r.client_course" type="checkbox" class="mt-1"><span>Chaque course terminée, dans leur application<span class="block text-xs text-gray-500">Étoiles, bons points en un clic, motif si la note est basse, commentaire.</span></span></label>
+        <label class="flex items-start gap-2 text-sm"><input v-model="r.client_course" type="checkbox" class="mt-1"><span>Chaque course terminée, dans leur application<span class="block text-xs text-slate-600">Étoiles, bons points en un clic, motif si la note est basse, commentaire.</span></span></label>
         <div class="grid sm:grid-cols-2 gap-3">
           <div><label class="label" for="edit-hours">Délai pour noter ou changer sa note (heures)</label><input id="edit-hours" v-model.number="r.client_edit_hours" type="number" min="1" max="720" class="input w-28"></div>
           <div>
@@ -45,8 +45,8 @@
             </select>
           </div>
         </div>
-        <label class="flex items-start gap-2 text-sm"><input v-model="r.whatsapp_invite" type="checkbox" class="mt-1"><span>Inviter le client à noter par WhatsApp après la livraison<span class="block text-xs text-gray-500">Modèle « course_a_noter » à faire approuver dans le compte WhatsApp.</span></span></label>
-        <label class="flex items-start gap-2 text-sm"><input v-model="r.recipient_rating" type="checkbox" class="mt-1"><span>Le destinataire peut aussi noter, sur la page de suivi<span class="block text-xs text-gray-500">Avec le code de livraison, une fois, dans les 7 jours.</span></span></label>
+        <label class="flex items-start gap-2 text-sm"><input v-model="r.whatsapp_invite" type="checkbox" class="mt-1"><span>Inviter le client à noter par WhatsApp après la livraison<span class="block text-xs text-slate-600">Modèle « course_a_noter » à faire approuver dans le compte WhatsApp.</span></span></label>
+        <label class="flex items-start gap-2 text-sm"><input v-model="r.recipient_rating" type="checkbox" class="mt-1"><span>Le destinataire peut aussi noter, sur la page de suivi<span class="block text-xs text-slate-600">Avec le code de livraison, une fois, dans les 7 jours.</span></span></label>
         <div class="grid sm:grid-cols-2 gap-3">
           <div>
             <label class="label" for="reason-below">Motif demandé, et responsable prévenu, à partir de</label>
@@ -72,13 +72,13 @@
               <input v-model="clientReasons" type="checkbox" :value="m.value"> {{ m.label }}
             </label>
           </div>
-          <p class="text-xs text-gray-500 mt-1">Aucune case cochée : tous les motifs sont proposés.</p>
+          <p class="text-xs text-slate-600 mt-1">Aucune case cochée : tous les motifs sont proposés.</p>
         </div>
       </section>
 
       <section class="card p-4 space-y-3">
         <h2 class="font-semibold">L'équipe note une course</h2>
-        <p class="text-sm text-gray-600">Sur la fiche d'une course (« Notes du livreur »), chaque étoile est expliquée, et un motif est demandé à partir du seuil choisi plus haut.</p>
+        <p class="text-sm text-slate-600">Sur la fiche d'une course (« Notes du livreur »), chaque étoile est expliquée, et un motif est demandé à partir du seuil choisi plus haut.</p>
         <div>
           <p class="label">Motifs proposés à l'équipe (liste déroulante « Ce qui n'est pas allé »)</p>
           <div class="grid sm:grid-cols-2 gap-1">
@@ -86,7 +86,7 @@
               <input v-model="teamReasons" type="checkbox" :value="m.value"> {{ m.label }}
             </label>
           </div>
-          <p class="text-xs text-gray-500 mt-1">Aucune case cochée : tous les motifs sont proposés.</p>
+          <p class="text-xs text-slate-600 mt-1">Aucune case cochée : tous les motifs sont proposés.</p>
         </div>
       </section>
 
@@ -104,8 +104,8 @@
           <div><label class="label" for="alert-bad">Ou après ce nombre de mauvaises notes en 7 jours (0 : jamais)</label><input id="alert-bad" v-model.number="r.alert_bad_count" type="number" min="0" max="50" class="input w-28"></div>
         </div>
         <label class="flex items-start gap-2 text-sm"><input v-model="r.assignment_preference" type="checkbox" class="mt-1"><span>Assignation automatique : à égalité, préférer les livreurs les mieux notés</span></label>
-        <label class="flex items-start gap-2 text-sm"><input v-model="r.client_choice" type="checkbox" class="mt-1"><span>Les clients peuvent choisir un livreur préféré ou en écarter un<span class="block text-xs text-gray-500">Livreur écarté : il ne reçoit plus automatiquement les courses de ce client. Préféré : prioritaire s'il est disponible.</span></span></label>
-        <p class="text-xs text-gray-500">Prime sur la note : Paie des livreurs › Primes d'objectifs › « Note du livreur ».</p>
+        <label class="flex items-start gap-2 text-sm"><input v-model="r.client_choice" type="checkbox" class="mt-1"><span>Les clients peuvent choisir un livreur préféré ou en écarter un<span class="block text-xs text-slate-600">Livreur écarté : il ne reçoit plus automatiquement les courses de ce client. Préféré : prioritaire s'il est disponible.</span></span></label>
+        <p class="text-xs text-slate-600">Prime sur la note : Paie des livreurs › Primes d'objectifs › « Note du livreur ».</p>
       </section>
 
       <SaveBar :dirty="dirty" :saving="saving" :error="error" @save="save" @reset="reset" />

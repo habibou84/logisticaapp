@@ -3,26 +3,26 @@
     <CoursesTabs />
     <div class="flex flex-wrap items-center justify-between gap-2">
       <div>
-        <h1 class="text-xl font-bold">⏳ Courses en retard</h1>
-        <p class="text-sm text-gray-600">
+        <h1 class="flex items-center gap-2 text-xl font-bold"><Icone nom="retard" /> Courses en retard</h1>
+        <p class="text-sm text-slate-600">
           Date de livraison dépassée, et pas encore livrées, retournées ni annulées. La distribution n'y arrive qu'après
           l'échéance de son lot, la MAD jamais (Réglages › Courses, « Livraisons du jour »).
         </p>
       </div>
-      <RouterLink v-if="tab === 'pas-ramassees' && auth.can('settings.manage')" to="/admin/reglages/courses#a-reporter" class="text-sm text-blue-600">⚙️ Message du soir</RouterLink>
+      <RouterLink v-if="tab === 'pas-ramassees' && auth.can('settings.manage')" to="/admin/reglages/courses#a-reporter" class="inline-flex items-center gap-1 text-sm text-blue-600"><Icone nom="reglages" taille="petite" /> Message du soir</RouterLink>
     </div>
 
     <nav class="flex gap-1 overflow-x-auto border-b" aria-label="Onglets">
       <button
         v-for="t in tabs" :key="t.key" type="button"
-        :class="['-mb-px flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-2 text-sm font-medium', tab === t.key ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-800']"
+        :class="['-mb-px flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-2 text-sm font-medium', tab === t.key ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-600 hover:text-slate-800']"
         :aria-current="tab === t.key ? 'page' : undefined" @click="select(t.key)"
       >
-        {{ t.label }}
-        <span :class="['rounded-full px-2 py-0.5 text-xs font-semibold', t.count ? 'bg-red-100 text-red-800' : 'bg-slate-100 text-slate-500']">{{ t.count }}</span>
+        <Icone :nom="t.icon" taille="petite" />{{ t.label }}
+        <span :class="['rounded-full px-2 py-0.5 text-xs font-semibold', t.count ? 'bg-red-100 text-red-800' : 'bg-slate-100 text-slate-600']">{{ t.count }}</span>
       </button>
     </nav>
-    <p class="text-sm text-gray-600">{{ current.help }}</p>
+    <p class="text-sm text-slate-600">{{ current.help }}</p>
 
     <!-- À décider : ramassées, date dépassée ; renvoyer au client ou reporter, par client -->
     <PickedLateGroups v-if="tab === 'a-decider'" />
@@ -34,6 +34,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
@@ -53,9 +54,9 @@ const KEYS = ['a-decider', 'pas-ramassees', 'toutes']
 const tabs = computed(() => {
   const c = dispatchCounts.counts
   return [
-    { key: 'a-decider', label: '🛵 À décider', count: c.exceptions?.picked_late || 0, help: 'Colis ramassés ou collectés, chez un livreur ou au dépôt, dont la date de livraison est dépassée : à renvoyer au client ou à reporter.' },
-    { key: 'pas-ramassees', label: '📦 Jamais ramassées', count: c.to_reschedule || 0, help: 'Colis jamais ramassés ni collectés : ils sont cachés chez les livreurs tant que la date n\'est pas actualisée. Demandez une nouvelle date au client ou choisissez-la.' },
-    { key: 'toutes', label: '⏳ Toutes', count: c.exceptions?.untreated || 0, help: 'Toutes les courses en retard, quelle que soit l\'étape : en chemin, pas encore validées, retours en cours.' },
+    { key: 'a-decider', icon: 'livreur', label: 'À décider', count: c.exceptions?.picked_late || 0, help: 'Colis ramassés ou collectés, chez un livreur ou au dépôt, dont la date de livraison est dépassée : à renvoyer au client ou à reporter.' },
+    { key: 'pas-ramassees', icon: 'course', label: 'Jamais ramassées', count: c.to_reschedule || 0, help: 'Colis jamais ramassés ni collectés : ils sont cachés chez les livreurs tant que la date n\'est pas actualisée. Demandez une nouvelle date au client ou choisissez-la.' },
+    { key: 'toutes', icon: 'retard', label: 'Toutes', count: c.exceptions?.untreated || 0, help: 'Toutes les courses en retard, quelle que soit l\'étape : en chemin, pas encore validées, retours en cours.' },
   ]
 })
 // Ancien onglet « Ramassées, pas livrées » : devenu « À décider »

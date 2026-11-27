@@ -14,14 +14,14 @@ use Illuminate\Support\Str;
 class FieldEventSettings
 {
     public const TYPES = [
-        ['key' => 'breakdown', 'label' => 'Panne', 'icon' => '🛵', 'hint' => 'Moteur, crevaison, plus d\'essence', 'severity' => 'blocking', 'photo' => false, 'gps' => true, 'excuse' => true, 'active' => true],
-        ['key' => 'accident', 'label' => 'Accident', 'icon' => '🚑', 'hint' => 'Avec ou sans blessé, colis abîmé', 'severity' => 'urgent', 'photo' => false, 'gps' => true, 'excuse' => true, 'active' => true],
-        ['key' => 'control', 'label' => 'Contrôle', 'icon' => '👮', 'hint' => 'Police, fourrière', 'severity' => 'info', 'photo' => false, 'gps' => true, 'excuse' => true, 'active' => true],
-        ['key' => 'theft', 'label' => 'Vol, agression', 'icon' => '🔒', 'hint' => 'Colis, argent, téléphone', 'severity' => 'urgent', 'photo' => false, 'gps' => true, 'excuse' => true, 'active' => true],
-        ['key' => 'weather', 'label' => 'Météo, route', 'icon' => '🌧️', 'hint' => 'Pluie, inondation, route barrée, embouteillage', 'severity' => 'info', 'photo' => false, 'gps' => true, 'excuse' => true, 'active' => true],
-        ['key' => 'equipment', 'label' => 'Matériel', 'icon' => '📱', 'hint' => 'Batterie, téléphone, sac de livraison', 'severity' => 'hindrance', 'photo' => false, 'gps' => false, 'excuse' => false, 'active' => true],
-        ['key' => 'health', 'label' => 'Santé', 'icon' => '🤒', 'hint' => 'Malaise', 'severity' => 'blocking', 'photo' => false, 'gps' => true, 'excuse' => true, 'active' => true],
-        ['key' => 'other', 'label' => 'Autre', 'icon' => '✏️', 'hint' => 'Dites-nous ce qui se passe', 'severity' => 'info', 'photo' => false, 'gps' => true, 'excuse' => false, 'active' => true],
+        ['key' => 'breakdown', 'label' => 'Panne', 'icon' => 'atelier', 'hint' => 'Moteur, crevaison, plus d\'essence', 'severity' => 'blocking', 'photo' => false, 'gps' => true, 'excuse' => true, 'active' => true],
+        ['key' => 'accident', 'label' => 'Accident', 'icon' => 'accident', 'hint' => 'Avec ou sans blessé, colis abîmé', 'severity' => 'urgent', 'photo' => false, 'gps' => true, 'excuse' => true, 'active' => true],
+        ['key' => 'control', 'label' => 'Contrôle', 'icon' => 'police', 'hint' => 'Police, fourrière', 'severity' => 'info', 'photo' => false, 'gps' => true, 'excuse' => true, 'active' => true],
+        ['key' => 'theft', 'label' => 'Vol, agression', 'icon' => 'verrou', 'hint' => 'Colis, argent, téléphone', 'severity' => 'urgent', 'photo' => false, 'gps' => true, 'excuse' => true, 'active' => true],
+        ['key' => 'weather', 'label' => 'Météo, route', 'icon' => 'meteo', 'hint' => 'Pluie, inondation, route barrée, embouteillage', 'severity' => 'info', 'photo' => false, 'gps' => true, 'excuse' => true, 'active' => true],
+        ['key' => 'equipment', 'label' => 'Matériel', 'icon' => 'mobile', 'hint' => 'Batterie, téléphone, sac de livraison', 'severity' => 'hindrance', 'photo' => false, 'gps' => false, 'excuse' => false, 'active' => true],
+        ['key' => 'health', 'label' => 'Santé', 'icon' => 'sante', 'hint' => 'Malaise', 'severity' => 'blocking', 'photo' => false, 'gps' => true, 'excuse' => true, 'active' => true],
+        ['key' => 'other', 'label' => 'Autre', 'icon' => 'modifier', 'hint' => 'Dites-nous ce qui se passe', 'severity' => 'info', 'photo' => false, 'gps' => true, 'excuse' => false, 'active' => true],
     ];
 
     public const DEFAULTS = [
@@ -130,7 +130,7 @@ class FieldEventSettings
                 return [
                     'key' => $key,
                     'label' => trim((string) $t['label']),
-                    'icon' => trim((string) ($t['icon'] ?? '')) ?: '⚠️',
+                    'icon' => trim((string) ($t['icon'] ?? '')) ?: 'alerte',
                     'hint' => trim((string) ($t['hint'] ?? '')),
                     'severity' => $t['severity'],
                     'photo' => (bool) ($t['photo'] ?? false),
@@ -147,6 +147,6 @@ class FieldEventSettings
     /** @return array<string, mixed> */
     private static function typeDefaults(): array
     {
-        return ['icon' => '⚠️', 'hint' => '', 'severity' => 'info', 'photo' => false, 'gps' => true, 'excuse' => false, 'active' => true];
+        return ['icon' => 'alerte', 'hint' => '', 'severity' => 'info', 'photo' => false, 'gps' => true, 'excuse' => false, 'active' => true];
     }
 }

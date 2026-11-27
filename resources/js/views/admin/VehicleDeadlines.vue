@@ -4,7 +4,7 @@
     <div class="flex flex-wrap items-end justify-between gap-3">
       <div>
         <h1 class="text-xl font-bold">Véhicules · Échéances</h1>
-        <p class="text-sm text-gray-600">Papiers des véhicules et des livreurs, entretien, versements : tout ce qui a une date.</p>
+        <p class="text-sm text-slate-600">Papiers des véhicules et des livreurs, entretien, versements : tout ce qui a une date.</p>
       </div>
       <div class="flex flex-wrap gap-2">
         <button v-for="f in FILTERS" :key="f.value" type="button" :class="['btn', filter === f.value ? 'bg-slate-900 text-white' : 'bg-white border border-slate-300']" @click="filter = f.value">{{ f.label }} ({{ count(f.value) }})</button>
@@ -13,39 +13,40 @@
 
     <div class="card overflow-x-auto">
       <table class="w-full text-left text-sm min-w-[44rem]">
-        <thead class="text-xs uppercase text-gray-500"><tr><th class="p-3" /><th class="p-3">Échéance</th><th class="p-3">Pour</th><th class="p-3">Date</th><th class="p-3">Reste</th><th class="p-3">Effet</th></tr></thead>
+        <thead class="text-xs uppercase text-slate-600"><tr><th class="p-3" /><th class="p-3">Échéance</th><th class="p-3">Pour</th><th class="p-3">Date</th><th class="p-3">Reste</th><th class="p-3">Effet</th></tr></thead>
         <tbody>
           <tr v-for="(a, i) in shown" :key="i" class="border-t border-slate-100">
-            <td class="p-3 text-xl">{{ a.icon }}</td>
-            <td class="p-3 font-medium">{{ a.label }}<span v-if="a.courier" class="font-normal text-gray-500"> · {{ a.courier }}</span></td>
+            <td class="p-3 text-xl"><Icone v-if="a.icon" :nom="a.icon" /></td>
+            <td class="p-3 font-medium">{{ a.label }}<span v-if="a.courier" class="font-normal text-slate-600"> · {{ a.courier }}</span></td>
             <td class="p-3"><RouterLink v-if="a.vehicle_id" :to="`/admin/vehicules/${a.vehicle_id}?onglet=${TAB[a.kind] || 'resume'}`" class="whitespace-nowrap font-mono text-blue-700">{{ a.title }}</RouterLink><span v-else>{{ a.title }}</span></td>
             <td class="p-3">{{ a.date ? date(a.date) : '—' }}</td>
             <td class="p-3"><span :class="['whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium', STATE_STYLES[a.state]]">{{ when(a) }}</span></td>
-            <td class="p-3 text-gray-500">{{ effect(a) }}</td>
+            <td class="p-3 text-slate-600">{{ effect(a) }}</td>
           </tr>
-          <tr v-if="!shown.length"><td colspan="6" class="p-8 text-center text-gray-500">Rien à surveiller ici. 👍</td></tr>
+          <tr v-if="!shown.length"><td colspan="6" class="p-8 text-center text-slate-600">Rien à surveiller ici. <Icone nom="pouce" taille="petite" class="inline" /></td></tr>
         </tbody>
       </table>
     </div>
 
     <section class="card p-4 space-y-2">
-      <div class="flex items-center justify-between"><h2 class="font-semibold">🪪 Permis des livreurs</h2><button type="button" class="btn-secondary text-sm" @click="licenseOpen = true">+ Ajouter un permis</button></div>
+      <div class="flex items-center justify-between"><h2 class="flex items-center gap-1.5 font-semibold"><Icone nom="permis" taille="petite" /> Permis des livreurs</h2><button type="button" class="btn-secondary text-sm" @click="licenseOpen = true">+ Ajouter un permis</button></div>
       <table class="w-full text-sm">
         <tr v-for="d in licenses" :key="d.id" class="border-t border-slate-100"><td class="py-2">{{ d.courier }}</td><td>{{ d.reference || '' }}</td><td>{{ d.ends_on ? `jusqu'au ${date(d.ends_on)}` : '' }}</td>
           <td><span :class="['rounded-full px-2 py-0.5 text-xs font-medium', STATE_STYLES[d.state]]">{{ d.state === 'permanent' ? 'sans fin' : daysText(d.days) }}</span></td></tr>
-        <tr v-if="!licenses.length"><td class="py-3 text-gray-500">Aucun permis enregistré.</td></tr>
+        <tr v-if="!licenses.length"><td class="py-3 text-slate-600">Aucun permis enregistré.</td></tr>
       </table>
       <div v-if="licenseOpen" class="flex flex-wrap items-end gap-2 border-t pt-3">
         <div><label class="label" for="lic-courier">Livreur</label><select id="lic-courier" v-model="licenseCourier" class="input"><option v-for="c in couriers" :key="c.id" :value="c.id">{{ c.name }}</option></select></div>
         <button type="button" class="btn-primary" :disabled="!licenseCourier" @click="docOpen = true">Continuer</button>
       </div>
     </section>
-    <p class="text-sm text-gray-500">Rappels {{ settings ? settings.reminder_days.map((d) => `à ${d} j`).join(' et ') : '' }} avant la date, aux responsables (cloche) et au livreur concerné.</p>
+    <p class="text-sm text-slate-600">Rappels {{ settings ? settings.reminder_days.map((d) => `à ${d} j`).join(' et ') : '' }} avant la date, aux responsables (cloche) et au livreur concerné.</p>
     <DocumentModal v-if="catalog" :open="docOpen" :courier-id="licenseCourier" :catalog="catalog" @close="docOpen = false" @saved="licenseOpen = false; load()" />
   </div>
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import { computed, onMounted, ref } from 'vue'
 import http from '../../bootstrap/axios'
 import DocumentModal from '../../components/vehicles/DocumentModal.vue'

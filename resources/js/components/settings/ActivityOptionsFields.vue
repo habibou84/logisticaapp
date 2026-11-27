@@ -10,10 +10,10 @@
         <div v-for="p in PROOFS" :key="p.key" class="rounded-lg border border-slate-200 p-2">
           <label v-if="!inherit" class="flex items-start gap-2">
             <input :checked="!!modelValue[p.key]" type="checkbox" class="mt-0.5" @change="set(p.key, $event.target.checked)">
-            <span>{{ p.label }}<span class="block text-xs text-gray-500">{{ p.hint }}</span></span>
+            <span>{{ p.label }}<span class="block text-xs text-slate-600">{{ p.hint }}</span></span>
           </label>
           <template v-else>
-            <label class="block text-xs text-gray-600" :for="`${uid}-${p.key}`">{{ p.label }}</label>
+            <label class="block text-xs text-slate-600" :for="`${uid}-${p.key}`">{{ p.label }}</label>
             <select :id="`${uid}-${p.key}`" :value="tri(p.key)" class="input mt-1" @change="setTri(p.key, $event.target.value)">
               <option value="">Comme l'entreprise ({{ inherit[p.key] ? 'oui' : 'non' }})</option>
               <option value="1">Oui</option>
@@ -27,10 +27,10 @@
     <div class="rounded-lg border border-slate-200 p-2">
       <label v-if="!inherit" class="flex items-start gap-2">
         <input :checked="!!modelValue.notify_recipient" type="checkbox" class="mt-0.5" @change="set('notify_recipient', $event.target.checked)">
-        <span>Prévenir le destinataire sur WhatsApp<span class="block text-xs text-gray-500">« Un envoi est en route », sans montant, avec le code de remise et le suivi.</span></span>
+        <span>Prévenir le destinataire sur WhatsApp<span class="block text-xs text-slate-600">« Un envoi est en route », sans montant, avec le code de remise et le suivi.</span></span>
       </label>
       <template v-else>
-        <label class="block text-xs text-gray-600" :for="`${uid}-notify`">Prévenir le destinataire sur WhatsApp</label>
+        <label class="block text-xs text-slate-600" :for="`${uid}-notify`">Prévenir le destinataire sur WhatsApp</label>
         <select :id="`${uid}-notify`" :value="tri('notify_recipient')" class="input mt-1" @change="setTri('notify_recipient', $event.target.value)">
           <option value="">Comme l'entreprise ({{ inherit.notify_recipient ? 'oui' : 'non' }})</option>
           <option value="1">Oui</option>
@@ -41,22 +41,22 @@
 
     <!-- Distribution : course de plusieurs plis ou chèques (nombre saisi sur la course) -->
     <div v-if="activity === 'distribution'" class="rounded-lg border border-slate-200 p-2">
-      <label class="block text-xs text-gray-600" :for="`${uid}-qty`">Course de plusieurs plis ou chèques</label>
+      <label class="block text-xs text-slate-600" :for="`${uid}-qty`">Course de plusieurs plis ou chèques</label>
       <select :id="`${uid}-qty`" :value="modelValue.quantity_billing ?? ''" class="input mt-1" @change="$event.target.value ? set('quantity_billing', $event.target.value) : clear('quantity_billing')">
         <option v-if="inherit" value="">Comme l'entreprise ({{ QUANTITY[inherit.quantity_billing || 'per_item'].toLowerCase() }})</option>
         <option v-for="(label, key) in QUANTITY" :key="key" :value="key">{{ label }}</option>
       </select>
-      <p class="mt-1 text-xs text-gray-500">Par pli : 12 plis comptent pour 12 dans le forfait ou le lot, et 12 fois le prix à l'unité. Par course : une remise compte pour un.</p>
+      <p class="mt-1 text-xs text-slate-600">Par pli : 12 plis comptent pour 12 dans le forfait ou le lot, et 12 fois le prix à l'unité. Par course : une remise compte pour un.</p>
     </div>
 
     <!-- MAD : quand les livreurs sont réservés au client -->
     <div v-if="activity === 'mad'" class="rounded-lg border border-slate-200 p-2 space-y-2">
       <label v-if="!inherit" class="flex items-start gap-2">
         <input :checked="!!modelValue.mad_exclusive" type="checkbox" class="mt-0.5" @change="set('mad_exclusive', $event.target.checked)">
-        <span>Livreurs réservés au client pendant la mise à disposition<span class="block text-xs text-gray-500">Ils ne reçoivent pas automatiquement les courses des autres clients.</span></span>
+        <span>Livreurs réservés au client pendant la mise à disposition<span class="block text-xs text-slate-600">Ils ne reçoivent pas automatiquement les courses des autres clients.</span></span>
       </label>
       <template v-else>
-        <label class="block text-xs text-gray-600" :for="`${uid}-excl`">Livreurs réservés au client</label>
+        <label class="block text-xs text-slate-600" :for="`${uid}-excl`">Livreurs réservés au client</label>
         <select :id="`${uid}-excl`" :value="tri('mad_exclusive')" class="input mt-1" @change="setTri('mad_exclusive', $event.target.value)">
           <option value="">Comme l'entreprise ({{ inherit.mad_exclusive ? 'oui' : 'non' }})</option>
           <option value="1">Oui</option>
@@ -65,7 +65,7 @@
       </template>
 
       <div>
-        <p class="text-xs text-gray-600">
+        <p class="text-xs text-slate-600">
           Jours de mise à disposition
           <button v-if="inherit && modelValue.mad_days" type="button" class="ml-1 text-blue-600" @click="clear('mad_days')">comme l'entreprise</button>
         </p>
@@ -80,9 +80,9 @@
         </div>
       </div>
       <div class="flex flex-wrap items-end gap-2">
-        <div><label class="block text-xs text-gray-600" :for="`${uid}-from`">De</label><input :id="`${uid}-from`" :value="hour('mad_from')" type="time" class="input w-32" @change="set('mad_from', $event.target.value || null)"></div>
-        <div><label class="block text-xs text-gray-600" :for="`${uid}-to`">À</label><input :id="`${uid}-to`" :value="hour('mad_to')" type="time" class="input w-32" @change="set('mad_to', $event.target.value || null)"></div>
-        <p class="text-xs text-gray-500 pb-2">Vide : {{ inherit && inherit.mad_from ? `comme l'entreprise (${inherit.mad_from} – ${inherit.mad_to})` : 'toute la journée' }}.</p>
+        <div><label class="block text-xs text-slate-600" :for="`${uid}-from`">De</label><input :id="`${uid}-from`" :value="hour('mad_from')" type="time" class="input w-32" @change="set('mad_from', $event.target.value || null)"></div>
+        <div><label class="block text-xs text-slate-600" :for="`${uid}-to`">À</label><input :id="`${uid}-to`" :value="hour('mad_to')" type="time" class="input w-32" @change="set('mad_to', $event.target.value || null)"></div>
+        <p class="text-xs text-slate-600 pb-2">Vide : {{ inherit && inherit.mad_from ? `comme l'entreprise (${inherit.mad_from} – ${inherit.mad_to})` : 'toute la journée' }}.</p>
       </div>
     </div>
   </div>

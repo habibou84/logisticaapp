@@ -21,11 +21,11 @@
         </select>
       </div>
       <button v-if="result?.table.length" type="button" class="btn-secondary" @click="exportCsv">Exporter</button>
-      <p class="text-xs text-slate-500">Courses créées pendant la période.</p>
+      <p class="text-xs text-slate-600">Courses créées pendant la période.</p>
     </section>
 
     <p v-if="error" class="rounded bg-red-50 px-3 py-2 text-sm text-red-700">{{ error }}</p>
-    <p v-if="loading" class="text-slate-500">Chargement…</p>
+    <p v-if="loading" class="text-slate-600">Chargement…</p>
 
     <section v-if="result" class="card overflow-x-auto">
       <table class="w-full text-sm">
@@ -42,7 +42,7 @@
             <td v-for="(v, i) in r.cells" :key="i" class="p-2 text-right tabular-nums" :style="heat(v)">{{ fmt(v) }}</td>
             <td class="p-2 text-right font-semibold tabular-nums">{{ fmt(r.total) }}</td>
           </tr>
-          <tr v-if="!result.table.length"><td :colspan="result.columns.length + 2" class="p-6 text-center text-slate-500">Aucune course sur la période.</td></tr>
+          <tr v-if="!result.table.length"><td :colspan="result.columns.length + 2" class="p-6 text-center text-slate-600">Aucune course sur la période.</td></tr>
         </tbody>
         <tfoot v-if="result.table.length" class="bg-slate-50 font-semibold">
           <tr>

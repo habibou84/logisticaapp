@@ -96,7 +96,7 @@ class DeliveryDayListsTest extends TestCase
         $this->artisan('orders:unassigned')->assertSuccessful();
 
         Notification::assertSentTo($this->admin, OrderAlert::class, fn (OrderAlert $n) => $n->kind === 'unassigned_cutoff'
-            && $n->title === '⏰ 15:00 passées : 1 course du jour toujours sans livreur'
+            && $n->title === '15:00 passées : 1 course du jour toujours sans livreur'
             && str_contains($n->body, 'Et 1 à ramasser pour un autre jour.')
             && ! str_contains(strstr($n->body, 'Elles risquent', true), $tomorrow->tracking_code));
     }
@@ -113,6 +113,6 @@ class DeliveryDayListsTest extends TestCase
         $this->travelTo(CarbonImmutable::parse('2026-12-02 06:50', 'UTC'));
         $this->artisan('orders:due-today')->assertSuccessful();
         Notification::assertSentTo($this->dispatcher, OrderAlert::class, fn (OrderAlert $n) => $n->kind === 'due_today'
-            && $n->title === "📅 Course {$early->tracking_code} prévue aujourd'hui (colis déjà ramassé)");
+            && $n->title === "Course {$early->tracking_code} prévue aujourd'hui (colis déjà ramassé)");
     }
 }

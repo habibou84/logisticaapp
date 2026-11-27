@@ -12,7 +12,7 @@
         <span class="min-w-0 flex-1"><strong class="block">{{ p.name }}</strong><span class="text-sm text-slate-600">{{ p.kind === 'preferred' ? 'Mon livreur préféré' : 'Écarté de mes courses' }}</span></span>
         <button type="button" class="text-sm font-semibold text-[var(--app-color)]" @click="remove(p)">Retirer</button>
       </div>
-      <p v-if="!loading && !list.length" class="p-4 text-sm text-slate-500">Aucun livreur préféré ni écarté.</p>
+      <p v-if="!loading && !list.length" class="p-4 text-sm text-slate-600">Aucun livreur préféré ni écarté.</p>
     </div>
   </div>
 </template>

@@ -3,10 +3,10 @@
     <div class="flex flex-wrap items-center justify-between gap-2">
       <div>
         <h1 class="text-xl font-bold">Livreurs</h1>
-        <p class="text-sm text-gray-500">Cliquez sur un livreur pour voir sa fiche : chiffres, note, véhicule, événements terrain.</p>
+        <p class="text-sm text-slate-600">Cliquez sur un livreur pour voir sa fiche : chiffres, note, véhicule, événements terrain.</p>
       </div>
       <div class="flex flex-wrap gap-2">
-        <RouterLink v-if="auth.can('ratings.manage')" to="/admin/reglages/notation" class="btn-secondary">⭐ Réglages des notes</RouterLink>
+        <RouterLink v-if="auth.can('ratings.manage')" to="/admin/reglages/notation" class="btn-secondary"><Icone nom="prioritaire" /> Réglages des notes</RouterLink>
         <button v-if="auth.can('users.manage')" type="button" class="btn-primary" @click="creating = true">+ Nouveau livreur</button>
       </div>
     </div>
@@ -14,7 +14,7 @@
     <!-- Résumé : chaque case filtre la liste -->
     <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
       <button v-for="k in kpis" :key="k.key" type="button" :class="['card px-3 py-2 text-left transition hover:border-slate-400', k.active ? 'ring-2 ring-blue-500' : '', k.alert ? 'border-red-200 bg-red-50' : '']" @click="k.apply()">
-        <span :class="['block text-xs', k.alert ? 'text-red-800' : 'text-gray-500']">{{ k.label }}</span>
+        <span :class="['block text-xs', k.alert ? 'text-red-800' : 'text-slate-600']">{{ k.label }}</span>
         <span :class="['block text-xl font-bold', k.alert ? 'text-red-700' : '']">{{ k.value }}</span>
       </button>
     </div>
@@ -89,10 +89,10 @@
       <!-- Ordinateur : tableau -->
       <div class="hidden overflow-x-auto md:block">
         <table class="w-full text-sm">
-          <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-gray-500">
+          <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-600">
             <tr>
               <th v-for="c in COLUMNS" :key="c.key" :class="['whitespace-nowrap px-3 py-2.5 font-bold', c.num ? 'text-right' : '']">
-                <button v-if="c.sort" type="button" class="uppercase hover:text-gray-900" :aria-label="`Trier par ${c.label}`" @click="sortBy(c.sort)">
+                <button v-if="c.sort" type="button" class="uppercase hover:text-slate-900" :aria-label="`Trier par ${c.label}`" @click="sortBy(c.sort)">
                   {{ c.label }}<span v-if="f.sort === c.sort" aria-hidden="true">{{ desc ? ' ▼' : ' ▲' }}</span>
                 </button>
                 <template v-else>{{ c.label }}</template>
@@ -108,28 +108,28 @@
                     ★ {{ scoreText(c.score) }}
                   </span>
                   <span class="min-w-0">
-                    <RouterLink :to="`/admin/livreurs/${c.id}`" class="block font-semibold text-gray-900 hover:underline" @click.stop>{{ c.name }}</RouterLink>
-                    <span class="text-xs text-gray-500">{{ c.phone }}<template v-if="!c.active"> · compte suspendu</template></span>
+                    <RouterLink :to="`/admin/livreurs/${c.id}`" class="block font-semibold text-slate-900 hover:underline" @click.stop>{{ c.name }}</RouterLink>
+                    <span class="text-xs text-slate-600">{{ c.phone }}<template v-if="!c.active"> · compte suspendu</template></span>
                   </span>
                 </div>
               </td>
               <td class="min-w-[9rem] px-3 py-2.5">
-                <span :class="['rounded-full px-2 py-0.5 text-xs', c.is_available ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600']">{{ c.is_available ? 'Disponible' : 'Indisponible' }}</span>
+                <span :class="['rounded-full px-2 py-0.5 text-xs', c.is_available ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-slate-600']">{{ c.is_available ? 'Disponible' : 'Indisponible' }}</span>
                 <span v-if="c.mad || c.field_event" class="mt-1 flex flex-col items-start gap-1 whitespace-nowrap"><MadBadge :mad="c.mad" /><FieldEventBadge :event="c.field_event" /></span>
-                <span v-if="c.last_location_at" class="mt-0.5 block text-xs text-gray-400">vu {{ ago(c.last_location_at) }}</span>
+                <span v-if="c.last_location_at" class="mt-0.5 block text-xs text-slate-500">vu {{ ago(c.last_location_at) }}</span>
               </td>
-              <td class="max-w-[12rem] px-3 py-2.5 text-xs text-gray-600"><span class="line-clamp-2">{{ c.zones.join(', ') || '—' }}</span></td>
-              <td class="whitespace-nowrap px-3 py-2.5 text-xs text-gray-600">
+              <td class="max-w-[12rem] px-3 py-2.5 text-xs text-slate-600"><span class="line-clamp-2">{{ c.zones.join(', ') || '—' }}</span></td>
+              <td class="whitespace-nowrap px-3 py-2.5 text-xs text-slate-600">
                 {{ c.vehicle?.label || [VEHICLES[c.vehicle_type], c.vehicle_plate].filter(Boolean).join(' · ') || '—' }}
-                <span v-if="c.vehicle_warnings.length" :class="['block font-semibold', c.vehicle_warnings.some((w) => w.level === 'alert') ? 'text-red-700' : 'text-amber-700']" :title="c.vehicle_warnings.map((w) => w.text).join(' · ')">⚠ {{ c.vehicle_warnings.length }} alerte{{ c.vehicle_warnings.length > 1 ? 's' : '' }}</span>
+                <span v-if="c.vehicle_warnings.length" :class="['flex items-center gap-1 font-semibold', c.vehicle_warnings.some((w) => w.level === 'alert') ? 'text-red-700' : 'text-amber-700']" :title="c.vehicle_warnings.map((w) => w.text).join(' · ')"><Icone nom="alerte" taille="petite" /> {{ c.vehicle_warnings.length }} alerte{{ c.vehicle_warnings.length > 1 ? 's' : '' }}</span>
               </td>
               <td class="px-3 py-2.5 text-right font-semibold">{{ c.missions || '—' }}</td>
-              <td class="px-3 py-2.5 text-right"><b>{{ c.delivered }}</b><span v-if="c.per_day" class="block text-xs text-gray-400">{{ String(c.per_day).replace('.', ',') }}/jour</span></td>
+              <td class="px-3 py-2.5 text-right"><b>{{ c.delivered }}</b><span v-if="c.per_day" class="block text-xs text-slate-500">{{ String(c.per_day).replace('.', ',') }}/jour</span></td>
               <td :class="['px-3 py-2.5 text-right font-semibold', rateClass(c.success_rate)]">{{ c.success_rate === null ? '—' : `${c.success_rate} %` }}</td>
               <td class="whitespace-nowrap px-3 py-2.5 text-right">{{ c.delivery_minutes === null ? '—' : duration(c.delivery_minutes) }}</td>
               <td class="px-3 py-2.5 text-right">{{ c.failed || '—' }}</td>
               <td class="whitespace-nowrap px-3 py-2.5 text-xs font-semibold text-orange-700">
-                <span v-if="c.below_threshold" class="block">⚠ à suivre</span>
+                <span v-if="c.below_threshold" class="flex items-center gap-1"><Icone nom="alerte" taille="petite" /> à suivre</span>
                 <span v-if="c.bad_last_7_days" class="block">{{ c.bad_last_7_days }} mauvaise{{ c.bad_last_7_days > 1 ? 's' : '' }} note{{ c.bad_last_7_days > 1 ? 's' : '' }} en 7 j</span>
               </td>
               <td class="whitespace-nowrap px-3 py-2.5 text-right" @click.stop>
@@ -148,28 +148,28 @@
             <span :class="['shrink-0 rounded-full px-2 py-0.5 text-xs font-bold', scoreClass(c)]">★ {{ scoreText(c.score) }}</span>
             <span class="min-w-0 flex-1">
               <span class="block truncate font-semibold">{{ c.name }}</span>
-              <span class="text-xs text-gray-500">
+              <span class="text-xs text-slate-600">
                 {{ c.is_available ? 'Disponible' : 'Indisponible' }} · {{ c.delivered }} livrée{{ c.delivered > 1 ? 's' : '' }}<template v-if="c.success_rate !== null"> · {{ c.success_rate }} %</template>
               </span>
               <span v-if="c.mad || c.field_event" class="mt-0.5 flex flex-wrap gap-1"><MadBadge :mad="c.mad" /><FieldEventBadge :event="c.field_event" /></span>
-              <span v-if="c.below_threshold || c.vehicle_warnings.length" class="block text-xs font-semibold text-orange-700">⚠ {{ [c.below_threshold ? 'note à suivre' : '', c.vehicle_warnings.length ? 'véhicule' : ''].filter(Boolean).join(' · ') }}</span>
+              <span v-if="c.below_threshold || c.vehicle_warnings.length" class="flex items-center gap-1 text-xs font-semibold text-orange-700"><Icone nom="alerte" taille="petite" /> {{ [c.below_threshold ? 'note à suivre' : '', c.vehicle_warnings.length ? 'véhicule' : ''].filter(Boolean).join(' · ') }}</span>
             </span>
-            <span class="text-gray-400" aria-hidden="true">›</span>
+            <span class="text-slate-500" aria-hidden="true">›</span>
           </RouterLink>
         </li>
       </ul>
 
-      <p v-if="loaded && !rows.length" class="p-6 text-center text-gray-500">Aucun livreur ne correspond.</p>
-      <p v-if="!loaded" class="p-6 text-center text-gray-500">Chargement…</p>
+      <p v-if="loaded && !rows.length" class="p-6 text-center text-slate-600">Aucun livreur ne correspond.</p>
+      <p v-if="!loaded" class="p-6 text-center text-slate-600">Chargement…</p>
       <div class="flex flex-wrap items-center justify-between gap-2 border-t px-3">
         <Pagination :meta="meta" class="flex-1" @change="(p) => load(p)" />
-        <label v-if="meta && meta.total > 10" class="flex items-center gap-2 py-3 text-xs text-gray-500">
+        <label v-if="meta && meta.total > 10" class="flex items-center gap-2 py-3 text-xs text-slate-600">
           Par page
           <select v-model="f.per_page" class="input w-20 py-1" @change="reload"><option value="10">10</option><option value="25">25</option><option value="50">50</option><option value="100">100</option></select>
         </label>
       </div>
     </div>
-    <p class="text-xs text-gray-500">
+    <p class="text-xs text-slate-600">
       Note sur 5 des {{ ratingWindow }} derniers jours : automatique, clients et équipe. Livrées, réussite, temps de livraison (du ramassage à la livraison, temps habituel) et échecs : sur la période choisie.
     </p>
 
@@ -179,6 +179,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
@@ -239,8 +240,8 @@ const kpis = computed(() => {
 })
 
 const scoreText = (s) => (s === null || s === undefined ? '—' : Number(s).toFixed(1).replace('.', ','))
-const scoreClass = (c) => (c.score === null ? 'bg-slate-100 text-slate-500' : c.below_threshold ? 'bg-orange-100 text-orange-800' : c.score >= 4 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800')
-const rateClass = (r) => (r === null ? 'text-gray-400' : r >= 90 ? 'text-emerald-700' : r >= 75 ? 'text-amber-700' : 'text-red-700')
+const scoreClass = (c) => (c.score === null ? 'bg-slate-100 text-slate-600' : c.below_threshold ? 'bg-orange-100 text-orange-800' : c.score >= 4 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800')
+const rateClass = (r) => (r === null ? 'text-slate-500' : r >= 90 ? 'text-emerald-700' : r >= 75 ? 'text-amber-700' : 'text-red-700')
 const duration = (m) => (m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')}`)
 function ago(iso) {
   const min = Math.round((Date.now() - new Date(iso).getTime()) / 60000)

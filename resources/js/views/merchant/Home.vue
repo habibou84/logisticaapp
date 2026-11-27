@@ -22,7 +22,7 @@
             <b class="block text-lg leading-tight">{{ counts[b.value] ?? 0 }}</b>{{ b.label }}
           </button>
         </div>
-        <p v-if="todoCount" class="relative mt-3 text-[13px] font-medium opacity-95">⚠️ {{ subtitle }}</p>
+        <p v-if="todoCount" class="relative mt-3 flex items-center gap-1.5 text-[13px] font-medium opacity-95"><Icone nom="alerte" taille="petite" />{{ subtitle }}</p>
       </section>
 
       <!-- Actions rapides : nouvelle course, importer, coller un message, étiquettes, l'argent -->
@@ -44,7 +44,7 @@
         <div class="flex items-center gap-3">
           <ColorIcon name="aregler" :size="44" />
           <div class="min-w-0 text-sm">
-            <p class="text-[15px] font-bold">📅 {{ toRescheduleTotal > 1 ? `${toRescheduleTotal} colis à reporter` : 'Un colis à reporter' }}</p>
+            <p class="flex items-center gap-1.5 text-[15px] font-bold"><Icone nom="date" taille="petite" />{{ toRescheduleTotal > 1 ? `${toRescheduleTotal} colis à reporter` : 'Un colis à reporter' }}</p>
             <p class="text-slate-600">Pas ramassé{{ toRescheduleTotal > 1 ? 's' : '' }} à la date prévue : choisissez une nouvelle date.</p>
           </div>
         </div>
@@ -123,7 +123,7 @@
 
         <!-- Chef de service : demandes de ses agents à valider -->
         <RouterLink v-if="counts.approval" :to="{ path: '/marchand/courses', query: { filtre: 'approval' } }" class="tap mb-2 flex items-center justify-between rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-900 ring-1 ring-amber-200">
-          <span>✋ {{ counts.approval }} demande{{ counts.approval > 1 ? 's' : '' }} à valider</span><span aria-hidden="true">›</span>
+          <span class="inline-flex items-center gap-1.5"><Icone nom="main" taille="petite" />{{ counts.approval }} demande{{ counts.approval > 1 ? 's' : '' }} à valider</span><span aria-hidden="true">›</span>
         </RouterLink>
 
         <!-- Argent de la période, en une phrase -->
@@ -233,6 +233,7 @@
 </template>
 
 <script setup>
+import Icone from '../../components/ui/Icone.vue'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { cachedGet } from '../../composables/useCachedApi'

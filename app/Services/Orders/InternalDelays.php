@@ -66,13 +66,13 @@ class InternalDelays
                     $riskAt = $start->addSeconds((int) round($start->diffInSeconds($due) * self::RISK_SHARE));
 
                     if ($now->greaterThanOrEqualTo($due)) {
-                        $this->alert($order, 'internal_late', "⏰ En retard : {$order->tracking_code}",
+                        $this->alert($order, 'internal_late', "En retard : {$order->tracking_code}",
                             "{$order->merchant?->business_name} · délai interne dépassé depuis le ".$due->setTimezone($this->tz($order))->format('d/m à H:i').'.');
                         $order->forceFill(['internal_alert' => 2])->saveQuietly();
                         $sent['late']++;
                     } elseif ($order->internal_alert < 1 && $now->greaterThanOrEqualTo($riskAt)) {
                         $left = $now->diffForHumans($due, ['syntax' => CarbonInterface::DIFF_ABSOLUTE, 'parts' => 2, 'locale' => 'fr']);
-                        $this->alert($order, 'internal_risk', "⚠️ Risque de retard : {$order->tracking_code}",
+                        $this->alert($order, 'internal_risk', "Risque de retard : {$order->tracking_code}",
                             "{$order->merchant?->business_name} · reste {$left} avant le délai interne (".$due->setTimezone($this->tz($order))->format('d/m à H:i').').');
                         $order->forceFill(['internal_alert' => 1])->saveQuietly();
                         $sent['risk']++;

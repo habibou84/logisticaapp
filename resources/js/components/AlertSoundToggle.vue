@@ -7,7 +7,7 @@
       :title="needsUnlock ? 'Cliquez pour activer le son des alertes' : 'Alertes sonores'"
       @click="open = !open"
     >
-      <span class="text-xl">{{ alertSound.enabled ? '🔊' : '🔇' }}</span>
+      <Icone :nom="alertSound.enabled ? 'son' : 'muet'" />
     </button>
 
     <div v-if="open" class="absolute right-0 mt-2 w-72 bg-white text-slate-800 rounded-lg shadow-xl border z-50 p-3 space-y-3 text-sm">
@@ -21,22 +21,23 @@
         <input id="alert-volume" type="range" min="0.1" max="1" step="0.1" :value="alertSound.volume" class="w-full" @change="setAlertSound({ volume: Number($event.target.value) }); playAlertSound('note')">
       </div>
       <div class="flex gap-2">
-        <button type="button" class="btn-secondary flex-1 text-xs" @click="playAlertSound('note', true)">▶︎ Note</button>
-        <button type="button" class="btn-secondary flex-1 text-xs" @click="playAlertSound('alert', true)">▶︎ Problème</button>
+        <button type="button" class="btn-secondary flex-1 text-xs" @click="playAlertSound('note', true)"><Icone nom="lecture" taille="petite" />Note</button>
+        <button type="button" class="btn-secondary flex-1 text-xs" @click="playAlertSound('alert', true)"><Icone nom="lecture" taille="petite" />Problème</button>
       </div>
       <div class="border-t pt-3">
-        <p v-if="alertSound.desktop === 'granted'" class="text-emerald-700">✓ Notifications du bureau activées (onglet en arrière-plan).</p>
-        <p v-else-if="alertSound.desktop === 'denied'" class="text-gray-500">Notifications du bureau bloquées : autorisez-les dans les réglages du navigateur.</p>
+        <p v-if="alertSound.desktop === 'granted'" class="text-emerald-700"><Icone nom="valider" taille="petite" class="inline align-text-bottom" /> Notifications du bureau activées (onglet en arrière-plan).</p>
+        <p v-else-if="alertSound.desktop === 'denied'" class="text-slate-600">Notifications du bureau bloquées : autorisez-les dans les réglages du navigateur.</p>
         <button v-else-if="alertSound.desktop !== 'unsupported'" type="button" class="btn-primary w-full text-xs" @click="enableDesktopNotifications">
           Afficher aussi les alertes quand l'onglet est caché
         </button>
       </div>
-      <p class="text-xs text-gray-500">Gardez cet onglet ouvert pendant le service pour entendre les alertes.</p>
+      <p class="text-xs text-slate-600">Gardez cet onglet ouvert pendant le service pour entendre les alertes.</p>
     </div>
   </div>
 </template>
 
 <script setup>
+import Icone from './ui/Icone.vue'
 import { computed, ref } from 'vue'
 import { alertSound, enableDesktopNotifications, playAlertSound, setAlertSound } from '../composables/useAlertSound'
 

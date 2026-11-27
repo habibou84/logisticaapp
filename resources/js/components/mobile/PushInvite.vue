@@ -1,6 +1,6 @@
 <template>
   <div v-if="visible" class="m-card p-4 flex items-start gap-3 bg-sky-50 ring-1 ring-sky-200">
-    <span class="text-2xl">🔔</span>
+    <Icone nom="notifications" taille="grande" class="mt-0.5 text-sky-700" />
     <div class="flex-1 text-sm space-y-2">
       <p>
         <strong class="block">Soyez prévenu sur ce téléphone</strong>
@@ -11,13 +11,14 @@
         <button type="button" class="tap rounded-full px-4 py-2 font-semibold text-white" :style="{ backgroundColor: 'var(--app-color)' }" :disabled="push.busy" @click="activate">
           {{ push.busy ? 'Activation…' : 'Activer' }}
         </button>
-        <button type="button" class="tap px-2 text-slate-500" @click="dismiss">Plus tard</button>
+        <button type="button" class="tap px-2 text-slate-600" @click="dismiss">Plus tard</button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
+import Icone from '../ui/Icone.vue'
 import { computed, onMounted, ref } from 'vue'
 import { enablePush, initPush, needsInstallFirst, push } from '../../composables/usePush'
 import { useToastStore } from '../../stores/toasts'

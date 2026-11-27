@@ -15,7 +15,7 @@
             <option v-for="t in catalog.templates.filter((t) => t.key.startsWith('role:'))" :key="t.key" :value="t.key">{{ t.label }}</option>
           </optgroup>
         </select>
-        <p v-if="template" class="text-xs text-gray-500 mt-1">{{ template.description }}</p>
+        <p v-if="template" class="text-xs text-slate-600 mt-1">{{ template.description }}</p>
       </div>
 
       <div class="grid sm:grid-cols-2 gap-3">
@@ -24,7 +24,7 @@
       </div>
 
       <details class="rounded-lg border border-slate-200 p-3" :open="hasScope">
-        <summary class="text-sm font-semibold cursor-pointer">Périmètre <span class="font-normal text-gray-500">(par défaut pour les comptes de ce rôle)</span></summary>
+        <summary class="text-sm font-semibold cursor-pointer">Périmètre <span class="font-normal text-slate-600">(par défaut pour les comptes de ce rôle)</span></summary>
         <ScopeFields v-model="form.scope" class="mt-2" hint="Un compte peut avoir son propre périmètre : il remplace alors celui du rôle." />
       </details>
 
@@ -35,7 +35,7 @@
 
       <div class="flex flex-wrap justify-between gap-2">
         <button v-if="role && role.users_count === 0" type="button" class="text-sm text-red-700" :disabled="saving" @click="remove">Supprimer ce rôle</button>
-        <span v-else-if="role" class="text-xs text-gray-500">{{ role.users_count }} compte(s) ont ce rôle : les changements s'appliquent à eux.</span>
+        <span v-else-if="role" class="text-xs text-slate-600">{{ role.users_count }} compte(s) ont ce rôle : les changements s'appliquent à eux.</span>
         <span v-else />
         <div class="flex gap-2">
           <button type="button" class="btn-secondary" @click="$emit('close')">Annuler</button>

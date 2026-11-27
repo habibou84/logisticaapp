@@ -13,12 +13,12 @@
         <div>
           <label class="label" for="lost-comp">Indemnité au client (F) *</label>
           <input id="lost-comp" v-model.number="form.compensation" type="number" min="0" class="input" required>
-          <p class="text-xs text-gray-500 mt-1">Valeur déclarée des articles : {{ money(order.amounts.items_amount) }}</p>
+          <p class="text-xs text-slate-600 mt-1">Valeur déclarée des articles : {{ money(order.amounts.items_amount) }}</p>
         </div>
         <div>
           <label class="label" for="lost-ded">Retenue sur le livreur (F)</label>
           <input id="lost-ded" v-model.number="form.courier_deduction" type="number" min="0" class="input">
-          <p class="text-xs text-gray-500 mt-1">0 si le livreur n'est pas en faute.</p>
+          <p class="text-xs text-slate-600 mt-1">0 si le livreur n'est pas en faute.</p>
         </div>
       </div>
       <div v-if="form.courier_deduction > 0">
