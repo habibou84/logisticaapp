@@ -115,7 +115,8 @@ if [[ "$label" == --verifier ]]; then
     exit 0
 fi
 
-[[ -z "$label" || "$label" =~ ^[A-Za-z0-9._-]+$ ]] || { echo "Étiquette invalide : $label" >&2; exit 1; }
+# Une étiquette ne commence pas par « - » : une option mal tapée (--verfier) n'est pas prise pour une étiquette
+[[ -z "$label" || "$label" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || { echo "Option ou étiquette inconnue : $label (options : --verifier)" >&2; exit 1; }
 
 name="$(date +%F_%H%M)${label:+_$label}.sql.gz"
 file="$dir/$name"

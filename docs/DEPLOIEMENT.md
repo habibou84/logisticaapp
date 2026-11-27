@@ -78,15 +78,18 @@ passe de l'administrateur. La **mise en route** guide les réglages (zones, tari
 ### Le chemin d'une modification
 
 ```
-branche de travail ──► PR vers main ──► contrôles GitHub (style, tests, build, sécurité) ──► VOUS fusionnez
-    ──► le serveur l'installe (5 min) : sauvegarde de la base, bascule, contrôle du site
+branche de travail ──► PR vers main ──► contrôles GitHub ──► VOUS fusionnez
+    ──► PRÉPRODUCTION (preprod.logisticadelivery.com) : installée toute seule, vous essayez
+    ──► VOUS publiez une version v1.4.0 (Releases GitHub)
+    ──► PRODUCTION : installée dans la plage horaire (sauvegarde, bascule, contrôle du site)
 ```
 
-- Le serveur suit **`main`**, et seulement `main`. On ne pousse jamais directement sur `main` : chaque modification
-  arrive par une PR, et **la fusion de la PR est la décision de mettre en ligne**.
-- Avant de fusionner : contrôles verts, description de la PR relue, et, si la modification touche un parcours
-  important (saisie, attribution, livraison, caisse), un essai à la main.
-- De préférence en dehors des heures de tournée : une fusion à 7 h ou à 20 h, pas à 11 h.
+- On ne pousse jamais directement sur `main` : chaque modification arrive par une PR. **Fusionner = mettre en
+  préproduction. Publier une version = mettre en production.**
+- La production n'installe que des versions publiées **et fusionnées sur `main`**, dont les contrôles GitHub sont
+  verts. La préproduction installe chaque fusion sur `main`.
+- Avant de publier : la modification essayée en préproduction (au moins les parcours touchés : saisie,
+  attribution, livraison, caisse…).
 
 **Réglages GitHub à faire une fois** (dépôt › *Settings*) :
 
@@ -97,62 +100,120 @@ branche de travail ──► PR vers main ──► contrôles GitHub (style, te
 3. *General › Pull Requests* : n'autoriser que « Allow squash merging » (un commit par modification sur `main` :
    facile à lire et à annuler).
 
-**Passer le serveur sur `main`** (une fois, s'il suit encore l'ancienne branche de travail) :
+### Publier une version (mise en production)
+
+Une fois la préproduction essayée : GitHub › dépôt › **Releases › Draft a new release**.
+
+1. *Choose a tag* : tapez le numéro de la nouvelle version, par exemple `v1.4.0`, puis *Create new tag* ;
+   *Target* : `main`.
+2. **Generate release notes** : la liste des PR fusionnées depuis la version précédente s'écrit toute seule.
+3. **Publish release**.
+
+La production l'installe dans les 5 minutes, ou au début de la plage horaire (`AUTO_UPDATE_WINDOW`).
+
+Numéros : `vMAJEUR.MINEUR.CORRECTIF`. Une correction seule : `v1.4.1` ; des nouveautés : `v1.5.0` ; un grand
+changement : `v2.0.0`. Toujours trois nombres (les versions comme `v1.4.0-test` sont ignorées).
+
+**Correction urgente** : PR, fusion, essai rapide en préproduction, publication, puis sur le serveur de production
+`bash deploy/auto-update.sh --now` pour ne pas attendre la plage horaire.
+
+### Mise à jour automatique
+
+Le serveur vérifie toutes les 5 minutes s'il y a une nouvelle version. Il l'installe **seulement si les contrôles
+GitHub sont passés** sur cette version (onglet *Actions*) ; sinon il attend, ou l'écarte si un contrôle a échoué.
+Rien n'est ouvert sur le serveur : c'est lui qui va chercher le code. Une installation qui échoue est réessayée
+deux fois, puis abandonnée (la version en service reste) jusqu'à `--now`.
+
+Réglages dans le `.env` de chaque installation :
+
+| Réglage | Production | Préproduction |
+|---|---|---|
+| `AUTO_UPDATE_TRACK` | `tags` : seulement les versions publiées | `branch` (défaut) : chaque fusion sur `main` |
+| `AUTO_UPDATE_WINDOW` | `20:00-07:00` : en dehors des tournées | vide : à toute heure |
+
+```bash
+bash deploy/auto-update.sh --install   # activer
+bash deploy/auto-update.sh --status    # suivi, version en service, dernière version, contrôles, plage, journal
+bash deploy/auto-update.sh --now       # installer tout de suite la dernière version validée (même hors plage)
+touch .no-auto-update                  # pause (intervention en cours) ; rm pour reprendre
+bash deploy/auto-update.sh --remove    # désactiver
+```
+
+Journal : `/var/log/<projet>-update.log` (`logistica`, `logistica-preprod`).
+
+**Passer la production aux versions publiées** (une fois, quand la préproduction fonctionne) : publiez d'abord
+`v1.0.0` (ci-dessus) à partir de la version en service, puis sur le serveur :
 
 ```bash
 cd /opt/logistica
-git fetch origin main
-git checkout -B main origin/main
-bash deploy/auto-update.sh --status     # « Branche suivie : main »
+echo 'AUTO_UPDATE_TRACK=tags' >> .env
+echo 'AUTO_UPDATE_WINDOW=20:00-07:00' >> .env
+bash deploy/auto-update.sh --status     # « Suivi : versions publiées v* »
 ```
-
-### Automatiques (recommandé)
-
-Une fois activée, le serveur vérifie toutes les 5 minutes s'il y a une nouvelle version sur `main`. Il
-l'installe **seulement si les contrôles GitHub sont passés** sur cette version (onglet *Actions* du dépôt) ;
-sinon il attend, ou l'écarte si un contrôle a échoué. Rien n'est ouvert sur le serveur : c'est lui qui va
-chercher le code.
-
-```bash
-bash /opt/logistica/deploy/auto-update.sh --install   # activer
-bash /opt/logistica/deploy/auto-update.sh --status    # version installée, dernière version, contrôles, journal
-bash /opt/logistica/deploy/auto-update.sh --now       # installer tout de suite la dernière version validée
-touch /opt/logistica/.no-auto-update                  # pause (intervention en cours) ; rm pour reprendre
-bash /opt/logistica/deploy/auto-update.sh --remove    # désactiver
-```
-
-Journal : `/var/log/logistica-update.log` (versions installées, écartées, échecs).
 
 ### À la main
 
 ```bash
-bash /opt/logistica/deploy/update.sh
+bash deploy/update.sh
 ```
 
 Étapes : récupère la dernière version de `main`, construit les nouvelles images pendant que le site reste en
-ligne, **sauvegarde la base** (`/var/backups/logistica/…_avant-<version>.sql.gz`, les 10 dernières gardées),
+ligne, **sauvegarde la base** (`/var/backups/<projet>/…_avant-<version>.sql.gz`, les 10 dernières gardées),
 redémarre les conteneurs (quelques secondes ; migrations comprises), puis **vérifie que le site répond**
-(`/up` contrôle aussi la base et Redis). Si une étape échoue, elle s'arrête et le dit.
+(`/up` contrôle aussi la base et Redis). Si une étape échoue, elle s'arrête et le dit. Les images sont nommées
+d'après la version ; les 3 précédentes restent sur le serveur pour le retour arrière.
 
 ### Revenir en arrière
 
-1. **Le cas normal : annuler la modification.** Sur GitHub, ouvrez la PR fusionnée et cliquez sur **Revert** :
-   une PR d'annulation est créée ; fusionnez-la. Le serveur installe la version corrigée comme d'habitude.
-2. **Urgence (site cassé, pas le temps d'attendre les contrôles)** : remettre tout de suite la version
-   précédente, puis faire l'annulation ci-dessus pour que le serveur ne réinstalle pas la version fautive.
+**En quelques secondes, sans rien reconstruire** :
+
+```bash
+cd /opt/logistica
+bash deploy/rollback.sh             # versions disponibles sur le serveur (▶ = en service)
+bash deploy/rollback.sh v1.3.0      # remet v1.3.0 en service, contrôle du site compris
+```
+
+La version retirée n'est pas réinstallée par la mise à jour automatique : le serveur attend la suivante.
+Ensuite, corrigez : PR (ou **Revert** sur la PR fautive), fusion, essai en préproduction, nouvelle version
+`v1.3.1` publiée.
+
+La base garde les migrations de la version retirée ; c'est sans conséquence quand elles ne font qu'ajouter
+(règle suivie dans ce projet). Si une migration a abîmé des données, restaurez la sauvegarde d'avant la mise à
+jour (`…_avant-<version-retirée>.sql.gz`, commande en section 5) : **les saisies faites depuis sont perdues**.
+
+### Préproduction
+
+Une copie complète de l'application, sur le même serveur, à `https://preprod.logisticadelivery.com` : même code,
+mais **base, fichiers et conteneurs séparés** de la production. Elle sert à essayer chaque modification avant
+les clients.
+
+- **Fermée au public** : un code d'accès est demandé avant toute page (mémorisé 30 jours), jamais indexée.
+- **Rien n'est envoyé** : WhatsApp, SMS et e-mails sont simulés (visibles dans le journal de l'application) ; ne
+  connectez pas le WhatsApp de l'entreprise dans ses réglages.
+- **Erreurs** : avec le même `SENTRY_LARAVEL_DSN` que la production, elles arrivent dans Sentry sous
+  l'environnement *staging*, à part de la production.
+- **Ressources** : environ 0,5 à 1 Go de mémoire en plus. Vérifiez avant : `free -h` (colonne *available*).
+
+**Mise en place** (une fois, 20 à 30 minutes) :
+
+1. DNS chez LWS : un enregistrement **A**, nom `preprod`, valeur `45.147.98.44` (comme pour `app`, section 1).
+2. Sur le serveur, en root :
 
    ```bash
-   cd /opt/logistica
-   touch .no-auto-update                                    # le serveur ne réinstalle pas la version fautive
-   grep -E 'Version .* en ligne' /var/log/logistica-update.log | tail -3   # versions précédentes
-   TARGET=<version-précédente> bash deploy/update.sh
-   # … une fois l'annulation fusionnée sur main :
-   rm .no-auto-update
+   git clone -b main https://github.com/habibou84/logisticaapp.git /opt/logistica-preprod
+   cd /opt/logistica-preprod
+   INSTANCE=preprod DOMAIN=preprod.logisticadelivery.com APP_PORT=8091 COMPOSE_PROJECT_NAME=logistica-preprod \
+     EMAIL=votre-adresse@exemple.com bash deploy/install.sh
+   bash deploy/auto-update.sh --install
    ```
 
-   La base garde les migrations de la version fautive ; c'est sans conséquence quand elles ne font qu'ajouter
-   (règle suivie dans ce projet). Si une migration a abîmé des données, restaurez la sauvegarde d'avant la mise à
-   jour (`…_avant-<version-fautive>.sql.gz`, commande en section 5) : **les saisies faites depuis sont perdues**.
+   Le script crée une entreprise et un administrateur de test, puis affiche **le code d'accès** (aussi dans
+   `.env` : `PREPROD_ACCESS_CODE`).
+3. Optionnel : `SENTRY_LARAVEL_DSN` (le même que la production) dans `/opt/logistica-preprod/.env`, puis
+   `docker compose up -d --force-recreate --no-deps app horizon reverb scheduler`.
+
+Les deux installations sont indépendantes : chaque commande se lance **dans son dossier** (`/opt/logistica` pour la
+production, `/opt/logistica-preprod` pour la préproduction).
 
 ## Sauvegardes
 
@@ -237,6 +298,8 @@ Depuis `/opt/logistica` :
 | Changer un mot de passe | `docker compose exec -u www-data app php artisan user:password 0700000000` |
 | Prendre en compte un changement du `.env` | `docker compose up -d --force-recreate` |
 | Sauvegarde immédiate | `bash deploy/backup.sh` |
+| Versions sur le serveur / retour arrière | `bash deploy/rollback.sh` / `bash deploy/rollback.sh v1.3.0` |
+| État de la mise à jour automatique | `bash deploy/auto-update.sh --status` |
 | Arrêter / redémarrer | `docker compose stop` / `docker compose up -d` |
 
 Les variables `VITE_*` (temps réel vu du navigateur) sont compilées dans l'interface : après les avoir changées,
