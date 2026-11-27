@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "fa7f51366d3d93e9de0872f392471e73",
+    "content-hash": "bf5438dcf43d67ca5675c9d7ed74a6f0",
     "packages": [
         {
             "name": "anthropic-ai/sdk",
@@ -1306,13 +1306,13 @@
             "version": "dev-main",
             "source": {
                 "type": "git",
-                "url": "https://github.com/habibou84/socle.git",
-                "reference": "2900866c86af220203a294f22ec08b070b281f2c"
+                "url": "git@github.com:habibou84/socle.git",
+                "reference": "18421fc"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/habibou84/socle/zipball/2900866c86af220203a294f22ec08b070b281f2c",
-                "reference": "2900866c86af220203a294f22ec08b070b281f2c",
+                "url": "https://api.github.com/repos/habibou84/socle/zipball/18421fc",
+                "reference": "18421fc",
                 "shasum": ""
             },
             "require": {
@@ -1332,7 +1332,7 @@
                     ]
                 },
                 "branch-alias": {
-                    "dev-main": "1.5.x-dev"
+                    "dev-main": "1.7.x-dev"
                 }
             },
             "autoload": {
@@ -1354,11 +1354,7 @@
                 "proprietary"
             ],
             "description": "Briques communes à Jibiat (livraison) et Jibiat Marchand : montants, téléphones, SMS, signature des webhooks.",
-            "support": {
-                "source": "https://github.com/habibou84/socle/tree/main",
-                "issues": "https://github.com/habibou84/socle/issues"
-            },
-            "time": "2026-10-26T22:23:26+00:00"
+            "time": "2026-11-22T15:36:08+00:00"
         },
         {
             "name": "laravel/framework",
@@ -10069,7 +10065,14 @@
             "time": "2025-11-17T20:03:58+00:00"
         }
     ],
-    "aliases": [],
+    "aliases": [
+        {
+            "package": "habibou84/socle",
+            "version": "dev-main",
+            "alias": "1.12.x-dev",
+            "alias_normalized": "1.12.9999999.9999999-dev"
+        }
+    ],
     "minimum-stability": "stable",
     "stability-flags": {
         "habibou84/socle": 20
