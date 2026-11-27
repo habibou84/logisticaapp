@@ -94,7 +94,9 @@ class MerchantSignupTest extends TestCase
     {
         $this->getJson('/api/v1/signup')->assertOk()
             ->assertJsonPath('data.open', true)
-            ->assertJsonFragment(['name' => 'Cocody']);
+            ->assertJsonFragment(['name' => 'Cocody'])
+            // Commune puis quartier : chaque quartier dit sa commune
+            ->assertJsonFragment(['id' => $this->angre->id, 'parent_id' => $this->cocody->id, 'short_name' => 'Angré', 'name' => 'Angré (Cocody)']);
         $this->getJson('/api/v1/branding')->assertJsonPath('data.signup_open', true);
 
         $this->company->update(['merchant_signup' => false]);

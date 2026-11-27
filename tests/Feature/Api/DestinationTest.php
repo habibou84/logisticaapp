@@ -247,4 +247,17 @@ class DestinationTest extends TestCase
         Sanctum::actingAs($this->merchantUser);
         $this->getJson('/api/v1/destinations')->assertForbidden();
     }
+
+    public function test_the_chosen_neighbourhood_fills_the_district_and_filters_by_commune(): void
+    {
+        $id = $this->postJson('/api/v1/destinations', ['name' => 'Pharmacie Angré', 'zone_id' => $this->angre->id, 'district' => 'saisi à la main'])
+            ->assertCreated()->json('data.id');
+        $this->assertSame(['Angré', 'Abidjan'], [Destination::find($id)->district, Destination::find($id)->city]);
+
+        // Une commune : elle et ses quartiers
+        $this->postJson('/api/v1/destinations', ['name' => 'Mairie de Yopougon', 'zone_id' => $this->yopougon->id])->assertCreated();
+        $names = collect($this->getJson("/api/v1/destinations?zone_id={$this->cocody->id}")->assertOk()->json('data'))->pluck('name');
+        $this->assertContains('Pharmacie Angré', $names);
+        $this->assertNotContains('Mairie de Yopougon', $names);
+    }
 }

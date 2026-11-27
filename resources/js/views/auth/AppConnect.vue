@@ -62,12 +62,7 @@
             <label class="block text-sm">Nom de la boutique<input v-model.trim="request.business_name" class="input mt-1" required maxlength="255"></label>
             <label class="block text-sm">Votre nom<input v-model.trim="request.contact_name" class="input mt-1" required maxlength="255"></label>
             <label class="block text-sm">Téléphone<input v-model.trim="request.phone" class="input mt-1" type="tel" inputmode="tel" required></label>
-            <label v-if="info.zones.length" class="block text-sm">Commune de ramassage
-              <SearchSelect
-                v-model="request.pickup_zone_id" class="mt-1" placeholder="— Choisir —" :empty-value="null" search-placeholder="Commune…"
-                :options="info.zones.map((z) => ({ value: z.id, label: z.name }))"
-              />
-            </label>
+            <CommuneQuartier v-if="info.zones.length" id="ac-zone" v-model="request.pickup_zone_id" :zones="info.zones" stacked :allow-add="false" commune-label="Commune ou ville de ramassage" />
             <label class="block text-sm">Adresse de ramassage<input v-model.trim="request.pickup_address" class="input mt-1" maxlength="500"></label>
             <label class="block text-sm">Un mot pour l'équipe (facultatif)<textarea v-model.trim="request.message" class="input mt-1" rows="2" maxlength="500" placeholder="Ex. : environ 30 colis par semaine" /></label>
             <label class="block text-sm">Mot de passe (8 caractères au moins)<input v-model="request.password" class="input mt-1" type="password" autocomplete="new-password" required minlength="8"></label>
@@ -83,7 +78,7 @@
 
 <script setup>
 import Icone from '../../components/ui/Icone.vue'
-import SearchSelect from '../../components/SearchSelect.vue'
+import CommuneQuartier from '../../components/CommuneQuartier.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'

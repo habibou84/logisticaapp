@@ -39,12 +39,10 @@
 
           <fieldset class="space-y-4 rounded-2xl bg-slate-50 p-4">
             <legend class="text-sm font-semibold text-slate-700 px-1">Où récupérer vos colis ?</legend>
-            <Field id="su-zone" label="Commune ou quartier" :error="errors.pickup_zone_id">
-              <select id="su-zone" v-model="form.pickup_zone_id" :class="inputClass" required>
-                <option :value="null" disabled>Choisissez…</option>
-                <option v-for="z in options.zones" :key="z.id" :value="z.id">{{ z.name }}</option>
-              </select>
-            </Field>
+            <div>
+              <CommuneQuartier id="su-zone" v-model="form.pickup_zone_id" :zones="options.zones" required stacked :allow-add="false" :input-class="inputClass" />
+              <p v-if="errors.pickup_zone_id" class="field-error">{{ errors.pickup_zone_id }}</p>
+            </div>
             <Field id="su-address" label="Adresse" :error="errors.pickup_address">
               <input id="su-address" v-model.trim="form.pickup_address" :class="inputClass" autocomplete="street-address" required maxlength="500" placeholder="Rue, immeuble, boutique…">
             </Field>
@@ -76,6 +74,7 @@
 
 <script setup>
 import Icone from '../../components/ui/Icone.vue'
+import CommuneQuartier from '../../components/CommuneQuartier.vue'
 import { computed, defineComponent, h, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
