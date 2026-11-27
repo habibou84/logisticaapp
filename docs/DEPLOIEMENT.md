@@ -311,6 +311,21 @@ lancez `bash deploy/update.sh`.
 gunzip -c /var/backups/logistica/<fichier>.sql.gz | docker compose exec -T postgres psql -U logistica -d logistica
 ```
 
+### Remise à zéro de l'activité (avant la mise en service réelle)
+
+Efface **toutes les courses** et ce qui en découle : argent (encaissements, caisse, gains, paies et avances des
+livreurs, comptes, reversements et factures des clients), messages et suivi terrain (photos comprises), mouvements
+de stock (quantités remises à zéro), statistiques. **Restent** : l'entreprise et ses réglages, les utilisateurs, les
+clients, les livreurs, les zones et tarifs, les véhicules, les produits, l'annuaire. Irréversible, sauf restauration
+de la sauvegarde.
+
+```bash
+cd /opt/logistica
+bash deploy/backup.sh avant-remise-a-zero                                    # sauvegarde d'abord
+docker compose exec -u www-data app php artisan app:reset-activity           # simulation : ce qui serait effacé
+docker compose exec -u www-data app php artisan app:reset-activity --execute # efface (taper EFFACER)
+```
+
 ## 6. Reprise des données de l'ancienne application
 
 L'ancienne application (`admin.`, `client.`, `livreur.logisticadelivery.com`, base MySQL du même serveur) reste
