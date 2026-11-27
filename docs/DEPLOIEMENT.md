@@ -34,12 +34,12 @@ En SSH, en root (le dépôt et le paquet commun `habibou84/socle` sont publics :
 
 ```bash
 apt-get update && apt-get install -y git
-git clone -b claude/delivery-app-standalone-config-7s34ck https://github.com/habibou84/logisticaapp.git /opt/logistica
+git clone -b main https://github.com/habibou84/logisticaapp.git /opt/logistica
 cd /opt/logistica
 ```
 
-La branche clonée est celle que suivent les mises à jour (`deploy/update.sh`). Pour suivre une autre branche
-plus tard (ex. `main` une fois la version validée) : `git -C /opt/logistica fetch origin main && git -C /opt/logistica checkout main`.
+La branche clonée est celle que suivent les mises à jour (`deploy/update.sh`) : **`main`**, la version validée
+(voir section 4).
 
 Si le dépôt devient privé : créez une clé de déploiement (`ssh-keygen -t ed25519 -f /root/.ssh/logistica -N ""`),
 ajoutez `/root/.ssh/logistica.pub` dans GitHub › dépôt › **Settings › Deploy keys** (sans droit d'écriture), puis
@@ -75,12 +75,43 @@ passe de l'administrateur. La **mise en route** guide les réglages (zones, tari
 
 ## 4. Mises à jour
 
+### Le chemin d'une modification
+
+```
+branche de travail ──► PR vers main ──► contrôles GitHub (style, tests, build, sécurité) ──► VOUS fusionnez
+    ──► le serveur l'installe (5 min) : sauvegarde de la base, bascule, contrôle du site
+```
+
+- Le serveur suit **`main`**, et seulement `main`. On ne pousse jamais directement sur `main` : chaque modification
+  arrive par une PR, et **la fusion de la PR est la décision de mettre en ligne**.
+- Avant de fusionner : contrôles verts, description de la PR relue, et, si la modification touche un parcours
+  important (saisie, attribution, livraison, caisse), un essai à la main.
+- De préférence en dehors des heures de tournée : une fusion à 7 h ou à 20 h, pas à 11 h.
+
+**Réglages GitHub à faire une fois** (dépôt › *Settings*) :
+
+1. *General › Default branch* : `main`.
+2. *Branches › Add branch ruleset* (ou *Add rule*) sur `main` : « Require a pull request before merging » et
+   « Require status checks to pass » (cocher *Style (Pint)*, *Tests (PostgreSQL, PHP 8.3)*, *Tests (PostgreSQL, PHP 8.4)*,
+   *Build front-end*, *Téléphone (largeur des pages)*), « Block force pushes ».
+3. *General › Pull Requests* : n'autoriser que « Allow squash merging » (un commit par modification sur `main` :
+   facile à lire et à annuler).
+
+**Passer le serveur sur `main`** (une fois, s'il suit encore l'ancienne branche de travail) :
+
+```bash
+cd /opt/logistica
+git fetch origin main
+git checkout -B main origin/main
+bash deploy/auto-update.sh --status     # « Branche suivie : main »
+```
+
 ### Automatiques (recommandé)
 
-Une fois activée, le serveur vérifie toutes les 5 minutes s'il y a une nouvelle version sur la branche suivie. Il
-l'installe **seulement si les contrôles GitHub sont passés** sur cette version (style, tests, build : onglet
-*Actions* du dépôt) ; sinon il attend, ou l'écarte si un contrôle a échoué. Rien n'est ouvert sur le serveur :
-c'est lui qui va chercher le code.
+Une fois activée, le serveur vérifie toutes les 5 minutes s'il y a une nouvelle version sur `main`. Il
+l'installe **seulement si les contrôles GitHub sont passés** sur cette version (onglet *Actions* du dépôt) ;
+sinon il attend, ou l'écarte si un contrôle a échoué. Rien n'est ouvert sur le serveur : c'est lui qui va
+chercher le code.
 
 ```bash
 bash /opt/logistica/deploy/auto-update.sh --install   # activer
@@ -98,8 +129,61 @@ Journal : `/var/log/logistica-update.log` (versions installées, écartées, éc
 bash /opt/logistica/deploy/update.sh
 ```
 
-Récupère la dernière version de la branche suivie, construit les nouvelles images pendant que le site reste
-en ligne, puis redémarre les conteneurs (quelques secondes ; migrations comprises).
+Étapes : récupère la dernière version de `main`, construit les nouvelles images pendant que le site reste en
+ligne, **sauvegarde la base** (`/var/backups/logistica/…_avant-<version>.sql.gz`, les 10 dernières gardées),
+redémarre les conteneurs (quelques secondes ; migrations comprises), puis **vérifie que le site répond**
+(`/up` contrôle aussi la base et Redis). Si une étape échoue, elle s'arrête et le dit.
+
+### Revenir en arrière
+
+1. **Le cas normal : annuler la modification.** Sur GitHub, ouvrez la PR fusionnée et cliquez sur **Revert** :
+   une PR d'annulation est créée ; fusionnez-la. Le serveur installe la version corrigée comme d'habitude.
+2. **Urgence (site cassé, pas le temps d'attendre les contrôles)** : remettre tout de suite la version
+   précédente, puis faire l'annulation ci-dessus pour que le serveur ne réinstalle pas la version fautive.
+
+   ```bash
+   cd /opt/logistica
+   touch .no-auto-update                                    # le serveur ne réinstalle pas la version fautive
+   grep -E 'Version .* en ligne' /var/log/logistica-update.log | tail -3   # versions précédentes
+   TARGET=<version-précédente> bash deploy/update.sh
+   # … une fois l'annulation fusionnée sur main :
+   rm .no-auto-update
+   ```
+
+   La base garde les migrations de la version fautive ; c'est sans conséquence quand elles ne font qu'ajouter
+   (règle suivie dans ce projet). Si une migration a abîmé des données, restaurez la sauvegarde d'avant la mise à
+   jour (`…_avant-<version-fautive>.sql.gz`, commande en section 5) : **les saisies faites depuis sont perdues**.
+
+## Sauvegardes
+
+- **Chaque nuit** (2 h 30) : `/var/backups/logistica/AAAA-MM-JJ_HHMM.sql.gz`, gardées 14 jours. Journal :
+  `/var/log/logistica-backup.log`.
+- **Avant chaque mise à jour** : `…_avant-<version>.sql.gz`, les 10 dernières.
+- **Hors du serveur** (à faire : sans copie ailleurs, une panne du serveur emporte la base et ses sauvegardes) :
+
+  ```bash
+  cd /opt/logistica
+  cp deploy/offsite.env.example .env.offsite && chmod 600 .env.offsite
+  nano .env.offsite        # stockage (Cloudflare R2, Backblaze B2, S3…), clé, mot de passe de chiffrement
+  bash deploy/backup.sh    # essai : doit finir par « copie hors du serveur : … »
+  ```
+
+  La copie est faite chaque nuit après la sauvegarde, **chiffrée** avant l'envoi, gardée 90 jours. Notez la phrase
+  de chiffrement dans un gestionnaire de mots de passe : sans elle, les copies sont illisibles.
+- **Restauration** : section 5. À essayer de temps en temps sur une base de test : une sauvegarde qu'on n'a jamais
+  restaurée n'est pas une sauvegarde sûre.
+
+## Surveillance
+
+Pour être prévenu avant les utilisateurs. Les trois services ont une formule gratuite suffisante.
+
+| Quoi | Service | Réglage |
+|---|---|---|
+| Le site est-il joignable ? | [UptimeRobot](https://uptimerobot.com) (ou Better Stack) | Moniteur HTTP(S) sur `https://app.logisticadelivery.com/up`, toutes les 5 minutes, alerte par e-mail ou SMS. `/up` répond une erreur si la base ou Redis ne répondent pas. |
+| Erreurs de l'application | [Sentry](https://sentry.io) | Projet *Laravel* ; copiez son DSN dans `.env` : `SENTRY_LARAVEL_DSN=https://…`, puis `docker compose up -d --force-recreate`. Chaque erreur (pages, files d'attente, tâches planifiées) arrive par e-mail avec la version du code (`APP_VERSION`). Ni utilisateur, ni adresse IP, ni contenu des formulaires n'est envoyé. |
+| La sauvegarde de la nuit a-t-elle eu lieu ? | [Healthchecks.io](https://healthchecks.io) | Un contrôle « tous les jours », 1 h de tolérance ; copiez son adresse dans `.env` : `BACKUP_PING_URL=https://hc-ping.com/…`. Il prévient si la sauvegarde échoue ou n'arrive pas. |
+
+Essai de Sentry : `docker compose exec -u www-data app php artisan sentry:test`.
 
 ## 5. Commandes utiles
 
