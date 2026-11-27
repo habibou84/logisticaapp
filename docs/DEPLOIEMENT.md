@@ -114,7 +114,16 @@ Depuis `/opt/logistica` :
 | Changer un mot de passe | `docker compose exec -u www-data app php artisan user:password 0700000000` |
 | Prendre en compte un changement du `.env` | `docker compose up -d --force-recreate` |
 | Sauvegarde immédiate | `bash deploy/backup.sh` |
+| Données fictives (préproduction seulement) | `docker compose exec -u www-data app php artisan app:preprod-data` |
 | Arrêter / redémarrer | `docker compose stop` / `docker compose up -d` |
+
+**Données fictives de la préproduction** (`app:preprod-data`, refusée si `APP_ENV=production`) : 10 clients,
+8 livreurs, un dispatcher, un caissier, un agent d'entrepôt et 30 jours de courses (≈ 18 par jour) passées par les
+vrais services : prix, journal, encaissements, versements des livreurs chaque soir, reversements aux clients le
+vendredi. Les courses du jour restent à différentes étapes (à valider, en ramassage, en chemin…). Aucun message ne
+part pendant la génération (WhatsApp, SMS, notifications, webhooks). Comptes en `07 99 …`, mot de passe
+`Preprod2026` (option `--password`). Relançable : les jours déjà remplis sont sautés, donc la relancer le matin
+ajoute seulement les courses du jour. Options : `--days=30`, `--per-day=18`, `--seed=` (mêmes données).
 
 Les variables `VITE_*` (temps réel vu du navigateur) sont compilées dans l'interface : après les avoir changées,
 lancez `bash deploy/update.sh`.
