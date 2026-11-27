@@ -379,6 +379,22 @@ livreur (onglet **Informations**, carte **Identité**), où elle peut aussi les 
 **Avec le bouton de l'ancienne application** : **Réglages › Reprise de l'ancienne application** explique la
 marche à suivre (fichier à copier dans l'ancienne application, clé de reprise valable 7 jours).
 
+**Annuler la reprise des livreurs** (pour les recréer à la main) : les livreurs dont le numéro figure dans l'export
+sont supprimés **définitivement** (fiche, zones, barème, planning, positions, véhicules attribués, photo et pièce
+d'identité) ; leurs numéros redeviennent libres. Les autres comptes (équipe, clients, livreurs créés à la main avec
+un autre numéro) ne sont jamais touchés. Un livreur qui a encore de l'activité bloque tout : faites d'abord la remise
+à zéro de l'activité (section 5).
+
+```bash
+cd /opt/logistica
+mysqldump --complete-insert -u <utilisateur> -p <ancienne_base> livreurs users > /root/ancienne-base.sql
+docker compose cp /root/ancienne-base.sql app:/tmp/ancienne-base.sql
+bash deploy/backup.sh avant-retrait-livreurs
+docker compose exec -u www-data app php artisan legacy:remove-couriers /tmp/ancienne-base.sql            # simulation : liste
+docker compose exec -u www-data app php artisan legacy:remove-couriers /tmp/ancienne-base.sql --execute  # taper SUPPRIMER
+docker compose exec app rm /tmp/ancienne-base.sql && rm /root/ancienne-base.sql
+```
+
 ## 7. WhatsApp
 
 Deux possibilités, dans **Réglages › WhatsApp** :
