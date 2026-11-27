@@ -18,8 +18,11 @@ use App\Services\WhatsApp\OrderMessageParser;
 use App\Support\PhoneNumber;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Events\DiagnosingHealth;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
@@ -65,6 +68,13 @@ class AppServiceProvider extends ServiceProvider
         Model::preventSilentlyDiscardingAttributes($strict);
 
         DB::prohibitDestructiveCommands($this->app->isProduction());
+
+        // Sonde /up (surveillance extérieure, contrôle après mise à jour) : en erreur 500 si la base ou le
+        // cache (Redis en production) ne répondent pas, pas seulement si PHP démarre
+        Event::listen(DiagnosingHealth::class, function (): void {
+            DB::select('select 1');
+            Cache::get('sonde-up');
+        });
 
         // Identifiant normalisé (07…, +225…, espaces : même compte) ; limite par compte toutes adresses IP confondues
         RateLimiter::for('login', function (Request $request) {

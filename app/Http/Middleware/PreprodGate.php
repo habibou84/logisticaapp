@@ -41,7 +41,7 @@ class PreprodGate
             return $this->check($request, $code, $pass);
         }
         if ($request->is('api/*') || $request->expectsJson()) {
-            return response()->json(['message' => 'Préproduction : saisissez le code d\'accès.'], 403);
+            return response()->json(['message' => 'Code d\'accès requis.'], 403);
         }
 
         return $this->form($request->getRequestUri());
