@@ -159,19 +159,52 @@ redémarre les conteneurs (quelques secondes ; migrations comprises), puis **vé
 - **Chaque nuit** (2 h 30) : `/var/backups/logistica/AAAA-MM-JJ_HHMM.sql.gz`, gardées 14 jours. Journal :
   `/var/log/logistica-backup.log`.
 - **Avant chaque mise à jour** : `…_avant-<version>.sql.gz`, les 10 dernières.
-- **Hors du serveur** (à faire : sans copie ailleurs, une panne du serveur emporte la base et ses sauvegardes) :
+- **Hors du serveur** (à faire : sans copie ailleurs, une panne du serveur emporte la base, les fichiers et leurs
+  sauvegardes) :
 
   ```bash
   cd /opt/logistica
   cp deploy/offsite.env.example .env.offsite && chmod 600 .env.offsite
   nano .env.offsite        # stockage (Cloudflare R2, Backblaze B2, S3…), clé, mot de passe de chiffrement
-  bash deploy/backup.sh    # essai : doit finir par « copie hors du serveur : … »
+  bash deploy/backup.sh    # essai : « base copiée hors du serveur » puis « fichiers copiés hors du serveur »
   ```
 
-  La copie est faite chaque nuit après la sauvegarde, **chiffrée** avant l'envoi, gardée 90 jours. Notez la phrase
-  de chiffrement dans un gestionnaire de mots de passe : sans elle, les copies sont illisibles.
-- **Restauration** : section 5. À essayer de temps en temps sur une base de test : une sauvegarde qu'on n'a jamais
-  restaurée n'est pas une sauvegarde sûre.
+  Chaque nuit, tout est **chiffré** avant l'envoi :
+
+  | Quoi | Où (dans le stockage) | Gardé |
+  |---|---|---|
+  | Base, chaque nuit | `jour/` | 14 jours |
+  | Base, le dimanche | `semaine/` | 12 semaines |
+  | Base, le 1er du mois | `mois/` | 12 mois |
+  | Fichiers (photos, pièces d'identité, documents, logos) | `fichiers/actuel/` | miroir du serveur |
+  | Fichiers supprimés ou remplacés sur le serveur | `fichiers/supprimes/<date>/` | 30 jours |
+
+  La première copie des fichiers envoie tout (elle peut prendre du temps) ; ensuite, seuls les nouveaux partent.
+  Notez la phrase de chiffrement dans un gestionnaire de mots de passe : sans elle, les copies sont illisibles.
+  Durées réglables dans `.env.offsite`.
+
+  Voir ce qui est stocké (noms en clair, grâce à la phrase de chiffrement) :
+
+  ```bash
+  docker run --rm --env-file .env.offsite rclone/rclone:1.68.2 lsl chiffre:jour
+  docker run --rm --env-file .env.offsite rclone/rclone:1.68.2 size chiffre:fichiers/actuel
+  ```
+
+- **Restaurer la base** : section 5 (fichier local) ; depuis le stockage, récupérez d'abord le fichier :
+  `docker run --rm --env-file .env.offsite -v /root:/out rclone/rclone:1.68.2 copy chiffre:jour/<fichier> /out`.
+- **Restaurer les fichiers** (serveur neuf ou fichiers perdus ; ne remplace que ce qui manque ou diffère) :
+
+  ```bash
+  cd /opt/logistica
+  docker run --rm --env-file .env.offsite --volumes-from "$(docker compose ps -q app)" rclone/rclone:1.68.2 \
+      copy chiffre:fichiers/actuel /var/www/html/storage/app
+  docker compose exec app chown -R www-data:www-data storage/app
+  ```
+
+  Un fichier supprimé par erreur ces 30 derniers jours : `… lsf -R chiffre:fichiers/supprimes`, puis `copyto` du
+  fichier vers son dossier.
+- **Essayer** de temps en temps de restaurer sur une base de test : une sauvegarde qu'on n'a jamais restaurée n'est
+  pas une sauvegarde sûre.
 
 ## Surveillance
 
