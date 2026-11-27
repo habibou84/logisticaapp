@@ -95,13 +95,7 @@
             <label class="m-label" for="shop-phone">Téléphone</label>
             <input id="shop-phone" v-model.trim="form.phone" class="m-input" type="tel" inputmode="tel" autocomplete="tel" required placeholder="07 00 00 00 00">
           </div>
-          <div>
-            <label class="m-label" for="shop-zone">Commune ou quartier</label>
-            <SearchSelect
-              id="shop-zone" v-model="form.zone_id" input-class="m-input" placeholder="Choisissez…" :allow-empty="false" :empty-value="null" required search-placeholder="Commune, quartier…" @change="quote"
-              :options="shop.zones.map((z) => ({ value: z.id, label: z.name }))"
-            />
-          </div>
+          <CommuneQuartier id="shop-zone" v-model="form.zone_id" :zones="shop.zones" required mobile stacked :allow-add="false" input-class="m-input" @update:model-value="(v) => v && quote()" />
           <div>
             <label class="m-label" for="shop-address">Adresse de livraison</label>
             <input id="shop-address" v-model.trim="form.address" class="m-input" autocomplete="street-address" required maxlength="500" placeholder="Rue, immeuble, quartier…">
@@ -141,7 +135,7 @@
 
 <script setup>
 import Icone from '../../components/ui/Icone.vue'
-import SearchSelect from '../../components/SearchSelect.vue'
+import CommuneQuartier from '../../components/CommuneQuartier.vue'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
