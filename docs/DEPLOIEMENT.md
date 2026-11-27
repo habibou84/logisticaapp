@@ -165,9 +165,15 @@ redémarre les conteneurs (quelques secondes ; migrations comprises), puis **vé
   ```bash
   cd /opt/logistica
   cp deploy/offsite.env.example .env.offsite && chmod 600 .env.offsite
-  nano .env.offsite        # stockage (Cloudflare R2, Backblaze B2, S3…), clé, mot de passe de chiffrement
-  bash deploy/backup.sh    # essai : « base copiée hors du serveur » puis « fichiers copiés hors du serveur »
+  nano .env.offsite                    # stockage (Cloudflare R2, Backblaze B2, S3…), clé, mot de passe de chiffrement
+  bash deploy/backup.sh --verifier     # format du fichier et connexion, sans rien envoyer
+  bash deploy/backup.sh                # essai : « base copiée hors du serveur » puis « fichiers copiés hors du serveur »
   ```
+
+  `--verifier` signale en clair les erreurs de saisie courantes : `https:` ou `stockage:` en double, clé de mauvaise
+  longueur, espaces, guillemets, valeur d'exemple oubliée, fins de ligne Windows. Les mêmes contrôles sont faits avant
+  chaque copie de la nuit. Une copie ne peut pas rester bloquée : pas de réponse en 30 secondes ou plus de 5 minutes sans
+  échange, elle s'arrête en erreur (et Healthchecks.io prévient).
 
   Chaque nuit, tout est **chiffré** avant l'envoi :
 

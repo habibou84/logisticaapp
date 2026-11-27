@@ -4,6 +4,7 @@
 #
 #   bash deploy/backup.sh                  # sauvegarde de la nuit (cron, voir deploy/install.sh) : gardée 14 jours
 #   bash deploy/backup.sh avant-1a2b3c4    # avant une mise à jour (deploy/update.sh) : les 10 dernières gardées
+#   bash deploy/backup.sh --verifier       # vérifie .env.offsite et la connexion au stockage, sans rien sauvegarder
 #
 # Copie hors du serveur (recommandé : si le serveur est perdu, ses sauvegardes le sont aussi) : fichier
 # .env.offsite à la racine de l'application, voir deploy/offsite.env.example. La copie passe par rclone
@@ -38,13 +39,83 @@ ping() {
     curl -fsS -m 10 --retry 3 -o /dev/null "$ping_url$1" || true
 }
 # Toute erreur (base injoignable, disque plein, copie hors du serveur refusée) : signalée à la surveillance
-trap 'echo "$(date "+%F %T") ÉCHEC de la sauvegarde (ligne $LINENO)" >&2; ping /fail' ERR
-
-[[ -z "$label" || "$label" =~ ^[A-Za-z0-9._-]+$ ]] || { echo "Étiquette invalide : $label" >&2; exit 1; }
+trap 'rc=$?; echo "$(date "+%F %T") ÉCHEC de la sauvegarde (ligne $LINENO)$([[ $rc == 124 ]] && echo " : délai dépassé, stockage injoignable ?")" >&2; ping /fail' ERR
 
 dir="/var/backups/$project"
 mkdir -p "$dir"
 chmod 700 "$dir"
+
+# ───────────────────────────── Stockage hors du serveur : outils ─────────────────────────────
+offsite=".env.offsite"
+# Jamais bloqué indéfiniment : connexion 30 s, inactivité 5 min, 3 essais ; puis délai total par commande
+RCLONE_FLAGS=(--contimeout 30s --timeout 5m --retries 3 --low-level-retries 5)
+
+# Commande rclone dans un conteneur, avec un délai total (1er argument). Sans la ligne inutile « Config file not found ».
+rclone_in() {
+    local limit="$1"; shift
+    timeout "$limit" docker run --rm --env-file "$app_dir/$offsite" "$@" 2>&1 \
+        | { grep -v 'Config file "/config/rclone/rclone.conf" not found' || true; }
+}
+rclone() { rclone_in 30m -v "$dir:/data:ro" "$RCLONE_IMAGE" "${RCLONE_FLAGS[@]}" "$@"; }
+# « chiffre: » ou « stockage:bucket/dossier » : pas de « / » ajouté après les deux-points
+at() { local dest; dest="$(env_get OFFSITE_DEST "$offsite")"; [[ "$dest" == *: ]] && printf '%s%s' "$dest" "$1" || printf '%s/%s' "${dest%/}" "$1"; }
+
+# Erreurs de saisie courantes dans .env.offsite, dites en clair (au lieu d'un « 400 Bad Request » de rclone)
+check_offsite() {
+    local line key val problems=() provider
+    grep -q $'\r' "$offsite" && problems+=("fins de ligne Windows : lancez  sed -i 's/\r\$//' $offsite")
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        line="${line%$'\r'}"
+        [[ -z "${line//[[:space:]]/}" || "$line" =~ ^[[:space:]]*# ]] && continue
+        if [[ "$line" != *=* ]]; then problems+=("ligne sans « = » : $line"); continue; fi
+        key="${line%%=*}"; val="${line#*=}"
+        [[ "$key" =~ ^[A-Z0-9_]+$ ]] || problems+=("« $key » : nom invalide (espaces avant le « = » ?)")
+        [[ "$val" =~ ^[[:space:]] || "$val" =~ [[:space:]]$ ]] && problems+=("$key : espace au début ou à la fin de la valeur")
+        [[ "$val" == \"* || "$val" == \'* ]] && problems+=("$key : pas de guillemets autour de la valeur")
+        [[ "$val" == *identifiant-du-compte* || "$val" == *nom-du-bucket* || "$val" == resultat-de-rclone-obscure \
+            || "$val" == access-key-id || "$val" == secret-access-key || "$val" == cle-secrete \
+            || "$val" == identifiant-de-la-cle ]] && problems+=("$key : valeur d'exemple pas encore remplacée")
+        if [[ "$key" == *_ENDPOINT ]] && ! [[ "$val" =~ ^https://[A-Za-z0-9.-]+/?$ ]]; then
+            problems+=("$key : adresse attendue https://<compte>.r2.cloudflarestorage.com (un seul « https:// », rien après « .com »)")
+        fi
+        if [[ "$key" == *_REMOTE || "$key" == OFFSITE_DEST ]]; then
+            [[ "$val" =~ ^[A-Za-z0-9_-]+: ]] || problems+=("$key : doit commencer par un nom de connexion suivi de « : » (ex. stockage:)")
+            [[ "$val" =~ ^[A-Za-z0-9_-]+:[A-Za-z0-9_-]+: ]] && problems+=("$key : nom de connexion en double (ex. « stockage:stockage: »)")
+        fi
+    done < "$offsite"
+    [[ -n "$(env_get OFFSITE_DEST "$offsite")" ]] || problems+=("OFFSITE_DEST manquant (ex. OFFSITE_DEST=chiffre:)")
+    provider="$(env_get RCLONE_CONFIG_STOCKAGE_PROVIDER "$offsite")"
+    if [[ "$provider" == Cloudflare ]]; then
+        val="$(env_get RCLONE_CONFIG_STOCKAGE_ACCESS_KEY_ID "$offsite")"
+        [[ ${#val} == 32 ]] || problems+=("RCLONE_CONFIG_STOCKAGE_ACCESS_KEY_ID : ${#val} caractères au lieu de 32 (l'« Access Key ID », pas le « Token value »)")
+        val="$(env_get RCLONE_CONFIG_STOCKAGE_SECRET_ACCESS_KEY "$offsite")"
+        [[ ${#val} == 64 ]] || problems+=("RCLONE_CONFIG_STOCKAGE_SECRET_ACCESS_KEY : ${#val} caractères au lieu de 64")
+    fi
+    if (( ${#problems[@]} )); then
+        echo "À corriger dans $app_dir/$offsite :" >&2
+        printf '  - %s\n' "${problems[@]}" >&2
+        return 1
+    fi
+}
+
+if [[ "$label" == --verifier ]]; then
+    [[ -f "$offsite" ]] || { echo "Pas de $offsite : copiez deploy/offsite.env.example (voir docs/DEPLOIEMENT.md)." >&2; exit 1; }
+    trap - ERR
+    check_offsite || exit 1
+    echo "$offsite : format correct. Connexion au stockage…"
+    # Dossier vide ou pas encore créé (code 3) : la connexion fonctionne quand même
+    rc=0
+    rclone_in 2m "$RCLONE_IMAGE" "${RCLONE_FLAGS[@]}" lsf "$(at '')" --max-depth 1 || rc=$?
+    case "$rc" in
+        0) echo "Connexion au stockage : OK ($(at ''))" ;;
+        3) echo "Connexion au stockage : OK (dossier encore vide)" ;;
+        124) echo "Connexion au stockage : ÉCHEC, pas de réponse en 2 minutes (adresse ENDPOINT ?)" >&2; exit 1 ;;
+        *) echo "Connexion au stockage : ÉCHEC (message de rclone ci-dessus)." >&2; exit 1 ;;
+    esac
+    exit 0
+fi
+
+[[ -z "$label" || "$label" =~ ^[A-Za-z0-9._-]+$ ]] || { echo "Étiquette invalide : $label" >&2; exit 1; }
 
 name="$(date +%F_%H%M)${label:+_$label}.sql.gz"
 file="$dir/$name"
@@ -63,17 +134,17 @@ find "$dir" -name '*.part' -mmin +60 -delete
 
 # ───────────────────────────── Hors du serveur ─────────────────────────────
 # Seulement la sauvegarde de la nuit (sans étiquette) : celles d'avant mise à jour restent sur le serveur
-offsite=".env.offsite"
 offsite_copy() {
-    local dest when files keep_daily keep_weekly keep_monthly keep_deleted max_delete app_container
+    local dest when files keep_daily keep_weekly keep_monthly keep_deleted max_delete files_timeout app_container
+    check_offsite
     dest="$(env_get OFFSITE_DEST "$offsite")"
-    [[ -n "$dest" ]] || { echo "OFFSITE_DEST manquant dans $offsite" >&2; false; }
     keep_daily="$(env_get OFFSITE_KEEP_DAILY "$offsite")"
     keep_weekly="$(env_get OFFSITE_KEEP_WEEKLY "$offsite")"
     keep_monthly="$(env_get OFFSITE_KEEP_MONTHLY "$offsite")"
     files="$(env_get OFFSITE_FILES "$offsite")"
     keep_deleted="$(env_get OFFSITE_FILES_KEEP_DELETED "$offsite")"
     max_delete="$(env_get OFFSITE_FILES_MAX_DELETE "$offsite")"
+    files_timeout="$(env_get OFFSITE_FILES_TIMEOUT "$offsite")"
 
     # Une seule copie à la fois (la première copie des fichiers peut être longue)
     exec 8>"/var/lock/$project-backup-offsite.lock"
@@ -82,9 +153,6 @@ offsite_copy() {
         return 0
     fi
 
-    # « chiffre: » ou « stockage:bucket/dossier » : pas de « / » ajouté après les deux-points
-    at() { [[ "$dest" == *: ]] && printf '%s%s' "$dest" "$1" || printf '%s/%s' "${dest%/}" "$1"; }
-    rclone() { docker run --rm --env-file "$app_dir/$offsite" -v "$dir:/data:ro" "$RCLONE_IMAGE" "$@"; }
     # Suppression ; un dossier pas encore créé (semaine/ avant le premier dimanche…) n'est pas une erreur (code 3)
     rclone_delete() { rclone delete "$@" || [[ $? == 3 ]]; }
     # Supprime d'un dossier les sauvegardes plus vieilles que N jours (0 : ne jamais supprimer)
@@ -112,7 +180,8 @@ offsite_copy() {
     [[ "$files" == 0 ]] && return 0
     app_container="$(docker compose ps -q app)"
     [[ -n "$app_container" ]] || { echo "Conteneur « app » arrêté : fichiers non copiés." >&2; false; }
-    docker run --rm --env-file "$app_dir/$offsite" --volumes-from "$app_container:ro" "$RCLONE_IMAGE" \
+    # Délai total : 6 h par défaut (la première copie envoie toutes les photos)
+    rclone_in "${files_timeout:-6h}" --volumes-from "$app_container:ro" "$RCLONE_IMAGE" "${RCLONE_FLAGS[@]}" \
         sync /var/www/html/storage/app "$(at fichiers/actuel)" \
         --backup-dir "$(at "fichiers/supprimes/$(date +%F_%H%M)")" \
         --exclude '.gitignore' --transfers 4 \
