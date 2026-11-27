@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    # main : branche suivie par le serveur (deploy/auto-update.sh attend ces contrôles sur chaque version) ;
-    # les branches de travail sont contrôlées par leur PR
-    branches: [main]
+    # main (préproduction) et production : branches suivies par les serveurs (deploy/auto-update.sh attend ces
+    # contrôles sur chaque version) ; les branches de travail sont contrôlées par leur PR
+    branches: [main, production]
   pull_request:
 
 concurrency:
