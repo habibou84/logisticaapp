@@ -164,7 +164,7 @@ redémarre les conteneurs (quelques secondes ; migrations comprises), puis **vé
   ```bash
   cd /opt/logistica
   cp deploy/offsite.env.example .env.offsite && chmod 600 .env.offsite
-  nano .env.offsite        # stockage (Backblaze B2, Scaleway…), clé, mot de passe de chiffrement
+  nano .env.offsite        # stockage (Cloudflare R2, Backblaze B2, S3…), clé, mot de passe de chiffrement
   bash deploy/backup.sh    # essai : doit finir par « copie hors du serveur : … »
   ```
 
