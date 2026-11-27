@@ -111,8 +111,10 @@ GitHub › dépôt › **Pull requests › New pull request** : *base* `producti
 La production l'installe au début de la plage horaire (`AUTO_UPDATE_WINDOW`, 20 h à 7 h), une fois les contrôles
 GitHub du commit de fusion passés. L'historique des mises en production est la liste des PR `main → production`.
 
-**Correction urgente** : PR, fusion, essai rapide en préproduction, PR `main → production` fusionnée, puis sur le
-serveur de production `bash deploy/auto-update.sh --now` pour ne pas attendre la plage horaire.
+**Mise en production immédiate** (correction urgente) : ajoutez **`[immédiat]`** au titre de la fusion (champ
+*Commit message* au moment de cliquer sur *Merge*, ou titre de la PR avant la fusion). La production l'installe
+dès que les contrôles du commit de fusion sont verts (environ 10 minutes), même en pleine journée. Autre moyen,
+sur le serveur : `bash deploy/auto-update.sh --now`.
 
 ### Mise à jour automatique
 
