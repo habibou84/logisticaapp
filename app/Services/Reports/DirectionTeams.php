@@ -360,7 +360,7 @@ class DirectionTeams
         if ($high->isNotEmpty()) {
             $add('critical', 'Charge', $high->count() === 1 ? "{$high[0]['name']} : {$high[0]['per_courier_day']} livraisons par livreur et par jour" : "{$high->count()} zones en surcharge",
                 $names($high, fn ($z) => "{$z['name']} ({$z['per_courier_day']} par livreur et par jour, {$z['couriers']} livreur(s))").". Moyenne des zones : {$zones['average']}. Renforcer ces zones ou recruter.",
-                '/admin/statistiques?onglet=zones', 'Voir les zones');
+                '/admin/statistiques?vue=ecommerce&detail=zones', 'Voir les zones');
         }
         $gaps = $couriers->where('cash_gap', '<', 0)->sortBy('cash_gap')->values();
         if ($gaps->isNotEmpty()) {
@@ -371,7 +371,7 @@ class DirectionTeams
         if ($support->isNotEmpty()) {
             $add('warning', 'Livreurs', $support->count() === 1 ? "{$support[0]['name']} est à accompagner" : "{$support->count()} livreurs à accompagner",
                 $names($support, fn ($c) => "{$c['name']} ({$c['success_rate']} % de réussite, {$c['per_day']} livraisons par jour)").'.',
-                '/admin/statistiques?onglet=couriers', 'Voir les livreurs');
+                '/admin/livreurs', 'Voir les livreurs');
         }
         $slow = collect($staff)->filter(fn ($s) => $s['assign_minutes'] !== null && $s['assigned'] >= 20 && $s['assign_minutes'] > 30)->sortByDesc('assign_minutes')->values();
         if ($slow->isNotEmpty()) {
@@ -382,13 +382,13 @@ class DirectionTeams
         if ($low->isNotEmpty() && $high->isNotEmpty()) {
             $add('info', 'Charge', $low->count() === 1 ? "{$low[0]['name']} est en sous-charge" : "{$low->count()} zones en sous-charge",
                 $names($low, fn ($z) => "{$z['name']} ({$z['per_courier_day']} par livreur et par jour)").'. Des livreurs peuvent être déplacés vers les zones en surcharge.',
-                '/admin/statistiques?onglet=zones', 'Voir les zones');
+                '/admin/statistiques?vue=ecommerce&detail=zones', 'Voir les zones');
         }
         $praise = $couriers->where('verdict', 'praise')->sortByDesc('per_day')->values();
         if ($praise->isNotEmpty()) {
             $add('good', 'Livreurs', $praise->count() === 1 ? "{$praise[0]['name']} est à féliciter" : "{$praise->count()} livreurs à féliciter",
                 $names($praise, fn ($c) => "{$c['name']} ({$c['success_rate']} % de réussite, {$c['per_day']} livraisons par jour)").'.',
-                '/admin/statistiques?onglet=couriers', 'Voir les livreurs');
+                '/admin/livreurs', 'Voir les livreurs');
         }
 
         return $out;

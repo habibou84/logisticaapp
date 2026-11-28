@@ -200,7 +200,7 @@ class DirectionBoard
                 $loss = (int) $zones->sum('margin');
                 $add('critical', $a, 'Rentabilité', $zones->count() === 1 ? "1 zone livrée à perte : −{$money($loss)}" : "{$zones->count()} zones livrées à perte : −{$money($loss)}",
                     $names($zones, fn ($z) => "{$z['name']} (−{$money($z['margin'] / $z['delivered'])} par course)").'. '.$zones->sum('delivered').' course(s) livrée(s) sur la période.',
-                    "/admin/statistiques?onglet=profitability&activite={$a}", 'Voir la rentabilité', abs($loss));
+                    "/admin/statistiques?vue={$a}&detail=profitability", 'Voir la rentabilité', abs($loss));
             }
 
             // Clients à perte
@@ -209,7 +209,7 @@ class DirectionBoard
                 $loss = (int) $losers->sum('margin');
                 $add('warning', $a, 'Rentabilité', $losers->count() === 1 ? "1 client à perte : −{$money($loss)}" : "{$losers->count()} clients à perte : −{$money($loss)}",
                     $names($losers, fn ($c) => "{$c['name']} (−{$money($c['margin'])})").'.',
-                    "/admin/statistiques?onglet=profitability&activite={$a}", 'Voir les clients', abs($loss));
+                    "/admin/statistiques?vue={$a}&detail=profitability", 'Voir les clients', abs($loss));
             }
 
             // Forfaits dépassés ou sous-utilisés
@@ -239,7 +239,7 @@ class DirectionBoard
                 if ($falling->isNotEmpty()) {
                     $add('info', $a, 'Clients', $falling->count() === 1 ? "{$falling[0]['name']} : {$falling[0]['change']} % de volume en 30 jours" : "{$falling->count()} clients en forte baisse sur 30 jours",
                         $names($falling, fn ($c) => "{$c['name']} ({$c['change']} %, {$c['recent']} course(s) contre {$c['average']} par mois)").'.',
-                        "/admin/statistiques?onglet=clients&activite={$a}", 'Voir les clients', (int) abs($falling->min('change')));
+                        "/admin/statistiques?vue={$a}&detail=loyalty", 'Voir les clients', (int) abs($falling->min('change')));
                 }
             }
 
@@ -248,7 +248,7 @@ class DirectionBoard
             if ($row !== null && $row['previous_revenue'] > 0 && ($growth = (int) round(($row['revenue'] / $row['previous_revenue'] - 1) * 100)) >= self::GROWTH_GOOD) {
                 $add('good', $a, 'Croissance', "Chiffre d'affaires en hausse de {$growth} %",
                     "{$money($row['revenue'])} contre {$money($row['previous_revenue'])} sur la période précédente.",
-                    "/admin/statistiques?onglet=goals&activite={$a}", 'Voir les tendances', $growth);
+                    '/admin/statistiques?vue=overview&detail=trends', 'Voir les tendances', $growth);
             }
         }
 
@@ -258,7 +258,7 @@ class DirectionBoard
             if ($late->isNotEmpty()) {
                 $add('critical', 'distribution', 'Lot en retard', $late->count() === 1 ? "{$late[0]['name']} : échéance dépassée" : "{$late->count()} lots ont dépassé leur échéance",
                     $names($late, fn ($l) => "{$l['name']} ({$l['delivered']} sur {$l['quantity']} livrés, échéance le ".CarbonImmutable::parse($l['due_on'])->format('d/m').')').'.',
-                    '/admin/statistiques?onglet=quality&activite=distribution', 'Voir les lots', (int) $late->sum(fn ($l) => $l['quantity'] - $l['delivered']));
+                    '/admin/statistiques?vue=distribution&detail=quality', 'Voir les lots', (int) $late->sum(fn ($l) => $l['quantity'] - $l['delivered']));
             }
         }
 
@@ -268,7 +268,7 @@ class DirectionBoard
             if ($absent->isNotEmpty()) {
                 $add('warning', 'mad', 'Présence', $absent->count() === 1 ? "{$absent[0]['merchant']} : {$absent[0]['rate']} % de présence" : "{$absent->count()} contrats MAD sous ".self::MAD_PRESENCE_MIN.' % de présence',
                     $names($absent, fn ($p) => "{$p['merchant']} ({$p['done_days']} jour(s) faits sur {$p['planned_days']})").'.',
-                    '/admin/statistiques?onglet=quality&activite=mad', 'Voir la présence', (int) round(100 - $absent->min('rate')));
+                    '/admin/statistiques?vue=mad&detail=quality', 'Voir la présence', (int) round(100 - $absent->min('rate')));
             }
         }
 

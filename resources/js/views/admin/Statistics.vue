@@ -2,8 +2,7 @@
   <div class="space-y-4">
     <!-- En-tête : titre, actions (export Excel, rapport du mois à imprimer) -->
     <div class="flex flex-wrap items-center justify-between gap-3">
-      <h1 v-if="!embedded" class="text-xl font-bold">Statistiques</h1>
-      <h2 v-else class="font-semibold">Détail des statistiques</h2>
+      <h1 class="text-xl font-bold">Statistiques</h1>
       <div class="flex flex-wrap gap-2">
         <button type="button" class="btn-secondary" :disabled="exporting" title="Toutes les statistiques de la période, en plusieurs onglets" @click="exportXlsx"><Icone v-if="!exporting" nom="exporter" />{{ exporting ? 'Export…' : 'Exporter en Excel' }}</button>
         <a :href="`/admin/rapport-mensuel?mois=${from.slice(0, 7)}`" target="_blank" class="btn-secondary" title="À imprimer ou enregistrer en PDF"><Icone nom="imprimer" /> Rapport du mois</a>
@@ -236,9 +235,6 @@ import { date, money, today, waitDuration } from '../../utils/format'
 import { myActivities } from '../../utils/activities'
 
 const auth = useAuthStore()
-// Affichée dans l'onglet « Détail » de la page Statistiques : le titre de la page est déjà au-dessus
-defineProps({ embedded: { type: Boolean, default: false } })
-
 const route = useRoute()
 const router = useRouter()
 
