@@ -124,11 +124,19 @@ class ProfitabilityTest extends TestCase
         $this->assertSame(0, FixedCost::find($id)->amountBetween($from, $from->endOfMonth()));
         $this->deleteJson("/api/v1/fixed-costs/{$id}")->assertOk();
 
-        // Saisie réservée à « Encaisser et reverser »
+        // Saisie réservée à « Saisir les frais fixes » : ni le dispatch, ni la caisse en lecture seule
+        $cost = ['label' => 'X', 'category' => 'other', 'amount' => 1, 'frequency' => 'once', 'starts_on' => '2026-12-01'];
         Sanctum::actingAs($this->dispatcher);
-        if (! $this->dispatcher->can('finance.manage')) {
-            $this->postJson('/api/v1/fixed-costs', ['label' => 'X', 'category' => 'other', 'amount' => 1, 'frequency' => 'once', 'starts_on' => '2026-12-01'])->assertForbidden();
-        }
+        $this->postJson('/api/v1/fixed-costs', $cost)->assertForbidden();
+        $this->getJson('/api/v1/fixed-costs')->assertForbidden();
+        // Le caissier la garde (née de « Encaisser et reverser ») ; un rôle peut ne recevoir qu'elle
+        Sanctum::actingAs($this->userWithRole(Role::Cashier));
+        $this->postJson('/api/v1/fixed-costs', $cost)->assertCreated();
+        $clerk = $this->userWithRole(Role::HubAgent);
+        $clerk->givePermissionTo('fixed_costs.manage');
+        Sanctum::actingAs($clerk->fresh());
+        $this->getJson('/api/v1/fixed-costs')->assertOk();
+        $this->postJson('/api/v1/fixed-costs', $cost)->assertCreated();
     }
 
     public function test_goals_projection_and_comparisons(): void
