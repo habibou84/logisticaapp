@@ -305,14 +305,17 @@ Depuis `/opt/logistica` :
 | Données fictives (préproduction seulement, depuis `/opt/logistica-preprod`) | `docker compose exec -u www-data app php artisan app:preprod-data` |
 | Arrêter / redémarrer | `docker compose stop` / `docker compose up -d` |
 
-**Données fictives de la préproduction** (`app:preprod-data`, refusée si `APP_ENV=production`) : 10 clients,
-8 livreurs, un dispatcher, un caissier, un agent d'entrepôt et 30 jours de courses (≈ 18 par jour) passées par les
+**Données fictives de la préproduction** (`app:preprod-data`, refusée si `APP_ENV=production`) : 10 clients
+e-commerce, 2 clients de distribution (un sous contrat mensuel, un à l'unité avec ses propres prix), 2 clients en MAD
+(chacun avec son livreur dédié, du lundi au samedi), 10 livreurs, un dispatcher, un caissier, un agent d'entrepôt et 30 jours de courses (≈ 18 par jour) passées par les
 vrais services : prix, journal, encaissements, versements des livreurs chaque soir, reversements aux clients le
 vendredi. Les courses du jour restent à différentes étapes (à valider, en ramassage, en chemin…). Aucun message ne
 part pendant la génération (WhatsApp, SMS, notifications, webhooks). Comptes en `07 99 …`, mot de passe
 `Preprod2026` (option `--password`). Relançable : les jours déjà remplis sont sautés, donc la relancer le matin
 ajoute seulement les courses du jour. Options : `--days=30`, `--per-day=18`, `--seed=` (mêmes données).
-Les clients fictifs ont leur propre grille de tarifs (« Clients fictifs (préproduction) ») : les tarifs réglés de
+Distribution et MAD : courses facturées au mois (rien à encaisser), preuve de remise par le nom de la personne qui
+reçoit, aucun message au destinataire ; factures des mois terminés préparées en brouillon. Une relance ajoute ces
+activités aux jours déjà remplis en e-commerce. Les clients fictifs ont leur propre grille de tarifs (« Clients fictifs (préproduction) ») : les tarifs réglés de
 l'entreprise ne sont pas touchés. Si des courses échouent, la commande affiche les erreurs les plus fréquentes.
 
 Les variables `VITE_*` (temps réel vu du navigateur) sont compilées dans l'interface : après les avoir changées,

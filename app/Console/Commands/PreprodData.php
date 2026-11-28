@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Enums\Activity;
 use App\Enums\AssignmentType;
+use App\Enums\BillingFormula;
 use App\Enums\FeePayer;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
@@ -15,9 +16,11 @@ use App\Exceptions\BusinessRuleException;
 use App\Jobs\RetryWebPush;
 use App\Jobs\SendOutboundMessage;
 use App\Jobs\SendWebhook;
+use App\Models\BillingPlan;
 use App\Models\CashCollection;
 use App\Models\Company;
 use App\Models\Courier;
+use App\Models\DistributionRate;
 use App\Models\IncidentReason;
 use App\Models\Merchant;
 use App\Models\MerchantPayout;
@@ -32,12 +35,14 @@ use App\Models\User;
 use App\Models\Zone;
 use App\Services\CompanyProvisioner;
 use App\Services\Finance\CashDesk;
+use App\Services\Finance\ClientInvoicing;
 use App\Services\Finance\MerchantPayouts;
 use App\Services\Messaging\OrderMessages;
 use App\Services\Orders\OrderDispatcher;
 use App\Services\Orders\OrderService;
 use App\Services\Orders\OrderWorkflow;
 use App\Services\Webhooks\WebhookDispatcher;
+use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
@@ -91,13 +96,24 @@ class PreprodData extends Command
 
     private PricingGrid $grid;
 
-    private ?IncidentReason $failReason = null;
+    /** @var array<string, IncidentReason|null> motif d'échec de livraison, par activité */
+    private array $failReasons = [];
+
+    /**
+     * Clients facturés au mois (distribution, MAD) : client, activité, livreurs dédiés (MAD).
+     *
+     * @var list<array{merchant: Merchant, activity: Activity, couriers: Collection<int, Courier>}>
+     */
+    private array $billed = [];
 
     /** @var array<string, int> erreur → nombre de courses */
     private array $errors = [];
 
     /** @var array<string, int> */
     private array $stats = [];
+
+    /** Heure au lancement : la génération ne place jamais rien après */
+    private Carbon $clock;
 
     public function handle(): int
     {
@@ -128,13 +144,17 @@ class PreprodData extends Command
         }
 
         $this->mute();
+        $before = Carbon::getTestNow();
+        $this->clock = now()->copy();
         $firstMessageId = (int) OutboundMessage::query()->max('id');
 
         try {
-            $this->setUp();
-            $this->history(max(1, (int) $this->option('days')), max(1, (int) $this->option('per-day')));
+            $days = max(1, (int) $this->option('days'));
+            $this->setUp($days);
+            $this->history($days, max(1, (int) $this->option('per-day')));
+            $this->invoices($days);
         } finally {
-            Carbon::setTestNow();
+            Carbon::setTestNow($before);
             // Filet de sécurité : un message préparé malgré tout (avis de reversement…) n'est jamais parti
             // (envoi bloqué dans mute()) ; il est retiré du journal des messages
             OutboundMessage::query()->where('id', '>', $firstMessageId)->where('to', 'like', '+225'.self::PHONE_PREFIX.'%')->delete();
@@ -180,7 +200,7 @@ class PreprodData extends Command
 
     // ───────────────────────────── Référentiel ─────────────────────────────
 
-    private function setUp(): void
+    private function setUp(int $days): void
     {
         $this->zones = $this->deliveryZones();
         if ($this->zones->isEmpty()) {
@@ -197,10 +217,95 @@ class PreprodData extends Command
         $this->team();
         $this->couriers = $this->couriers();
         $this->merchants = $this->merchants();
+        $this->billed = $this->billedClients($this->clock->copy()->subDays($days)->startOfMonth());
 
-        $this->failReason = IncidentReason::availableTo($this->company->id)->get()->first(fn (IncidentReason $r) => $r->appliesTo('delivery')
-            && $r->forActivity(Activity::Ecommerce)
-            && $r->counts_as_attempt && ! $r->requires_note && ! $r->requires_date && $r->photo !== 'required');
+        $reasons = IncidentReason::availableTo($this->company->id)->get();
+        foreach (Activity::cases() as $activity) {
+            $this->failReasons[$activity->value] = $reasons->first(fn (IncidentReason $r) => $r->appliesTo('delivery')
+                && $r->forActivity($activity)
+                && $r->counts_as_attempt && ! $r->requires_note && ! $r->requires_date && $r->photo !== 'required');
+        }
+    }
+
+    /**
+     * Clients de distribution et de MAD, avec leur formule. Réglages du contrat : nom de la personne qui reçoit
+     * comme preuve (sans photo ni signature, que la génération ne peut pas fournir) et aucun message au
+     * destinataire. MAD : un livreur dédié par contrat, du lundi au samedi.
+     *
+     * @return list<array{merchant: Merchant, activity: Activity, couriers: Collection<int, Courier>}>
+     */
+    private function billedClients(Carbon $startsOn): array
+    {
+        $options = ['proof_name' => true, 'proof_signature' => false, 'proof_photo' => false, 'receipt_label' => false, 'notify_recipient' => false];
+        $mad = [...$options, 'mad_exclusive' => true, 'mad_days' => [1, 2, 3, 4, 5, 6], 'mad_from' => '07:30', 'mad_to' => '19:00'];
+        // [enseigne, contact, commune, adresse, repère, lat, lng, n° (téléphone, compte client si vrai), formule, contrat, livreur MAD]
+        $clients = [
+            ['Assurances Éburnéa', 'Corinne Aké', 'Plateau', 'Avenue Chardy, immeuble Le Méridien', 'Accueil au rez-de-chaussée', 5.3240, -4.0170, [11, true],
+                BillingFormula::DistributionContract, ['monthly_fee' => 150000, 'included_quantity' => 300, 'overage_price' => 700, 'delivery_delay' => '48h', 'cheque_price' => 1500, 'extra_kg_price' => 300, 'options' => $options], null],
+            ['Cabinet Kouamé & Associés', 'Me Rodrigue Kouamé', 'Cocody', 'II Plateaux, rue des Jardins', 'Villa 12, portail gris', 5.3700, -3.9950, [12, false],
+                BillingFormula::DistributionUnit, ['delivery_delay' => '24h', 'cheque_price' => 0, 'extra_kg_price' => 300, 'options' => $options], null],
+            ['Pharma Lagune Distribution', 'Dr Awa Diomandé', 'Koumassi', 'Zone industrielle, rue des Entrepôts', 'Entrepôt bleu, quai 3', 5.2990, -3.9620, [13, true],
+                BillingFormula::MadContract, ['monthly_fee' => 350000, 'included_quantity' => 600, 'overage_price' => 500, 'delivery_delay' => '24h', 'options' => $mad], ['Ismaël Bakayoko', 9]],
+            ['Restaurant Chez Tantie Rose', 'Rose Gnahoré', 'Marcory', 'Zone 4, rue Pierre et Marie Curie', 'Face à la boulangerie', 5.2930, -3.9850, [14, false],
+                BillingFormula::MadContract, ['monthly_fee' => 200000, 'included_quantity' => 300, 'overage_price' => 500, 'delivery_delay' => '24h', 'options' => $mad], ['Yannick Kipré', 10]],
+        ];
+
+        return collect($clients)->map(function (array $client) use ($startsOn) {
+            [$name, $contact, $commune, $address, $landmark, $lat, $lng, [$n, $hasAccount], $formula, $terms, $courier] = $client;
+            $phone = '+225'.self::PHONE_PREFIX.sprintf('0002%02d', $n);
+            $zone = $this->pickupZones->get($commune) ?? $this->pickupZones->values()->get($n % $this->pickupZones->count());
+            $activity = $formula->activity();
+
+            $merchant = Merchant::withoutGlobalScopes()->firstOrCreate(
+                ['company_id' => $this->company->id, 'phone' => $phone],
+                [
+                    'business_name' => $name, 'contact_name' => $contact, 'whatsapp_phone' => $phone,
+                    'pickup_address' => $address, 'pickup_landmark' => $landmark, 'pickup_lat' => $lat, 'pickup_lng' => $lng,
+                    'default_fee_payer' => FeePayer::Merchant, 'notes' => 'Client fictif (données de préproduction)',
+                ],
+            );
+            $merchant->forceFill(['pickup_zone_id' => $zone->id, 'pricing_grid_id' => $this->grid->id, 'status' => 'active'])->save();
+            $merchant->syncActivities([$activity]);
+            if ($hasAccount) {
+                $this->account($contact, sprintf('000002%02d', $n), Role::MerchantOwner, $merchant);
+            }
+
+            $plan = BillingPlan::withoutGlobalScopes()->where('merchant_id', $merchant->id)->where('activity', $activity->value)->first()
+                ?? BillingPlan::create([
+                    'monthly_fee' => 0, 'included_quantity' => 0, 'overage_price' => 0, 'cheque_price' => 0, 'extra_kg_price' => 0,
+                    ...$terms,
+                    'company_id' => $this->company->id, 'merchant_id' => $merchant->id,
+                    'formula' => $formula, 'activity' => $activity, 'starts_on' => $startsOn->toDateString(),
+                    'notes' => 'Contrat fictif (données de préproduction)',
+                ]);
+            if ($plan->starts_on->greaterThan($startsOn)) {
+                $plan->update(['starts_on' => $startsOn->toDateString()]);
+            }
+
+            // À l'unité : prix propres au client (la grille commune de l'entreprise n'est pas touchée)
+            if ($formula === BillingFormula::DistributionUnit) {
+                foreach (['24h' => [1500, 2500, 2000], '48h' => [1200, 2000, 1500], '72h' => [1000, 1700, 1200]] as $delay => [$pli, $colis, $cheque]) {
+                    foreach (['pli' => $pli, 'colis' => $colis, 'cheque' => $cheque] as $type => $price) {
+                        DistributionRate::withoutGlobalScopes()->firstOrCreate(
+                            ['company_id' => $this->company->id, 'merchant_id' => $merchant->id, 'delivery_delay' => $delay, 'shipment_type' => $type],
+                            ['price' => $price],
+                        );
+                    }
+                }
+            }
+
+            $couriers = collect();
+            if ($courier !== null) {
+                [$courierName, $courierN] = $courier;
+                $user = $this->account($courierName, sprintf('000001%02d', $courierN), Role::Courier);
+                $mad = Courier::withoutGlobalScopes()->where('user_id', $user->id)->firstOrFail();
+                $mad->update(['vehicle_type' => VehicleType::Moto, 'is_available' => true, 'current_lat' => $lat, 'current_lng' => $lng, 'last_location_at' => now()]);
+                $plan->couriers()->syncWithoutDetaching([$mad->id]);
+                $couriers->push($mad->load('user'));
+            }
+
+            return ['merchant' => $merchant, 'activity' => $activity, 'couriers' => $couriers];
+        })->all();
     }
 
     /**
@@ -353,8 +458,7 @@ class PreprodData extends Command
 
     private function history(int $days, int $perDay): void
     {
-        Carbon::setTestNow();
-        $today = today();
+        $today = $this->clock->copy()->startOfDay();
         $bar = $this->output->createProgressBar($days);
         $bar->start();
 
@@ -362,14 +466,24 @@ class PreprodData extends Command
             $day = $today->copy()->subDays($ago);
             $bar->advance();
 
-            // Dimanche : peu d'activité ; jour déjà rempli : sauté (relance sans doublons)
-            if ($this->dayDone($day)) {
-                continue;
+            // Dimanche : peu d'e-commerce, ni distribution ni MAD ; activité déjà remplie ce jour-là : sautée
+            // (relance sans doublons, et une relance ajoute une activité nouvelle aux jours déjà remplis)
+            if (! $this->dayDone($day, Activity::Ecommerce)) {
+                $count = $day->isSunday() ? intdiv($perDay, 4) : max(1, $perDay + mt_rand(-3, 3));
+                for ($n = 0; $n < $count; $n++) {
+                    $this->order($day, $ago);
+                }
             }
-            $count = $day->isSunday() ? intdiv($perDay, 4) : max(1, $perDay + mt_rand(-3, 3));
 
-            for ($n = 0; $n < $count; $n++) {
-                $this->order($day, $ago);
+            foreach ([Activity::Distribution, Activity::Mad] as $activity) {
+                if ($day->isSunday() || $this->dayDone($day, $activity)) {
+                    continue;
+                }
+                $clients = array_values(array_filter($this->billed, fn (array $b) => $b['activity'] === $activity));
+                $count = max(2, intdiv($perDay, 3) + mt_rand(-2, 2));
+                for ($n = 0; $n < $count && $clients !== []; $n++) {
+                    $this->order($day, $ago, $this->pick($clients));
+                }
             }
 
             if ($ago > 0) {
@@ -381,9 +495,9 @@ class PreprodData extends Command
         $this->newLine(2);
     }
 
-    private function dayDone(Carbon $day): bool
+    private function dayDone(Carbon $day, Activity $activity): bool
     {
-        return Order::withoutGlobalScopes()->where('company_id', $this->company->id)
+        return Order::withoutGlobalScopes()->where('company_id', $this->company->id)->where('activity', $activity->value)
             ->where('merchant_reference', 'like', self::REFERENCE_PREFIX.$day->format('ymd').'%')->exists();
     }
 
@@ -391,22 +505,26 @@ class PreprodData extends Command
      * Une course : créée dans la matinée, puis menée jusqu'à son état final (jours passés)
      * ou jusqu'à une étape de la journée en cours (aujourd'hui).
      */
-    private function order(Carbon $day, int $ago): void
+    /**
+     * @param  array{merchant: Merchant, activity: Activity, couriers: Collection<int, Courier>}|null  $billed  client facturé au mois
+     */
+    private function order(Carbon $day, int $ago, ?array $billed = null): void
     {
         $at = $day->copy()->setTime(mt_rand(7, 13), mt_rand(0, 59));
         // Aujourd'hui : rien dans le futur
-        if ($ago === 0 && $at->isFuture()) {
-            $at = now()->subMinutes(mt_rand(30, 180))->max($day->copy()->setTime(0, 5));
+        if ($ago === 0 && $at->greaterThan($this->clock)) {
+            $at = $this->clock->copy()->subMinutes(mt_rand(30, 180))->max($day->copy()->setTime(0, 5));
         }
         $this->at($at);
 
         $target = $ago === 0 ? $this->todayTarget() : $this->pastTarget();
-        $merchant = $this->merchants->random();
+        $merchant = $billed['merchant'] ?? $this->merchants->random();
+        $data = $billed ? $this->billedData($billed['activity'], $day) : $this->orderData($merchant, $day);
 
         try {
-            $order = app(OrderService::class)->create($this->admin, $merchant, $this->orderData($merchant, $day), 'dashboard');
-            $this->count('courses');
-            $this->drive($order, $target);
+            $order = app(OrderService::class)->create($this->admin, $merchant, $data, 'dashboard');
+            $this->count('courses '.($billed ? $billed['activity']->label() : Activity::Ecommerce->label()));
+            $this->drive($order, $target, $billed['couriers'] ?? null);
             $this->count('→ '.$order->fresh()->status->label());
         } catch (Throwable $e) {
             $this->count('courses en erreur');
@@ -472,11 +590,59 @@ class PreprodData extends Command
         ];
     }
 
-    private function drive(Order $order, string $target): void
+    /**
+     * Distribution : plis, colis et chèques pour des entreprises et administrations (fictives), sans encaissement.
+     * MAD : livraisons faites pour le client par son livreur dédié, sans encaissement non plus.
+     *
+     * @return array<string, mixed>
+     */
+    private function billedData(Activity $activity, Carbon $day): array
+    {
+        [$commune, $address, $landmark] = $this->pick(self::ADDRESSES);
+        $zone = $this->zones->get($commune) ?? $this->zones->random();
+        $common = [
+            'activity' => $activity->value,
+            'merchant_reference' => self::REFERENCE_PREFIX.$day->format('ymd').'-'.strtoupper(bin2hex(random_bytes(3))),
+            'recipient_phone' => '+225'.self::PHONE_PREFIX.sprintf('%06d', mt_rand(100000, 999999)),
+            'delivery_zone_id' => $zone->id,
+            'delivery_address' => $address,
+            'delivery_landmark' => $landmark,
+            'items_amount' => 0,
+            'fee_payer' => FeePayer::Merchant->value,
+            'notify_merchant' => false,
+        ];
+
+        if ($activity === Activity::Mad) {
+            return [...$common,
+                'recipient_name' => $this->pick(self::FIRST_NAMES).' '.$this->pick(self::LAST_NAMES),
+                'description' => $this->pick(self::MAD_ITEMS),
+                'shipment_type' => 'colis',
+                'package_size' => 'S',
+            ];
+        }
+
+        [$type, $label] = $this->pick(self::DISTRIBUTION_ITEMS);
+        $quantity = $type === 'colis' ? 1 : $this->pick([1, 1, 1, 2, 3, 5]);
+
+        return [...$common,
+            'recipient_name' => $this->pick(self::OFFICES).' — '.$this->pick(self::ORGANIZATIONS),
+            'description' => ($quantity > 1 ? "{$quantity} × " : '').$label,
+            'shipment_type' => $type,
+            'shipment_quantity' => $quantity,
+            'weight_kg' => $type === 'colis' && mt_rand(1, 4) === 1 ? mt_rand(55, 90) / 10 : null,
+            'package_size' => $type === 'colis' ? 'M' : 'S',
+        ];
+    }
+
+    /**
+     * @param  Collection<int, Courier>|null  $dedicated  livreurs du contrat MAD : eux seuls font ses courses
+     */
+    private function drive(Order $order, string $target, ?Collection $dedicated = null): void
     {
         $order = $order->fresh();
-        $pickupCourier = $this->couriers->random();
-        $deliveryCourier = mt_rand(1, 3) === 1 ? $this->couriers->random() : $pickupCourier;
+        $fleet = $dedicated !== null && $dedicated->isNotEmpty() ? $dedicated : $this->couriers;
+        $pickupCourier = $fleet->random();
+        $deliveryCourier = mt_rand(1, 3) === 1 ? $fleet->random() : $pickupCourier;
 
         if ($target === 'pending') {
             return;
@@ -511,8 +677,8 @@ class PreprodData extends Command
             return;
         }
 
-        // Une partie des colis passe par le dépôt avant la livraison
-        if ($target === 'at_hub' || mt_rand(1, 4) === 1) {
+        // Une partie des colis passe par le dépôt avant la livraison (pas en MAD : le livreur est chez le client)
+        if ($target === 'at_hub' || ($order->activity !== Activity::Mad && mt_rand(1, 4) === 1)) {
             $this->move($order, OrderStatus::AtHub, [], mt_rand(20, 60), $pickupCourier);
             if ($target === 'at_hub') {
                 return;
@@ -559,8 +725,9 @@ class PreprodData extends Command
 
     private function failDelivery(Order $order, Courier $courier): void
     {
-        $context = $this->failReason
-            ? ['incident_reason_id' => $this->failReason->id, 'note' => 'Destinataire injoignable au téléphone']
+        $reason = $this->failReasons[$order->activity->value] ?? null;
+        $context = $reason
+            ? ['incident_reason_id' => $reason->id, 'note' => 'Destinataire absent ou injoignable']
             : ['incident_reason_id' => null];
         $this->move($order, OrderStatus::DeliveryFailed, $context, mt_rand(20, 90), $courier);
     }
@@ -614,17 +781,16 @@ class PreprodData extends Command
         app(OrderDispatcher::class)->assign($this->admin, $order, $type, $courier, 'planning');
     }
 
-    /** Avance l'horloge de la génération sans jamais dépasser l'heure réelle */
+    /** Avance l'horloge de la génération sans jamais dépasser l'heure du lancement */
     private function later(int $minutes): void
     {
         $this->at(now()->addMinutes($minutes));
     }
 
-    /** Place l'horloge de la génération, jamais après l'heure réelle */
+    /** Place l'horloge de la génération, jamais après l'heure du lancement */
     private function at(Carbon $moment): void
     {
-        Carbon::setTestNow();
-        Carbon::setTestNow($moment->min(now()));
+        Carbon::setTestNow($moment->copy()->min($this->clock)->copy());
     }
 
     /**
@@ -671,6 +837,27 @@ class PreprodData extends Command
     }
 
     /**
+     * Factures du mois des clients de distribution et de MAD pour les mois terminés de l'historique (brouillons,
+     * comme le fait billing:invoice le 1er du mois) : à relire, émettre et encaisser depuis Facturation.
+     */
+    private function invoices(int $days): void
+    {
+        Carbon::setTestNow($this->clock->copy());
+        $invoicing = app(ClientInvoicing::class);
+        $month = CarbonImmutable::parse($this->clock->copy()->subDays($days)->startOfMonth());
+        $current = CarbonImmutable::parse($this->clock->copy()->startOfMonth());
+
+        for (; $month->lessThan($current); $month = $month->addMonth()) {
+            try {
+                $count = $invoicing->generate($this->company, $month, [Activity::Distribution->value, Activity::Mad->value]);
+                $this->stats['factures du mois (brouillons)'] = ($this->stats['factures du mois (brouillons)'] ?? 0) + $count;
+            } catch (Throwable $e) {
+                $this->errors['Factures : '.$e->getMessage()] = 1;
+            }
+        }
+    }
+
+    /**
      * Élément tiré au hasard (mt_rand, que --seed rend reproductible). Pas de fake() : Faker est une
      * dépendance de développement, absente des images Docker de production et de préproduction.
      *
@@ -701,7 +888,8 @@ class PreprodData extends Command
         }
         $this->info('Comptes fictifs : téléphones en +225 07 99 …, mot de passe « '.$this->option('password').' ».');
         $this->line('  Dispatcher 07 99 00 00 01 · Caissier 07 99 00 00 02 · Entrepôt 07 99 00 00 03');
-        $this->line('  Livreurs 07 99 00 01 01 à 07 99 00 01 08 · Clients 07 99 00 02 01, 02 et 04');
+        $this->line('  Livreurs 07 99 00 01 01 à 07 99 00 01 08 · Livreurs MAD 07 99 00 01 09 et 10');
+        $this->line('  Clients e-commerce 07 99 00 02 01, 02 et 04 · Distribution 07 99 00 02 11 · MAD 07 99 00 02 13');
     }
 
     // ───────────────────────────── Listes ─────────────────────────────
@@ -741,6 +929,33 @@ class PreprodData extends Command
         ['Bingerville', 'Cité Feh Kessé', 'Après le lycée'],
         ['Songon', 'Songon Agban', 'Près du carrefour principal'],
         ['Anyama', 'Anyama Zossonkoi', 'Près de la grande mosquée'],
+    ];
+
+    /** Distribution : [type d'envoi, contenu] */
+    private const DISTRIBUTION_ITEMS = [
+        ['pli', 'Courrier recommandé'], ['pli', 'Contrat à signer'], ['pli', 'Facture et relevé de compte'],
+        ['pli', 'Convocation'], ['pli', 'Attestation d\'assurance'], ['pli', 'Dossier de sinistre'],
+        ['colis', 'Cartons d\'archives'], ['colis', 'Fournitures de bureau'], ['colis', 'Brochures commerciales'],
+        ['cheque', 'Chèque de règlement'],
+    ];
+
+    /** Distribution : services destinataires */
+    private const OFFICES = [
+        'Direction générale', 'Service comptabilité', 'Ressources humaines', 'Service juridique', 'Secrétariat',
+        'Service courrier', 'Direction commerciale', 'Service des achats',
+    ];
+
+    /** Distribution : entreprises et établissements (fictifs) */
+    private const ORGANIZATIONS = [
+        'Groupe Akwaba Services', 'Imprimerie du Lagon', 'Clinique Sainte-Grâce', 'Transports Bénié', 'Agence Immobilière Horizon',
+        'Cabinet d\'expertise Yao', 'Lycée privé La Réussite', 'Société Agro-Savane', 'Bureau d\'études Ivoire Conseil',
+        'Hôtel Les Cocotiers', 'Mutuelle des Enseignants du Lagon', 'Laboratoire Bio-Santé Abidjan',
+    ];
+
+    /** MAD : livraisons faites pour le client */
+    private const MAD_ITEMS = [
+        'Médicaments (commande d\'officine)', 'Carton de produits pharmaceutiques', 'Commande de repas',
+        'Plateau traiteur', 'Boissons et desserts', 'Réassort de pharmacie',
     ];
 
     /** [article, prix unitaire, taille, fragile] */
