@@ -407,7 +407,7 @@ class Order extends Model
         return $this->hasMany(OrderProposal::class);
     }
 
-    /** Consignes du client signalées par le livreur (événements « information » : heure, repère, tiers…) */
+    /** Consignes du destinataire signalées par le livreur (événements « information » : heure, repère, tiers…) */
     public function instructionEvents(): HasMany
     {
         return $this->hasMany(OrderEvent::class)->where('type', 'note')

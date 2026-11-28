@@ -69,9 +69,9 @@
           </div>
         </div>
 
-        <!-- Consignes du client signalées par le livreur (heure, personne, lieu, repère) -->
+        <!-- Consignes du destinataire signalées par le livreur (heure, personne, lieu, repère) -->
         <div v-if="order.instructions?.length" class="rounded-lg bg-sky-50 ring-1 ring-sky-200 px-4 py-3 text-sm text-sky-900 space-y-0.5">
-          <p class="font-semibold"><Icone nom="note" taille="petite" class="inline align-[-0.15em]" /> Consignes du client</p>
+          <p class="font-semibold"><Icone nom="note" taille="petite" class="inline align-[-0.15em]" /> Consignes du destinataire</p>
           <p v-for="c in order.instructions" :key="c.id">{{ c.label }}<template v-if="c.note"> : <strong>{{ c.note }}</strong></template> <span class="text-sky-700">· {{ c.by }}, {{ dateTime(c.at) }}</span></p>
         </div>
 

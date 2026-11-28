@@ -49,7 +49,7 @@ class CourierSpaceController extends Controller
                 ...OrderController::LIST_RELATIONS,
                 'billingPlan',
                 'expenses' => fn ($e) => $e->active()->where('courier_id', $courier->id)->orderBy('id'),
-                // Consignes du client déjà signalées, report ou retour en attente de validation
+                // Consignes du destinataire déjà signalées, report ou retour en attente de validation
                 'instructionEvents' => fn ($q) => $q->with('incidentReason'),
                 'pendingProposal' => fn ($q) => $q->with(['proposer', 'reason', 'event']),
             ])])

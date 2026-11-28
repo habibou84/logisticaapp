@@ -76,10 +76,10 @@ class ServiceQualityTest extends TestCase
 
         $f = $data['failures'];
         $this->assertSame(3, $f['total']);
-        $this->assertSame(['Le client ne répond pas au téléphone', 2], [$f['reasons'][0]['label'], $f['reasons'][0]['count']]);
+        $this->assertSame(['Le destinataire ne répond pas au téléphone', 2], [$f['reasons'][0]['label'], $f['reasons'][0]['count']]);
         $this->assertSame(1, $f['hours'][16]);
-        $this->assertSame(['Le client ne répond pas au téléphone', 'Je ne trouve pas l\'adresse'], $f['matrix']['reasons']);
-        $this->assertSame('Le client ne répond pas au téléphone', $f['by_client'][0]['top_reason']);
+        $this->assertSame(['Le destinataire ne répond pas au téléphone', 'Je ne trouve pas l\'adresse'], $f['matrix']['reasons']);
+        $this->assertSame('Le destinataire ne répond pas au téléphone', $f['by_client'][0]['top_reason']);
 
         $d = $data['distribution'];
         $this->assertSame([3, 6], [$d['courses'], $d['units']]);

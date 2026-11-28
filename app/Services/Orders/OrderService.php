@@ -366,7 +366,7 @@ class OrderService
     }
 
     /**
-     * Consigne du client signalée par le livreur (événement « information ») : notée dans l'historique ; l'heure de
+     * Consigne du destinataire signalée par le livreur (événement « information ») : notée dans l'historique ; l'heure de
      * livraison demandée et le repère sont aussi enregistrés sur la course (affichés au livreur, à l'équipe, au client).
      */
     public function addInformation(User $actor, Order $order, IncidentReason $reason, ?string $note, ?string $time, ?float $lat = null, ?float $lng = null): void
