@@ -29,6 +29,8 @@ class DestinationResource extends JsonResource
             'district' => $this->district,
             'address' => $this->address,
             'landmark' => $this->landmark,
+            // Consignes permanentes (heures de réception, dépôt à l'accueil, service à qui remettre)
+            'instructions' => $this->instructions,
             'phone' => $this->phone,
             'phone2' => $this->phone2,
             'phone3' => $this->phone3,

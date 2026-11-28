@@ -20,7 +20,7 @@ class Destination extends Model
     public const SOURCES = ['import', 'order', 'staff', 'routine'];
 
     protected $fillable = [
-        'company_id', 'name', 'acronym', 'city', 'zone_id', 'district', 'address', 'landmark',
+        'company_id', 'name', 'acronym', 'city', 'zone_id', 'district', 'address', 'landmark', 'instructions',
         'phone', 'phone2', 'phone3', 'phones_raw', 'phone_check', 'email', 'sector',
         'lat', 'lng', 'location_accuracy', 'location_source', 'located_at', 'located_by', 'location_conflict',
         'deliveries_count', 'last_used_at', 'source', 'status', 'legacy_id', 'created_by',

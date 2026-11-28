@@ -91,6 +91,59 @@ class DeliveryNotesTest extends TestCase
         $this->postJson("/api/v1/orders/{$renewed['id']}/renew")->assertStatus(422);
     }
 
+    public function test_distribution_list_merges_unavailable_people_and_keeps_ecommerce_instructions_apart(): void
+    {
+        // Congé, déplacement, réunion, inventaire : une seule note ; « Reporté par le client » n'est plus au livreur
+        $this->assertTrue(IncidentReason::whereNull('company_id')->where('code', 'd_unavailable_person')->where('is_active', true)->exists());
+        $this->assertFalse(IncidentReason::whereNull('company_id')->whereIn('code', ['d_annual_leave', 'd_travelling', 'd_inventory', 'd_meeting', 'd_postponed_client'])->where('is_active', true)->exists());
+        $order = $this->outForDelivery();
+        $this->failWith($order, 'd_unavailable_person')->assertJsonValidationErrors('note');
+        $this->failWith($order, 'd_unavailable_person', ['note' => 'En congé jusqu\'à lundi'])->assertOk()->assertJsonPath('data.attempts_count', 1);
+
+        // Un autre jour : report daté, sans tentative
+        $other = $this->outForDelivery();
+        $this->failWith($other, 'd_not_today')->assertJsonValidationErrors('rescheduled_to');
+        $this->failWith($other, 'd_not_today', ['rescheduled_to' => '2026-11-25'])->assertOk()
+            ->assertJsonPath('data.status', 'rescheduled')->assertJsonPath('data.attempts_count', 0);
+
+        // Consignes de l'e-commerce refusées sur une course de distribution
+        $this->postJson("/api/v1/orders/{$this->outForDelivery()->id}/notes", ['incident_reason_id' => $this->reason('i_time_slot')->id, 'time' => '10:00'])
+            ->assertJsonValidationErrors('incident_reason_id');
+    }
+
+    public function test_standing_instructions_are_kept_on_the_directory_address(): void
+    {
+        $destination = Destination::create(['company_id' => $this->company->id, 'name' => 'Imperial Tobacco', 'zone_id' => $this->yopougon->id, 'phone' => '0707070707', 'status' => 'active', 'source' => 'manual']);
+        $order = $this->outForDelivery(['destination_id' => $destination->id]);
+        Sanctum::actingAs($this->dispatcher);
+        $note = fn (string $code, string $text) => $this->postJson("/api/v1/orders/{$order->id}/notes", ['incident_reason_id' => $this->reason($code)->id, 'note' => $text]);
+
+        $note('d_receiving_hours', 'de 8h à 10h')->assertCreated();
+        $note('d_reception_desk', 'Mme Koné, service courrier')->assertCreated();
+        // Même consigne : remplacée, pas ajoutée
+        $note('d_receiving_hours', 'de 8h à 12h')->assertCreated();
+        $this->assertSame(
+            "Le destinataire demande de déposer à l'accueil ou au service courrier : Mme Koné, service courrier\nLe destinataire réceptionne seulement à certaines heures : de 8h à 12h",
+            $destination->fresh()->instructions,
+        );
+        $this->assertSame(OrderStatus::OutForDelivery, $order->fresh()->status);
+
+        // Rappelées sur les prochaines courses vers cette adresse
+        $next = $this->outForDelivery(['destination_id' => $destination->id]);
+        $this->getJson("/api/v1/orders/{$next->id}")->assertJsonPath('data.destination.instructions', $destination->fresh()->instructions);
+    }
+
+    public function test_mad_has_its_own_notes(): void
+    {
+        Sanctum::actingAs($this->courierA->user);
+        $codes = collect($this->getJson('/api/v1/incident-reasons')->json('data'))->filter(fn ($r) => in_array('mad', $r['activities'] ?: ['mad'], true))->pluck('code');
+        foreach (['m_waiting', 'm_extra_errand', 'm_counter_closed', 'm_queue', 'm_file_refused', 'dp_not_ready'] as $code) {
+            $this->assertContains($code, $codes);
+        }
+        $this->assertNotContains('i_waiting', $codes);
+        $this->assertNotContains('merchant_unavailable', $codes);
+    }
+
     public function test_reasons_update_the_directory(): void
     {
         $destination = Destination::create(['company_id' => $this->company->id, 'name' => 'Imperial Tobacco', 'zone_id' => $this->yopougon->id, 'phone' => '0707070707', 'status' => 'active', 'source' => 'manual']);
@@ -139,7 +192,7 @@ class DeliveryNotesTest extends TestCase
         Sanctum::actingAs($this->admin);
         $stamp = $this->reason('d_no_stamp');
         $this->patchJson("/api/v1/incident-reason-settings/{$stamp->id}", ['label' => 'Cachet absent', 'photo' => 'required'])->assertOk()->assertJsonPath('data.photo', 'required');
-        $this->patchJson("/api/v1/incident-reason-settings/{$this->reason('d_inventory')->id}", ['is_active' => false])->assertOk();
+        $this->patchJson("/api/v1/incident-reason-settings/{$this->reason('d_closed_works')->id}", ['is_active' => false])->assertOk();
         $new = $this->postJson('/api/v1/incident-reason-settings', ['label' => 'Courrier non conforme', 'applies_to' => 'delivery', 'family' => 'documents', 'activities' => ['distribution'], 'triggers_return' => true])
             ->assertCreated()->json('data');
         $this->deleteJson("/api/v1/incident-reason-settings/{$stamp->id}")->assertForbidden();
@@ -147,7 +200,7 @@ class DeliveryNotesTest extends TestCase
         $codes = collect($this->getJson('/api/v1/incident-reasons')->json('data'))->pluck('label');
         $this->assertContains('Cachet absent', $codes);
         $this->assertContains('Courrier non conforme', $codes);
-        $this->assertNotContains('En inventaire', $codes);
+        $this->assertNotContains('Fermé pour travaux', $codes);
 
         // Photo désormais exigée : sans photo, refusé
         $this->failWith($this->outForDelivery(), 'd_no_stamp')->assertStatus(422)->assertJsonValidationErrors('photo');

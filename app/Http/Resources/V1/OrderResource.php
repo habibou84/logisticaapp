@@ -341,6 +341,8 @@ class OrderResource extends JsonResource
             'located_at' => $d->located_at,
             'location_source' => $d->location_source,
             'deliveries_count' => $d->deliveries_count,
+            // Consignes permanentes de l'adresse, rappelées au livreur à chaque livraison
+            'instructions' => $d->instructions,
         ] : null;
     }
 }

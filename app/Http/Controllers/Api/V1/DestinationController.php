@@ -230,6 +230,7 @@ class DestinationController extends Controller
             'district' => [$sometimes, 'nullable', 'string', 'max:120'],
             'address' => [$sometimes, 'nullable', 'string', 'max:2000'],
             'landmark' => [$sometimes, 'nullable', 'string', 'max:255'],
+            'instructions' => [$sometimes, 'nullable', 'string', 'max:2000'],
             'phone' => [$sometimes, 'nullable', 'string', 'max:30'],
             'phone2' => [$sometimes, 'nullable', 'string', 'max:30'],
             'phone3' => [$sometimes, 'nullable', 'string', 'max:30'],
