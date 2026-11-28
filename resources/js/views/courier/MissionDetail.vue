@@ -41,9 +41,9 @@
       <p v-if="order.proposal" class="rounded-xl bg-amber-50 p-3 text-sm text-amber-900">
         <Icone nom="sablier" taille="petite" class="inline" /> Envoyé, en attente de validation : <strong>{{ order.proposal.summary }}</strong> ({{ order.proposal.reason }})
       </p>
-      <!-- Consignes du client déjà signalées (heure, personne, lieu, repère) -->
+      <!-- Consignes du destinataire déjà signalées (heure, personne, lieu, repère) -->
       <div v-if="order.instructions?.length" class="rounded-xl bg-sky-50 p-3 text-sm text-sky-900 space-y-1">
-        <p class="font-semibold"><Icone nom="note" taille="petite" class="inline" /> Consignes du client</p>
+        <p class="font-semibold"><Icone nom="note" taille="petite" class="inline" /> Consignes du destinataire</p>
         <p v-for="c in order.instructions" :key="c.id">{{ c.label }}<template v-if="c.note"> : <strong>{{ c.note }}</strong></template></p>
       </div>
 
@@ -226,7 +226,7 @@
       <div class="space-y-4">
         <template v-if="!freeNote">
           <ReasonPicker v-model="incident.reason" :reasons="reportReasons" />
-          <p v-if="!canReportIncident" class="text-xs text-slate-600">{{ stage === 'pickup' ? 'Problème au ramassage : une fois parti chercher le colis.' : 'Client absent, adresse introuvable… : une fois parti livrer. Report et refus du client : tout de suite.' }}</p>
+          <p v-if="!canReportIncident" class="text-xs text-slate-600">{{ stage === 'pickup' ? 'Problème au ramassage : une fois parti chercher le colis.' : 'Destinataire absent, adresse introuvable… : une fois parti livrer. Report et refus du destinataire : tout de suite.' }}</p>
           <button v-if="!incident.reason" type="button" class="text-sm font-medium text-[var(--app-color)]" @click="freeNote = true"><Icone nom="modifier" taille="petite" class="inline" /> Autre chose : écrire une note</button>
         </template>
         <template v-else>
@@ -237,13 +237,13 @@
         </template>
         <template v-if="!freeNote && selectedReason">
         <div v-if="selectedReason?.requires_date">
-          <p class="m-label">Nouvelle date demandée par le client</p>
+          <p class="m-label">Nouvelle date demandée par le destinataire</p>
           <ChoiceChips v-model="incident.when" :options="dateOptions" :columns="3" label="Date" />
           <input v-if="incident.when === 'other'" v-model="incident.date" type="date" :min="today()" class="m-input mt-2" aria-label="Date">
         </div>
         <!-- Heure : obligatoire pour « heure précise », facultative pour un rappel ou un report -->
         <div v-if="selectedReason.asks || selectedReason.requires_date">
-          <label class="m-label" for="incident-time">{{ selectedReason.asks === 'delivery_time' ? 'Heure de livraison demandée *' : selectedReason.asks === 'time' ? 'Vers quelle heure ? (facultatif)' : 'Heure, si le client la donne' }}</label>
+          <label class="m-label" for="incident-time">{{ selectedReason.asks === 'delivery_time' ? 'Heure de livraison demandée *' : selectedReason.asks === 'time' ? 'Vers quelle heure ? (facultatif)' : 'Heure, si le destinataire la donne' }}</label>
           <input id="incident-time" v-model="incident.time" type="time" class="m-input" step="300">
         </div>
         <textarea v-model="incident.note" rows="2" class="m-input" :placeholder="notePlaceholder" :aria-label="selectedReason.note_hint || 'Précision'" />
@@ -459,7 +459,7 @@ const primary = computed(() => {
 const stage = computed(() => (mission.value?.type === 'pickup' ? 'pickup' : 'delivery'))
 // Motifs de l'étape et de l'activité de la course (distribution, MAD : les leurs)
 const stageReasons = computed(() => reasonsFor(reasons.value, stage.value, order.value?.activity))
-// Note : consignes du client toujours ; report et refus (à valider) dès que la livraison est confiée ;
+// Note : consignes du destinataire toujours ; report et refus (à valider) dès que la livraison est confiée ;
 // échecs une fois parti (ramassage ou livraison)
 const reportReasons = computed(() => stageReasons.value.filter((r) => r.effect === 'note' || canReportIncident.value
   || (mission.value?.type === 'delivery' && reasonValidates(r))))
@@ -667,8 +667,8 @@ async function confirmIncident() {
   sheetError.value = ''
   try {
     if (selectedReason.value?.requires_note && !incident.note.trim()) throw new Error(selectedReason.value.note_hint ? `${selectedReason.value.note_hint} : à préciser.` : 'Précisez ce qui se passe dans la note.')
-    if (selectedReason.value?.asks === 'delivery_time' && !incident.time) throw new Error('Indiquez l\'heure demandée par le client.')
-    // Consigne du client : une note avec l'événement choisi (et l'heure), la course continue
+    if (selectedReason.value?.asks === 'delivery_time' && !incident.time) throw new Error('Indiquez l\'heure demandée par le destinataire.')
+    // Consigne du destinataire : une note avec l'événement choisi (et l'heure), la course continue
     if (selectedReason.value?.effect === 'note') {
       busy.value = false
       await sendNote({ incident_reason_id: incident.reason, note: incident.note.trim() || undefined, time: incident.time || undefined })

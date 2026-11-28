@@ -18,8 +18,8 @@
         Livrée le <strong>{{ longDay(order.delivery.scheduled_date) }}</strong> · prévue d'abord le {{ longDay(order.delivery.first_date) }}
       </p>
       <p v-if="plannedDay" class="flex items-center gap-2 rounded-xl bg-sky-50 px-3 py-2 text-sm text-sky-900"><StatusIcon name="calendar" class="h-4 w-4 shrink-0" /><span>Livraison prévue le <strong>{{ plannedDay }}</strong><template v-if="order.delivery.time"> à <strong>{{ clockTime(order.delivery.time) }}</strong></template></span></p>
-      <p v-else-if="order.delivery.time && !isFinal" class="flex items-center gap-2 rounded-xl bg-sky-50 px-3 py-2 text-sm text-sky-900"><Icone nom="rappel" taille="petite" /><span>Le client veut être livré à <strong>{{ clockTime(order.delivery.time) }}</strong></span></p>
-      <!-- Consignes du client données au livreur -->
+      <p v-else-if="order.delivery.time && !isFinal" class="flex items-center gap-2 rounded-xl bg-sky-50 px-3 py-2 text-sm text-sky-900"><Icone nom="rappel" taille="petite" /><span>Le destinataire veut être livré à <strong>{{ clockTime(order.delivery.time) }}</strong></span></p>
+      <!-- Consignes du destinataire données au livreur -->
       <div v-if="order.instructions?.length && !isFinal" class="rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-700 space-y-0.5">
         <p v-for="c in order.instructions" :key="c.id">{{ c.label }}<template v-if="c.note"> : <strong>{{ c.note }}</strong></template></p>
       </div>

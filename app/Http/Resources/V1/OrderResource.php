@@ -190,7 +190,7 @@ class OrderResource extends JsonResource
             'max_attempts' => $this->max_attempts,
             // Colis non livré : décision attendue, ou décision déjà prise par le client
             'needs_decision' => $this->needsDecision(),
-            // Consignes du client signalées par le livreur : heure, tiers, lieu de rencontre, repère…
+            // Consignes du destinataire signalées par le livreur : heure, tiers, lieu de rencontre, repère…
             'instructions' => $this->whenLoaded('instructionEvents', fn () => $this->instructionEvents
                 ->filter(fn ($e) => $user?->merchant_id === null || $e->visible_to_merchant)
                 ->map(fn ($e) => [

@@ -82,7 +82,7 @@ class OrderProposalTest extends TestCase
         // Fiche de la course et file « À valider »
         $this->as($this->dispatcher)->getJson("/api/v1/orders/{$order->id}")
             ->assertJsonPath('data.proposal.kind', 'reschedule')
-            ->assertJsonPath('data.proposal.reason', 'Le client demande à être livré un autre jour')
+            ->assertJsonPath('data.proposal.reason', 'Le destinataire demande à être livré un autre jour')
             ->assertJsonPath('data.proposal.note', 'Le client est au travail')
             ->assertJsonPath('data.proposal.can_decide', true);
         $this->assertSame([$order->id], collect($this->getJson('/api/v1/orders?queue=to_validate')->json('data'))->pluck('id')->all());
@@ -218,7 +218,7 @@ class OrderProposalTest extends TestCase
         $event = $order->events()->where('incident_reason_id', $this->reason('i_time_slot'))->first();
         $this->assertSame(['note', 'À 17h30'], [$event->type->value, $event->note]);
         Notification::assertSentTo($this->dispatcher, OrderAlert::class, fn (OrderAlert $n) => $n->kind === 'note'
-            && str_contains($n->body, 'Le client veut être livré à une heure précise « À 17h30 »'));
+            && str_contains($n->body, 'Le destinataire veut être livré à une heure précise « À 17h30 »'));
 
         // Repère : gardé sur la course et dans le carnet du destinataire
         $this->postJson("/api/v1/orders/{$order->id}/notes", ['incident_reason_id' => $this->reason('i_landmark'), 'note' => 'Portail bleu après la pharmacie'])->assertCreated();
@@ -228,7 +228,7 @@ class OrderProposalTest extends TestCase
         // Consignes affichées sur la course (livreur, équipe, client)
         $this->as($this->merchantUser)->getJson("/api/v1/orders/{$order->id}")
             ->assertJsonPath('data.delivery.time', '17:30')
-            ->assertJsonPath('data.instructions.0.label', 'Le client veut être livré à une heure précise')
+            ->assertJsonPath('data.instructions.0.label', 'Le destinataire veut être livré à une heure précise')
             ->assertJsonPath('data.instructions.0.note', 'À 17h30');
 
         // Un échec ne se signale pas comme une note, ni l'inverse

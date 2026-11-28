@@ -16,9 +16,9 @@ class IncidentReason extends Model
 
     /** Familles des motifs (regroupement à l'écran du livreur) */
     public const FAMILIES = [
-        'info' => 'Consigne du client (la course continue)',
+        'info' => 'Consigne du destinataire (la course continue)',
         'postponed' => 'Autre date (report)',
-        'unavailable' => 'Client injoignable ou absent',
+        'unavailable' => 'Destinataire injoignable ou absent',
         'address' => 'Adresse, téléphone',
         'documents' => 'Documents',
         'recipient' => 'Refus, annulation, litige',

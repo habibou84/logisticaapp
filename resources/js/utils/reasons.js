@@ -2,9 +2,9 @@
  * Familles des motifs (miroir de App\Models\IncidentReason::FAMILIES) et filtre par étape et par activité.
  */
 export const REASON_FAMILIES = {
-  info: { label: 'Consigne du client (la course continue)', icon: 'note' },
+  info: { label: 'Consigne du destinataire (la course continue)', icon: 'note' },
   postponed: { label: 'Autre date (report)', icon: 'date' },
-  unavailable: { label: 'Client injoignable ou absent', icon: 'absent' },
+  unavailable: { label: 'Destinataire injoignable ou absent', icon: 'absent' },
   address: { label: 'Adresse, téléphone', icon: 'adresse' },
   recipient: { label: 'Refus, annulation, litige', icon: 'entreprise' },
   documents: { label: 'Documents', icon: 'document' },
