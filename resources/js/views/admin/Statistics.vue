@@ -202,6 +202,11 @@
     <PivotTab v-if="tab === 'pivot'" :from="from" :to="to" :activity="activity" />
     <QualityTab v-if="tab === 'quality' && data.quality" :data="data.quality" />
     <GoalsTab v-if="tab === 'goals' && data.goals" :data="data.goals" @reload="load" />
+    <DirectionOverview v-if="tab === 'direction' && data.direction" :board="data.direction" />
+    <DirectionEcommerce v-if="tab === 'dir-ecommerce' && data['dir-ecommerce']" :data="data['dir-ecommerce']" />
+    <DirectionMad v-if="tab === 'dir-mad' && data['dir-mad']" :data="data['dir-mad']" />
+    <DirectionDistribution v-if="tab === 'dir-distribution' && data['dir-distribution']" :data="data['dir-distribution']" />
+    <DirectionTeams v-if="tab === 'dir-teams' && data['dir-teams']" :key="`${from}-${to}`" :data="data['dir-teams']" />
     <ProfitabilityTab v-if="tab === 'profitability' && data.profitability" :data="data.profitability" @reload="load" />
     <FieldTab v-if="tab === 'field' && data.field" :data="data.field" />
     <VehiclesTab v-if="tab === 'vehicles' && data.vehicles" :data="data.vehicles" />
@@ -222,6 +227,11 @@ import QualityTab from '../../components/stats/QualityTab.vue'
 import ClientInsightsTab from '../../components/stats/ClientInsightsTab.vue'
 import PivotTab from '../../components/stats/PivotTab.vue'
 import IntegrationsTab from '../../components/stats/IntegrationsTab.vue'
+import DirectionDistribution from '../../components/direction/DirectionDistribution.vue'
+import DirectionEcommerce from '../../components/direction/DirectionEcommerce.vue'
+import DirectionMad from '../../components/direction/DirectionMad.vue'
+import DirectionOverview from '../../components/direction/DirectionOverview.vue'
+import DirectionTeams from '../../components/direction/DirectionTeams.vue'
 import ProfitabilityTab from '../../components/stats/ProfitabilityTab.vue'
 import FieldTab from '../../components/stats/FieldTab.vue'
 import VehiclesTab from '../../components/stats/VehiclesTab.vue'
@@ -281,6 +291,12 @@ const SECTIONS = [
     tabs: [
       { key: 'overview', label: 'Vue d\'ensemble', description: 'Les chiffres clés de la période comparés à la période précédente, les courses jour par jour et les heures de pointe.' },
       { key: 'goals', label: 'Objectifs et tendances', period: false, description: 'Le mois en cours face à ses objectifs, sa projection de fin de mois, la comparaison avec l\'an dernier et 13 mois d\'historique.' },
+      // Vues de direction : les activités côte à côte, puis un écran par activité et les équipes, avec les points à décider
+      { key: 'direction', label: 'Activités côte à côte', permission: 'direction.view', activity: false, description: 'Chiffre d\'affaires, marge, qualité et factures en retard de chaque activité, comparés à la période précédente, et les points à décider.' },
+      { key: 'dir-ecommerce', label: 'E-commerce', permission: 'direction.view', activity: false, only: 'ecommerce', description: 'Parcours des colis, échecs, marge par zone, argent en circulation et clients principaux.' },
+      { key: 'dir-mad', label: 'MAD', permission: 'direction.view', activity: false, only: 'mad', description: 'Forfaits, consommation, présence et retards par contrat, marge et échéances.' },
+      { key: 'dir-distribution', label: 'Distribution', permission: 'direction.view', activity: false, only: 'distribution', description: 'Volumes par type d\'envoi, délais tenus, forfaits, lots et paiement des factures.' },
+      { key: 'dir-teams', label: 'Équipes', permission: 'direction.view', activity: false, description: 'Livreurs, charge par zone, temps par mission, paie, véhicules et agents du bureau.' },
     ],
   },
   {
@@ -316,7 +332,8 @@ const SECTIONS = [
     ],
   },
 ]
-const allowed = (t) => !t.permission || [t.permission].flat().some((p) => auth.can(p))
+// Une vue réservée à une activité ne s'affiche que si elle est dans le périmètre de la personne
+const allowed = (t) => (!t.permission || [t.permission].flat().some((p) => auth.can(p))) && (!t.only || myActivities(auth.user).some((a) => a.value === t.only))
 const sections = computed(() => SECTIONS.map((g) => ({ ...g, tabs: g.tabs.filter(allowed) })).filter((g) => g.tabs.length))
 const tabs = computed(() => sections.value.flatMap((g) => g.tabs))
 const ENDPOINTS = {
@@ -328,6 +345,12 @@ const ENDPOINTS = {
   clients: '/stats/clients',
   profitability: '/stats/profitability',
   vehicles: '/vehicles/stats',
+  // Vues de direction
+  direction: '/stats/direction',
+  'dir-ecommerce': '/stats/direction/ecommerce',
+  'dir-mad': '/stats/direction/mad',
+  'dir-distribution': '/stats/direction/distribution',
+  'dir-teams': '/stats/direction/teams',
 }
 
 const preset = ref(PRESETS[route.query.periode] ? route.query.periode : 'month')
@@ -340,7 +363,7 @@ const loading = ref(false)
 const error = ref('')
 // Statistiques d'une seule activité (vide : toutes celles de son périmètre)
 const activities = computed(() => myActivities(auth.user))
-// « ?activite= » : lien venu du tableau de direction
+// « ?activite= » : lien venu d'un point « À décider »
 const activity = ref(activities.value.some((a) => a.value === route.query.activite) ? route.query.activite : '')
 const showTable = ref(false)
 

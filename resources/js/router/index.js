@@ -91,8 +91,8 @@ const routes = [
     children: [
       { path: '', name: 'admin', component: shared.dashboard },
       { path: 'statistiques', component: () => import('../views/admin/Statistics.vue'), meta: { permission: 'orders.view' } },
-      // Tableau de direction : les activités côte à côte, points à décider
-      { path: 'direction', component: () => import('../views/admin/Direction.vue'), meta: { permission: 'direction.view' } },
+      // Ancienne adresse des vues de direction : elles sont dans Statistiques › Pilotage
+      { path: 'direction', redirect: { path: '/admin/statistiques', query: { onglet: 'direction' } } },
       // Mon compte : mot de passe de la personne connectée (bouton profil de l'en-tête)
       { path: 'mon-compte', component: () => import('../views/admin/Account.vue') },
       { path: 'courses', component: shared.orders, meta: { permission: 'orders.view' } },

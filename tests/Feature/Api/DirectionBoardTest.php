@@ -17,7 +17,7 @@ use Tests\Concerns\BuildsDeliveryWorld;
 use Tests\TestCase;
 
 /**
- * Tableau de direction › Vue d'ensemble : les activités côte à côte (chiffre d'affaires, marge, qualité, factures en
+ * Statistiques de direction › Vue d'ensemble : les activités côte à côte (chiffre d'affaires, marge, qualité, factures en
  * retard), douze mois de chiffre d'affaires, points à décider ; réservé à l'autorisation « direction.view », dans le
  * périmètre d'activités de la personne.
  */

@@ -185,8 +185,8 @@ class StatisticsController extends Controller
     }
 
     /**
-     * Tableau de direction › Vue d'ensemble : les activités côte à côte et les points à décider.
-     * Réservé à qui a l'autorisation « Voir le tableau de direction », dans son périmètre d'activités.
+     * Statistiques de direction › Vue d'ensemble : les activités côte à côte et les points à décider.
+     * Réservé à qui a l'autorisation « Voir les statistiques de direction », dans son périmètre d'activités.
      */
     public function direction(Request $request, DirectionBoard $board): JsonResponse
     {
@@ -199,7 +199,7 @@ class StatisticsController extends Controller
     }
 
     /**
-     * Tableau de direction › une activité (e-commerce, MAD, distribution) : ses indicateurs propres.
+     * Statistiques de direction › une activité (e-commerce, MAD, distribution) : ses indicateurs propres.
      * Refusé hors du périmètre d'activités de la personne.
      */
     public function directionActivity(Request $request, string $activity, DirectionActivities $screens): JsonResponse
@@ -213,7 +213,7 @@ class StatisticsController extends Controller
     }
 
     /**
-     * Tableau de direction › Équipes : livreurs, charge par zone, paie, véhicules, agents du bureau.
+     * Statistiques de direction › Équipes : livreurs, charge par zone, paie, véhicules, agents du bureau.
      */
     public function directionTeams(Request $request, DirectionTeams $teams): JsonResponse
     {

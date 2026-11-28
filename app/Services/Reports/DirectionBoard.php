@@ -11,7 +11,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 
 /**
- * Tableau de direction › Vue d'ensemble : les activités de l'entreprise côte à côte (chiffre d'affaires, marge nette,
+ * Statistiques de direction › Vue d'ensemble : les activités de l'entreprise côte à côte (chiffre d'affaires, marge nette,
  * courses livrées, qualité, factures en retard) comparées à la période précédente, le chiffre d'affaires des douze
  * derniers mois par activité, et les points « À décider » : écarts chiffrés, classés par gravité, avec le lien vers
  * l'écran où agir.

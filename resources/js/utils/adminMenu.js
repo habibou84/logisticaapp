@@ -89,7 +89,6 @@ export function adminMenuGroups(badges = {}) {
 export const adminMenuTop = (can = () => true) => [
   { to: '/admin', icon: can('orders.dispatch') ? 'pilotage' : 'accueil', label: can('orders.dispatch') ? 'Poste de pilotage' : 'Tableau de bord' },
   { to: '/admin/statistiques', icon: 'statistiques', label: 'Statistiques', permission: 'orders.view' },
-  { to: '/admin/direction', icon: 'tendance', label: 'Direction', permission: 'direction.view' },
 ]
 
 /**
