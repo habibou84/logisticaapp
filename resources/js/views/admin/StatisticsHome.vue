@@ -29,38 +29,49 @@
     </nav>
 
     <!-- Dans l'onglet : la synthèse, puis les vues de détail qui lui appartiennent -->
-    <div v-if="current.views.length > 1 || tab === 'tools'" class="flex flex-wrap items-center gap-1.5" role="group" :aria-label="`Vues de l'onglet ${current.label}`">
+    <div v-if="tab !== 'tools' && current.views.length > 1" class="flex flex-wrap items-center gap-1.5" role="group" :aria-label="`Vues de l'onglet ${current.label}`">
       <button
         v-for="v in current.views" :key="v.key" type="button" :aria-pressed="detail === v.key"
         :class="['rounded-full border px-3 py-1 text-sm font-medium', detail === v.key ? 'border-slate-900 bg-slate-900 text-white' : 'bg-white text-slate-700 hover:bg-slate-50']"
         @click="detail = v.key"
       >{{ v.label }}</button>
-      <template v-if="tab === 'tools'">
-        <span class="flex-1" />
-        <button type="button" class="btn-secondary" :disabled="exporting" title="Toutes les statistiques de la période, en plusieurs feuilles" @click="exportXlsx">{{ exporting ? 'Export…' : 'Exporter en Excel' }}</button>
-        <a :href="`/admin/rapport-mensuel?mois=${from.slice(0, 7)}`" target="_blank" class="btn-secondary" title="À imprimer ou enregistrer en PDF">Rapport du mois</a>
-      </template>
     </div>
 
-    <p v-if="error" class="rounded bg-red-50 border border-red-200 text-red-700 text-sm px-3 py-2">{{ error }}</p>
-    <p v-if="loading && view.endpoint && !data[shown]" class="text-slate-600">Chargement…</p>
+    <div :class="tab === 'tools' ? 'grid gap-4 lg:grid-cols-[15rem_minmax(0,1fr)]' : ''">
+      <!-- Outils : le menu des outils, par groupe -->
+      <nav v-if="tab === 'tools'" class="grid content-start gap-3 rounded-xl bg-slate-100 p-2 sm:grid-cols-2 lg:grid-cols-1" aria-label="Outils">
+        <div v-for="g in toolGroups" :key="g.label">
+          <p class="px-2 pb-1 text-xs font-bold uppercase tracking-wide text-slate-600">{{ g.label }}</p>
+          <button
+            v-for="v in g.views" :key="v.key" type="button" :aria-current="detail === v.key ? 'page' : undefined"
+            :class="['block w-full rounded-lg px-3 py-1.5 text-left text-sm', detail === v.key ? 'bg-white font-semibold text-slate-900 shadow-sm' : 'font-medium text-slate-700 hover:bg-white']"
+            @click="detail = v.key"
+          >{{ v.label }}</button>
+        </div>
+      </nav>
 
-    <!-- Synthèses -->
-    <template v-if="!detail && data[shown]">
-      <DirectionOverview v-if="tab === 'overview'" :board="data[shown]" />
-      <DirectionEcommerce v-else-if="tab === 'ecommerce'" :data="data[shown]" />
-      <DirectionMad v-else-if="tab === 'mad'" :data="data[shown]" />
-      <DirectionDistribution v-else-if="tab === 'distribution'" :data="data[shown]" />
-      <DirectionTeams v-else-if="tab === 'teams'" :key="`${from}-${to}`" :data="data[shown]" />
-    </template>
-    <!-- Objectifs : leur propre choix du mois -->
-    <DirectionObjectives v-if="tab === 'objectives'" />
+      <div class="min-w-0 space-y-4">
+        <p v-if="error" class="rounded bg-red-50 border border-red-200 text-red-700 text-sm px-3 py-2">{{ error }}</p>
+        <p v-if="loading && view.endpoint && !data[shown]" class="text-slate-600">Chargement…</p>
 
-    <!-- Vues de détail : celles des statistiques d'origine, pour l'activité de l'onglet -->
-    <template v-if="detail">
-      <component :is="view.component" v-if="!view.endpoint" v-bind="view.props ? view.props() : {}" />
-      <component :is="view.component" v-else-if="data[shown]" :data="data[shown]" v-bind="view.props ? view.props() : {}" @reload="load" />
-    </template>
+        <!-- Synthèses -->
+        <template v-if="!detail && data[shown]">
+          <DirectionOverview v-if="tab === 'overview'" :board="data[shown]" />
+          <DirectionEcommerce v-else-if="tab === 'ecommerce'" :data="data[shown]" />
+          <DirectionMad v-else-if="tab === 'mad'" :data="data[shown]" />
+          <DirectionDistribution v-else-if="tab === 'distribution'" :data="data[shown]" />
+          <DirectionTeams v-else-if="tab === 'teams'" :key="`${from}-${to}`" :data="data[shown]" />
+        </template>
+        <!-- Objectifs : leur propre choix du mois -->
+        <DirectionObjectives v-if="tab === 'objectives'" />
+
+        <!-- Vues de détail : celles des statistiques d'origine, pour l'activité de l'onglet -->
+        <template v-if="detail">
+          <component :is="view.component" v-if="!view.endpoint" v-bind="view.props ? view.props() : {}" />
+          <component :is="view.component" v-else-if="data[shown]" :data="data[shown]" v-bind="view.props ? view.props() : {}" @reload="load" />
+        </template>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -77,13 +88,14 @@ import DirectionOverview from '../../components/direction/DirectionOverview.vue'
 import DirectionQuestions from '../../components/direction/DirectionQuestions.vue'
 import DirectionSimulator from '../../components/direction/DirectionSimulator.vue'
 import DirectionTeams from '../../components/direction/DirectionTeams.vue'
+import ToolsExport from '../../components/direction/ToolsExport.vue'
+import ToolsReport from '../../components/direction/ToolsReport.vue'
 import { COLORS } from '../../components/direction/shared'
 import ClientInsightsTab from '../../components/stats/ClientInsightsTab.vue'
 import DailyTab from '../../components/stats/DailyTab.vue'
 import DeliveryDelaysTab from '../../components/stats/DeliveryDelaysTab.vue'
 import FieldTab from '../../components/stats/FieldTab.vue'
 import FinancesTab from '../../components/stats/FinancesTab.vue'
-import FixedCostsPanel from '../../components/stats/FixedCostsPanel.vue'
 import GoalsTab from '../../components/stats/GoalsTab.vue'
 import IntegrationsTab from '../../components/stats/IntegrationsTab.vue'
 import MerchantsTab from '../../components/stats/MerchantsTab.vue'
@@ -143,12 +155,16 @@ const DETAILS = {
   cash: { label: 'Trésorerie', endpoint: '/stats/finances', component: FinancesTab, permission: 'finance.view', activity: false, description: 'L\'argent en circulation aujourd\'hui : chez les livreurs, à reverser aux clients, dû par des clients (toutes activités).' },
   field: { label: 'Pannes et accidents', endpoint: '/field-events/stats', component: FieldTab, permission: 'field_events.manage', activity: false, description: 'Pannes, accidents et autres événements remontés par les livreurs.' },
   vehicles: { label: 'Véhicules', endpoint: '/vehicles/stats', component: VehiclesTab, permission: 'fleet.manage', activity: false, description: 'Coûts, consommation et immobilisations du parc.' },
-  forecast: { label: 'Prévisions', endpoint: '/stats/direction/forecast', component: DirectionForecast, period: false, activity: false, description: 'Le chiffre d\'affaires des trois prochains mois, par activité, d\'après la tendance des derniers mois.' },
-  simulator: { label: 'Simulateur « et si »', endpoint: '/stats/direction/simulator', component: DirectionSimulator, period: false, activity: false, description: 'L\'effet d\'une décision sur la marge, à partir des chiffres du dernier mois terminé.' },
-  questions: { label: 'Questions (IA)', component: DirectionQuestions, permission: 'direction.ask', period: false, description: 'Une question en français, une réponse calculée par l\'application. Seule la question est envoyée à Anthropic.' },
-  costs: { label: 'Frais fixes', component: FixedCostsPanel, permission: 'finance.view', period: false, description: 'Loyer, équipe, téléphone… : les frais fixes comptés dans la marge nette.' },
-  pivot: { label: 'Analyse croisée', component: PivotTab, props: () => ({ from: from.value, to: to.value }), description: 'Croisez deux axes (client, zone, livreur, activité, jour, mois, heure) avec l\'indicateur de votre choix.' },
-  share: { label: 'Alertes et partage', component: IntegrationsTab, permission: ['settings.manage', 'merchants.view'], period: false, description: 'Alertes du matin, point par e-mail, lien Google Sheets et rapports mensuels des clients sous contrat.' },
+  // Outils : aide à la décision, analyse, export et partage, alertes
+  forecast: { group: 'Décider', label: 'Prévisions', endpoint: '/stats/direction/forecast', component: DirectionForecast, period: false, activity: false, description: 'Le chiffre d\'affaires des trois prochains mois, par activité, d\'après la tendance des derniers mois.' },
+  simulator: { group: 'Décider', label: 'Simulateur « et si »', endpoint: '/stats/direction/simulator', component: DirectionSimulator, period: false, activity: false, description: 'L\'effet d\'une décision sur la marge, à partir des chiffres du dernier mois terminé.' },
+  questions: { group: 'Décider', label: 'Questions (IA)', component: DirectionQuestions, permission: 'direction.ask', period: false, description: 'Une question en français, une réponse calculée par l\'application. Seule la question est envoyée à Anthropic.' },
+  pivot: { group: 'Analyser', label: 'Analyse croisée', component: PivotTab, props: () => ({ from: from.value, to: to.value }), description: 'Croisez deux axes (client, zone, livreur, activité, jour, mois, heure) avec l\'indicateur de votre choix.' },
+  export: { group: 'Exporter et partager', label: 'Export', component: ToolsExport, props: () => ({ from: from.value, to: to.value }), description: 'Les statistiques de la période dans un fichier Excel.' },
+  report: { group: 'Exporter et partager', label: 'Rapport du mois', component: ToolsReport, period: false, description: 'Le rapport du mois à imprimer, et les rapports des clients sous contrat.' },
+  sheets: { group: 'Exporter et partager', label: 'Google Sheets', component: IntegrationsTab, props: () => ({ only: ['sheets'] }), permission: 'settings.manage', period: false, description: 'Vos statistiques dans un tableur Google, mises à jour toutes seules.' },
+  alerts: { group: 'Alertes', label: 'Alertes', component: IntegrationsTab, props: () => ({ only: ['alerts'] }), permission: 'settings.manage', period: false, description: 'Être prévenu quand un indicateur passe un seuil.' },
+  sends: { group: 'Alertes', label: 'Envois réguliers', component: IntegrationsTab, props: () => ({ only: ['email'] }), permission: 'settings.manage', period: false, description: 'Le point du lundi et celui du 1er du mois, par e-mail.' },
 }
 const SUMMARY = { key: '', label: 'Synthèse' }
 const details = (keys) => keys.filter((k) => !DETAILS[k].permission || [DETAILS[k].permission].flat().some((p) => auth.can(p))).map((k) => ({ key: k, ...DETAILS[k] }))
@@ -167,9 +183,14 @@ const tabs = computed(() => [
   })),
   { key: 'teams', label: 'Équipes', color: '#6a4ce2', endpoint: '/stats/direction/teams', description: 'Livreurs, charge par zone, temps par mission, paie, véhicules et agents du bureau.', views: [SUMMARY, ...details(['field', 'vehicles'])] },
   { key: 'objectives', label: 'Objectifs', color: '#ec1d27', description: 'Les objectifs du mois, par activité et pour les équipes, comparés au réalisé.', views: [{ key: '', period: false }] },
-  { key: 'decision', label: 'Aide à la décision', color: '#c9400c', description: 'Prévisions, simulateur et questions.', views: details(['forecast', 'simulator', 'questions']) },
-  { key: 'tools', label: 'Outils', color: '#94a3b8', description: 'Réglages et outils des statistiques.', views: details(['costs', 'pivot', 'share']) },
+  { key: 'tools', label: 'Outils', color: '#94a3b8', description: 'Aide à la décision, analyse croisée, export, rapports et alertes.', views: details(['forecast', 'simulator', 'questions', 'pivot', 'export', 'report', 'sheets', 'alerts', 'sends']) },
 ].filter((t) => t.views.length))
+
+// Outils rangés par groupe, dans l'ordre du menu
+const toolGroups = computed(() => {
+  const views = tabs.value.find((t) => t.key === 'tools')?.views ?? []
+  return [...new Set(views.map((v) => v.group))].map((label) => ({ label, views: views.filter((v) => v.group === label) }))
+})
 
 const preset = ref('month')
 const [initialFrom, initialTo] = PRESETS.month.range()
@@ -222,24 +243,6 @@ function custom() {
 function selectTab(key) {
   tab.value = key
   detail.value = firstView(current.value)
-}
-
-// Export Excel : toutes les statistiques de la période, en plusieurs feuilles
-const exporting = ref(false)
-async function exportXlsx() {
-  exporting.value = true
-  try {
-    const { data: blob } = await http.get('/stats/export', { params: { from: from.value, to: to.value }, responseType: 'blob' })
-    const link = document.createElement('a')
-    link.href = URL.createObjectURL(blob)
-    link.download = `statistiques-${from.value}-au-${to.value}.xlsx`
-    link.click()
-    URL.revokeObjectURL(link.href)
-  } catch (e) {
-    error.value = apiErrorMessage(e)
-  } finally {
-    exporting.value = false
-  }
 }
 
 watch(shown, () => {

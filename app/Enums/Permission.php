@@ -40,6 +40,8 @@ enum Permission: string
     // Argent
     case FinanceView = 'finance.view';
     case FinanceManage = 'finance.manage';
+    // Frais fixes de l'entreprise (loyer, équipe…) : leur propre menu
+    case FixedCostsManage = 'fixed_costs.manage';
     // Factures du mois des clients (distribution, MAD) : consulter ; calculer, émettre, encaisser ; annuler
     case InvoicesView = 'invoices.view';
     case InvoicesManage = 'invoices.manage';
@@ -84,6 +86,7 @@ enum Permission: string
             self::IntegrationsManage => 'Clés d\'API et webhooks',
             self::FinanceView => 'Voir la caisse et les reversements',
             self::FinanceManage => 'Encaisser et reverser',
+            self::FixedCostsManage => 'Saisir les frais fixes',
             self::InvoicesView => 'Voir les factures clients',
             self::InvoicesManage => 'Calculer, émettre et encaisser les factures',
             self::InvoicesVoid => 'Annuler une facture émise ou faire un avoir',
@@ -125,6 +128,7 @@ enum Permission: string
             self::IntegrationsManage => 'Clés de l\'API publique et webhooks des clients.',
             self::FinanceView => 'Caisse, encaissements des livreurs, reversements.',
             self::FinanceManage => 'Encaisser, avancer, ajuster, reverser, payer les livreurs.',
+            self::FixedCostsManage => 'Menu Frais fixes : loyer, équipe, téléphone… comptés dans la marge nette.',
             self::InvoicesView => 'Factures du mois des clients sous contrat.',
             self::InvoicesManage => 'Calculer, compléter, émettre et encaisser les factures.',
             self::InvoicesVoid => 'Annuler une facture déjà émise, ou la corriger par un avoir (total ou partiel).',
@@ -148,7 +152,7 @@ enum Permission: string
             self::RepairsManage, self::RepairsPurchases => 'workshop',
             self::MerchantsView, self::MerchantsManage, self::RatesManage, self::DepartmentsManage, self::DestinationsManage,
             self::StockManage, self::IntegrationsManage => 'merchants',
-            self::FinanceView, self::FinanceManage, self::InvoicesView, self::InvoicesManage, self::InvoicesVoid, self::RevenueView, self::DirectionView, self::DirectionAsk => 'money',
+            self::FinanceView, self::FinanceManage, self::InvoicesView, self::InvoicesManage, self::InvoicesVoid, self::RevenueView, self::DirectionView, self::DirectionAsk, self::FixedCostsManage => 'money',
             self::SettingsManage, self::ZonesManage, self::PricingManage, self::MessagingManage, self::UsersView, self::UsersManage => 'settings',
         };
     }
@@ -191,6 +195,7 @@ enum Permission: string
             self::MerchantsManage->value => [self::DepartmentsManage->value, self::DestinationsManage->value],
             self::UsersManage->value => [self::CouriersManage->value, self::RatingsManage->value],
             self::InvoicesManage->value => [self::InvoicesVoid->value],
+            self::FinanceManage->value => [self::FixedCostsManage->value],
         ];
     }
 }

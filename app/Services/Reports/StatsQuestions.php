@@ -44,8 +44,8 @@ class StatsQuestions
         'teams' => ['teams', null, 'livreurs : productivité, temps par mission, paie, écarts de caisse, charge par zone, agents du bureau'],
         'teams:vehicles' => ['teams', 'vehicles', 'véhicules : coûts, consommation, immobilisations'],
         'objectives' => ['objectives', null, 'objectifs du mois par activité et pour les équipes, comparés au réalisé'],
-        'decision:forecast' => ['decision', 'forecast', 'prévision du chiffre d\'affaires des trois prochains mois'],
-        'decision:simulator' => ['decision', 'simulator', 'simulateur : effet d\'une hausse de prix, d\'un recrutement, d\'un frais fixe sur la marge'],
+        'tools:forecast' => ['tools', 'forecast', 'prévision du chiffre d\'affaires des trois prochains mois'],
+        'tools:simulator' => ['tools', 'simulator', 'simulateur : effet d\'une hausse de prix, d\'un recrutement, d\'un frais fixe sur la marge'],
     ];
 
     public function __construct(private readonly Pivot $pivot) {}

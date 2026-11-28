@@ -157,6 +157,8 @@ const routes = [
       { path: 'factures/:id(\\d+)', component: shared.clientInvoice, meta: { permission: 'invoices.view' } },
       // Chiffre d'affaires par activité (e-commerce, distribution, MAD)
       { path: 'chiffre-affaires', component: () => import('../views/admin/Revenue.vue'), meta: { permission: 'revenue.view' } },
+      // Frais fixes de l'entreprise, comptés dans la marge nette des statistiques
+      { path: 'frais-fixes', component: () => import('../views/admin/FixedCosts.vue'), meta: { permission: 'fixed_costs.manage' } },
       { path: 'annuaire', component: () => import('../views/admin/Destinations.vue'), meta: { permission: 'merchants.view' } },
       { path: 'contrats', component: () => import('../views/admin/Contracts.vue'), meta: { permission: 'merchants.view' } },
       // Livraison › Parcours : routine du matin des livreurs en mise à disposition, client par client
