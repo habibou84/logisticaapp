@@ -77,6 +77,10 @@ class OrderWorkflow
             // l'équipe ou le client confirme (OrderProposals)
             $proposal = $reason?->validates() && $actor->isCourier()
                 && in_array($to, [OrderStatus::DeliveryFailed, OrderStatus::Rescheduled], true);
+            // Avant le départ (client joint au téléphone) : rien ne change sur la course tant que ce n'est pas validé
+            if ($proposal && $from !== OrderStatus::OutForDelivery) {
+                return $this->proposeBeforeDeparture($actor, $order, $reason, $context);
+            }
             if ($proposal) {
                 $to = OrderStatus::DeliveryFailed;
                 $context['proposal'] = true;
@@ -102,8 +106,8 @@ class OrderWorkflow
             $this->authorizeActor($actor, $order, $from, $to, $context);
             $this->validate($order, $from, $to, $reason, $context);
 
-            // La course repart (nouvelle date, départ en livraison, dépôt…) : le report ou retour à valider est remplacé
-            if ($from === OrderStatus::DeliveryFailed && $to !== OrderStatus::DeliveryFailed) {
+            // La course avance (nouvelle date, départ en livraison, dépôt…) : le report ou retour à valider est remplacé
+            if ($to !== OrderStatus::DeliveryFailed) {
                 app(OrderProposals::class)->settle($order, $actor);
             }
 
@@ -146,7 +150,7 @@ class OrderWorkflow
             ]);
 
             if ($proposal) {
-                app(OrderProposals::class)->propose($actor, $order, $event, $reason, $context['rescheduled_to'] ?? null);
+                app(OrderProposals::class)->propose($actor, $order, $event, $reason, $context['rescheduled_to'] ?? null, $context['delivery_time'] ?? null);
             }
 
             // Distribution, MAD : signature de la personne qui a reçu (ou qui a remis au ramassage), gardée avec la course
@@ -201,6 +205,40 @@ class OrderWorkflow
         });
     }
 
+    /**
+     * Report ou retour signalé par le livreur avant de partir livrer (le client a appelé) : la mission et le statut
+     * restent tels quels, la proposition attend l'équipe ou le client. Validée, la mission est retirée.
+     */
+    private function proposeBeforeDeparture(User $actor, Order $order, IncidentReason $reason, array $context): Order
+    {
+        $assignment = $order->activeAssignment(AssignmentType::Delivery);
+        if ($assignment === null || $assignment->courier_id !== $actor->courier?->id) {
+            throw new AuthorizationException('Cette livraison ne vous est pas confiée.');
+        }
+        if (! $reason->appliesTo('delivery')) {
+            throw new BusinessRuleException('Ce motif ne s\'applique pas à cette étape.', 'incident_reason_id');
+        }
+        $this->validateReason($order, $reason, $context);
+        if ($reason->requires_date) {
+            $this->validateRescheduleDate($context['rescheduled_to'] ?? null);
+        }
+
+        $event = $this->journal->record($order, $actor, OrderEventType::Incident, [
+            ...(isset($context['occurred_at']) ? ['created_at' => $context['occurred_at']] : []),
+            'assignment_id' => $assignment->id,
+            'from_status' => $order->status,
+            'incident_reason_id' => $reason->id,
+            'rescheduled_to' => $reason->requires_date ? $context['rescheduled_to'] : null,
+            'note' => $context['note'] ?? null,
+            'lat' => $context['lat'] ?? null,
+            'lng' => $context['lng'] ?? null,
+            'meta' => array_filter(['before_departure' => true, 'delivery_time' => $context['delivery_time'] ?? null]),
+        ]);
+        app(OrderProposals::class)->propose($actor, $order, $event, $reason, $context['rescheduled_to'] ?? null, $context['delivery_time'] ?? null);
+
+        return $order;
+    }
+
     private function resolveReason(Order $order, ?int $reasonId): ?IncidentReason
     {
         if ($reasonId === null) {
@@ -218,6 +256,11 @@ class OrderWorkflow
 
     private function authorizeActor(User $actor, Order $order, OrderStatus $from, OrderStatus $to, array $context = []): void
     {
+        // Report proposé par le livreur et validé par l'équipe ou le client (OrderProposals vérifie qui valide)
+        if (! empty($context['proposal_approved']) && $to === OrderStatus::Rescheduled) {
+            return;
+        }
+
         // Déclarer un colis perdu engage la caisse : administrateur (dispatch + finance) uniquement
         if ($to === OrderStatus::Lost) {
             if ($actor->can(Permission::OrdersDispatch->value) && $actor->can(Permission::FinanceManage->value)) {
@@ -621,6 +664,8 @@ class OrderWorkflow
 
                 if ($to === OrderStatus::Rescheduled) {
                     $order->delivery_scheduled_date = $context['rescheduled_to'];
+                    // Heure précise demandée par le client avec la nouvelle date, sinon plus d'heure
+                    $order->delivery_time = $context['delivery_time'] ?? null;
                 }
 
                 // Retour à valider : il ne part qu'une fois confirmé (OrderProposals)

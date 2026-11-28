@@ -16,12 +16,12 @@ class IncidentReason extends Model
 
     /** Familles des motifs (regroupement à l'écran du livreur) */
     public const FAMILIES = [
-        'unavailable' => 'Indisponible',
-        'postponed' => 'Report',
-        'address' => 'Adresse, contact',
+        'info' => 'Consigne du client (la course continue)',
+        'postponed' => 'Autre date (report)',
+        'unavailable' => 'Client injoignable ou absent',
+        'address' => 'Adresse, téléphone',
         'documents' => 'Documents',
-        'recipient' => 'Destinataire',
-        'info' => 'Information (la course continue)',
+        'recipient' => 'Refus, annulation, litige',
         'pickup' => 'Ramassage',
         'other' => 'Autre',
     ];
@@ -30,6 +30,9 @@ class IncidentReason extends Model
 
     /** status : échec, report ou retour (la course change de statut) ; note : simple information, la course continue */
     public const EFFECTS = ['status', 'note'];
+
+    /** Ce que le livreur saisit : delivery_time (heure de livraison demandée, affichée partout) ou time (une heure) */
+    public const ASKS = ['delivery_time', 'time'];
 
     /** Effet sur la fiche de l'annuaire */
     public const DESTINATION_EFFECTS = ['inactive', 'check_name', 'check_address', 'check_phone'];
@@ -51,6 +54,8 @@ class IncidentReason extends Model
         'visible_to_client',
         'effect',
         'needs_validation',
+        'asks',
+        'note_hint',
         'is_active',
         'sort_order',
     ];

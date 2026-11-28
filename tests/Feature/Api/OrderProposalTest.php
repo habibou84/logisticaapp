@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Api;
 
+use App\Enums\AssignmentType;
 use App\Models\IncidentReason;
 use App\Models\Order;
 use App\Models\OrderProposal;
@@ -81,7 +82,7 @@ class OrderProposalTest extends TestCase
         // Fiche de la course et file « À valider »
         $this->as($this->dispatcher)->getJson("/api/v1/orders/{$order->id}")
             ->assertJsonPath('data.proposal.kind', 'reschedule')
-            ->assertJsonPath('data.proposal.reason', 'Livraison reportée à la demande du client')
+            ->assertJsonPath('data.proposal.reason', 'Le client demande à être livré un autre jour')
             ->assertJsonPath('data.proposal.note', 'Le client est au travail')
             ->assertJsonPath('data.proposal.can_decide', true);
         $this->assertSame([$order->id], collect($this->getJson('/api/v1/orders?queue=to_validate')->json('data'))->pluck('id')->all());
@@ -202,22 +203,89 @@ class OrderProposalTest extends TestCase
         $order = $this->outForDelivery();
         $this->as($this->courierB->user);
 
-        // Précision demandée par l'événement
+        // Heure précise : l'heure est demandée, puis enregistrée sur la course et affichée
         $this->postJson("/api/v1/orders/{$order->id}/notes", ['incident_reason_id' => $this->reason('i_time_slot')])
-            ->assertJsonValidationErrors('note');
+            ->assertJsonValidationErrors('time');
+        $this->postJson("/api/v1/orders/{$order->id}/notes", ['incident_reason_id' => $this->reason('i_time_slot'), 'time' => '17:30'])->assertCreated();
         $this->postJson("/api/v1/orders/{$order->id}/notes", ['incident_reason_id' => $this->reason('i_call_back')])->assertCreated();
-        $this->postJson("/api/v1/orders/{$order->id}/notes", ['incident_reason_id' => $this->reason('i_time_slot'), 'note' => 'Après 17h'])->assertCreated();
+        // Précision demandée par l'événement (nom de la personne)
+        $this->postJson("/api/v1/orders/{$order->id}/notes", ['incident_reason_id' => $this->reason('i_third_party')])
+            ->assertJsonValidationErrors('note');
 
         $order->refresh();
         $this->assertSame('out_for_delivery', $order->status->value);
-        $event = $order->events()->latest('id')->first();
-        $this->assertSame(['note', 'Après 17h', $this->reason('i_time_slot')], [$event->type->value, $event->note, $event->incident_reason_id]);
-        Notification::assertSentTo($this->dispatcher, OrderAlert::class, fn (OrderAlert $n) => $n->kind === 'note' && str_contains($n->body, 'Le client demande un créneau « Après 17h »'));
+        $this->assertSame('17:30', $order->delivery_time);
+        $event = $order->events()->where('incident_reason_id', $this->reason('i_time_slot'))->first();
+        $this->assertSame(['note', 'À 17h30'], [$event->type->value, $event->note]);
+        Notification::assertSentTo($this->dispatcher, OrderAlert::class, fn (OrderAlert $n) => $n->kind === 'note'
+            && str_contains($n->body, 'Le client veut être livré à une heure précise « À 17h30 »'));
+
+        // Repère : gardé sur la course et dans le carnet du destinataire
+        $this->postJson("/api/v1/orders/{$order->id}/notes", ['incident_reason_id' => $this->reason('i_landmark'), 'note' => 'Portail bleu après la pharmacie'])->assertCreated();
+        $this->assertStringEndsWith('Portail bleu après la pharmacie', $order->fresh()->delivery_landmark);
+        $this->assertSame($order->fresh()->delivery_landmark, $order->recipient->fresh()->landmark);
+
+        // Consignes affichées sur la course (livreur, équipe, client)
+        $this->as($this->merchantUser)->getJson("/api/v1/orders/{$order->id}")
+            ->assertJsonPath('data.delivery.time', '17:30')
+            ->assertJsonPath('data.instructions.0.label', 'Le client veut être livré à une heure précise')
+            ->assertJsonPath('data.instructions.0.note', 'À 17h30');
 
         // Un échec ne se signale pas comme une note, ni l'inverse
+        $this->as($this->courierB->user);
         $this->postJson("/api/v1/orders/{$order->id}/notes", ['incident_reason_id' => $this->reason('unreachable')])->assertJsonValidationErrors('incident_reason_id');
         $this->postJson("/api/v1/orders/{$order->id}/status", ['status' => 'delivery_failed', 'incident_reason_id' => $this->reason('i_call_back')])
             ->assertJsonValidationErrors('incident_reason_id');
+    }
+
+    public function test_postponement_before_departure_keeps_the_mission_until_validated_with_the_time(): void
+    {
+        Notification::fake();
+        $order = $this->createOrder();
+        $this->as($this->dispatcher);
+        $this->postJson("/api/v1/orders/{$order->id}/assign", ['type' => 'pickup', 'courier_id' => $this->courierB->id])->assertOk();
+        $this->postJson("/api/v1/orders/{$order->id}/assign", ['type' => 'delivery', 'courier_id' => $this->courierB->id])->assertOk();
+        $this->as($this->courierB->user)->postJson("/api/v1/orders/{$order->id}/status", ['status' => 'picked_up'])->assertOk();
+        $before = $order->fresh()->status->value;
+        $date = today()->addDays(2)->toDateString();
+
+        // Le client a appelé avant le départ : report proposé, rien ne change sur la course
+        $this->postJson("/api/v1/orders/{$order->id}/status", [
+            'status' => 'delivery_failed', 'incident_reason_id' => $this->reason('postponed'),
+            'rescheduled_to' => $date, 'delivery_time' => '10:00',
+        ])->assertOk()->assertJsonPath('data.status', $before);
+        $proposal = OrderProposal::sole();
+        $this->assertSame(['reschedule', '10:00'], [$proposal->kind, $proposal->proposed_time]);
+        $this->assertNotNull($order->fresh()->activeAssignment(AssignmentType::Delivery));
+        Notification::assertSentTo($this->merchantUser, OrderAlert::class, fn (OrderAlert $n) => $n->kind === 'proposal' && str_contains($n->body, 'à 10h'));
+        // La mission affiche la demande en attente
+        $mission = collect($this->getJson('/api/v1/courier/missions')->json('data'))->firstWhere('order.id', $order->id);
+        $this->assertSame('pending', $mission['order']['proposal']['status']);
+
+        // Le client valide : la livraison prévue est retirée au livreur, la course est reportée à cette date et cette heure
+        $this->as($this->merchantUser)->postJson("/api/v1/orders/{$order->id}/proposal/approve")->assertOk()
+            ->assertJsonPath('data.status', 'rescheduled')
+            ->assertJsonPath('data.delivery.scheduled_date', $date)
+            ->assertJsonPath('data.delivery.time', '10:00');
+        $this->assertNull($order->fresh()->activeAssignment(AssignmentType::Delivery));
+        Notification::assertSentTo($this->courierB->user, OrderAlert::class, fn (OrderAlert $n) => $n->kind === 'mission_removed');
+    }
+
+    public function test_courier_departure_replaces_a_proposal_made_before(): void
+    {
+        $order = $this->createOrder();
+        $this->as($this->dispatcher);
+        $this->postJson("/api/v1/orders/{$order->id}/assign", ['type' => 'pickup', 'courier_id' => $this->courierB->id])->assertOk();
+        $this->postJson("/api/v1/orders/{$order->id}/assign", ['type' => 'delivery', 'courier_id' => $this->courierB->id])->assertOk();
+        $this->as($this->courierB->user)->postJson("/api/v1/orders/{$order->id}/status", ['status' => 'picked_up'])->assertOk();
+        $this->postJson("/api/v1/orders/{$order->id}/status", ['status' => 'delivery_failed', 'incident_reason_id' => $this->reason('recipient_cancelled')])->assertOk();
+        $this->assertSame('return', OrderProposal::sole()->kind);
+        // Un échec simple (sans validation) ne se fait qu'une fois parti
+        $this->postJson("/api/v1/orders/{$order->id}/status", ['status' => 'delivery_failed', 'incident_reason_id' => $this->reason('unreachable')])->assertUnprocessable();
+
+        // Le client a changé d'avis : le livreur part livrer
+        $this->postJson("/api/v1/orders/{$order->id}/status", ['status' => 'out_for_delivery'])->assertOk();
+        $this->assertSame('closed', OrderProposal::sole()->status);
     }
 
     public function test_reason_settings_expose_effect_and_validation(): void

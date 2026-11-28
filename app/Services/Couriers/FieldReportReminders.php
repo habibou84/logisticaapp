@@ -112,8 +112,9 @@ class FieldReportReminders
         $proposals = OrderProposal::withoutGlobalScopes()->where('company_id', $company->id)
             ->where('status', OrderProposal::PENDING)
             ->where('created_at', '<=', now()->subMinutes($interval))
-            ->whereHas('order', fn ($q) => $q->withoutGlobalScopes()->where('status', 'delivery_failed')
-                ->whereDoesntHave('assignments', fn ($a) => $a->active()))
+            // Course en échec, ou livraison pas encore partie (proposé avant le départ)
+            ->whereHas('order', fn ($q) => $q->withoutGlobalScopes()
+                ->whereNotIn('status', ['out_for_delivery', 'delivered', 'returned', 'cancelled', 'rejected', 'lost']))
             ->with(['order' => fn ($q) => $q->withoutGlobalScopes(), 'reason', 'proposer'])
             ->get();
 

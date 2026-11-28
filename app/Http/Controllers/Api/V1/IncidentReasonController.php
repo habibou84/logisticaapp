@@ -83,6 +83,8 @@ class IncidentReasonController extends Controller
             'visible_to_client' => ['sometimes', 'boolean'],
             'effect' => ['sometimes', Rule::in(IncidentReason::EFFECTS)],
             'needs_validation' => ['sometimes', 'boolean'],
+            'asks' => ['sometimes', 'nullable', Rule::in(IncidentReason::ASKS)],
+            'note_hint' => ['sometimes', 'nullable', 'string', 'max:120'],
             'is_active' => ['sometimes', 'boolean'],
             'sort_order' => ['sometimes', 'integer', 'min:0', 'max:10000'],
         ], [], ['label' => 'libellé', 'applies_to' => 'étape']);

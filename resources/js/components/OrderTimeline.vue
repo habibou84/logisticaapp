@@ -15,7 +15,7 @@
       <p v-if="event.incident_reason && event.type === 'note'" class="text-sm font-medium text-slate-800">{{ event.incident_reason.label }}</p>
       <p v-else-if="event.incident_reason" class="text-sm text-red-700">Motif : {{ event.incident_reason.label }}</p>
       <!-- Échec avec une date : report demandé par le livreur, à valider -->
-      <p v-if="event.rescheduled_to && event.to_status === 'delivery_failed'" class="text-sm text-orange-700">Report demandé au {{ date(event.rescheduled_to) }} (à valider)</p>
+      <p v-if="event.rescheduled_to && event.type === 'incident' && event.to_status !== 'rescheduled'" class="text-sm text-orange-700">Report demandé au {{ date(event.rescheduled_to) }} (à valider)</p>
       <p v-else-if="event.rescheduled_to" class="text-sm text-orange-700">Reporté au {{ date(event.rescheduled_to) }}</p>
       <p v-if="event.meta?.courier_name" class="text-sm text-slate-700">{{ event.meta.type_label }} → {{ event.meta.courier_name }}</p>
       <p v-if="event.meta?.collected_amount !== undefined" class="text-sm text-slate-700">Encaissé : {{ money(event.meta.collected_amount) }}</p>

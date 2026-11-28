@@ -28,6 +28,8 @@ class TransitionOrderRequest extends FormRequest
             'incident_reason_id' => ['nullable', 'integer'],
             'note' => ['nullable', 'string', 'max:1000'],
             'rescheduled_to' => ['nullable', 'date'],
+            // Heure précise demandée par le client avec le report (« 17:30 »)
+            'delivery_time' => ['nullable', 'date_format:H:i'],
             'delivery_code' => ['nullable', 'string', 'max:10'],
             'collected_amount' => ['nullable', 'integer', 'min:0'],
             'payment_method' => ['nullable', Rule::in(array_map(fn (PaymentMethod $m) => $m->value, PaymentMethod::atDelivery()))],
@@ -64,6 +66,7 @@ class TransitionOrderRequest extends FormRequest
             'status' => 'statut',
             'incident_reason_id' => 'motif',
             'rescheduled_to' => 'date de report',
+            'delivery_time' => 'heure de livraison',
             'delivery_code' => 'code de livraison',
             'collected_amount' => 'montant encaissé',
             'received_by_name' => 'nom de la personne qui a reçu',

@@ -161,3 +161,10 @@ export const isCollect = (activity) => ['distribution', 'mad'].includes(activity
 export const pickupWord = (activity) => (isCollect(activity) ? 'collecte' : 'ramassage')
 // Client qui ne fait que de la distribution ou de la MAD : « collecte » partout dans son espace
 export const collectsOnly = (activities) => !!activities?.length && activities.every(isCollect)
+
+/** Heure « 17:30 » → « 17h30 », « 09:00 » → « 9h » */
+export function hour(value) {
+  const m = /^(\d{1,2}):(\d{2})/.exec(value || '')
+  if (!m) return value || ''
+  return `${Number(m[1])}h${m[2] === '00' ? '' : m[2]}`
+}

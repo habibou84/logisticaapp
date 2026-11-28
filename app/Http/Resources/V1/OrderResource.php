@@ -81,6 +81,8 @@ class OrderResource extends JsonResource
                 // Première date prévue, figée (la date de livraison suit les reports et devient le jour de la livraison)
                 'first_date' => $this->first_delivery_date?->toDateString(),
                 'time_slot' => $this->delivery_time_slot,
+                // Heure précise demandée par le client (« 17:30 »)
+                'time' => $this->delivery_time,
             ],
             // Commande préparée à l'entrepôt : pas de ramassage
             'from_warehouse' => $this->fromWarehouse(),
@@ -188,6 +190,16 @@ class OrderResource extends JsonResource
             'max_attempts' => $this->max_attempts,
             // Colis non livré : décision attendue, ou décision déjà prise par le client
             'needs_decision' => $this->needsDecision(),
+            // Consignes du client signalées par le livreur : heure, tiers, lieu de rencontre, repère…
+            'instructions' => $this->whenLoaded('instructionEvents', fn () => $this->instructionEvents
+                ->filter(fn ($e) => $user?->merchant_id === null || $e->visible_to_merchant)
+                ->map(fn ($e) => [
+                    'id' => $e->id,
+                    'label' => $e->incidentReason?->label,
+                    'note' => $e->note,
+                    'by' => $e->actor_name,
+                    'at' => $e->created_at,
+                ])->values()),
             // Report ou retour signalé par le livreur, à valider par l'équipe ou le client (fiche de la course)
             'proposal' => $this->whenLoaded('pendingProposal', fn () => $this->pendingProposal ? [
                 ...$this->pendingProposal->present(),

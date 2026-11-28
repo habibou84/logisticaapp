@@ -340,6 +340,7 @@ class OrderController extends Controller
                 ->orderBy('id'),
             'assignments' => fn ($q) => $q->with(['courier.user', 'assignedBy'])->orderBy('id'),
             'pendingProposal' => fn ($q) => $q->with(['proposer', 'reason', 'event']),
+            'instructionEvents' => fn ($q) => $q->with('incidentReason'),
             // Le client ne voit que les frais qui lui sont facturés
             'expenses' => fn ($q) => $q->when($isMerchant, fn ($q) => $q->where('billed_to', 'merchant'))
                 ->with('courier.user')->orderBy('id'),

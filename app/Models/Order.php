@@ -70,6 +70,7 @@ class Order extends Model
         'delivery_zone_id',
         'delivery_address',
         'delivery_landmark',
+        'delivery_time',
         'delivery_lat',
         'delivery_lng',
         'delivery_scheduled_date',
@@ -404,6 +405,14 @@ class Order extends Model
     public function proposals(): HasMany
     {
         return $this->hasMany(OrderProposal::class);
+    }
+
+    /** Consignes du client signalées par le livreur (événements « information » : heure, repère, tiers…) */
+    public function instructionEvents(): HasMany
+    {
+        return $this->hasMany(OrderEvent::class)->where('type', 'note')
+            ->whereIn('incident_reason_id', IncidentReason::query()->withoutGlobalScopes()->where('effect', 'note')->select('id'))
+            ->orderBy('id');
     }
 
     /** Report ou retour du livreur en attente de validation (équipe ou client) */

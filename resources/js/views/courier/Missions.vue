@@ -165,6 +165,9 @@
               · {{ c.first.type === 'pickup' ? c.first.order.pickup.address : c.first.order.delivery.address }}
             </p>
             <div class="flex flex-wrap items-center gap-2 mt-2">
+              <!-- Heure précise demandée par le client -->
+              <span v-if="c.first.type === 'delivery' && c.first.order.delivery.time" class="inline-flex items-center gap-1 rounded-full bg-sky-100 text-sky-900 text-xs font-semibold px-2 py-0.5"><Icone nom="rappel" taille="petite" />À {{ hour(c.first.order.delivery.time) }}</span>
+              <span v-if="c.first.order.proposal" class="inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-900 text-xs font-semibold px-2 py-0.5"><Icone nom="sablier" taille="petite" />En attente de validation</span>
               <span v-if="c.first.status === 'assigned'" class="rounded-full bg-amber-100 text-amber-800 text-xs font-semibold px-2 py-0.5">Nouvelle · à accepter</span>
               <StatusBadge v-else :status="c.first.order.status" :label="c.first.order.status_label" />
               <span v-if="c.first.offline" class="inline-flex items-center gap-1 rounded-full bg-sky-100 text-sky-800 text-xs font-semibold px-2 py-0.5"><Icone nom="sablier" taille="petite" />À envoyer</span>
@@ -212,7 +215,7 @@ import { useNotificationStore } from '../../stores/notifications'
 import { currentPosition } from '../../composables/useGeolocation'
 import { useCourierMessageStore } from '../../stores/courierMessages'
 import { enablePush, initPush, push } from '../../composables/usePush'
-import { money } from '../../utils/format'
+import { hour, money } from '../../utils/format'
 
 const auth = useAuthStore()
 const notifications = useNotificationStore()

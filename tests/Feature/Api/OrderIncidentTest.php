@@ -75,7 +75,7 @@ class OrderIncidentTest extends TestCase
         ])->assertOk()
             ->assertJsonPath('data.status', 'delivery_failed')
             ->assertJsonPath('data.attempts_count', 1)
-            ->assertJsonPath('data.last_incident.label', 'Destinataire injoignable');
+            ->assertJsonPath('data.last_incident.label', 'Le client ne répond pas au téléphone');
 
         $event = $order->events()->latest('id')->first();
         $this->assertSame('incident', $event->type->value);

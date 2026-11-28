@@ -32,6 +32,9 @@ class IncidentReasonResource extends JsonResource
             'effect' => $this->effect ?? 'status',
             // Report ou retour du livreur validé par l'équipe ou le client avant de prendre effet
             'needs_validation' => (bool) $this->needs_validation,
+            // Ce que le livreur saisit (delivery_time : heure de livraison ; time : une heure) et l'aide à la saisie
+            'asks' => $this->asks,
+            'note_hint' => $this->note_hint,
             'is_active' => $this->is_active,
             'sort_order' => $this->sort_order,
             // Motif commun (null) ou propre à l'entreprise

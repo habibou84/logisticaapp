@@ -29,7 +29,7 @@ class OrderProposal extends Model
     public const CLOSED = 'closed';
 
     protected $fillable = [
-        'company_id', 'order_id', 'order_event_id', 'incident_reason_id', 'proposed_by', 'kind', 'proposed_date', 'status',
+        'company_id', 'order_id', 'order_event_id', 'incident_reason_id', 'proposed_by', 'kind', 'proposed_date', 'proposed_time', 'status',
         'decided_by', 'decided_by_type', 'decided_at', 'decision_note', 'reminders', 'last_reminded_at',
     ];
 
@@ -57,8 +57,18 @@ class OrderProposal extends Model
     public function summary(): string
     {
         return $this->kind === self::RESCHEDULE
-            ? 'Report au '.($this->proposed_date?->locale('fr')->isoFormat('dddd D MMMM') ?? '?')
+            ? 'Report au '.($this->proposed_date?->locale('fr')->isoFormat('dddd D MMMM') ?? '?').($this->proposed_time ? ' à '.self::hour($this->proposed_time) : '')
             : 'Retour au client';
+    }
+
+    /** « 17:30 » → « 17h30 », « 09:00 » → « 9h » */
+    public static function hour(?string $time): string
+    {
+        if (! $time || ! preg_match('/^(\d{1,2}):(\d{2})/', $time, $m)) {
+            return (string) $time;
+        }
+
+        return (int) $m[1].'h'.($m[2] === '00' ? '' : $m[2]);
     }
 
     public function statusLabel(): string
@@ -81,6 +91,7 @@ class OrderProposal extends Model
             'kind' => $this->kind,
             'summary' => $this->summary(),
             'proposed_date' => $this->proposed_date?->toDateString(),
+            'proposed_time' => $this->proposed_time,
             'reason' => $this->reason?->label,
             'note' => $this->event?->note,
             'proposed_by' => $this->proposer?->name,

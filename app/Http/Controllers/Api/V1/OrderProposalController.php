@@ -21,10 +21,11 @@ class OrderProposalController extends Controller
         abort_unless(OrderProposals::canDecide($request->user(), $order), 403, 'Vous ne pouvez pas valider cette course.');
         $data = $request->validate([
             'date' => ['nullable', 'date', 'after_or_equal:today'],
+            'time' => ['nullable', 'date_format:H:i'],
             'note' => ['nullable', 'string', 'max:500'],
-        ], [], ['date' => 'date de livraison']);
+        ], [], ['date' => 'date de livraison', 'time' => 'heure de livraison']);
 
-        $order = $this->proposals->approve($request->user(), $order, $data['date'] ?? null, $data['note'] ?? null);
+        $order = $this->proposals->approve($request->user(), $order, $data['date'] ?? null, $data['note'] ?? null, $data['time'] ?? null);
 
         return OrderResource::make($order->load(OrderController::loadDetailRelations($request)));
     }

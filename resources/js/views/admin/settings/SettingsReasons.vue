@@ -89,6 +89,8 @@ function tags(r) {
   if (r.applies_to === 'both') t.push({ label: 'Ramassage et livraison' })
   if (r.applies_to !== 'follow_up') t.push({ label: r.activities?.length ? r.activities.map(activityShort).join(', ') : 'Toutes activités' })
   if (r.effect === 'note') t.push({ icon: 'note', label: 'Information : la course continue' })
+  if (r.asks === 'delivery_time') t.push({ icon: 'rappel', label: 'Heure de livraison' })
+  if (r.asks === 'time') t.push({ icon: 'rappel', label: 'Heure' })
   if (r.needs_validation && r.effect !== 'note' && (r.requires_date || r.triggers_return)) t.push({ icon: 'sablier', label: 'À faire valider' })
   if (r.counts_as_attempt && r.effect !== 'note') t.push({ label: 'Compte une tentative' })
   if (r.triggers_return) t.push({ icon: 'retour', label: 'Retour au client' })
@@ -107,7 +109,7 @@ function blank() {
     label: '', applies_to: tab.value, family: tab.value === 'follow_up' ? null : (tab.value === 'pickup' ? 'pickup' : 'other'),
     activities: [], requires_date: false, requires_note: false, photo: 'off', counts_as_attempt: tab.value === 'delivery',
     triggers_return: false, destination_effect: null, holds: false, visible_to_client: false, is_active: true,
-    effect: 'status', needs_validation: true,
+    effect: 'status', needs_validation: true, asks: null, note_hint: '',
   }
 }
 
@@ -123,7 +125,7 @@ function edit(r) {
 
 function payload(m) {
   const keys = ['label', 'applies_to', 'family', 'activities', 'requires_date', 'requires_note', 'photo', 'counts_as_attempt',
-    'triggers_return', 'destination_effect', 'holds', 'visible_to_client', 'is_active', 'effect', 'needs_validation']
+    'triggers_return', 'destination_effect', 'holds', 'visible_to_client', 'is_active', 'effect', 'needs_validation', 'asks', 'note_hint']
   const p = Object.fromEntries(keys.map((k) => [k, m[k]]))
   if (!p.activities?.length) p.activities = null
   return p
