@@ -48,7 +48,7 @@
         <span class="flex-1 min-w-0">
           <span class="block font-semibold truncate">{{ m.order.recipient.name || m.order.recipient.phone }}</span>
           <span v-if="m.order.department" class="block text-sm text-violet-800 truncate"><Icone nom="entreprise" taille="petite" class="inline" /> {{ m.order.department.label }}<template v-if="m.order.to_department"> → {{ m.order.to_department.label }}</template></span>
-          <span class="block text-sm text-slate-600 truncate"><Icone nom="livrer" taille="petite" class="inline" /> vers {{ m.order.delivery.zone_name }} · {{ m.order.package.description || 'Colis' }}<template v-if="m.order.package.shipment_quantity > 1 || m.order.package.pli_kind"> · {{ shipmentLabel(m.order.package) }}</template></span>
+          <span class="block text-sm text-slate-600 truncate"><Icone nom="livrer" taille="petite" class="inline" /> vers {{ m.order.delivery.zone_name }} · {{ m.order.package.description || 'Colis' }}<template v-if="severalShipments(m.order.package) || m.order.package.pli_kind"> · {{ shipmentLabel(m.order.package) }}</template></span>
           <span class="flex flex-wrap items-center gap-2 mt-1">
             <span v-if="m.status === 'assigned'" class="rounded-full bg-amber-100 text-amber-800 text-xs font-semibold px-2 py-0.5">À accepter</span>
             <StatusBadge v-else :status="m.order.status" :label="m.order.status_label" />
@@ -137,7 +137,7 @@ import { useToastStore } from '../../stores/toasts'
 import { currentPosition } from '../../composables/useGeolocation'
 import { sendStatus, withPending } from '../../composables/useOfflineQueue'
 import { reasonsFor } from '../../utils/reasons'
-import { mapsLink, money, shipmentLabel, telLink, whatsappLink } from '../../utils/format'
+import { mapsLink, money, severalShipments, shipmentLabel, telLink, whatsappLink } from '../../utils/format'
 
 /**
  * Une mission par boutique : tous les colis à ramasser chez le même client, à la même adresse.

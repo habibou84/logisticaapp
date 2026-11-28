@@ -122,6 +122,11 @@
             <Icone nom="contrat" taille="petite" class="inline align-[-0.15em]" /> {{ shipmentLabel(order.package) }}<template v-if="order.package.delivery_delay"> en {{ order.package.delivery_delay.replace('h', ' h') }}</template> ·
             {{ order.billing.label }} : sur la facture du mois du client.
             <span v-if="order.package.declared_value" class="block"><Icone nom="argent" taille="petite" class="inline align-[-0.15em]" /> Valeur déclarée : <strong>{{ money(order.package.declared_value) }}</strong></span>
+            <!-- Distribution : chèques, plis et colis remis ensemble, une course par type -->
+            <span v-if="group.length > 1" class="block">
+              <Icone nom="course" taille="petite" class="inline align-[-0.15em]" /> Remis ensemble :
+              <template v-for="(g, i) in group" :key="g.id"><template v-if="i">, </template><strong v-if="g.id === order.id">{{ shipmentLabel(g) }} (cette course)</strong><RouterLink v-else :to="`${auth.homeRoute}/courses/${g.id}`" class="underline">{{ shipmentLabel(g) }} · {{ g.tracking_code }} · {{ g.status_label }}</RouterLink></template>
+            </span>
           </div>
           <div v-if="order.is_shipping" class="sm:col-span-4 rounded bg-indigo-50 text-indigo-900 p-2">
             <Icone nom="expedition" taille="petite" class="inline align-[-0.15em]" /> <strong>Expédition</strong> ·
@@ -318,6 +323,7 @@ const auth = useAuthStore()
 const toasts = useToastStore()
 
 const order = ref(null)
+const group = ref([])
 const error = ref('')
 const supplementOpen = ref(false)
 const proofLabel = computed(() => {
@@ -387,6 +393,7 @@ async function load() {
   try {
     const { data } = await http.get(`/orders/${route.params.id}`)
     order.value = data.data
+    group.value = data.group || []
     if (isDispatcher.value) courierMessages.value = (await http.get(`/orders/${route.params.id}/courier-messages`)).data.data
   } catch (e) {
     error.value = apiErrorMessage(e)

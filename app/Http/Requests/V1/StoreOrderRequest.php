@@ -103,6 +103,11 @@ class StoreOrderRequest extends FormRequest
             'shipment_type' => ['nullable', Rule::enum(ShipmentType::class)],
             // Nombre de plis ou de chèques remis ensemble
             'shipment_quantity' => ['nullable', 'integer', 'min:1', 'max:10000'],
+            // Plusieurs types remis ensemble (chèques, plis, colis) : distribution, une course par type ;
+            // MAD, une seule course
+            'shipment_contents' => ['nullable', 'array', 'max:3'],
+            'shipment_contents.*.type' => ['required', 'distinct', Rule::enum(ShipmentType::class)],
+            'shipment_contents.*.quantity' => ['nullable', 'integer', 'min:1', 'max:10000'],
             // Pli : ce que c'est (facture, courrier, carte d'invitation…)
             'pli_kind' => ['nullable', 'string', 'max:60'],
             // Valeur déclarée du colis (F CFA)
@@ -149,6 +154,9 @@ class StoreOrderRequest extends FormRequest
             'activity' => 'activité',
             'shipment_type' => 'type d\'envoi',
             'shipment_quantity' => 'nombre de plis',
+            'shipment_contents' => 'envois',
+            'shipment_contents.*.type' => 'type d\'envoi',
+            'shipment_contents.*.quantity' => 'nombre',
             'pli_kind' => 'type de pli',
             'declared_value' => 'valeur du colis',
             'department_id' => 'département',

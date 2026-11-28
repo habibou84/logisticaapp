@@ -147,14 +147,24 @@ export function waitDuration(minutes) {
   return rest ? `${hours} h ${String(rest).padStart(2, '0')}` : `${hours} h`
 }
 
-// Envoi d'un client sous formule : « Pli », « 12 plis », « 3 chèques », « Pli (facture) »
+// Envoi d'un client sous formule : « Pli », « 12 plis », « 3 chèques », « Pli (facture) » ;
+// MAD avec plusieurs types : « 3 chèques + 5 plis (facture) + 1 colis »
 export function shipmentLabel(pkg) {
-  const n = pkg?.shipment_quantity || 1
+  if (pkg?.shipment_contents?.length > 1) {
+    return pkg.shipment_contents.map((c) => shipmentLine(c.type, c.label, c.quantity, pkg.pli_kind, true)).join(' + ')
+  }
   if (!pkg?.shipment_type) return ''
-  const kind = pkg.shipment_type === 'pli' && pkg.pli_kind ? ` (${pkg.pli_kind.toLowerCase()})` : ''
-  if (n <= 1) return pkg.shipment_type_label + kind
-  return `${n} ${{ pli: 'plis', cheque: 'chèques', colis: 'colis' }[pkg.shipment_type] || pkg.shipment_type_label}${kind}`
+  return shipmentLine(pkg.shipment_type, pkg.shipment_type_label, pkg.shipment_quantity || 1, pkg.pli_kind, false)
 }
+
+function shipmentLine(type, label, n, pliKind, counted) {
+  const kind = type === 'pli' && pliKind ? ` (${pliKind.toLowerCase()})` : ''
+  if (n <= 1) return (counted ? `1 ${label.toLowerCase()}` : label) + kind
+  return `${n} ${{ pli: 'plis', cheque: 'chèques', colis: 'colis' }[type] || label}${kind}`
+}
+
+// Plusieurs envois dans la course (nombre ou types)
+export const severalShipments = (pkg) => (pkg?.shipment_quantity || 1) > 1 || pkg?.shipment_contents?.length > 1
 
 // Distribution et MAD : on parle de collecte chez le client (adresse de collecte) ; e-commerce : de ramassage
 export const isCollect = (activity) => ['distribution', 'mad'].includes(activity)

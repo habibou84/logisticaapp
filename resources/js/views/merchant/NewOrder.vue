@@ -9,6 +9,11 @@
     </div>
     <div class="m-card divide-y divide-slate-100 text-left">
       <div class="flex items-center justify-between gap-3 p-4"><span class="text-slate-600">N° de suivi</span><strong class="font-mono tracking-wider">{{ created.tracking_code }}</strong></div>
+      <!-- Distribution, plusieurs types d'envoi : une course par type -->
+      <div v-if="created.group?.length > 1" class="p-4">
+        <p class="text-slate-600">{{ created.group.length }} courses, une par type d'envoi</p>
+        <p v-for="g in created.group" :key="g.id" class="flex justify-between gap-3 text-sm"><span>{{ shipmentLabel(g) }}</span><strong class="font-mono tracking-wider">{{ g.tracking_code }}</strong></p>
+      </div>
       <div class="flex items-center justify-between gap-3 p-4">
         <span class="text-slate-600">Code de livraison<span class="block text-xs">à donner au destinataire</span></span>
         <strong class="font-mono text-xl tracking-[0.25em]">{{ created.delivery_code }}</strong>
@@ -136,11 +141,23 @@
           <ChoiceChips v-model="form.billing_plan_id" :options="lotChoices" :columns="1" label="Lot de la course" />
         </div>
         <div>
-          <p class="m-label">Type d'envoi</p>
-          <ChoiceChips v-model="form.shipment_type" :options="SHIPMENT_TYPES" :columns="3" label="Type d'envoi" />
+          <p class="m-label">Type d'envoi <span class="font-normal text-slate-600">(un ou plusieurs)</span></p>
+          <div class="grid grid-cols-3 gap-2" role="group" aria-label="Type d'envoi">
+            <button
+              v-for="t in SHIPMENT_TYPES" :key="t.value" type="button" :aria-pressed="shipmentTypes.includes(t.value)"
+              :class="['tap rounded-2xl px-3 py-3 text-left ring-1 transition active:scale-[0.98]', shipmentTypes.includes(t.value) ? 'ring-2 ring-[var(--app-color)] bg-[color-mix(in_srgb,var(--app-color)_8%,white)]' : 'ring-slate-200 bg-white']"
+              @click="toggleType(t.value)"
+            >
+              <span class="flex items-center gap-2"><span class="shrink-0 text-xl"><Icone :nom="t.icon" /></span><span class="font-medium">{{ t.label }}</span></span>
+              <span class="block text-sm text-slate-600 mt-0.5">{{ t.description }}</span>
+            </button>
+          </div>
+          <p v-if="shipmentTypes.length > 1" class="text-xs text-slate-600 mt-1">
+            {{ form.activity === 'distribution' ? `${shipmentTypes.length} courses seront créées, une par type d'envoi.` : 'Une seule course, avec tous ces envois.' }}
+          </p>
         </div>
         <!-- Pli : ce que c'est (liste de l'agence), « Autre » à préciser -->
-        <div v-if="form.shipment_type === 'pli' && pliKinds.length">
+        <div v-if="shipmentTypes.includes('pli') && pliKinds.length">
           <p class="m-label">Ce pli est <span class="font-normal text-slate-600">(facultatif)</span></p>
           <div class="flex flex-wrap gap-2">
             <button
@@ -154,12 +171,12 @@
           <input v-if="isOther(pliChoice)" v-model="pliOther" maxlength="60" class="m-input mt-2" placeholder="Précisez : ex. faire-part, devis, badge…" aria-label="Précisez le type de pli">
         </div>
         <!-- Plusieurs plis ou chèques remis ensemble au même destinataire -->
-        <div v-if="hasQuantity">
-          <label class="m-label" for="quantity">Nombre de {{ form.shipment_type === 'cheque' ? 'chèques' : 'plis' }}</label>
+        <div v-for="t in quantityTypes" :key="t">
+          <label class="m-label" :for="`quantity-${t}`">Nombre de {{ t === 'cheque' ? 'chèques' : 'plis' }}</label>
           <div class="flex items-center gap-2">
-            <button type="button" class="tap h-11 w-11 rounded-xl ring-1 ring-slate-300 text-xl" aria-label="Un de moins" :disabled="form.shipment_quantity <= 1" @click="form.shipment_quantity = Math.max(1, form.shipment_quantity - 1)">−</button>
-            <input id="quantity" v-model.number="form.shipment_quantity" type="number" min="1" max="10000" inputmode="numeric" class="m-input w-24 text-center">
-            <button type="button" class="tap h-11 w-11 rounded-xl ring-1 ring-slate-300 text-xl" aria-label="Un de plus" @click="form.shipment_quantity = (form.shipment_quantity || 1) + 1">+</button>
+            <button type="button" class="tap h-11 w-11 rounded-xl ring-1 ring-slate-300 text-xl" aria-label="Un de moins" :disabled="quantities[t] <= 1" @click="quantities[t] = Math.max(1, quantities[t] - 1)">−</button>
+            <input :id="`quantity-${t}`" v-model.number="quantities[t]" type="number" min="1" max="10000" inputmode="numeric" class="m-input w-24 text-center">
+            <button type="button" class="tap h-11 w-11 rounded-xl ring-1 ring-slate-300 text-xl" aria-label="Un de plus" @click="quantities[t] = (quantities[t] || 1) + 1">+</button>
           </div>
         </div>
         <div>
@@ -277,7 +294,14 @@
       <div v-show="!keyboardOpen" class="fixed bottom-0 inset-x-0 z-20 bg-white/95 backdrop-blur border-t border-slate-200 pb-safe shadow-[0_-6px_18px_rgba(15,23,42,0.06)]">
         <div class="mx-auto max-w-lg px-4 pt-3 pb-3 space-y-2">
           <!-- Distribution, MAD : comment la course sera facturée, et le forfait du mois -->
-          <div v-if="billed && quote?.billing" class="text-sm space-y-0.5">
+          <div v-if="billed && quoteLines.length" class="text-sm space-y-0.5">
+            <div v-for="l in quoteLines" :key="l.type" class="flex justify-between gap-3">
+              <span class="text-slate-600">{{ l.billing?.label }}<template v-if="l.billing?.units > 1"> · × {{ l.billing.units }}</template></span>
+              <strong class="whitespace-nowrap">{{ l.billing?.basis === 'forfait' && !l.billing?.amount ? 'forfait' : money(l.billing?.amount) }}</strong>
+            </div>
+            <p class="text-slate-600">{{ quoteLines.length }} courses · rien à encaisser · facture du mois</p>
+          </div>
+          <div v-else-if="billed && quote?.billing" class="text-sm space-y-0.5">
             <div class="flex justify-between gap-3">
               <span class="text-slate-600">{{ quote.billing.label }}<template v-if="quote.billing.units > 1"> · × {{ quote.billing.units }}</template></span>
               <strong class="whitespace-nowrap">{{ quote.billing.basis === 'forfait' && !quote.billing.amount ? 'forfait' : money(quote.billing.amount) }}</strong>
@@ -324,7 +348,7 @@ import DestinationSearch from '../../components/destinations/DestinationSearch.v
 import { applyDestination, clearDestination, usesDirectory } from '../../utils/destinations'
 import { longDay, useDeliveryDate } from '../../composables/useDeliveryDate'
 import { useAuthStore } from '../../stores/auth'
-import { localPhone, money, today } from '../../utils/format'
+import { localPhone, money, shipmentLabel, today } from '../../utils/format'
 import { activityLabel } from '../../utils/activities'
 import { useClientSpaceStore } from '../../stores/clientSpace'
 import { siteOrigin } from '../../native'
@@ -416,17 +440,30 @@ watch(() => departments.senders.value, (list) => {
   if (list.length === 1 && !form.department_id) form.department_id = list[0].id
 }, { immediate: true })
 watch(internal, (v) => { if (!v) form.to_department_id = null })
+// Types d'envoi remis ensemble (chèque, pli, colis) : le premier donne le type de la course ;
+// distribution, une course par type ; MAD, une seule course
+const SHIPMENT_ORDER = ['cheque', 'pli', 'colis']
+const shipmentTypes = ref([])
+const quantities = reactive({ cheque: 1, pli: 1 })
+function toggleType(type) {
+  if (!shipmentTypes.value.includes(type)) shipmentTypes.value = SHIPMENT_ORDER.filter((t) => t === type || shipmentTypes.value.includes(t))
+  else if (shipmentTypes.value.length > 1) shipmentTypes.value = shipmentTypes.value.filter((t) => t !== type)
+}
 // Nombre de plis ou de chèques : seulement pour un pli ou un chèque (un colis compte pour un)
-const hasQuantity = computed(() => ['distribution', 'mad'].includes(form.activity) && ['pli', 'cheque'].includes(form.shipment_type))
+const quantityTypes = computed(() => (billed.value ? shipmentTypes.value.filter((t) => t !== 'colis') : []))
+const shipmentContents = computed(() => shipmentTypes.value.map((type) => ({ type, quantity: type === 'colis' ? 1 : Math.max(1, quantities[type] || 1) })))
+watch(shipmentContents, (lines) => {
+  form.shipment_type = lines[0]?.type ?? null
+  form.shipment_quantity = lines[0]?.quantity ?? 1
+}, { deep: true })
 // Type de pli (facture, courrier, carte d'invitation…) : liste de l'agence ; « Autre » se précise
 const pliKinds = computed(() => auth.user?.company?.shipment_settings?.pli_kinds || [])
 const pliChoice = ref('')
 const pliOther = ref('')
 const isOther = (k) => !!k && k.toLowerCase() === 'autre'
-watch([pliChoice, pliOther, () => form.shipment_type], () => {
-  form.pli_kind = form.shipment_type !== 'pli' || !pliChoice.value ? null : isOther(pliChoice.value) ? (pliOther.value.trim() || pliChoice.value) : pliChoice.value
+watch([pliChoice, pliOther, shipmentTypes], () => {
+  form.pli_kind = !shipmentTypes.value.includes('pli') || !pliChoice.value ? null : isOther(pliChoice.value) ? (pliOther.value.trim() || pliChoice.value) : pliChoice.value
 })
-watch(hasQuantity, (v) => { if (!v) form.shipment_quantity = 1 })
 // Formule de l'activité choisie (auth : sans réseau ; space : consommation du mois)
 const contractPlan = computed(() => (auth.user?.merchant?.billing_plans || []).find((p) => p.activity === form.activity) || null)
 // Lots de colis en cours (distribution) ; sans contrat, la course va forcément dans un lot
@@ -450,12 +487,13 @@ watch([() => form.activity, plan], (current, old) => {
   if (!billed.value) {
     // Retour à l'e-commerce : « qui paie » redevient un choix explicite
     if (old && old[0] !== 'ecommerce') form.fee_payer = null
-    Object.assign(form, { shipment_type: null, weight_kg: null, delivery_delay: null })
+    shipmentTypes.value = []
+    Object.assign(form, { weight_kg: null, delivery_delay: null })
     return
   }
   form.fee_payer = 'merchant'
   form.items_amount = 0
-  form.shipment_type = form.shipment_type || (form.activity === 'distribution' ? 'pli' : 'colis')
+  if (!shipmentTypes.value.length) shipmentTypes.value = [form.activity === 'distribution' ? 'pli' : 'colis']
   form.delivery_delay = plan.value && !plan.value.has_forfait ? (form.delivery_delay || plan.value.delivery_delay) : null
 }, { immediate: true })
 const showMore = ref(false)
@@ -539,29 +577,42 @@ const shareLink = computed(() => {
 })
 
 // Tarif recalculé à chaque changement utile
-watch(() => [form.delivery_zone_id, form.is_express, form.is_fragile, form.activity, form.billing_plan_id, form.shipment_type, form.shipment_quantity, form.delivery_delay, form.weight_kg], fetchQuote)
+watch(() => [form.delivery_zone_id, form.is_express, form.is_fragile, form.activity, form.billing_plan_id, form.shipment_type, form.shipment_quantity, form.delivery_delay, form.weight_kg, JSON.stringify(shipmentContents.value)], fetchQuote)
+
+// Distribution, plusieurs types : un tarif par course (une par type)
+const quoteLines = ref([])
+const splitShipments = computed(() => form.activity === 'distribution' && shipmentTypes.value.length > 1)
 
 async function fetchQuote() {
   quote.value = null
+  quoteLines.value = []
   quoteError.value = ''
   if (!form.delivery_zone_id) return
   try {
-    const { data } = await http.post('/quotes', {
-      activity: form.activity,
-      billing_plan_id: form.billing_plan_id || undefined,
-      shipment_type: form.shipment_type || undefined,
-      shipment_quantity: form.shipment_quantity > 1 ? form.shipment_quantity : undefined,
-      delivery_delay: form.delivery_delay || undefined,
-      weight_kg: form.weight_kg || undefined,
-      delivery_zone_id: form.delivery_zone_id,
-      pickup_zone_id: sourceZoneId.value || undefined,
-      is_express: form.is_express,
-      is_fragile: form.is_fragile,
-    })
-    quote.value = data.data
+    const lines = splitShipments.value ? shipmentContents.value : [{ type: form.shipment_type, quantity: form.shipment_quantity }]
+    const results = await Promise.all(lines.map((line) => quoteFor(line)))
+    quote.value = results[0]
+    if (lines.length > 1) quoteLines.value = results.map((r, i) => ({ ...lines[i], billing: r.billing }))
   } catch (e) {
     quoteError.value = apiErrorMessage(e)
   }
+}
+
+async function quoteFor(line) {
+  const { data } = await http.post('/quotes', {
+    activity: form.activity,
+    billing_plan_id: form.billing_plan_id || undefined,
+    shipment_type: line.type || undefined,
+    shipment_quantity: line.quantity > 1 ? line.quantity : undefined,
+    delivery_delay: form.delivery_delay || undefined,
+    // Plusieurs courses : le poids va au colis, sinon au pli
+    weight_kg: (!splitShipments.value || line.type === (shipmentTypes.value.includes('colis') ? 'colis' : 'pli')) ? form.weight_kg || undefined : undefined,
+    delivery_zone_id: form.delivery_zone_id,
+    pickup_zone_id: sourceZoneId.value || undefined,
+    is_express: form.is_express,
+    is_fragile: form.is_fragile,
+  })
+  return data.data
 }
 
 let searchTimer
@@ -681,7 +732,10 @@ async function submit() {
     if (billed.value) delete payload.items_amount
     if (pickedItems.value.length && !billed.value) payload.items = pickedItems.value.map(({ product_id, quantity, unit_price }) => ({ product_id, quantity, unit_price }))
     if (source.value) payload.pickup_hub_id = source.value
-    created.value = (await http.post('/orders', payload)).data.data
+    // Plusieurs types remis ensemble : distribution, une course par type ; MAD, une seule course
+    if (billed.value && shipmentTypes.value.length > 1) payload.shipment_contents = shipmentContents.value
+    const { data } = await http.post('/orders', payload)
+    created.value = { ...data.data, group: data.group || [] }
     loadStock()
   } catch (e) {
     error.value = apiErrorMessage(e)
@@ -698,6 +752,9 @@ async function submit() {
 function reset() {
   // Activité gardée d'une course à l'autre
   Object.assign(form, { ...blank(), activity: form.activity, billing_plan_id: form.billing_plan_id, department_id: form.department_id, requested_by: form.requested_by })
+  // Types d'envoi gardés : la course suivante reprend le même envoi
+  form.shipment_type = shipmentContents.value[0]?.type ?? null
+  form.shipment_quantity = shipmentContents.value[0]?.quantity ?? 1
   internal.value = false
   pliChoice.value = ''
   pliOther.value = ''

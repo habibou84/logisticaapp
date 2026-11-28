@@ -15,14 +15,21 @@ const router = useRouter()
 const auth = useAuthStore()
 const toasts = useToastStore()
 
+// Distribution, plusieurs types d'envoi : une course par type
+function savedText(order) {
+  return order.group?.length > 1
+    ? `${order.group.length} courses enregistrées (${order.group.map((o) => `${o.tracking_code} : ${o.shipment_type_label}`).join(', ')}).`
+    : `Course ${order.tracking_code} enregistrée.`
+}
+
 function saved(order) {
-  toasts.success(`Course ${order.tracking_code} enregistrée.`)
+  toasts.success(savedText(order))
   router.push(`${auth.homeRoute}/courses/${order.id}`)
 }
 
 // « Enregistrer et nouvelle » : on reste sur le formulaire
 function savedAgain(order) {
-  toasts.success(`Course ${order.tracking_code} enregistrée. Saisissez la suivante.`)
+  toasts.success(`${savedText(order)} Saisissez la suivante.`)
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 </script>

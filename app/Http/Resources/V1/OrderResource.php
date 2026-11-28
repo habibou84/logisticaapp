@@ -4,6 +4,7 @@ namespace App\Http\Resources\V1;
 
 use App\Enums\OrderEventType;
 use App\Enums\OrderStatus;
+use App\Enums\ShipmentType;
 use App\Models\Department;
 use App\Models\Order;
 use App\Services\Departments\Departments;
@@ -112,6 +113,14 @@ class OrderResource extends JsonResource
                 'shipment_type_label' => $this->shipment_type?->label(),
                 // Plis ou chèques remis ensemble (1 : un seul envoi)
                 'shipment_quantity' => (int) ($this->shipment_quantity ?? 1),
+                // MAD : chèques, plis et colis remis dans la même course (vide : un seul type)
+                'shipment_contents' => array_map(fn (array $c) => [
+                    'type' => $c['type'],
+                    'label' => ShipmentType::tryFrom($c['type'])?->label(),
+                    'quantity' => (int) $c['quantity'],
+                ], $this->shipment_contents ?? []),
+                // Distribution : courses saisies ensemble (une par type d'envoi)
+                'shipment_group' => $this->shipment_group,
                 // Pli : ce que c'est (facture, courrier, carte d'invitation…)
                 'pli_kind' => $this->pli_kind,
                 // Valeur déclarée du colis (F CFA)

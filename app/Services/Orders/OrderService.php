@@ -7,6 +7,7 @@ use App\Enums\FeePayer;
 use App\Enums\OrderEventType;
 use App\Enums\OrderStatus;
 use App\Enums\ReturnCause;
+use App\Enums\ShipmentType;
 use App\Exceptions\BusinessRuleException;
 use App\Models\Company;
 use App\Models\Hub;
@@ -29,6 +30,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Str;
 
 /**
  * Création et modification des courses. Le prix est toujours calculé ici,
@@ -49,6 +51,8 @@ class OrderService
         'merchant_reference', 'description', 'package_size', 'weight_kg', 'is_fragile', 'is_express', 'merchant_note',
         // Clients sous formule (distribution, MAD) : type d'envoi et délai
         'shipment_type', 'shipment_quantity', 'pli_kind', 'declared_value', 'delivery_delay',
+        // Envois remis ensemble : détail (MAD, une course) ou courses de la même saisie (distribution)
+        'shipment_contents', 'shipment_group',
     ];
 
     private const MONEY_FIELDS = ['items_amount', 'fee_payer'];
@@ -64,6 +68,89 @@ class OrderService
         private readonly Departments $departments,
         private readonly Destinations $destinations,
     ) {}
+
+    /**
+     * Saisie avec plusieurs types d'envoi remis ensemble (shipment_contents : chèques, plis, colis) :
+     *  - distribution : une course par type, reliées par shipment_group (la facturation reste par type) ;
+     *  - MAD : une seule course, le détail des envois est gardé pour le livreur (facturation inchangée) ;
+     *  - e-commerce ou un seul type : une course ordinaire.
+     *
+     * @param  array<string, mixed>  $data  données validées (StoreOrderRequest)
+     * @return list<Order> la première course d'abord
+     */
+    public function createShipments(User $actor, Merchant $merchant, array $data, string $source = 'dashboard'): array
+    {
+        $contents = self::contents($data['shipment_contents'] ?? null);
+        unset($data['shipment_contents'], $data['shipment_group']);
+        if ($contents === []) {
+            return [$this->create($actor, $merchant, $data, $source)];
+        }
+
+        $activity = $this->activity($actor, $merchant, $data['activity'] ?? null);
+        if ($activity === Activity::Ecommerce) {
+            return [$this->create($actor, $merchant, $data, $source)];
+        }
+        [$first] = $contents;
+        if (count($contents) === 1 || $activity === Activity::Mad) {
+            return [$this->create($actor, $merchant, [
+                ...$data,
+                'shipment_type' => $first['type'],
+                'shipment_quantity' => $first['quantity'],
+                'shipment_contents' => count($contents) > 1 ? $contents : null,
+            ], $source)];
+        }
+
+        // Distribution : une course par type ; le poids va au colis (sinon au pli), le contenu et la valeur au colis,
+        // les articles du stock à la première course seulement
+        $types = array_column($contents, 'type');
+        $weighted = in_array(ShipmentType::Colis->value, $types, true) ? ShipmentType::Colis->value
+            : (in_array(ShipmentType::Pli->value, $types, true) ? ShipmentType::Pli->value : null);
+        $group = (string) Str::uuid();
+
+        return DB::transaction(function () use ($actor, $merchant, $data, $source, $contents, $weighted, $group) {
+            $orders = [];
+            foreach ($contents as $i => $line) {
+                $isColis = $line['type'] === ShipmentType::Colis->value;
+                $orders[] = $this->create($actor, $merchant, [
+                    ...$data,
+                    'activity' => Activity::Distribution->value,
+                    'shipment_type' => $line['type'],
+                    'shipment_quantity' => $line['quantity'],
+                    'shipment_group' => $group,
+                    'weight_kg' => $line['type'] === $weighted ? ($data['weight_kg'] ?? null) : null,
+                    'description' => $isColis ? ($data['description'] ?? null) : null,
+                    'declared_value' => $isColis ? ($data['declared_value'] ?? null) : null,
+                    'items' => $i === 0 ? ($data['items'] ?? []) : [],
+                ], $source);
+            }
+
+            return $orders;
+        });
+    }
+
+    /**
+     * Envois remis ensemble, dans l'ordre chèque, pli, colis ; un colis compte pour un.
+     *
+     * @return list<array{type: string, quantity: int}>
+     */
+    public static function contents(mixed $lines): array
+    {
+        $byType = [];
+        foreach (is_array($lines) ? $lines : [] as $line) {
+            $type = ShipmentType::tryFrom((string) ($line['type'] ?? ''));
+            if ($type !== null) {
+                $byType[$type->value] = $type === ShipmentType::Colis ? 1 : max(1, (int) ($line['quantity'] ?? 1));
+            }
+        }
+        $ordered = [];
+        foreach ([ShipmentType::Cheque, ShipmentType::Pli, ShipmentType::Colis] as $type) {
+            if (isset($byType[$type->value])) {
+                $ordered[] = ['type' => $type->value, 'quantity' => $byType[$type->value]];
+            }
+        }
+
+        return $ordered;
+    }
 
     /**
      * @param  array<string, mixed>  $data  données validées (StoreOrderRequest)
@@ -99,6 +186,10 @@ class OrderService
             $data = $this->departments->prepare($actor, $merchant, $activity, $data);
             // Annuaire des destinations : la destination choisie remplit la fiche
             $data = $this->destinations->prepare($merchant, $activity->value, $data);
+
+            // Détail des envois : seulement une course MAD qui en contient de plusieurs types (createShipments)
+            $contents = self::contents($data['shipment_contents'] ?? null);
+            $data['shipment_contents'] = $activity === Activity::Mad && count($contents) > 1 ? $contents : null;
 
             // Distribution et MAD : rien à encaisser auprès du destinataire, la course passe sur la facture du mois
             if ($activity !== Activity::Ecommerce) {

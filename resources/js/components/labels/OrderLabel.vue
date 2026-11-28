@@ -39,7 +39,7 @@
         <div class="box"><span>Signature</span></div>
         <div class="box" style="border-style: dashed"><span>Cachet de l'entreprise</span></div>
       </div>
-      <p class="text-[8.5px] mt-[5px]">Je reconnais avoir reçu {{ order.package.shipment_quantity > 1 ? 'les envois ci-dessus' : 'l\'envoi ci-dessus' }} en bon état.</p>
+      <p class="text-[8.5px] mt-[5px]">Je reconnais avoir reçu {{ severalShipments(order.package) ? 'les envois ci-dessus' : 'l\'envoi ci-dessus' }} en bon état.</p>
     </div>
   </div>
 
@@ -89,7 +89,7 @@ import Icone from '../ui/Icone.vue'
 import { computed, ref, watchEffect } from 'vue'
 import QRCode from 'qrcode'
 import { useAuthStore } from '../../stores/auth'
-import { dateTime, localPhone, money } from '../../utils/format'
+import { dateTime, localPhone, money, severalShipments, shipmentLabel } from '../../utils/format'
 import { siteOrigin } from '../../native'
 import { DEFAULT_LOGO } from '../../composables/useBranding'
 
@@ -127,6 +127,8 @@ const handTo = computed(() => {
 const quantity = computed(() => {
   const p = props.order.package
   if (!p.shipment_type_label) return ''
+  // MAD : chèques, plis et colis dans la même course
+  if (p.shipment_contents?.length > 1) return shipmentLabel(p)
   const n = p.shipment_quantity || 1
   const kind = p.shipment_type === 'pli' && p.pli_kind ? ` (${p.pli_kind.toLowerCase()})` : ''
   return `${n} ${p.shipment_type_label.toLowerCase()}${n > 1 && !p.shipment_type_label.endsWith('s') ? 's' : ''}${kind}`

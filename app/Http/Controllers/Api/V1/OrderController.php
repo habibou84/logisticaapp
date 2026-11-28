@@ -301,16 +301,41 @@ class OrderController extends Controller
         $merchant = Merchant::findOrFail($user->merchant_id ?? $data['merchant_id']);
 
         $source = $user->merchant_id !== null ? 'dashboard' : 'admin';
-        $order = $this->orders->create($user, $merchant, $data, $source);
+        // Plusieurs types d'envoi remis ensemble : une course par type en distribution
+        $orders = $this->orders->createShipments($user, $merchant, $data, $source);
 
-        return OrderResource::make($this->loadDetail($order))->response()->setStatusCode(201);
+        return OrderResource::make($this->loadDetail($orders[0]))
+            ->additional(['group' => count($orders) > 1 ? self::groupSummary($orders) : []])
+            ->response()->setStatusCode(201);
     }
 
     public function show(Order $order): OrderResource
     {
         Gate::authorize('view', $order);
 
-        return OrderResource::make($this->loadDetail($order));
+        // Distribution : les autres courses de la même saisie (chèques, plis, colis remis ensemble)
+        $group = $order->shipment_group === null ? [] : self::groupSummary(
+            Order::query()->where('shipment_group', $order->shipment_group)->orderBy('id')->get(['id', 'tracking_code', 'shipment_type', 'shipment_quantity', 'status'])->all()
+        );
+
+        return OrderResource::make($this->loadDetail($order))->additional(['group' => $group]);
+    }
+
+    /**
+     * @param  list<Order>  $orders
+     * @return list<array<string, mixed>>
+     */
+    private static function groupSummary(array $orders): array
+    {
+        return array_map(fn (Order $o) => [
+            'id' => $o->id,
+            'tracking_code' => $o->tracking_code,
+            'shipment_type' => $o->shipment_type?->value,
+            'shipment_type_label' => $o->shipment_type?->label(),
+            'shipment_quantity' => (int) ($o->shipment_quantity ?? 1),
+            'status' => $o->status->value,
+            'status_label' => $o->status->label(),
+        ], $orders);
     }
 
     public function update(UpdateOrderRequest $request, Order $order): OrderResource

@@ -80,6 +80,10 @@ class Order extends Model
         'shipment_type',
         // Plis ou chèques remis ensemble, et envois facturés (le nombre de plis, ou 1 à la course)
         'shipment_quantity',
+        // MAD : chèques, plis et colis remis dans la même course [{type, quantity}]
+        'shipment_contents',
+        // Distribution : courses saisies ensemble (une par type d'envoi)
+        'shipment_group',
         // Pli : ce que c'est (facture, courrier, carte d'invitation…)
         'pli_kind',
         // Valeur déclarée du colis (F CFA) : en cas de perte ou de dommage
@@ -133,6 +137,7 @@ class Order extends Model
             'delivery_delay' => DeliveryDelay::class,
             'billing_amount' => 'integer',
             'shipment_quantity' => 'integer',
+            'shipment_contents' => 'array',
             'declared_value' => 'integer',
             'billing_units' => 'integer',
             'internal_due_at' => 'datetime',
@@ -197,8 +202,12 @@ class Order extends Model
                 $order->unassigned_alerted_at = null;
                 $order->unassigned_escalated_at = null;
             }
-            // Ce qu'est le pli : seulement pour un pli
-            if ($order->shipment_type !== ShipmentType::Pli) {
+            // Type ou nombre changé à la main : le détail des envois de la course n'est plus à jour
+            if ($order->exists && $order->isDirty(['shipment_type', 'shipment_quantity']) && ! $order->isDirty('shipment_contents')) {
+                $order->shipment_contents = null;
+            }
+            // Ce qu'est le pli : seulement pour un pli (ou une course qui en contient)
+            if ($order->shipment_type !== ShipmentType::Pli && ! collect($order->shipment_contents ?? [])->contains('type', ShipmentType::Pli->value)) {
                 $order->pli_kind = null;
             }
         });
