@@ -710,6 +710,9 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::get('stats/export/options', [StatsIntegrationController::class, 'exportOptions'])->name('stats.export.options');
         Route::post('stats/export/templates', [StatsIntegrationController::class, 'saveExportTemplate'])->name('stats.export.templates.store');
         Route::delete('stats/export/templates/{template}', [StatsIntegrationController::class, 'deleteExportTemplate'])->name('stats.export.templates.destroy');
+        Route::put('stats/export/templates/{template}/schedule', [StatsIntegrationController::class, 'scheduleExportTemplate'])->name('stats.export.templates.schedule');
+        Route::get('stats/alerts', [StatsIntegrationController::class, 'alerts'])->name('stats.alerts');
+        Route::put('stats/alerts', [StatsIntegrationController::class, 'saveAlerts'])->name('stats.alerts.save');
         Route::post('stats/export/send', [StatsIntegrationController::class, 'sendExport'])->middleware('throttle:5,1')->name('stats.export.send');
         Route::get('stats/feed-link', [StatsIntegrationController::class, 'feedLink'])->name('stats.feed-link');
         Route::post('stats/feed-link', [StatsIntegrationController::class, 'regenerateFeed'])->name('stats.feed-link.regenerate');

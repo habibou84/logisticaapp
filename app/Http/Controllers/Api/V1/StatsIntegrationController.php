@@ -7,6 +7,7 @@ use App\Enums\Permission;
 use App\Http\Controllers\Controller;
 use App\Mail\StatsReportMail;
 use App\Models\Company;
+use App\Notifications\StatsAlertRaised;
 use App\Services\Reports\Performance;
 use App\Services\Reports\Profitability;
 use App\Services\Reports\ServiceQuality;
@@ -92,6 +93,54 @@ class StatsIntegrationController extends Controller
         $company = $user->company->fresh();
 
         return response()->json(['data' => ['templates' => $this->storeTemplates($company, collect($settings->for($company)['exports'])->where('id', '!=', $template)->values()->all())]]);
+    }
+
+    /** Envoi régulier d'un modèle : chaque lundi, le 1er du mois, ou jamais (aux adresses du point par e-mail) */
+    public function scheduleExportTemplate(Request $request, string $template, StatsSettings $settings): JsonResponse
+    {
+        $company = $this->manager($request);
+        $data = $request->validate(['schedule' => ['nullable', Rule::in(['weekly', 'monthly'])]]);
+        $templates = collect($settings->for($company)['exports'])->map(fn (array $t) => $t['id'] === $template ? [...$t, 'schedule' => $data['schedule'] ?? null] : $t);
+        abort_unless($templates->contains('id', $template), 404);
+
+        return response()->json(['data' => ['templates' => $this->storeTemplates($company, $templates->all())]]);
+    }
+
+    /** Alertes par événement : réglage de chacune, destinataires, dernières alertes reçues */
+    public function alerts(Request $request, StatsSettings $settings): JsonResponse
+    {
+        $company = $this->manager($request);
+        $events = $settings->alertEvents($company);
+
+        return response()->json(['data' => [
+            'events' => collect(StatsSettings::ALERT_EVENTS)->map(fn (array $e, string $key) => ['key' => $key, 'label' => $e['label'], 'unit' => $e['unit'], ...$events[$key]])->values(),
+            'recipients' => $settings->alertRecipients($company),
+            'min_volume' => $settings->for($company)['alerts']['min_volume'],
+            'recent' => $request->user()->notifications()->where('type', StatsAlertRaised::class)->latest()->limit(8)->get()
+                ->map(fn ($n) => ['title' => $n->data['title'] ?? '', 'body' => $n->data['body'] ?? '', 'href' => $n->data['href'] ?? null, 'at' => $n->created_at?->toIso8601String()])->values(),
+        ]]);
+    }
+
+    public function saveAlerts(Request $request, StatsSettings $settings): JsonResponse
+    {
+        $company = $this->manager($request);
+        $rules = [
+            'events' => ['required', 'array:'.implode(',', array_keys(StatsSettings::ALERT_EVENTS))],
+            'recipients' => ['present', 'array', 'max:10'],
+            'recipients.*' => ['email:rfc', 'max:150'],
+            'min_volume' => ['nullable', 'integer', 'min:1', 'max:1000'],
+        ];
+        foreach (array_keys(StatsSettings::ALERT_EVENTS) as $key) {
+            $rules["events.{$key}"] = ['array:active,threshold,bell,whatsapp,email'];
+            $rules["events.{$key}.threshold"] = ['nullable', 'integer', 'min:0', 'max:100000000'];
+            foreach (['active', ...StatsSettings::ALERT_CHANNELS] as $flag) {
+                $rules["events.{$key}.{$flag}"] = ['nullable', 'boolean'];
+            }
+        }
+        $data = $request->validate($rules, [], ['recipients' => 'destinataires']);
+        $settings->storeAlerts($company, $data['events'], $data['recipients'], $data['min_volume'] ?? null);
+
+        return $this->alerts($request, $settings);
     }
 
     /** Envoie l'export par e-mail, en pièce jointe, aux adresses données */
