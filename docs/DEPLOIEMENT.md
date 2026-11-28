@@ -194,6 +194,22 @@ Dans les deux cas, l'application Meta reçoit les messages à l'adresse
 du `.env` (généré à l'installation). Pages exigées par Meta : `/confidentialite`, `/conditions` et
 `/confidentialite#suppression`.
 
+### WhatsApp des alertes (QR code)
+
+Les alertes de la direction (zones, clients en baisse, livreurs) peuvent partir d'un numéro WhatsApp
+ordinaire relié en scannant un QR code, sans modèle Meta à faire approuver. La session est tenue par le
+conteneur `whatsapp-qr` (WAHA, moteur léger NOWEB), joignable seulement par les autres conteneurs. La clé
+`WHATSAPP_QR_API_KEY` est créée par `deploy/install.sh` ou, sur une installation existante, par
+`deploy/update.sh`. La session reliée est gardée dans le volume `whatsapp-qr` : une mise à jour ne
+demande pas de nouveau scan.
+
+- Prendre un numéro réservé aux alertes (jamais celui des clients), déjà utilisé normalement quelques jours.
+- Connexion non officielle : WhatsApp peut la couper ou bloquer le numéro. L'application vérifie la session
+  toutes les 5 minutes, la relance si besoin et prévient les administrateurs (cloche et e-mail) quand elle
+  reste déconnectée plus de 10 minutes.
+- Envois espacés de quelques secondes et plafonnés à 30 par heure ; pas de SMS de repli.
+- Dépannage : `docker compose logs --tail=50 whatsapp-qr`.
+
 ## 8. Dépannage
 
 | Symptôme | Vérification |

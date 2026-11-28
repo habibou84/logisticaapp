@@ -87,6 +87,24 @@ services:
       app:
         condition: service_healthy
 
+  # WhatsApp des alertes : numéro WhatsApp ordinaire relié en scannant un QR code (WAHA, moteur léger NOWEB).
+  # Joignable seulement par les autres conteneurs (http://whatsapp-qr:3000), avec la clé WHATSAPP_QR_API_KEY.
+  # La session reliée est gardée dans le volume « whatsapp-qr » : pas de nouveau scan après une mise à jour.
+  whatsapp-qr:
+    image: devlikeapro/waha:noweb-2026.10.1
+    restart: unless-stopped
+    environment:
+      WAHA_API_KEY: ${WHATSAPP_QR_API_KEY:-}
+      WHATSAPP_DEFAULT_ENGINE: NOWEB
+      WAHA_DASHBOARD_ENABLED: "false"
+      WHATSAPP_SWAGGER_ENABLED: "false"
+      WAHA_PRINT_QR: "false"
+      WHATSAPP_DOWNLOAD_MEDIA: "false"
+      WAHA_LOG_LEVEL: warn
+      NODE_OPTIONS: --max-old-space-size=512
+    volumes:
+      - whatsapp-qr:/app/.sessions
+
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
@@ -119,3 +137,5 @@ volumes:
   storage:
   postgres:
   redis:
+  # Session du WhatsApp des alertes (QR code)
+  whatsapp-qr:

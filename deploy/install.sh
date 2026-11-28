@@ -85,6 +85,8 @@ else
     env_set TRUSTED_PROXIES '*'
     [[ -n "$EMAIL" ]] && env_set VAPID_SUBJECT "mailto:$EMAIL"
     env_set WHATSAPP_VERIFY_TOKEN "$(random 16)"
+    # WhatsApp des alertes (QR code) : clé entre l'application et le conteneur « whatsapp-qr »
+    env_set WHATSAPP_QR_API_KEY "$(random 40)"
     info ".env créé pour https://$DOMAIN."
 fi
 # Lisible par root et par le groupe www-data des conteneurs (gid 33) : l'application y lit sa configuration

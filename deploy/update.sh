@@ -32,6 +32,12 @@ main() {
     # .env lisible par l'application des conteneurs (groupe www-data, gid 33), fermé aux autres comptes
     chown root:33 .env && chmod 640 .env
 
+    # WhatsApp des alertes (QR code) : clé du conteneur « whatsapp-qr », créée une fois
+    if ! grep -qE '^WHATSAPP_QR_API_KEY=.+' .env; then
+        sed -i '/^WHATSAPP_QR_API_KEY=/d' .env
+        echo "WHATSAPP_QR_API_KEY=$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 40)" >> .env
+    fi
+
     echo "==> Construction des images (le site reste en ligne)"
     docker compose build
 
