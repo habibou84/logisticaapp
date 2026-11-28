@@ -99,6 +99,13 @@ class ServiceQualityTest extends TestCase
         Sanctum::actingAs($this->admin);
         $history = $this->getJson('/api/v1/stats/quality?from=2026-12-01&to=2026-12-15')->json('data.history');
         $this->assertSame(['2026-12-15', 1], [$history[0]['date'], $history[0]['untreated']]);
+        // Le relevé se lit aussi par activité : la course en attente est en e-commerce, rien en distribution
+        $this->assertSame(1, $this->getJson('/api/v1/stats/quality?from=2026-12-01&to=2026-12-15&activity=ecommerce')->json('data.history.0.untreated'));
+        $this->assertSame(0, $this->getJson('/api/v1/stats/quality?from=2026-12-01&to=2026-12-15&activity=distribution')->json('data.history.0.untreated'));
+        // Un relevé d'avant, sans le détail par activité : laissé de côté pour une activité, gardé pour l'ensemble
+        DailySnapshot::create(['company_id' => $this->company->id, 'day' => '2026-12-10', 'data' => ['untreated' => 4, 'internal_late' => 0, 'unassigned' => 0, 'delivered' => 0, 'created' => 0]]);
+        $this->assertCount(2, $this->getJson('/api/v1/stats/quality?from=2026-12-01&to=2026-12-15')->json('data.history'));
+        $this->assertCount(1, $this->getJson('/api/v1/stats/quality?from=2026-12-01&to=2026-12-15&activity=mad')->json('data.history'));
 
         // Zone sous le seuil : 2 livrées, 8 échecs à Yopougon sur 7 jours
         for ($i = 0; $i < 2; $i++) {

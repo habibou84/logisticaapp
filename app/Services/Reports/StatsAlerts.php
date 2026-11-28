@@ -175,12 +175,18 @@ class StatsAlerts
         $orders = fn () => Order::withoutGlobalScopes()->where('company_id', $company->id)->whereNull('deleted_at');
         $day = [$now->startOfDay()->utc(), $now->endOfDay()->utc()];
 
-        return DailySnapshot::withoutGlobalScopes()->updateOrCreate(['company_id' => $company->id, 'day' => $now->toDateString()], ['data' => [
+        $count = fn (callable $orders) => [
             'untreated' => $orders()->untreated($company, $now->toDateString())->count(),
             'internal_late' => $orders()->whereNotNull('internal_due_at')->where('internal_due_at', '<=', $now->utc())->whereNotIn('status', Order::finalStatuses())->count(),
             'unassigned' => AwaitingCourier::scope($orders(), null, $now->toDateString())->count(),
             'delivered' => $orders()->where('status', OrderStatus::Delivered->value)->whereBetween('delivered_at', $day)->count(),
             'created' => $orders()->whereBetween('created_at', $day)->count(),
+        ];
+
+        return DailySnapshot::withoutGlobalScopes()->updateOrCreate(['company_id' => $company->id, 'day' => $now->toDateString()], ['data' => [
+            ...$count($orders),
+            // Le même relevé pour chaque activité (statistiques d'une seule activité)
+            'by_activity' => collect(Activity::cases())->mapWithKeys(fn (Activity $a) => [$a->value => $count(fn () => $orders()->where('activity', $a->value))])->all(),
         ]]);
     }
 

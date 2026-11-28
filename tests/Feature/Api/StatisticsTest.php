@@ -236,6 +236,13 @@ class StatisticsTest extends TestCase
         // Les 20 000 F encaissés sont encore chez la livreuse
         $this->assertSame(20000, $data['circulation']['with_couriers']);
         $this->assertSame(20000 - $fees, $data['circulation']['to_merchants']);
+        // Par activité : tout cet argent vient de courses e-commerce ; rien en distribution, qui montre ses factures
+        $ecommerce = $this->getJson('/api/v1/stats/finances?activity=ecommerce')->assertOk()->json('data');
+        $this->assertSame($data['circulation'], $ecommerce['circulation']);
+        $this->assertNull($ecommerce['invoices']);
+        $distribution = $this->getJson('/api/v1/stats/finances?activity=distribution')->assertOk()->json('data');
+        $this->assertSame(['with_couriers' => 0, 'to_merchants' => 0, 'to_merchants_available' => 0, 'owed_by_merchants' => 0], $distribution['circulation']);
+        $this->assertSame(0, $distribution['invoices']['outstanding']);
 
         // Réservé aux comptes qui voient la caisse
         Sanctum::actingAs($this->dispatcher);

@@ -154,7 +154,7 @@ const DETAILS = {
   clients: { label: 'Clients', endpoint: '/stats/merchants', component: MerchantsTab, props: amounts, permission: 'merchants.view', description: 'Courses, réussite et montants de chaque client, clients inactifs à relancer.' },
   loyalty: { label: 'Fidélité et paiements', endpoint: '/stats/clients', component: ClientInsightsTab, permission: 'merchants.view', description: 'Concentration du chiffre d\'affaires, clients en baisse, fidélité des nouveaux clients, paiement des factures.' },
   profitability: { label: 'Rentabilité détaillée', endpoint: '/stats/profitability', component: ProfitabilityTab, permission: 'finance.view', description: 'Ce que rapportent et coûtent les clients, les zones, les livreurs et les contrats.' },
-  cash: { label: 'Trésorerie', endpoint: '/stats/finances', component: FinancesTab, permission: 'finance.view', activity: false, description: 'L\'argent en circulation aujourd\'hui : chez les livreurs, à reverser aux clients, dû par des clients (toutes activités).' },
+  cash: { label: 'Trésorerie', endpoint: '/stats/finances', component: FinancesTab, permission: 'finance.view', description: 'L\'argent de cette activité en circulation aujourd\'hui : chez les livreurs, à reverser aux clients, dû par des clients, factures à encaisser.' },
   field: { label: 'Pannes et accidents', endpoint: '/field-events/stats', component: FieldTab, permission: 'field_events.manage', activity: false, description: 'Pannes, accidents et autres événements remontés par les livreurs.' },
   vehicles: { label: 'Véhicules', endpoint: '/vehicles/stats', component: VehiclesTab, permission: 'fleet.manage', activity: false, description: 'Coûts, consommation et immobilisations du parc.' },
   // Outils : aide à la décision, analyse, export et partage, alertes
@@ -174,8 +174,8 @@ const details = (keys) => keys.filter((k) => !DETAILS[k].permission || [DETAILS[
 // Un onglet par activité du périmètre de la personne, puis les équipes, les objectifs et les outils
 const SCREENS = {
   ecommerce: { label: 'E-commerce', description: 'Parcours des colis, échecs, marge par zone, argent en circulation et clients principaux.', details: ['zones', 'delays', 'quality', 'clients', 'loyalty', 'profitability', 'cash'] },
-  mad: { label: 'MAD', description: 'Forfaits, consommation, présence et retards par contrat, marge et échéances.', details: ['quality', 'clients', 'loyalty', 'profitability'] },
-  distribution: { label: 'Distribution', description: 'Volumes par type d\'envoi, délais tenus, forfaits, lots et paiement des factures.', details: ['quality', 'clients', 'loyalty', 'profitability'] },
+  mad: { label: 'MAD', description: 'Forfaits, consommation, présence et retards par contrat, marge et échéances.', details: ['quality', 'clients', 'loyalty', 'profitability', 'cash'] },
+  distribution: { label: 'Distribution', description: 'Volumes par type d\'envoi, délais tenus, forfaits, lots et paiement des factures.', details: ['quality', 'clients', 'loyalty', 'profitability', 'cash'] },
 }
 const tabs = computed(() => [
   { key: 'overview', label: 'Vue d\'ensemble', color: '#0f172a', endpoint: '/stats/direction', description: 'Les activités côte à côte, comparées à la période précédente, et les points à décider.', views: [SUMMARY, ...details(['daily', 'trends'])] },
