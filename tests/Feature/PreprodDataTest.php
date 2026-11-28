@@ -2,9 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Enums\Activity;
+use App\Enums\BillingFormula;
+use App\Enums\ClientInvoiceStatus;
 use App\Enums\OrderStatus;
 use App\Enums\Role;
+use App\Models\BillingPlan;
 use App\Models\CashCollection;
+use App\Models\ClientInvoice;
 use App\Models\Company;
 use App\Models\Courier;
 use App\Models\Merchant;
@@ -45,13 +50,14 @@ class PreprodDataTest extends TestCase
 
         $this->artisan('app:preprod-data', ['--days' => 4, '--per-day' => 8, '--seed' => 7])->assertSuccessful();
 
-        $this->assertSame(10, Merchant::forCompany($company->id)->count());
-        $this->assertSame(8, Courier::forCompany($company->id)->count());
+        $this->assertSame(14, Merchant::forCompany($company->id)->count());
+        $this->assertSame(10, Courier::forCompany($company->id)->count());
         $this->assertTrue(User::where('phone', '+2250799000101')->sole()->hasRole(Role::Courier->value));
 
         $orders = Order::forCompany($company->id)->get();
         $this->assertGreaterThan(15, $orders->count());
-        $this->assertTrue($orders->every(fn (Order $o) => str_starts_with($o->merchant_reference, 'DEMO-') && $o->delivery_fee > 0));
+        $this->assertTrue($orders->every(fn (Order $o) => str_starts_with($o->merchant_reference, 'DEMO-')));
+        $this->assertTrue($orders->where('activity', Activity::Ecommerce)->every(fn (Order $o) => $o->delivery_fee > 0));
         $this->assertTrue($orders->contains('status', OrderStatus::Delivered));
 
         // Encaissements des jours passés versés à la caisse
@@ -66,6 +72,44 @@ class PreprodDataTest extends TestCase
         // Relance : les jours déjà remplis sont sautés
         $this->artisan('app:preprod-data', ['--days' => 4, '--per-day' => 8])->assertSuccessful();
         $this->assertSame($orders->count(), Order::forCompany($company->id)->count());
+    }
+
+    public function test_distribution_and_mad_clients_have_their_contract_courses_and_month_invoices(): void
+    {
+        $company = $this->installedCompany();
+        // Historique à cheval sur octobre : sa facture du mois est préparée
+        $this->travelTo('2026-11-04 18:00:00');
+
+        $this->artisan('app:preprod-data', ['--days' => 8, '--per-day' => 9, '--seed' => 11])
+            ->doesntExpectOutputToContain('courses en erreur')->assertSuccessful();
+
+        $orders = Order::forCompany($company->id)->get();
+        foreach ([Activity::Distribution, Activity::Mad] as $activity) {
+            $billed = $orders->where('activity', $activity);
+            $this->assertGreaterThan(5, $billed->count(), $activity->value);
+            // Facturées au mois : ni frais sur la course, ni argent à encaisser
+            $this->assertTrue($billed->every(fn (Order $o) => $o->billing_plan_id !== null && $o->delivery_fee === 0 && (int) $o->cod_amount === 0));
+            $this->assertTrue($billed->contains('status', OrderStatus::Delivered));
+        }
+
+        // MAD : chaque course faite par le livreur dédié du contrat, qui ne travaille pas pour les autres clients
+        $plans = BillingPlan::forCompany($company->id)->with('couriers')->get();
+        $this->assertSame(['distribution_contract', 'distribution_unit', 'mad_contract', 'mad_contract'], $plans->pluck('formula')->map->value->sort()->values()->all());
+        $mad = $plans->where('formula', BillingFormula::MadContract)->flatMap->couriers->pluck('id');
+        $this->assertCount(2, $mad);
+        $this->assertTrue($orders->where('activity', Activity::Mad)->whereNotNull('delivery_courier_id')->every(fn (Order $o) => $mad->contains($o->delivery_courier_id)));
+        $this->assertFalse($orders->where('activity', '!=', Activity::Mad)->contains(fn (Order $o) => $mad->contains($o->delivery_courier_id) || $mad->contains($o->pickup_courier_id)));
+
+        // Factures d'octobre en brouillon pour les clients livrés ce mois-là
+        $this->assertGreaterThan(0, ClientInvoice::forCompany($company->id)->where('status', ClientInvoiceStatus::Draft)->count());
+
+        // Relance d'une préproduction déjà remplie en e-commerce seulement : la distribution et la MAD s'ajoutent
+        Order::forCompany($company->id)->whereIn('activity', ['distribution', 'mad'])->get()->each(fn (Order $o) => $o->forceDelete());
+        $ecommerce = Order::forCompany($company->id)->count();
+        $this->artisan('app:preprod-data', ['--days' => 8, '--per-day' => 9])->assertSuccessful();
+        $this->assertSame($ecommerce, Order::forCompany($company->id)->where('activity', 'ecommerce')->count());
+        $this->assertGreaterThan(10, Order::forCompany($company->id)->whereIn('activity', ['distribution', 'mad'])->count());
+        $this->assertSame(0, OutboundMessage::count());
     }
 
     public function test_it_does_not_depend_on_the_company_tariffs_or_pickup_zones(): void
@@ -103,7 +147,22 @@ class PreprodDataTest extends TestCase
 
         $this->installedCompany();
         $this->app['env'] = 'production';
-        $this->artisan('app:preprod-data')->expectsOutputToContain('Refusé')->assertFailed();
+        $this->artisan('app:preprod-data')->expectsOutputToContain('Refusé : APP_ENV=production')->assertFailed();
+
+        // Tout environnement inconnu est refusé, pas seulement « production »
+        $this->app['env'] = 'prod';
+        $this->artisan('app:preprod-data')->expectsOutputToContain('Refusé : APP_ENV=prod')->assertFailed();
+
+        // Adresse de la production, même avec un APP_ENV de préproduction (.env mal réglé)
+        $this->app['env'] = 'staging';
+        config(['app.url' => 'https://app.logisticadelivery.com', 'platform.preprod_access_code' => 'code']);
+        $this->artisan('app:preprod-data')->expectsOutputToContain('adresse de la production')->assertFailed();
+
+        // Préproduction sans son code d'accès : pas reconnue
+        config(['app.url' => 'https://preprod.logisticadelivery.com', 'platform.preprod_access_code' => '']);
+        $this->artisan('app:preprod-data')->expectsOutputToContain('PREPROD_ACCESS_CODE vide')->assertFailed();
+
         $this->assertSame(0, Order::count());
+        $this->assertSame(0, User::where('phone', 'like', '+2250799%')->count());
     }
 }
