@@ -10,8 +10,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 /**
- * WhatsApp des alertes (réglage des alertes) : numéro relié en scannant un QR code,
- * essai, déconnexion. Réservé aux responsables des réglages.
+ * WhatsApp › Connexion : numéro à part, relié en scannant un QR code, qui envoie seulement
+ * les alertes des administrateurs. Essai, déconnexion. Réservé aux responsables de WhatsApp.
  */
 class AlertWhatsAppController extends Controller
 {
@@ -49,7 +49,7 @@ class AlertWhatsAppController extends Controller
     private function companyId(Request $request): int
     {
         $user = $request->user();
-        abort_if($user->merchant_id !== null || $user->company_id === null || ! $user->can(Permission::SettingsManage->value), 403);
+        abort_if($user->merchant_id !== null || $user->company_id === null || ! $user->can(Permission::MessagingManage->value), 403);
 
         return (int) $user->company_id;
     }

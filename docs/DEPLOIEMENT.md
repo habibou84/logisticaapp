@@ -196,8 +196,9 @@ du `.env` (généré à l'installation). Pages exigées par Meta : `/confidentia
 
 ### WhatsApp des alertes (QR code)
 
-Les alertes de la direction (zones, clients en baisse, livreurs) peuvent partir d'un numéro WhatsApp
-ordinaire relié en scannant un QR code, sans modèle Meta à faire approuver. La session est tenue par le
+Les alertes des administrateurs (zones, clients en baisse, livreurs) peuvent partir d'un second numéro
+WhatsApp, à part, relié en scannant un QR code dans **WhatsApp › Connexion** (carte « WhatsApp des alertes
+administrateurs »), sans modèle Meta à faire approuver. Il n'écrit jamais aux clients. La session est tenue par le
 conteneur `whatsapp-qr` (WAHA, moteur léger NOWEB), joignable seulement par les autres conteneurs. La clé
 `WHATSAPP_QR_API_KEY` est créée par `deploy/install.sh` ou, sur une installation existante, par
 `deploy/update.sh`. La session reliée est gardée dans le volume `whatsapp-qr` : une mise à jour ne

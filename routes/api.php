@@ -313,6 +313,11 @@ Route::prefix('v1')->name('v1.')->group(function () {
             Route::post('whatsapp/signup-ticket', [WhatsAppSignupController::class, 'ticket'])->middleware('throttle:10,1')->name('whatsapp.signup-ticket');
             Route::post('whatsapp/templates/submit', [WhatsAppSettingsController::class, 'submitTemplates'])->middleware('throttle:5,1')->name('whatsapp.templates.submit');
             Route::post('whatsapp/simulate', [WhatsAppSettingsController::class, 'simulate'])->middleware('throttle:60,1')->name('whatsapp.simulate');
+            // WhatsApp › Connexion : numéro à part, relié par QR code, pour les alertes des administrateurs
+            Route::get('alert-whatsapp', [AlertWhatsAppController::class, 'show'])->middleware('throttle:120,1')->name('alert-whatsapp.show');
+            Route::post('alert-whatsapp/connect', [AlertWhatsAppController::class, 'connect'])->middleware('throttle:10,1')->name('alert-whatsapp.connect');
+            Route::post('alert-whatsapp/test', [AlertWhatsAppController::class, 'test'])->middleware('throttle:5,1')->name('alert-whatsapp.test');
+            Route::delete('alert-whatsapp', [AlertWhatsAppController::class, 'destroy'])->middleware('throttle:10,1')->name('alert-whatsapp.destroy');
         });
 
         // Remontées terrain des livreurs (notes, problèmes) : consultation et suivi par le dispatch
@@ -699,11 +704,6 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::post('stats/feed-link', [StatsIntegrationController::class, 'regenerateFeed'])->name('stats.feed-link.regenerate');
         Route::delete('stats/feed-link', [StatsIntegrationController::class, 'disableFeed'])->name('stats.feed-link.disable');
         Route::post('stats/test-email', [StatsIntegrationController::class, 'testEmail'])->middleware('throttle:5,1')->name('stats.test-email');
-        // WhatsApp des alertes : numéro relié en scannant un QR code (réglage des alertes)
-        Route::get('alert-whatsapp', [AlertWhatsAppController::class, 'show'])->middleware('throttle:120,1')->name('alert-whatsapp.show');
-        Route::post('alert-whatsapp/connect', [AlertWhatsAppController::class, 'connect'])->middleware('throttle:10,1')->name('alert-whatsapp.connect');
-        Route::post('alert-whatsapp/test', [AlertWhatsAppController::class, 'test'])->middleware('throttle:5,1')->name('alert-whatsapp.test');
-        Route::delete('alert-whatsapp', [AlertWhatsAppController::class, 'destroy'])->middleware('throttle:10,1')->name('alert-whatsapp.destroy');
         Route::get('client-reports', [ClientReportController::class, 'index'])->name('client-reports.index');
         Route::post('client-reports/generate', [ClientReportController::class, 'generate'])->name('client-reports.generate');
         Route::get('client-reports/{clientReport}', [ClientReportController::class, 'show'])->whereNumber('clientReport')->name('client-reports.show');

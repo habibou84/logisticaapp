@@ -12,13 +12,13 @@ use Illuminate\Notifications\Notification;
 
 /**
  * WhatsApp des alertes déconnecté depuis quelques minutes : cloche et e-mail des administrateurs,
- * avec le lien vers les réglages des alertes pour scanner à nouveau le QR code.
+ * avec le lien vers WhatsApp › Connexion pour scanner à nouveau le QR code.
  */
 class AlertWhatsAppDisconnected extends Notification implements ShouldQueue
 {
     use Queueable;
 
-    public const HREF = '/admin/statistiques?onglet=integrations';
+    public const HREF = '/admin/whatsapp';
 
     public function __construct(public WhatsAppQrSession $session) {}
 
@@ -39,7 +39,7 @@ class AlertWhatsAppDisconnected extends Notification implements ShouldQueue
             'kind' => 'whatsapp_qr',
             'title' => 'WhatsApp des alertes déconnecté',
             'body' => 'Les alertes ne partent plus par ce numéro'.($this->session->phone ? " ({$this->session->phone})" : '')
-                .'. Ouvrez le réglage des alertes et scannez à nouveau le QR code avec le téléphone.',
+                .'. Ouvrez WhatsApp › Connexion et scannez à nouveau le QR code avec le téléphone.',
             'href' => self::HREF,
         ];
     }
