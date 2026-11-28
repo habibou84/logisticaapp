@@ -2,6 +2,7 @@
 
 namespace App\Services\Reports;
 
+use App\Enums\Activity;
 use App\Models\Company;
 
 /**
@@ -61,7 +62,8 @@ class StatsSettings
         return [...self::DEFAULTS, ...$saved, 'goals' => [...self::DEFAULTS['goals'], ...($saved['goals'] ?? [])],
             'alerts' => [...self::DEFAULTS['alerts'], ...($saved['alerts'] ?? [])],
             'email' => [...self::DEFAULTS['email'], ...($saved['email'] ?? [])],
-            'objectives' => self::cleanObjectives((array) ($company?->stats_settings['objectives'] ?? []))];
+            'objectives' => self::cleanObjectives((array) ($company?->stats_settings['objectives'] ?? [])),
+            'exports' => self::cleanExports((array) ($company?->stats_settings['exports'] ?? []))];
     }
 
     /** @return array<string, array<int, mixed>> */
@@ -89,6 +91,42 @@ class StatsSettings
             'stats_settings.forfait_high' => ['nullable', 'integer', 'min:50', 'max:300'],
             'stats_settings.forfait_low' => ['nullable', 'integer', 'min:0', 'max:100'],
         ];
+    }
+
+    /** Modèles d'export enregistrés, au plus */
+    public const MAX_EXPORTS = 20;
+
+    /**
+     * Options d'un export (Statistiques › Outils › Export avancé) : rubriques, format, activité, montants masqués,
+     * livreurs anonymisés. Les valeurs inconnues sont écartées.
+     *
+     * @param  array<string, mixed>  $input
+     * @return array{sections: list<string>, format: string, activity: string|null, hide_amounts: bool, anonymize: bool}
+     */
+    public static function cleanExportOptions(array $input): array
+    {
+        $sections = array_values(array_intersect(array_keys(StatsExport::SECTIONS), (array) ($input['sections'] ?? [])));
+
+        return [
+            'sections' => $sections ?: StatsExport::DEFAULT_SECTIONS,
+            'format' => isset(StatsExport::FORMATS[$input['format'] ?? '']) ? $input['format'] : 'xlsx',
+            'activity' => in_array($input['activity'] ?? null, Activity::values(), true) ? $input['activity'] : null,
+            'hide_amounts' => (bool) ($input['hide_amounts'] ?? false),
+            'anonymize' => (bool) ($input['anonymize'] ?? false),
+        ];
+    }
+
+    /**
+     * Modèles d'export enregistrés : un nom et des options, pour refaire le même export en un clic.
+     *
+     * @param  array<int, mixed>  $input
+     * @return list<array<string, mixed>>
+     */
+    public static function cleanExports(array $input): array
+    {
+        return collect($input)->filter(fn ($t) => is_array($t) && is_string($t['id'] ?? null) && trim((string) ($t['name'] ?? '')) !== '')
+            ->map(fn (array $t) => ['id' => mb_substr($t['id'], 0, 40), 'name' => mb_substr(trim((string) $t['name']), 0, 60), ...self::cleanExportOptions($t)])
+            ->take(self::MAX_EXPORTS)->values()->all();
     }
 
     /**
@@ -120,6 +158,9 @@ class StatsSettings
         $out = [];
         if (isset($input['objectives']) && is_array($input['objectives'])) {
             $out['objectives'] = self::cleanObjectives($input['objectives']);
+        }
+        if (isset($input['exports']) && is_array($input['exports'])) {
+            $out['exports'] = self::cleanExports($input['exports']);
         }
         if (isset($input['goals']) && is_array($input['goals'])) {
             foreach (self::GOALS as $key) {

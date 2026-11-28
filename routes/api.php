@@ -707,6 +707,10 @@ Route::prefix('v1')->name('v1.')->group(function () {
             ->middleware('can:direction.view')->name('stats.direction.activity');
         // Intégrations : Excel, lien Google Sheets, point par e-mail ; rapports mensuels des clients
         Route::get('stats/export', [StatsIntegrationController::class, 'export'])->middleware('throttle:20,1')->name('stats.export');
+        Route::get('stats/export/options', [StatsIntegrationController::class, 'exportOptions'])->name('stats.export.options');
+        Route::post('stats/export/templates', [StatsIntegrationController::class, 'saveExportTemplate'])->name('stats.export.templates.store');
+        Route::delete('stats/export/templates/{template}', [StatsIntegrationController::class, 'deleteExportTemplate'])->name('stats.export.templates.destroy');
+        Route::post('stats/export/send', [StatsIntegrationController::class, 'sendExport'])->middleware('throttle:5,1')->name('stats.export.send');
         Route::get('stats/feed-link', [StatsIntegrationController::class, 'feedLink'])->name('stats.feed-link');
         Route::post('stats/feed-link', [StatsIntegrationController::class, 'regenerateFeed'])->name('stats.feed-link.regenerate');
         Route::delete('stats/feed-link', [StatsIntegrationController::class, 'disableFeed'])->name('stats.feed-link.disable');

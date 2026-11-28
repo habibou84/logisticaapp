@@ -39,6 +39,9 @@ class StatsReportMail extends Mailable
     /** @return list<Attachment> */
     public function attachments(): array
     {
-        return [Attachment::fromPath($this->xlsxPath)->as($this->filename)->withMime('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')];
+        // Excel par défaut ; un export avancé peut aussi partir en CSV ou en PDF
+        $mime = ['csv' => 'text/csv', 'pdf' => 'application/pdf'][pathinfo($this->filename, PATHINFO_EXTENSION)] ?? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+        return [Attachment::fromPath($this->xlsxPath)->as($this->filename)->withMime($mime)];
     }
 }
