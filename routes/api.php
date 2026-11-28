@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\Connect\PublicConnectController;
 use App\Http\Controllers\Api\CspReportController;
 use App\Http\Controllers\Api\PublicV1\PublicAccountController;
 use App\Http\Controllers\Api\PublicV1\PublicApiController;
+use App\Http\Controllers\Api\V1\AlertWhatsAppController;
 use App\Http\Controllers\Api\V1\ApiKeyController;
 use App\Http\Controllers\Api\V1\AppearanceController;
 use App\Http\Controllers\Api\V1\AuthController;
@@ -314,6 +315,11 @@ Route::prefix('v1')->name('v1.')->group(function () {
             Route::post('whatsapp/signup-ticket', [WhatsAppSignupController::class, 'ticket'])->middleware('throttle:10,1')->name('whatsapp.signup-ticket');
             Route::post('whatsapp/templates/submit', [WhatsAppSettingsController::class, 'submitTemplates'])->middleware('throttle:5,1')->name('whatsapp.templates.submit');
             Route::post('whatsapp/simulate', [WhatsAppSettingsController::class, 'simulate'])->middleware('throttle:60,1')->name('whatsapp.simulate');
+            // WhatsApp › Connexion : numéro à part, relié par QR code, pour les alertes des administrateurs
+            Route::get('alert-whatsapp', [AlertWhatsAppController::class, 'show'])->middleware('throttle:120,1')->name('alert-whatsapp.show');
+            Route::post('alert-whatsapp/connect', [AlertWhatsAppController::class, 'connect'])->middleware('throttle:10,1')->name('alert-whatsapp.connect');
+            Route::post('alert-whatsapp/test', [AlertWhatsAppController::class, 'test'])->middleware('throttle:5,1')->name('alert-whatsapp.test');
+            Route::delete('alert-whatsapp', [AlertWhatsAppController::class, 'destroy'])->middleware('throttle:10,1')->name('alert-whatsapp.destroy');
         });
 
         // Remontées terrain des livreurs (notes, problèmes) : consultation et suivi par le dispatch
