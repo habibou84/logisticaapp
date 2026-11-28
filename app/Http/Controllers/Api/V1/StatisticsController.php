@@ -9,12 +9,14 @@ use App\Services\Reports\ClientInsights;
 use App\Services\Reports\ClientReports;
 use App\Services\Reports\DirectionActivities;
 use App\Services\Reports\DirectionBoard;
+use App\Services\Reports\DirectionObjectives;
 use App\Services\Reports\DirectionTeams;
 use App\Services\Reports\Performance;
 use App\Services\Reports\Pivot;
 use App\Services\Reports\Profitability;
 use App\Services\Reports\ServiceQuality;
 use App\Services\Reports\Statistics;
+use App\Services\Reports\StatsSettings;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -222,6 +224,58 @@ class StatisticsController extends Controller
         [$from, $to] = $this->period($request);
 
         return response()->json(['data' => $teams->build($user->company->fresh(), $from, $to)]);
+    }
+
+    /**
+     * Statistiques de direction › Objectifs : les objectifs du mois, par activité et pour les équipes, face au réalisé.
+     */
+    public function directionObjectives(Request $request, DirectionObjectives $objectives): JsonResponse
+    {
+        $user = $request->user();
+        abort_if($user->merchant_id !== null || $user->company === null, 403);
+        $data = $request->validate(['month' => ['nullable', 'date_format:Y-m']], [], ['month' => 'mois']);
+        $now = CarbonImmutable::now($user->company->timezone ?: config('app.timezone'));
+        $month = isset($data['month']) ? CarbonImmutable::createFromFormat('Y-m-d', $data['month'].'-01')->startOfDay() : $now->startOfMonth();
+        if ($month->greaterThan($now)) {
+            throw ValidationException::withMessages(['month' => 'Choisissez le mois en cours ou un mois passé.']);
+        }
+        $activities = array_values(array_filter(Activity::cases(), fn (Activity $a) => $user->seesActivity($a)));
+
+        return response()->json(['data' => [
+            ...$objectives->build($user->company->fresh(), $month, $activities),
+            'can_edit' => $user->can(Permission::SettingsManage->value),
+        ]]);
+    }
+
+    /**
+     * Fixe les objectifs (réglage de l'entreprise) : seuls ceux du périmètre d'activités de la personne changent.
+     */
+    public function saveDirectionObjectives(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        abort_if($user->merchant_id !== null || $user->company === null, 403);
+        abort_unless($user->can(Permission::SettingsManage->value), 403);
+        $rules = ['objectives' => ['required', 'array:'.implode(',', StatsSettings::OBJECTIVE_SCOPES)]];
+        foreach (StatsSettings::OBJECTIVE_SCOPES as $scope) {
+            $metrics = StatsSettings::OBJECTIVES[$scope === 'teams' ? 'teams' : 'activity'];
+            $rules["objectives.{$scope}"] = ['nullable', 'array:'.implode(',', array_keys($metrics))];
+            foreach ($metrics as $key => $metric) {
+                $rules["objectives.{$scope}.{$key}"] = ['nullable', 'numeric', $key === 'margin' ? 'min:-1000000000' : 'min:0', $metric['kind'] === 'percent' ? 'max:100' : 'max:100000000000'];
+            }
+        }
+        $input = $request->validate($rules)['objectives'];
+
+        $company = $user->company->fresh();
+        $settings = (array) ($company->stats_settings ?? []);
+        $objectives = StatsSettings::cleanObjectives((array) ($settings['objectives'] ?? []));
+        foreach ($input as $scope => $values) {
+            if ($scope === 'teams' || $user->seesActivity($scope)) {
+                $objectives[$scope] = [...$objectives[$scope], ...(array) $values];
+            }
+        }
+        $company->update(['stats_settings' => [...$settings, 'objectives' => StatsSettings::cleanObjectives($objectives)]]);
+
+        return response()->json(['data' => ['objectives' => $company->fresh()->stats_settings['objectives']]]);
     }
 
     private function withAmounts(Request $request): bool

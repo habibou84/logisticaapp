@@ -171,6 +171,53 @@ class DirectionBoardTest extends TestCase
         $this->assertSame(2, $data['kpis']['couriers']);
     }
 
+    public function test_objectives_by_activity_and_for_the_teams_against_results(): void
+    {
+        $order = $this->deliver();
+        CourierEarning::query()->withoutGlobalScopes()->delete();
+        CourierEarning::create(['company_id' => $this->company->id, 'courier_id' => $this->courierB->id, 'order_id' => $order->id, 'type' => 'delivery', 'amount' => 500]);
+        $fee = $order->delivery_fee + $order->surcharges_total;
+
+        Sanctum::actingAs($this->admin);
+        $this->putJson('/api/v1/stats/direction/objectives', ['objectives' => [
+            'ecommerce' => ['revenue' => $fee * 10, 'delivered' => 1, 'quality' => 90],
+            'teams' => ['pay_per_delivery' => 400, 'success_rate' => 80],
+        ]])->assertOk()->assertJsonPath('data.objectives.ecommerce.delivered', 1)->assertJsonPath('data.objectives.mad.revenue', null);
+
+        $data = $this->getJson('/api/v1/stats/direction/objectives?month=2026-12')->assertOk()->json('data');
+        $this->assertSame([true, 15, 31, true, 5], [$data['current'], $data['elapsed_days'], $data['days_in_month'], $data['can_edit'], $data['set']]);
+        $this->assertSame(['ecommerce', 'distribution', 'mad', 'teams'], array_column($data['groups'], 'scope'));
+        $rows = collect($data['groups'][0]['rows'])->keyBy('key');
+        // Chiffre d'affaires : un dixième de l'objectif, loin du compte même au rythme actuel
+        $this->assertSame([$fee * 10, $fee, 10, 'behind'], [$rows['revenue']['target'], $rows['revenue']['realized'], $rows['revenue']['percent'], $rows['revenue']['status']]);
+        $this->assertSame([1, 100, 'ok'], [$rows['delivered']['realized'], $rows['delivered']['percent'], $rows['delivered']['status']]);
+        $this->assertSame(['Taux de livraison', 'ok'], [$rows['quality']['label'], $rows['quality']['status']]);
+        $this->assertNull($rows['margin']['status']);
+        // Équipes : la paie par course est un plafond (500 F payés pour 400 F visés)
+        $teams = collect($data['groups'][3]['rows'])->keyBy('key');
+        $this->assertSame([400, 500, 80, 'behind', false], [$teams['pay_per_delivery']['target'], $teams['pay_per_delivery']['realized'], $teams['pay_per_delivery']['percent'], $teams['pay_per_delivery']['status'], $teams['pay_per_delivery']['higher_is_better']]);
+        $this->assertSame('ok', $teams['success_rate']['status']);
+
+        // Mois passé : résultat du mois entier, sans estimation ; mois à venir refusé
+        $past = $this->getJson('/api/v1/stats/direction/objectives?month=2026-11')->assertOk()->json('data');
+        $this->assertSame([false, 30], [$past['current'], $past['elapsed_days']]);
+        $this->assertNull($past['groups'][0]['rows'][0]['projection']);
+        $this->getJson('/api/v1/stats/direction/objectives?month=2027-01')->assertJsonValidationErrors('month');
+
+        // Les autres réglages des statistiques n'effacent pas les objectifs
+        $this->patchJson("/api/v1/companies/{$this->company->id}", ['stats_settings' => ['forfait_high' => 120]])->assertOk();
+        $this->assertSame(1, $this->company->fresh()->stats_settings['objectives']['ecommerce']['delivered']);
+
+        // Voir les objectifs : l'autorisation de direction ; les fixer : les réglages en plus
+        $manager = $this->userWithRole(Role::ActivityManager);
+        $manager->givePermissionTo('direction.view');
+        Sanctum::actingAs($manager->fresh());
+        $this->getJson('/api/v1/stats/direction/objectives')->assertOk()->assertJsonPath('data.can_edit', false);
+        $this->putJson('/api/v1/stats/direction/objectives', ['objectives' => ['teams' => ['minutes' => 30]]])->assertForbidden();
+        Sanctum::actingAs($this->dispatcher);
+        $this->getJson('/api/v1/stats/direction/objectives')->assertForbidden();
+    }
+
     public function test_reserved_to_the_permission_and_limited_to_the_scope(): void
     {
         // Sans l'autorisation : refusé, même avec les statistiques

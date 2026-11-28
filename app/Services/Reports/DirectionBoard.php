@@ -139,7 +139,7 @@ class DirectionBoard
      * @param  array<string, mixed>  $quality
      * @return array{label: string, rate: float|null}
      */
-    private function qualityOf(Company $company, Activity $activity, CarbonImmutable $from, CarbonImmutable $to, array $quality): array
+    public function qualityOf(Company $company, Activity $activity, CarbonImmutable $from, CarbonImmutable $to, array $quality): array
     {
         if ($activity === Activity::Ecommerce) {
             $kpis = $this->statistics->for($company)->forActivity($activity->value)->overview($from, $to, false)['kpis'];

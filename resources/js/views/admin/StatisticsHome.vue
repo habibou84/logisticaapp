@@ -7,7 +7,7 @@
         <h1 class="text-xl font-bold">Statistiques</h1>
         <p class="text-sm text-slate-600">{{ current.description }}</p>
       </div>
-      <div v-if="tab !== 'detail'" class="flex flex-wrap items-end gap-2">
+      <div v-if="current.endpoint" class="flex flex-wrap items-end gap-2">
         <div>
           <label class="label" for="dr-preset">Période</label>
           <select id="dr-preset" v-model="preset" class="input w-auto" @change="applyPreset">
@@ -30,11 +30,13 @@
 
     <!-- Les statistiques détaillées : leurs rubriques, leur période et leur filtre d'activité -->
     <Statistics v-if="tab === 'detail'" embedded />
+    <!-- Objectifs : leur propre choix du mois -->
+    <DirectionObjectives v-if="tab === 'objectives'" />
 
-    <p v-if="error && tab !== 'detail'" class="rounded bg-red-50 border border-red-200 text-red-700 text-sm px-3 py-2">{{ error }}</p>
-    <p v-if="loading && !data[tab] && tab !== 'detail'" class="text-slate-600">Chargement…</p>
+    <p v-if="error && current.endpoint" class="rounded bg-red-50 border border-red-200 text-red-700 text-sm px-3 py-2">{{ error }}</p>
+    <p v-if="loading && !data[tab] && current.endpoint" class="text-slate-600">Chargement…</p>
 
-    <template v-if="data[tab] && tab !== 'detail'">
+    <template v-if="data[tab] && current.endpoint">
       <DirectionOverview v-if="tab === 'overview'" :board="data.overview" />
       <DirectionEcommerce v-else-if="tab === 'ecommerce'" :data="data.ecommerce" />
       <DirectionMad v-else-if="tab === 'mad'" :data="data.mad" />
@@ -51,6 +53,7 @@ import http, { apiErrorMessage } from '../../bootstrap/axios'
 import DirectionDistribution from '../../components/direction/DirectionDistribution.vue'
 import DirectionEcommerce from '../../components/direction/DirectionEcommerce.vue'
 import DirectionMad from '../../components/direction/DirectionMad.vue'
+import DirectionObjectives from '../../components/direction/DirectionObjectives.vue'
 import DirectionOverview from '../../components/direction/DirectionOverview.vue'
 import DirectionTeams from '../../components/direction/DirectionTeams.vue'
 import { COLORS } from '../../components/direction/shared'
@@ -97,6 +100,7 @@ const tabs = computed(() => [
   { key: 'overview', label: 'Vue d\'ensemble', color: '#0f172a', endpoint: '/stats/direction', description: 'Les activités côte à côte, comparées à la période précédente, et les points à décider.' },
   ...myActivities(auth.user).map((a) => ({ key: a.value, color: COLORS[a.value], endpoint: `/stats/direction/${a.value}`, ...SCREENS[a.value] })),
   { key: 'teams', label: 'Équipes', color: '#6a4ce2', endpoint: '/stats/direction/teams', description: 'Livreurs, charge par zone, temps par mission, paie, véhicules et agents du bureau.' },
+  { key: 'objectives', label: 'Objectifs', color: '#ec1d27', description: 'Les objectifs du mois, par activité et pour les équipes, comparés au réalisé.' },
   { key: 'detail', label: 'Détail', color: '#94a3b8', description: 'Livraisons, délais et échecs, livreurs, zones, clients, rentabilité, trésorerie, analyse croisée, partage et alertes.' },
 ])
 
@@ -112,7 +116,7 @@ const loading = ref(false)
 const error = ref('')
 
 async function load() {
-  if (!direction.value || tab.value === 'detail' || !from.value || !to.value) return
+  if (!direction.value || !current.value.endpoint || !from.value || !to.value) return
   const key = tab.value
   loading.value = true
   error.value = ''

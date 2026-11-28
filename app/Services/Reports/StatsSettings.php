@@ -14,6 +14,28 @@ class StatsSettings
 {
     public const GOALS = ['delivered', 'revenue', 'success_rate', 'margin'];
 
+    /**
+     * Objectifs du mois par activité et pour les équipes (Statistiques › Objectifs) : indicateur => valeur visée.
+     * Pour chaque indicateur : son libellé, son unité et son sens (une hausse est-elle une bonne nouvelle ?).
+     */
+    public const OBJECTIVES = [
+        'activity' => [
+            'revenue' => ['label' => 'Chiffre d\'affaires', 'kind' => 'money', 'higher' => true],
+            'margin' => ['label' => 'Marge nette', 'kind' => 'money', 'higher' => true],
+            'delivered' => ['label' => 'Courses livrées', 'kind' => 'number', 'higher' => true],
+            'quality' => ['label' => 'Qualité', 'kind' => 'percent', 'higher' => true],
+        ],
+        'teams' => [
+            'per_day' => ['label' => 'Livraisons par livreur et par jour', 'kind' => 'decimal', 'higher' => true],
+            'success_rate' => ['label' => 'Taux de réussite', 'kind' => 'percent', 'higher' => true],
+            'minutes' => ['label' => 'Temps moyen par mission', 'kind' => 'minutes', 'higher' => false],
+            'pay_per_delivery' => ['label' => 'Paie par course livrée', 'kind' => 'money', 'higher' => false],
+        ],
+    ];
+
+    /** Ce que visent les objectifs : chaque activité, puis les équipes */
+    public const OBJECTIVE_SCOPES = ['ecommerce', 'distribution', 'mad', 'teams'];
+
     public const DEFAULTS = [
         'goals' => ['delivered' => null, 'revenue' => null, 'success_rate' => null, 'margin' => null],
         'renegotiate_margin' => 10,
@@ -38,7 +60,8 @@ class StatsSettings
 
         return [...self::DEFAULTS, ...$saved, 'goals' => [...self::DEFAULTS['goals'], ...($saved['goals'] ?? [])],
             'alerts' => [...self::DEFAULTS['alerts'], ...($saved['alerts'] ?? [])],
-            'email' => [...self::DEFAULTS['email'], ...($saved['email'] ?? [])]];
+            'email' => [...self::DEFAULTS['email'], ...($saved['email'] ?? [])],
+            'objectives' => self::cleanObjectives((array) ($company?->stats_settings['objectives'] ?? []))];
     }
 
     /** @return array<string, array<int, mixed>> */
@@ -69,12 +92,35 @@ class StatsSettings
     }
 
     /**
+     * Objectifs : pour chaque activité et pour les équipes, la valeur visée de chaque indicateur (null : pas d'objectif).
+     *
+     * @param  array<string, mixed>  $input
+     * @return array<string, array<string, int|float|null>>
+     */
+    public static function cleanObjectives(array $input): array
+    {
+        $out = [];
+        foreach (self::OBJECTIVE_SCOPES as $scope) {
+            foreach (self::OBJECTIVES[$scope === 'teams' ? 'teams' : 'activity'] as $key => $metric) {
+                $v = $input[$scope][$key] ?? null;
+                $out[$scope][$key] = $v === null || $v === '' || ! is_numeric($v) ? null
+                    : (in_array($metric['kind'], ['percent', 'decimal'], true) ? round((float) $v, 1) : (int) $v);
+            }
+        }
+
+        return $out;
+    }
+
+    /**
      * @param  array<string, mixed>  $input
      * @return array<string, mixed>
      */
     public static function clean(array $input): array
     {
         $out = [];
+        if (isset($input['objectives']) && is_array($input['objectives'])) {
+            $out['objectives'] = self::cleanObjectives($input['objectives']);
+        }
         if (isset($input['goals']) && is_array($input['goals'])) {
             foreach (self::GOALS as $key) {
                 if (array_key_exists($key, $input['goals'])) {
