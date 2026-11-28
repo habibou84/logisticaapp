@@ -90,7 +90,9 @@ const routes = [
     meta: { roles: SPACES.admin },
     children: [
       { path: '', name: 'admin', component: shared.dashboard },
-      { path: 'statistiques', component: () => import('../views/admin/Statistics.vue'), meta: { permission: 'orders.view' } },
+      { path: 'statistiques', component: () => import('../views/admin/StatisticsHome.vue'), meta: { permission: 'orders.view' } },
+      // Ancienne adresse des vues de direction : elles ouvrent la page Statistiques
+      { path: 'direction', redirect: '/admin/statistiques' },
       // Mon compte : mot de passe de la personne connectée (bouton profil de l'en-tête)
       { path: 'mon-compte', component: () => import('../views/admin/Account.vue') },
       { path: 'courses', component: shared.orders, meta: { permission: 'orders.view' } },
@@ -155,6 +157,8 @@ const routes = [
       { path: 'factures/:id(\\d+)', component: shared.clientInvoice, meta: { permission: 'invoices.view' } },
       // Chiffre d'affaires par activité (e-commerce, distribution, MAD)
       { path: 'chiffre-affaires', component: () => import('../views/admin/Revenue.vue'), meta: { permission: 'revenue.view' } },
+      // Frais fixes de l'entreprise, comptés dans la marge nette des statistiques
+      { path: 'frais-fixes', component: () => import('../views/admin/FixedCosts.vue'), meta: { permission: 'fixed_costs.manage' } },
       { path: 'annuaire', component: () => import('../views/admin/Destinations.vue'), meta: { permission: 'merchants.view' } },
       { path: 'contrats', component: () => import('../views/admin/Contracts.vue'), meta: { permission: 'merchants.view' } },
       // Livraison › Parcours : routine du matin des livreurs en mise à disposition, client par client
@@ -212,6 +216,7 @@ const routes = [
       { path: 'stock', component: () => import('../views/admin/Stock.vue'), meta: { permission: 'stock.manage' } },
       { path: 'caisse', component: () => import('../views/courier/Wallet.vue'), meta: { title: 'Ma caisse' } },
       { path: 'messages', component: () => import('../views/courier/Messages.vue'), meta: { title: 'Consignes de l\'agence', back: true } },
+      { path: 'remise/:merchant(\\d+)', component: () => import('../views/courier/ReturnConfirm.vue'), meta: { title: 'Remise au client', back: true } },
       { path: 'retours/:id(\\d+)', component: () => import('../views/courier/ReturnHandOver.vue'), meta: { title: 'Remise au client', back: true } },
       { path: 'evenements/:id(\\d+)', component: () => import('../views/courier/FieldEvent.vue'), meta: { title: 'Mon signalement', back: true } },
       { path: 'vehicule', component: () => import('../views/courier/MyVehicle.vue'), meta: { title: 'Mon véhicule', back: true } },

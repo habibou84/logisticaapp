@@ -69,6 +69,9 @@
           </div>
         </div>
 
+        <!-- Report ou retour signalé par le livreur : à valider avant qu'il prenne effet -->
+        <ProposalCard v-if="order.proposal" :order-id="order.id" :proposal="order.proposal" @updated="(o) => (order = o)" />
+
         <p v-if="order.status === 'lost'" class="rounded-lg bg-red-50 ring-1 ring-red-200 px-4 py-2 text-sm text-red-900">
           <Icone nom="alerte" taille="petite" class="inline align-[-0.15em]" /> Colis déclaré perdu le {{ dateTime(order.lost_at) }}<span v-if="order.lost_reason"> : {{ order.lost_reason }}</span>
         </p>
@@ -255,13 +258,7 @@
       <form class="space-y-3" @submit.prevent="saveEdit">
         <div><label class="label">Téléphone</label><input v-model="edit.recipient_phone" class="input" required></div>
         <div><label class="label">Second téléphone</label><input v-model="edit.recipient_phone2" class="input"></div>
-        <div>
-          <label class="label">Zone</label>
-          <SearchSelect
-            v-model="edit.delivery_zone_id" search-placeholder="Commune ou quartier…" aria-label="Zone de livraison"
-            :options="zones.map((z) => ({ value: z.id, label: z.full_name }))"
-          />
-        </div>
+        <CommuneQuartier id="edit-lieu" v-model="edit.delivery_zone_id" :zones="zones" required stacked @added="(z) => zones.push(z)" />
         <div><label class="label">Adresse</label><input v-model="edit.delivery_address" class="input"></div>
         <div><label class="label">Repère</label><input v-model="edit.delivery_landmark" class="input"></div>
         <p v-if="editError" class="field-error">{{ editError }}</p>
@@ -280,12 +277,14 @@
 <script setup>
 import Icone from '../../components/ui/Icone.vue'
 import SearchSelect from '../../components/SearchSelect.vue'
+import CommuneQuartier from '../../components/CommuneQuartier.vue'
 import { madSuffix } from '../../utils/mad'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import StatusBadge from '../../components/StatusBadge.vue'
 import OrderTimeline from '../../components/OrderTimeline.vue'
+import ProposalCard from '../../components/ProposalCard.vue'
 import Modal from '../../components/Modal.vue'
 import OrderDecision from '../../components/OrderDecision.vue'
 import LostParcelDialog from '../../components/LostParcelDialog.vue'

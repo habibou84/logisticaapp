@@ -34,12 +34,11 @@ En SSH, en root (le dépôt et le paquet commun `habibou84/socle` sont publics :
 
 ```bash
 apt-get update && apt-get install -y git
-git clone -b claude/delivery-app-standalone-config-7s34ck https://github.com/habibou84/logisticaapp.git /opt/logistica
+git clone -b production https://github.com/habibou84/logisticaapp.git /opt/logistica
 cd /opt/logistica
 ```
 
-La branche clonée est celle que suivent les mises à jour (`deploy/update.sh`). Pour suivre une autre branche
-plus tard (ex. `main` une fois la version validée) : `git -C /opt/logistica fetch origin main && git -C /opt/logistica checkout main`.
+La branche clonée est celle que suivent les mises à jour (`deploy/update.sh`) : **`production`** (voir section 4).
 
 Si le dépôt devient privé : créez une clé de déploiement (`ssh-keygen -t ed25519 -f /root/.ssh/logistica -N ""`),
 ajoutez `/root/.ssh/logistica.pub` dans GitHub › dépôt › **Settings › Deploy keys** (sans droit d'écriture), puis
@@ -75,36 +74,226 @@ passe de l'administrateur. La **mise en route** guide les réglages (zones, tari
 
 ## 4. Mises à jour
 
-### Automatiques (recommandé)
+### Le chemin d'une modification
 
-Une fois activée, le serveur vérifie toutes les 5 minutes s'il y a une nouvelle version sur la branche suivie. Il
-l'installe **seulement si les contrôles GitHub sont passés** sur cette version (style, tests, build : onglet
-*Actions* du dépôt) ; sinon il attend, ou l'écarte si un contrôle a échoué. Rien n'est ouvert sur le serveur :
-c'est lui qui va chercher le code.
-
-```bash
-bash /opt/logistica/deploy/auto-update.sh --install   # activer
-bash /opt/logistica/deploy/auto-update.sh --status    # version installée, dernière version, contrôles, journal
-bash /opt/logistica/deploy/auto-update.sh --now       # installer tout de suite la dernière version validée
-touch /opt/logistica/.no-auto-update                  # pause (intervention en cours) ; rm pour reprendre
-bash /opt/logistica/deploy/auto-update.sh --remove    # désactiver
+```
+branche de travail ──► PR vers main ──► contrôles GitHub ──► fusion (squash)
+    ──► PRÉPRODUCTION (preprod.logisticadelivery.com) : installée toute seule, on essaie
+    ──► PR main → production ──► fusion (commit de fusion)
+    ──► PRODUCTION : installée dans la plage horaire (sauvegarde, bascule, contrôle du site)
 ```
 
-Journal : `/var/log/logistica-update.log` (versions installées, écartées, échecs).
+- **Fusionner sur `main` = mettre en préproduction. Fusionner `main` dans `production` = mettre en production.**
+- On ne pousse jamais directement sur `main` ni sur `production` : tout passe par une PR, aux contrôles verts.
+- Les deux fusions se font sur demande du propriétaire, par lui ou par Claude (« ouvre la PR et fusionne »,
+  « mets en production »).
+- Avant de mettre en production : la modification essayée en préproduction (au moins les parcours touchés :
+  saisie, attribution, livraison, caisse…).
+
+**Réglages GitHub à faire une fois** (dépôt › *Settings*) :
+
+1. *General › Default branch* : `main`.
+2. *General › Pull Requests* : cocher « Allow squash merging » (PR des modifications vers `main` : un commit par
+   modification) **et** « Allow merge commits » (PR `main` → `production` : la production reçoit exactement les
+   commits de `main`).
+3. *Rules › Rulesets › New branch ruleset*, cible `main` **et** `production` : « Restrict deletions »,
+   « Require a pull request before merging », « Require status checks to pass » (cocher *Style (Pint)*,
+   *Tests (PostgreSQL, PHP 8.3)*, *Tests (PostgreSQL, PHP 8.4)*, *Build front-end*, *Téléphone (largeur des pages)*),
+   « Block force pushes ».
+4. Branche `production` : créée une fois à partir de `main` (*Branches › New branch*).
+
+### Mettre en production
+
+GitHub › dépôt › **Pull requests › New pull request** : *base* `production` ← *compare* `main`, puis
+**Create pull request**. La liste des modifications depuis la dernière mise en production s'affiche (onglet
+*Commits*). Quand les contrôles sont verts : **Merge pull request** (« Create a merge commit », pas « Squash »).
+
+La production l'installe au début de la plage horaire (`AUTO_UPDATE_WINDOW`, 20 h à 7 h), une fois les contrôles
+GitHub du commit de fusion passés. L'historique des mises en production est la liste des PR `main → production`.
+
+**Mise en production immédiate** (correction urgente) : ajoutez **`[immédiat]`** au titre de la fusion (champ
+*Commit message* au moment de cliquer sur *Merge*, ou titre de la PR avant la fusion). La production l'installe
+dès que les contrôles du commit de fusion sont verts (environ 10 minutes), même en pleine journée. Autre moyen,
+sur le serveur : `bash deploy/auto-update.sh --now`.
+
+### Mise à jour automatique
+
+Le serveur vérifie toutes les 5 minutes s'il y a une nouvelle version sur la branche qu'il suit. Il l'installe
+**seulement si les contrôles GitHub sont passés** sur cette version (onglet *Actions*) ; sinon il attend, ou
+l'écarte si un contrôle a échoué. Rien n'est ouvert sur le serveur : c'est lui qui va chercher le code. Une
+installation qui échoue est réessayée deux fois, puis abandonnée (la version en service reste) jusqu'à `--now`.
+
+| | Production (`/opt/logistica`) | Préproduction (`/opt/logistica-preprod`) |
+|---|---|---|
+| Branche suivie (celle du dossier) | `production` | `main` |
+| `AUTO_UPDATE_TRACK` (`.env`) | `branch` | `branch` (défaut) |
+| `AUTO_UPDATE_WINDOW` (`.env`) | `20:00-07:00` : en dehors des tournées | vide : à toute heure |
+
+```bash
+bash deploy/auto-update.sh --install   # activer
+bash deploy/auto-update.sh --status    # suivi, version en service, dernière version, contrôles, plage, journal
+bash deploy/auto-update.sh --now       # installer tout de suite la dernière version validée (même hors plage)
+touch .no-auto-update                  # pause (intervention en cours) ; rm pour reprendre
+bash deploy/auto-update.sh --remove    # désactiver
+```
+
+Journal : `/var/log/<projet>-update.log` (`logistica`, `logistica-preprod`).
+
+**Passer la production sur la branche `production`** (une fois, la branche créée sur GitHub) :
+
+```bash
+cd /opt/logistica
+git fetch origin production
+git checkout -B production origin/production
+sed -i '/^AUTO_UPDATE_TRACK=/d' .env && echo 'AUTO_UPDATE_TRACK=branch' >> .env
+grep -q '^AUTO_UPDATE_WINDOW=' .env || echo 'AUTO_UPDATE_WINDOW=20:00-07:00' >> .env
+bash deploy/auto-update.sh --status     # « Suivi : branche production »
+```
+
+Variante : `AUTO_UPDATE_TRACK=tags` fait suivre les versions publiées `v1.2.3` (*Releases* GitHub) au lieu d'une
+branche.
 
 ### À la main
 
 ```bash
-bash /opt/logistica/deploy/update.sh
+bash deploy/update.sh
 ```
 
-Récupère la dernière version de la branche suivie, construit les nouvelles images et applique les migrations
-pendant que le site reste en ligne, puis bascule sur la nouvelle version : environ une seconde de coupure
-(le journal indique « nouvelle version prête en … s »). Pendant ce court instant, l'interface réessaie seule
+Étapes : récupère la dernière version de `main`, construit les nouvelles images pendant que le site reste en
+ligne, **sauvegarde la base** (`/var/backups/<projet>/…_avant-<version>.sql.gz`, les 10 dernières gardées),
+applique les migrations (le site reste en ligne), bascule sur la nouvelle version, puis **vérifie que le site répond**
+(`/up` contrôle aussi la base et Redis). Si une étape échoue, elle s'arrête et le dit. Les images sont nommées
+d'après la version ; les 3 précédentes restent sur le serveur pour le retour arrière.
+
+**Coupure pendant la bascule : une fraction de seconde.** Le site est basculé seul, un conteneur à la fois
+(PHP-FPM, puis Nginx) ; les files d'attente, le temps réel et les tâches planifiées redémarrent ensuite, sans effet
+sur le site. Le journal indique « version … en ligne en … s ». Pendant ce court instant, l'interface réessaie seule
 les lectures en échec ; un enregistrement envoyé à ce moment-là affiche une erreur et peut être renvoyé.
 
-Les migrations tournent avec la nouvelle version pendant que l'ancienne sert encore les visites : elles
-doivent rester compatibles avec la version précédente (ajouter avant de retirer).
+Les migrations tournent avec la nouvelle version pendant que l'ancienne sert encore les visites : elles doivent
+rester compatibles avec la version précédente (ajouter avant de retirer).
+
+### Revenir en arrière
+
+**En quelques secondes, sans rien reconstruire** :
+
+```bash
+cd /opt/logistica
+bash deploy/rollback.sh             # versions disponibles sur le serveur (▶ = en service)
+bash deploy/rollback.sh 7d29741     # remet cette version en service, contrôle du site compris
+```
+
+La version retirée n'est pas réinstallée par la mise à jour automatique : le serveur attend la suivante.
+Ensuite, corrigez : PR (ou **Revert** sur la PR fautive), fusion, essai en préproduction, nouvelle mise en
+production (PR `main → production`).
+
+La base garde les migrations de la version retirée ; c'est sans conséquence quand elles ne font qu'ajouter
+(règle suivie dans ce projet). Si une migration a abîmé des données, restaurez la sauvegarde d'avant la mise à
+jour (`…_avant-<version-retirée>.sql.gz`, commande en section 5) : **les saisies faites depuis sont perdues**.
+
+### Préproduction
+
+Une copie complète de l'application, sur le même serveur, à `https://preprod.logisticadelivery.com` : même code,
+mais **base, fichiers et conteneurs séparés** de la production. Elle sert à essayer chaque modification avant
+les clients.
+
+- **Fermée au public** : un code d'accès est demandé avant toute page (mémorisé 30 jours), jamais indexée.
+- **Rien n'est envoyé** : WhatsApp, SMS et e-mails sont simulés (visibles dans le journal de l'application) ; ne
+  connectez pas le WhatsApp de l'entreprise dans ses réglages.
+- **Erreurs** : avec le même `SENTRY_LARAVEL_DSN` que la production, elles arrivent dans Sentry sous
+  l'environnement *staging*, à part de la production.
+- **Ressources** : environ 0,5 à 1 Go de mémoire en plus. Vérifiez avant : `free -h` (colonne *available*).
+
+**Mise en place** (une fois, 20 à 30 minutes) :
+
+1. DNS chez LWS : un enregistrement **A**, nom `preprod`, valeur `45.147.98.44` (comme pour `app`, section 1).
+2. Sur le serveur, en root :
+
+   ```bash
+   git clone -b main https://github.com/habibou84/logisticaapp.git /opt/logistica-preprod
+   cd /opt/logistica-preprod
+   INSTANCE=preprod DOMAIN=preprod.logisticadelivery.com APP_PORT=8091 COMPOSE_PROJECT_NAME=logistica-preprod \
+     EMAIL=votre-adresse@exemple.com bash deploy/install.sh
+   bash deploy/auto-update.sh --install
+   ```
+
+   Le script crée une entreprise et un administrateur de test, puis affiche **le code d'accès** (aussi dans
+   `.env` : `PREPROD_ACCESS_CODE`).
+3. Optionnel : `SENTRY_LARAVEL_DSN` (le même que la production) dans `/opt/logistica-preprod/.env`, puis
+   `docker compose up -d --force-recreate --no-deps app horizon reverb scheduler`.
+
+Les deux installations sont indépendantes : chaque commande se lance **dans son dossier** (`/opt/logistica` pour la
+production, `/opt/logistica-preprod` pour la préproduction).
+
+## Sauvegardes
+
+- **Chaque nuit** (2 h 30) : `/var/backups/logistica/AAAA-MM-JJ_HHMM.sql.gz`, gardées 14 jours. Journal :
+  `/var/log/logistica-backup.log`.
+- **Avant chaque mise à jour** : `…_avant-<version>.sql.gz`, les 10 dernières.
+- **Hors du serveur** (à faire : sans copie ailleurs, une panne du serveur emporte la base, les fichiers et leurs
+  sauvegardes) :
+
+  ```bash
+  cd /opt/logistica
+  cp deploy/offsite.env.example .env.offsite && chmod 600 .env.offsite
+  nano .env.offsite                    # stockage (Cloudflare R2, Backblaze B2, S3…), clé, mot de passe de chiffrement
+  bash deploy/backup.sh --verifier     # format du fichier et connexion, sans rien envoyer
+  bash deploy/backup.sh                # essai : « base copiée hors du serveur » puis « fichiers copiés hors du serveur »
+  ```
+
+  `--verifier` signale en clair les erreurs de saisie courantes : `https:` ou `stockage:` en double, clé de mauvaise
+  longueur, espaces, guillemets, valeur d'exemple oubliée, fins de ligne Windows. Les mêmes contrôles sont faits avant
+  chaque copie de la nuit. Une copie ne peut pas rester bloquée : pas de réponse en 30 secondes ou plus de 5 minutes sans
+  échange, elle s'arrête en erreur (et Healthchecks.io prévient).
+
+  Chaque nuit, tout est **chiffré** avant l'envoi :
+
+  | Quoi | Où (dans le stockage) | Gardé |
+  |---|---|---|
+  | Base, chaque nuit | `jour/` | 14 jours |
+  | Base, le dimanche | `semaine/` | 12 semaines |
+  | Base, le 1er du mois | `mois/` | 12 mois |
+  | Fichiers (photos, pièces d'identité, documents, logos) | `fichiers/actuel/` | miroir du serveur |
+  | Fichiers supprimés ou remplacés sur le serveur | `fichiers/supprimes/<date>/` | 30 jours |
+
+  La première copie des fichiers envoie tout (elle peut prendre du temps) ; ensuite, seuls les nouveaux partent.
+  Notez la phrase de chiffrement dans un gestionnaire de mots de passe : sans elle, les copies sont illisibles.
+  Durées réglables dans `.env.offsite`.
+
+  Voir ce qui est stocké (noms en clair, grâce à la phrase de chiffrement) :
+
+  ```bash
+  docker run --rm --env-file .env.offsite rclone/rclone:1.68.2 lsl chiffre:jour
+  docker run --rm --env-file .env.offsite rclone/rclone:1.68.2 size chiffre:fichiers/actuel
+  ```
+
+- **Restaurer la base** : section 5 (fichier local) ; depuis le stockage, récupérez d'abord le fichier :
+  `docker run --rm --env-file .env.offsite -v /root:/out rclone/rclone:1.68.2 copy chiffre:jour/<fichier> /out`.
+- **Restaurer les fichiers** (serveur neuf ou fichiers perdus ; ne remplace que ce qui manque ou diffère) :
+
+  ```bash
+  cd /opt/logistica
+  docker run --rm --env-file .env.offsite --volumes-from "$(docker compose ps -q app)" rclone/rclone:1.68.2 \
+      copy chiffre:fichiers/actuel /var/www/html/storage/app
+  docker compose exec app chown -R www-data:www-data storage/app
+  ```
+
+  Un fichier supprimé par erreur ces 30 derniers jours : `… lsf -R chiffre:fichiers/supprimes`, puis `copyto` du
+  fichier vers son dossier.
+- **Essayer** de temps en temps de restaurer sur une base de test : une sauvegarde qu'on n'a jamais restaurée n'est
+  pas une sauvegarde sûre.
+
+## Surveillance
+
+Pour être prévenu avant les utilisateurs. Les trois services ont une formule gratuite suffisante.
+
+| Quoi | Service | Réglage |
+|---|---|---|
+| Le site est-il joignable ? | [UptimeRobot](https://uptimerobot.com) (ou Better Stack) | Moniteur HTTP(S) sur `https://app.logisticadelivery.com/up`, toutes les 5 minutes, alerte par e-mail ou SMS. `/up` répond une erreur si la base ou Redis ne répondent pas. |
+| Erreurs de l'application | [Sentry](https://sentry.io) | Projet *Laravel* ; copiez son DSN dans `.env` : `SENTRY_LARAVEL_DSN=https://…`, puis `docker compose up -d --force-recreate`. Chaque erreur (pages, files d'attente, tâches planifiées) arrive par e-mail avec la version du code (`APP_VERSION`). Ni utilisateur, ni adresse IP, ni contenu des formulaires n'est envoyé. |
+| La sauvegarde de la nuit a-t-elle eu lieu ? | [Healthchecks.io](https://healthchecks.io) | Un contrôle « tous les jours », 1 h de tolérance ; copiez son adresse dans `.env` : `BACKUP_PING_URL=https://hc-ping.com/…`. Il prévient si la sauvegarde échoue ou n'arrive pas. |
+
+Essai de Sentry : `docker compose exec -u www-data app php artisan sentry:test`.
 
 ## 5. Commandes utiles
 
@@ -119,7 +308,26 @@ Depuis `/opt/logistica` :
 | Changer un mot de passe | `docker compose exec -u www-data app php artisan user:password 0700000000` |
 | Prendre en compte un changement du `.env` | `docker compose up -d --force-recreate` |
 | Sauvegarde immédiate | `bash deploy/backup.sh` |
+| Versions sur le serveur / retour arrière | `bash deploy/rollback.sh` / `bash deploy/rollback.sh <version>` |
+| État de la mise à jour automatique | `bash deploy/auto-update.sh --status` |
+| Données fictives (préproduction seulement, depuis `/opt/logistica-preprod`) | `docker compose exec -u www-data app php artisan app:preprod-data` |
 | Arrêter / redémarrer | `docker compose stop` / `docker compose up -d` |
+
+**Données fictives de la préproduction** (`app:preprod-data`) : 10 clients
+e-commerce, 2 clients de distribution (un sous contrat mensuel, un à l'unité avec ses propres prix), 2 clients en MAD
+(chacun avec son livreur dédié, du lundi au samedi), 10 livreurs, un dispatcher, un caissier, un agent d'entrepôt et 30 jours de courses (≈ 18 par jour) passées par les
+vrais services : prix, journal, encaissements, versements des livreurs chaque soir, reversements aux clients le
+vendredi. Les courses du jour restent à différentes étapes (à valider, en ramassage, en chemin…). Aucun message ne
+part pendant la génération (WhatsApp, SMS, notifications, webhooks). Comptes en `07 99 …`, mot de passe
+`Preprod2026` (option `--password`). Relançable : les jours déjà remplis sont sautés, donc la relancer le matin
+ajoute seulement les courses du jour. Options : `--days=30`, `--per-day=18`, `--seed=` (mêmes données).
+Distribution et MAD : courses facturées au mois (rien à encaisser), preuve de remise par le nom de la personne qui
+reçoit, aucun message au destinataire ; factures des mois terminés préparées en brouillon. Une relance ajoute ces
+activités aux jours déjà remplis en e-commerce. **Jamais en production.** La commande refuse de tourner si `APP_ENV` n'est pas `local`, `testing` ou `staging`, si
+`APP_URL` est `app.logisticadelivery.com`, ou si une préproduction n'a pas de `PREPROD_ACCESS_CODE`. Les deux
+installations ont chacune leur base et leurs sauvegardes (`/var/backups/logistica` et `/var/backups/logistica-preprod`) :
+ne jamais restaurer une sauvegarde de la préproduction dans la production. Les clients fictifs ont leur propre grille de tarifs (« Clients fictifs (préproduction) ») : les tarifs réglés de
+l'entreprise ne sont pas touchés. Si des courses échouent, la commande affiche les erreurs les plus fréquentes.
 
 Les variables `VITE_*` (temps réel vu du navigateur) sont compilées dans l'interface : après les avoir changées,
 lancez `bash deploy/update.sh`.
@@ -128,6 +336,21 @@ lancez `bash deploy/update.sh`.
 
 ```bash
 gunzip -c /var/backups/logistica/<fichier>.sql.gz | docker compose exec -T postgres psql -U logistica -d logistica
+```
+
+### Remise à zéro de l'activité (avant la mise en service réelle)
+
+Efface **toutes les courses** et ce qui en découle : argent (encaissements, caisse, gains, paies et avances des
+livreurs, comptes, reversements et factures des clients), messages et suivi terrain (photos comprises), mouvements
+de stock (quantités remises à zéro), statistiques. **Restent** : l'entreprise et ses réglages, les utilisateurs, les
+clients, les livreurs, les zones et tarifs, les véhicules, les produits, l'annuaire. Irréversible, sauf restauration
+de la sauvegarde.
+
+```bash
+cd /opt/logistica
+bash deploy/backup.sh avant-remise-a-zero                                    # sauvegarde d'abord
+docker compose exec -u www-data app php artisan app:reset-activity           # simulation : ce qui serait effacé
+docker compose exec -u www-data app php artisan app:reset-activity --execute # efface (taper EFFACER)
 ```
 
 ## 6. Reprise des données de l'ancienne application
@@ -183,6 +406,22 @@ livreur (onglet **Informations**, carte **Identité**), où elle peut aussi les 
 **Avec le bouton de l'ancienne application** : **Réglages › Reprise de l'ancienne application** explique la
 marche à suivre (fichier à copier dans l'ancienne application, clé de reprise valable 7 jours).
 
+**Annuler la reprise des livreurs** (pour les recréer à la main) : les livreurs dont le numéro figure dans l'export
+sont supprimés **définitivement** (fiche, zones, barème, planning, positions, véhicules attribués, photo et pièce
+d'identité) ; leurs numéros redeviennent libres. Les autres comptes (équipe, clients, livreurs créés à la main avec
+un autre numéro) ne sont jamais touchés. Un livreur qui a encore de l'activité bloque tout : faites d'abord la remise
+à zéro de l'activité (section 5).
+
+```bash
+cd /opt/logistica
+mysqldump --complete-insert -u <utilisateur> -p <ancienne_base> livreurs users > /root/ancienne-base.sql
+docker compose cp /root/ancienne-base.sql app:/tmp/ancienne-base.sql
+bash deploy/backup.sh avant-retrait-livreurs
+docker compose exec -u www-data app php artisan legacy:remove-couriers /tmp/ancienne-base.sql            # simulation : liste
+docker compose exec -u www-data app php artisan legacy:remove-couriers /tmp/ancienne-base.sql --execute  # taper SUPPRIMER
+docker compose exec app rm /tmp/ancienne-base.sql && rm /root/ancienne-base.sql
+```
+
 ## 7. WhatsApp
 
 Deux possibilités, dans **Réglages › WhatsApp** :
@@ -198,6 +437,23 @@ Dans les deux cas, l'application Meta reçoit les messages à l'adresse
 `https://app.logisticadelivery.com/api/webhooks/whatsapp`, avec le jeton de vérification `WHATSAPP_VERIFY_TOKEN`
 du `.env` (généré à l'installation). Pages exigées par Meta : `/confidentialite`, `/conditions` et
 `/confidentialite#suppression`.
+
+### WhatsApp des alertes (QR code)
+
+Les alertes des administrateurs (zones, clients en baisse, livreurs) peuvent partir d'un second numéro
+WhatsApp, à part, relié en scannant un QR code dans **WhatsApp › Connexion** (carte « WhatsApp des alertes
+administrateurs »), sans modèle Meta à faire approuver. Il n'écrit jamais aux clients. La session est tenue par le
+conteneur `whatsapp-qr` (WAHA, moteur léger NOWEB), joignable seulement par les autres conteneurs. La clé
+`WHATSAPP_QR_API_KEY` est créée par `deploy/install.sh` ou, sur une installation existante, par
+`deploy/update.sh`. La session reliée est gardée dans le volume `whatsapp-qr` : une mise à jour ne
+demande pas de nouveau scan.
+
+- Prendre un numéro réservé aux alertes (jamais celui des clients), déjà utilisé normalement quelques jours.
+- Connexion non officielle : WhatsApp peut la couper ou bloquer le numéro. L'application vérifie la session
+  toutes les 5 minutes, la relance si besoin et prévient les administrateurs (cloche et e-mail) quand elle
+  reste déconnectée plus de 10 minutes.
+- Envois espacés de quelques secondes et plafonnés à 30 par heure ; pas de SMS de repli.
+- Dépannage : `docker compose logs --tail=50 whatsapp-qr`.
 
 ## 8. Dépannage
 

@@ -13,6 +13,7 @@ use App\Models\Courier;
 use App\Models\IncidentReason;
 use App\Models\Merchant;
 use App\Models\Order;
+use App\Models\OrderProposal;
 use App\Services\Orders\AwaitingCourier;
 use App\Services\Orders\OrderService;
 use App\Services\Orders\PickupGroups;
@@ -43,7 +44,7 @@ class OrderController extends Controller
             'status' => ['nullable', 'array'],
             'status.*' => [Rule::enum(OrderStatus::class)],
             // File d'attente du dispatch : à valider, à ramasser, à livrer, à retourner
-            'queue' => ['nullable', Rule::in(['to_confirm', 'to_approve', 'on_hold', 'follow_up', 'to_pickup', 'to_reschedule', 'to_prepare', 'to_deliver', 'unassigned', 'pickup_unassigned', 'delivery_unassigned', 'delivery_assigned', 'on_the_way', 'delivered', 'to_decide', 'scheduled', 'to_return', 'incidents', 'failed', 'code_to_verify', 'internal_late', 'untreated', 'untreated_picked', 'picked_late'])],
+            'queue' => ['nullable', Rule::in(['to_confirm', 'to_approve', 'to_validate', 'on_hold', 'follow_up', 'to_pickup', 'to_reschedule', 'to_prepare', 'to_deliver', 'unassigned', 'pickup_unassigned', 'delivery_unassigned', 'delivery_assigned', 'on_the_way', 'delivered', 'to_decide', 'scheduled', 'to_return', 'incidents', 'failed', 'code_to_verify', 'internal_late', 'untreated', 'untreated_picked', 'picked_late'])],
             // Courses non traitées : celles qui n'ont pas de livreur
             'without_courier' => ['nullable', 'boolean'],
             // Courses non traitées : livreur de la livraison, à défaut du ramassage
@@ -180,9 +181,14 @@ class OrderController extends Controller
     {
         Gate::authorize('dispatch', Order::class);
 
-        $day = $request->validate(['day' => ['nullable', 'date']])['day'] ?? null;
+        $data = $request->validate([
+            'day' => ['nullable', 'date'],
+            // Page Courses filtrée sur une activité : seulement ses ramassages
+            'activity' => ['nullable', Rule::enum(Activity::class)],
+        ]);
+        $day = $data['day'] ?? null;
 
-        return response()->json(['data' => $groups->toAssign($request->user(), $day ? Carbon::parse($day)->toDateString() : null)]);
+        return response()->json(['data' => $groups->toAssign($request->user(), $day ? Carbon::parse($day)->toDateString() : null, $data['activity'] ?? null)]);
     }
 
     public function counts(Request $request, AwaitingCourier $awaiting): JsonResponse
@@ -191,13 +197,18 @@ class OrderController extends Controller
 
         $data = $request->validate([
             'day' => ['nullable', 'date'],
-            // Tableau de bord : une seule activité (les compteurs d'attente et l'heure limite restent ceux de l'entreprise)
+            // Une seule activité (page Courses) : files, retards et jour de cette activité ; le bloc « menu »,
+            // l'attente par étape et l'heure limite restent ceux de toute l'entreprise
             'activity' => ['nullable', Rule::enum(Activity::class)],
         ]);
         $activity = $data['activity'] ?? null;
         $base = fn (): Builder => Order::query()->when($activity, fn ($q) => $q->where('activity', $activity));
         $count = fn (string $queue) => $this->applyQueue($base(), $queue)->count();
         $day = $data['day'] ?? null;
+        $company = $request->user()->company;
+        $late = $awaiting->lateCounts($company, $activity);
+        $toReschedule = $count('to_reschedule');
+        $exceptions = collect(self::EXCEPTION_QUEUES)->mapWithKeys(fn (string $queue) => [$queue => $count($queue)])->all();
 
         return response()->json(['data' => [
             'to_confirm' => $count('to_confirm'),
@@ -205,14 +216,27 @@ class OrderController extends Controller
             'to_deliver' => $count('to_deliver'),
             'internal_late' => $count('internal_late'),
             'unassigned' => AwaitingCourier::scope($base())->count(),
-            'to_reschedule' => $count('to_reschedule'),
+            'to_reschedule' => $toReschedule,
             // Cas à régler, toutes dates (tant qu'ils ne sont pas réglés) : cartes et onglets visibles s'il y en a
-            'exceptions' => collect(self::EXCEPTION_QUEUES)->mapWithKeys(fn (string $queue) => [$queue => $count($queue)])->all(),
-            'late' => $awaiting->lateCounts($request->user()->company),
+            'exceptions' => $exceptions,
+            'late' => $late,
+            // Pastilles du menu : toujours toute l'entreprise, quelle que soit l'activité choisie dans la page
+            'menu' => $activity ? [
+                'late' => $awaiting->lateCounts($company)['total'],
+                'untreated' => $this->applyQueue(Order::query(), 'untreated')->count(),
+                'to_reschedule' => $this->applyQueue(Order::query(), 'to_reschedule')->count(),
+            ] : [
+                'late' => $late['total'],
+                'untreated' => $exceptions['untreated'],
+                'to_reschedule' => $toReschedule,
+            ],
+            // Choix de l'activité (écrans Courses) : courses du jour par activité, toute l'entreprise
+            'activities_today' => Order::query()->ofDay(today()->toDateString())
+                ->toBase()->selectRaw('activity, COUNT(*) AS n')->groupBy('activity')->pluck('n', 'activity')->map(fn ($n) => (int) $n)->all(),
             // Tableau de bord : en attente d'un livreur, par étape
-            'waiting' => $awaiting->summary($request->user()->company),
+            'waiting' => $awaiting->summary($company),
             // Heure limite du jour : passée ou non, et courses encore sans livreur
-            'cutoff' => $awaiting->cutoff($request->user()->company),
+            'cutoff' => $awaiting->cutoff($company),
             // Liste de l'agence sur un jour : files limitées à ce jour, courses prévues plus tard à part
             ...($day ? ['day' => $this->dayCounts(Carbon::parse($day)->toDateString(), $base)] : []),
         ]]);
@@ -249,7 +273,7 @@ class OrderController extends Controller
     private const DAY_QUEUES = ['to_confirm', 'failed'];
 
     /** Cas à régler comptés toutes dates : la page Courses ne montre leur onglet ou leur carte que s'il y en a */
-    private const EXCEPTION_QUEUES = ['untreated', 'untreated_picked', 'picked_late', 'to_approve', 'to_return', 'failed', 'to_decide', 'incidents', 'scheduled', 'on_hold', 'follow_up', 'code_to_verify', 'internal_late', 'to_prepare'];
+    private const EXCEPTION_QUEUES = ['untreated', 'untreated_picked', 'picked_late', 'to_approve', 'to_validate', 'to_return', 'failed', 'to_decide', 'incidents', 'scheduled', 'on_hold', 'follow_up', 'code_to_verify', 'internal_late', 'to_prepare'];
 
     /** Files de travail : limitées au jour choisi (les jours passés sont dans « Courses non traitées ») */
     private const WORK_QUEUES = ['to_pickup', 'to_prepare', 'to_deliver', 'unassigned', 'pickup_unassigned', 'delivery_unassigned', 'delivery_assigned', 'on_the_way', 'delivered'];
@@ -315,6 +339,7 @@ class OrderController extends Controller
                 ->with(['incidentReason', 'attachments'])
                 ->orderBy('id'),
             'assignments' => fn ($q) => $q->with(['courier.user', 'assignedBy'])->orderBy('id'),
+            'pendingProposal' => fn ($q) => $q->with(['proposer', 'reason', 'event']),
             // Le client ne voit que les frais qui lui sont facturés
             'expenses' => fn ($q) => $q->when($isMerchant, fn ($q) => $q->where('billed_to', 'merchant'))
                 ->with('courier.user')->orderBy('id'),
@@ -334,6 +359,8 @@ class OrderController extends Controller
             // Les demandes d'agents pas encore validées par leur chef de service ne sont pas encore à valider ici
             'to_confirm' => $query->where('status', OrderStatus::Pending)->where(fn ($q) => $q->whereNull('approval_requested_at')->orWhereNotNull('approved_at')),
             'to_approve' => $query->where('status', OrderStatus::Pending)->whereNotNull('approval_requested_at')->whereNull('approved_at'),
+            // Reports et retours signalés par les livreurs, à valider par l'équipe ou le client
+            'to_validate' => $query->whereHas('proposals', fn ($q) => $q->where('status', OrderProposal::PENDING)),
             // Mises en attente par une note de suivi de l'équipe
             'on_hold' => $query->whereIn('follow_up_reason_id', IncidentReason::query()->where('holds', true)->select('id')),
             'follow_up' => $query->whereNotNull('follow_up_reason_id'),

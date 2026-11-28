@@ -3,7 +3,7 @@
   <nav v-if="cards.length > 1" class="grid grid-cols-2 gap-3 xl:grid-cols-4" aria-label="Courses">
     <RouterLink
       v-for="c in cards" :key="c.to" :to="c.to"
-      :class="['card flex flex-col gap-1.5 p-3 sm:p-4 transition', c.active ? 'border-[var(--admin-color,#0f172a)] ring-2 ring-[var(--admin-color,#0f172a)]' : 'hover:border-slate-400']"
+      :class="['card flex flex-col gap-1.5 p-3 sm:p-4 transition', scope ? `border-t-4 ${scope.border}` : '', c.active ? 'border-[var(--admin-color,#0f172a)] ring-2 ring-[var(--admin-color,#0f172a)]' : 'hover:border-slate-400']"
       :aria-current="c.active ? 'page' : undefined"
     >
       <span class="flex items-center gap-2">
@@ -11,6 +11,8 @@
         <span class="flex-1 font-bold leading-tight">{{ c.label }}</span>
         <span v-if="c.badge" class="grid h-6 min-w-6 place-items-center rounded-full bg-red-600 px-1.5 text-xs font-bold text-white">{{ c.badge > 99 ? '99+' : c.badge }}</span>
       </span>
+      <!-- Activité choisie : chiffres de cette activité seulement -->
+      <span v-if="scope" :class="['self-start rounded-full px-2 py-0.5 text-xs font-bold', scope.tag]">{{ scope.label }}</span>
       <!-- Chiffre mis en avant (Courses en retard : à décider) -->
       <span v-if="c.highlight" :class="['rounded-xl px-3 py-2', c.highlight.number ? 'bg-red-600 text-white' : 'bg-slate-100 text-slate-700']">
         <span class="block text-2xl font-extrabold tabular-nums">{{ c.highlight.number }} <span class="text-sm font-semibold">{{ c.highlight.unit }}</span></span>
@@ -20,15 +22,17 @@
       <span v-if="c.progress !== undefined" class="h-2 rounded-full bg-slate-200"><span class="block h-2 rounded-full bg-emerald-600" :style="{ width: `${c.progress}%` }" /></span>
       <span v-for="(l, i) in c.lines" :key="i" class="hidden text-sm text-slate-700 sm:block">{{ l }}</span>
       <span v-if="c.alert" :class="['mt-auto rounded-lg px-2 py-1 text-xs font-semibold sm:text-sm', c.alertClass]">{{ c.alert }}</span>
+      <span v-if="scope && c.global" class="hidden text-xs italic text-slate-600 sm:block">{{ c.global }}</span>
     </RouterLink>
   </nav>
 </template>
 
 <script setup>
 import Icone from './ui/Icone.vue'
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import http from '../bootstrap/axios'
+import { useActivityFilterStore } from '../stores/activityFilter'
 import { useAuthStore } from '../stores/auth'
 import { useDispatchCountStore } from '../stores/dispatchCounts'
 import { useFieldReportStore } from '../stores/fieldReports'
@@ -45,6 +49,15 @@ import { collectsOnly, money } from '../utils/format'
 const route = useRoute()
 const auth = useAuthStore()
 const counts = useDispatchCountStore()
+const filter = useActivityFilterStore()
+// Activité choisie dans les écrans Courses : liseré, étiquette et chiffres de cette activité
+const SCOPES = {
+  ecommerce: { label: 'E-commerce', tag: 'bg-sky-50 text-sky-800', border: 'border-t-sky-600!' },
+  distribution: { label: 'Distribution', tag: 'bg-amber-50 text-amber-900', border: 'border-t-amber-600!' },
+  mad: { label: 'MAD', tag: 'bg-violet-50 text-violet-800', border: 'border-t-violet-600!' },
+}
+const scope = computed(() => SCOPES[filter.current] || null)
+const params = () => (filter.current ? { activity: filter.current } : {})
 const fieldReports = useFieldReportStore()
 const heldParcels = useHeldParcelStore()
 const returns = ref(null)
@@ -61,6 +74,7 @@ const mine = computed(() => myActivities(auth.user).map((a) => a.value))
 const picked = computed(() => (collectsOnly(mine.value) ? 'collecté' : 'ramassé'))
 
 const cards = computed(() => {
+  // Toutes les cartes suivent l'activité choisie (compteurs de la liste, sinon ceux chargés ici)
   const general = counts.day ? counts.counts : (own.value || counts.counts)
   const day = counts.day ? counts.dayCounts : own.value?.day
   const isToday = !day || day.date === todayIso
@@ -92,13 +106,15 @@ const cards = computed(() => {
       to: '/admin/activite', label: 'Activité des livreurs', icon: 'livreur', permission: ACTIVITY_TABS.map((t) => t.permission), active: route.path.startsWith('/admin/activite'),
       number: activity.value ? mission : null, unit: 'en mission', numberClass: 'text-blue-700',
       lines: activity.value
-        ? [`${plural(free, 'libre', 'libres')} maintenant${end ? ` · fin estimée ${hour(end)}` : ''}`, ...(mine.value.includes('ecommerce') ? [`${money(cash)} chez les livreurs`] : [])]
+        ? [`${plural(free, 'libre', 'libres')} maintenant${end ? ` · fin estimée ${hour(end)}` : ''}`, ...(mine.value.includes('ecommerce') && ['', 'ecommerce'].includes(filter.current) ? [`${money(cash)} chez les livreurs`] : [])]
         : [],
       alert: [
         fieldReports.badge ? plural(fieldReports.badge, 'remontée à traiter', 'remontées à traiter') : '',
         heldParcels.counts.overdue ? plural(heldParcels.counts.overdue, 'colis gardé trop longtemps', 'colis gardés trop longtemps') : '',
       ].filter(Boolean).join(' · '),
       alertClass: 'bg-amber-50 text-amber-900', badge: watch,
+      // Remontées et colis gardés : pas rattachés à une activité
+      global: watch ? 'Remontées et colis gardés : toute l\'entreprise' : '',
     },
     {
       to: '/admin/retours', label: 'Retours clients', icon: 'retour', permission: 'orders.dispatch', active: route.path === '/admin/retours',
@@ -119,10 +135,10 @@ const cards = computed(() => {
 async function load() {
   if (!isDispatch.value) return
   const [r, a, o] = await Promise.allSettled([
-    http.get('/return-slips/count'),
-    http.get('/couriers/activity'),
+    http.get('/return-slips/count', { params: params() }),
+    http.get('/couriers/activity', { params: params() }),
     // Liste des courses sur un jour : ses compteurs (déjà chargés par la liste) ; sinon ceux d'aujourd'hui
-    counts.day ? Promise.resolve(null) : http.get('/orders/counts', { params: { day: todayIso } }),
+    counts.day ? Promise.resolve(null) : http.get('/orders/counts', { params: { day: todayIso, ...params() } }),
     fieldReports.fetchCounts(),
     heldParcels.fetchCounts(),
   ])
@@ -137,4 +153,6 @@ onMounted(() => {
   timer = setInterval(() => !document.hidden && load(), 60000)
 })
 onBeforeUnmount(() => clearInterval(timer))
+// Autre activité choisie : les cartes rechargent leurs chiffres
+watch(() => filter.current, () => load())
 </script>

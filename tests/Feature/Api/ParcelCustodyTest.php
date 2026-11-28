@@ -103,6 +103,8 @@ class ParcelCustodyTest extends TestCase
         $this->move($delivered, $this->courierB->user, 'delivered')->assertOk();
         $failed = $this->failDelivery($this->onTheRoad());
         $reportReason = IncidentReason::where('applies_to', 'delivery')->where('requires_date', true)->orderBy('id')->first();
+        // Report pris en compte tout de suite (motif réglé sans validation)
+        $reportReason->update(['needs_validation' => false]);
         $rescheduled = $this->onTheRoad();
         $this->move($rescheduled, $this->courierB->user, 'delivery_failed', [
             'incident_reason_id' => $reportReason->id, 'rescheduled_to' => today()->addDay()->toDateString(),

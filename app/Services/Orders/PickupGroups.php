@@ -35,10 +35,11 @@ class PickupGroups
      *
      * @return Collection<int, array<string, mixed>>
      */
-    public function toAssign(User $actor, ?string $day = null): Collection
+    public function toAssign(User $actor, ?string $day = null, ?string $activity = null): Collection
     {
         $orders = Order::query()
             ->visibleTo($actor)
+            ->when($activity, fn ($q) => $q->where('activity', $activity))
             ->where('status', OrderStatus::Confirmed)
             ->whereNull('pickup_hub_id')
             // Date de livraison passée : dans « À reporter » tant que la date n'est pas actualisée

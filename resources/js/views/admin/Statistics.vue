@@ -280,7 +280,7 @@ const SECTIONS = [
     key: 'pilotage', label: 'Pilotage', icon: 'objectif',
     tabs: [
       { key: 'overview', label: 'Vue d\'ensemble', description: 'Les chiffres clés de la période comparés à la période précédente, les courses jour par jour et les heures de pointe.' },
-      { key: 'goals', label: 'Objectifs et tendances', period: false, description: 'Le mois en cours face à ses objectifs, sa projection de fin de mois, la comparaison avec l\'an dernier et 13 mois d\'historique.' },
+      { key: 'goals', label: 'Tendances', period: false, description: 'Le mois en cours et son estimation de fin de mois, la comparaison avec l\'an dernier et 13 mois d\'historique.' },
     ],
   },
   {
@@ -340,7 +340,8 @@ const loading = ref(false)
 const error = ref('')
 // Statistiques d'une seule activité (vide : toutes celles de son périmètre)
 const activities = computed(() => myActivities(auth.user))
-const activity = ref('')
+// « ?activite= » : lien venu d'un point « À décider »
+const activity = ref(activities.value.some((a) => a.value === route.query.activite) ? route.query.activite : '')
 const showTable = ref(false)
 
 const section = computed(() => sections.value.find((g) => g.tabs.some((t) => t.key === tab.value)) || sections.value[0])

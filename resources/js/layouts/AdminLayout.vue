@@ -251,11 +251,21 @@ onBeforeUnmount(() => {
   window.removeEventListener('inbox-changed', fetchInbox)
 })
 
+// Pastilles du menu : toute l'entreprise, même quand la liste des courses est filtrée sur une activité
+const menuCounts = computed(() => {
+  const c = dispatchCounts.counts
+  return {
+    late: c.menu?.late ?? c.late.total,
+    untreated: c.menu?.untreated ?? (c.exceptions?.untreated || 0),
+    reschedule: c.menu?.to_reschedule ?? (c.to_reschedule || 0),
+  }
+})
+
 // Menu en rubriques (utils/adminMenu) ; entrée propre à certaines activités : cachée aux comptes limités à d'autres
 const menu = computed(() => filterMenu((p) => auth.can(p), myActivities(auth.user).map((a) => a.value), {
-  late: isDispatch.value ? dispatchCounts.counts.late.total : 0,
-  untreated: isDispatch.value ? dispatchCounts.counts.exceptions?.untreated || 0 : 0,
-  reschedule: isDispatch.value ? dispatchCounts.counts.to_reschedule || 0 : 0,
+  late: isDispatch.value ? menuCounts.value.late : 0,
+  untreated: isDispatch.value ? menuCounts.value.untreated : 0,
+  reschedule: isDispatch.value ? menuCounts.value.reschedule : 0,
   fieldReports: fieldReports.badge,
   heldParcels: heldParcels.counts.overdue,
   inbox: inboxUnread.value,
@@ -269,7 +279,7 @@ const tabs = computed(() => {
   const home = { to: '/admin', icon: 'accueil', label: 'Accueil', exact: true }
   const candidates = isDispatch.value
     ? [
-        { to: '/admin/courses', icon: 'course', label: 'Courses', badge: dispatchCounts.counts.late.total },
+        { to: '/admin/courses', icon: 'course', label: 'Courses', badge: menuCounts.value.late },
         { to: '/admin/activite', icon: 'livreur', label: 'Livreurs', badge: fieldReports.badge },
       ].filter((t) => !t.permission || auth.can(t.permission))
     : [

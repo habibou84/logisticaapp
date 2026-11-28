@@ -1,7 +1,11 @@
 <template>
   <div class="space-y-4">
     <CoursesTabs />
-    <h1 class="text-xl font-bold">Activité des livreurs</h1>
+    <div class="space-y-2">
+      <h1 class="text-xl font-bold">Activité des livreurs</h1>
+      <!-- Activité commune aux écrans Courses : le suivi du jour la suit, les autres onglets concernent les livreurs -->
+      <ActivityFilter :note="followsActivity ? 'Le suivi du jour et les cartes suivent ce choix.' : 'Cet onglet montre tous les livreurs, quelle que soit l\'activité.'" />
+    </div>
 
     <!-- Onglets : chaque ancienne page garde son adresse sous /admin/activite -->
     <nav class="flex gap-1 overflow-x-auto border-b border-slate-300" aria-label="Onglets de l'activité des livreurs">
@@ -31,6 +35,7 @@ import { useHeldParcelStore } from '../../../stores/heldParcels'
 import { useAuthStore } from '../../../stores/auth'
 import { ACTIVITY_TABS } from '../../../utils/courierActivity'
 import CoursesTabs from '../../../components/CoursesTabs.vue'
+import ActivityFilter from '../../../components/ActivityFilter.vue'
 
 const route = useRoute()
 const auth = useAuthStore()
@@ -43,5 +48,7 @@ const badges = computed(() => ({
   '/admin/activite/remontees': { badge: fieldReports.badge },
 }))
 const tabs = computed(() => ACTIVITY_TABS.filter((t) => auth.can(t.permission)).map((t) => ({ ...t, ...badges.value[t.to] })))
+// Suivi du jour : le seul onglet filtré par activité
+const followsActivity = computed(() => route.path === '/admin/activite' || route.path === '/admin/activite/')
 const isCurrent = (t) => (t.exact ? route.path === t.to || route.path === `${t.to}/` : route.path.startsWith(t.to))
 </script>

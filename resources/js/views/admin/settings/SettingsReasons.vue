@@ -1,5 +1,5 @@
 <template>
-  <SettingsPage icon="note" title="Motifs et notes de suivi" intro="Ce que le livreur choisit quand il ne livre pas ou ne ramasse pas, et les notes de suivi de l'équipe. Les motifs communs se règlent ou se désactivent ; ajoutez les vôtres.">
+  <SettingsPage icon="note" title="Motifs et notes de suivi" intro="Les événements que le livreur choisit sur une course (information, échec, report, retour), et les notes de suivi de l'équipe. Les motifs communs se règlent ou se désactivent ; ajoutez les vôtres.">
     <div class="flex flex-wrap gap-2">
       <button v-for="t in TABS" :key="t.key" type="button" class="px-3 py-1.5 rounded-full text-sm border"
         :class="tab === t.key ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-700'" @click="tab = t.key; editing = null">
@@ -55,7 +55,7 @@ import { useToastStore } from '../../../stores/toasts'
 import { confirmDialog } from '../../../composables/useDialog'
 
 const TABS = [
-  { key: 'delivery', label: 'Non-livraison', help: 'Choisis par le livreur quand il ne peut pas remettre la course. Rangés par famille.' },
+  { key: 'delivery', label: 'Livraison', help: 'Choisis par le livreur avec « Signaler » : information (la course continue), échec, report ou retour. Les reports et retours « à faire valider » attendent l\'équipe ou le client.' },
   { key: 'pickup', label: 'Ramassage', help: 'Choisis par le livreur quand un colis n\'est pas remis au ramassage.' },
   { key: 'follow_up', label: 'Notes de suivi', help: 'Posées par l\'équipe sur une course (fiche de la course). Le livreur ne les voit pas ; le client seulement si vous le cochez.' },
 ]
@@ -88,7 +88,9 @@ function tags(r) {
   const t = []
   if (r.applies_to === 'both') t.push({ label: 'Ramassage et livraison' })
   if (r.applies_to !== 'follow_up') t.push({ label: r.activities?.length ? r.activities.map(activityShort).join(', ') : 'Toutes activités' })
-  if (r.counts_as_attempt) t.push({ label: 'Compte une tentative' })
+  if (r.effect === 'note') t.push({ icon: 'note', label: 'Information : la course continue' })
+  if (r.needs_validation && r.effect !== 'note' && (r.requires_date || r.triggers_return)) t.push({ icon: 'sablier', label: 'À faire valider' })
+  if (r.counts_as_attempt && r.effect !== 'note') t.push({ label: 'Compte une tentative' })
   if (r.triggers_return) t.push({ icon: 'retour', label: 'Retour au client' })
   if (r.requires_date) t.push({ icon: 'date', label: 'Date' })
   if (r.requires_note) t.push({ icon: 'modifier', label: 'Note obligatoire' })
@@ -105,6 +107,7 @@ function blank() {
     label: '', applies_to: tab.value, family: tab.value === 'follow_up' ? null : (tab.value === 'pickup' ? 'pickup' : 'other'),
     activities: [], requires_date: false, requires_note: false, photo: 'off', counts_as_attempt: tab.value === 'delivery',
     triggers_return: false, destination_effect: null, holds: false, visible_to_client: false, is_active: true,
+    effect: 'status', needs_validation: true,
   }
 }
 
@@ -120,7 +123,7 @@ function edit(r) {
 
 function payload(m) {
   const keys = ['label', 'applies_to', 'family', 'activities', 'requires_date', 'requires_note', 'photo', 'counts_as_attempt',
-    'triggers_return', 'destination_effect', 'holds', 'visible_to_client', 'is_active']
+    'triggers_return', 'destination_effect', 'holds', 'visible_to_client', 'is_active', 'effect', 'needs_validation']
   const p = Object.fromEntries(keys.map((k) => [k, m[k]]))
   if (!p.activities?.length) p.activities = null
   return p

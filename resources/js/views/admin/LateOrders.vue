@@ -12,6 +12,9 @@
       <RouterLink v-if="tab === 'pas-ramassees' && auth.can('settings.manage')" to="/admin/reglages/courses#a-reporter" class="inline-flex items-center gap-1 text-sm text-blue-600"><Icone nom="reglages" taille="petite" /> Message du soir</RouterLink>
     </div>
 
+    <!-- Activité commune aux écrans Courses : onglets et listes de cette activité -->
+    <ActivityFilter note="Onglets et listes des courses en retard de cette activité seulement." />
+
     <nav class="flex gap-1 overflow-x-auto border-b" aria-label="Onglets">
       <button
         v-for="t in tabs" :key="t.key" type="button"
@@ -40,6 +43,7 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 import { useDispatchCountStore } from '../../stores/dispatchCounts'
 import CoursesTabs from '../../components/CoursesTabs.vue'
+import ActivityFilter from '../../components/ActivityFilter.vue'
 import PickedLateGroups from '../../components/PickedLateGroups.vue'
 import RescheduleOrders from './RescheduleOrders.vue'
 import UntreatedOrders from './UntreatedOrders.vue'

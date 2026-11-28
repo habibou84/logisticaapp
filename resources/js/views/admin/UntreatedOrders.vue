@@ -22,16 +22,6 @@
       >
         <Icone :nom="g.icon" taille="petite" class="inline" /> {{ g.label }}
       </button>
-      <template v-if="activityChoices.length > 1">
-        <span class="ml-2 text-slate-600">Activité :</span>
-        <button
-          v-for="a in [{ value: '', label: 'Toutes' }, ...activityChoices]" :key="a.value || 'all'" type="button"
-          :class="['rounded-full px-3 py-1 ring-1', activity === a.value ? 'bg-slate-900 text-white ring-slate-900' : 'bg-white ring-slate-300']"
-          :aria-pressed="activity === a.value" @click="setActivity(a.value)"
-        >
-          {{ a.label }}
-        </button>
-      </template>
     </div>
 
     <p v-if="error" class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">{{ error }}</p>
@@ -146,6 +136,7 @@ import OrderDecision from '../../components/OrderDecision.vue'
 import { useAuthStore } from '../../stores/auth'
 import { useToastStore } from '../../stores/toasts'
 import { useDispatchCountStore } from '../../stores/dispatchCounts'
+import { useActivityFilterStore } from '../../stores/activityFilter'
 import { orderListChanges } from '../../composables/useRealtime'
 import { date, money } from '../../utils/format'
 import { madSuffix } from '../../utils/mad'
@@ -170,8 +161,11 @@ const dispatchCounts = useDispatchCountStore()
 const route = useRoute()
 const router = useRouter()
 const activityChoices = computed(() => myActivities(auth.user))
+// Activité : choix commun aux écrans Courses (au-dessus des onglets) ; ?activity= dans l'adresse l'impose
+const activityFilter = useActivityFilterStore()
+if (route.query.activity) activityFilter.set(route.query.activity)
 const by = ref(GROUPINGS.some((g) => g.value === route.query.by) ? route.query.by : 'date')
-const activity = ref(activityChoices.value.some((a) => a.value === route.query.activity) ? route.query.activity : '')
+const activity = computed(() => activityFilter.current)
 const selectedGroup = ref(null)
 const data = ref(null)
 const orders = ref([])
@@ -245,12 +239,12 @@ function setBy(value) {
   refresh()
 }
 
-function setActivity(value) {
-  activity.value = value
+// Autre activité choisie au-dessus des onglets
+watch(activity, () => {
   selectedGroup.value = null
   syncQuery()
   refresh()
-}
+})
 
 function toggleAll(e) {
   selected.value = e.target.checked ? orders.value.map((o) => o.id) : []

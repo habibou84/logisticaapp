@@ -19,6 +19,7 @@ class SendStatsEmails extends Command
     {
         $frequency = $this->argument('frequency') === 'monthly' ? 'monthly' : 'weekly';
         $this->info($mailer->sendAll($frequency).' e-mail(s) envoyé(s).');
+        $this->info($mailer->sendTemplates($frequency).' modèle(s) d\'export envoyé(s).');
         if ($frequency === 'monthly') {
             $count = Company::query()->where('status', CompanyStatus::Active->value)->get()
                 ->sum(fn (Company $c) => $reports->generate($c, CarbonImmutable::now($c->timezone ?: config('app.timezone'))->subMonthNoOverflow()->startOfMonth()));

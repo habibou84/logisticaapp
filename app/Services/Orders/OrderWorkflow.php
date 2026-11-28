@@ -28,6 +28,7 @@ use App\Services\Stock\StockKeeper;
 use App\Support\Money;
 use App\Support\SignatureImage;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
@@ -72,8 +73,20 @@ class OrderWorkflow
 
             $reason = $this->resolveReason($order, $context['incident_reason_id'] ?? null);
 
+            // Report ou retour du livreur avec un motif « à valider » : la course reste en échec jusqu'à ce que
+            // l'équipe ou le client confirme (OrderProposals)
+            $proposal = $reason?->validates() && $actor->isCourier()
+                && in_array($to, [OrderStatus::DeliveryFailed, OrderStatus::Rescheduled], true);
+            if ($proposal) {
+                $to = OrderStatus::DeliveryFailed;
+                $context['proposal'] = true;
+                if ($reason->requires_date) {
+                    $this->validateRescheduleDate($context['rescheduled_to'] ?? null);
+                }
+            }
+
             // Un échec avec un motif « report » devient directement un report daté
-            if ($to === OrderStatus::DeliveryFailed && $reason?->requires_date) {
+            if ($to === OrderStatus::DeliveryFailed && $reason?->requires_date && ! $proposal) {
                 $to = OrderStatus::Rescheduled;
             }
 
@@ -88,6 +101,11 @@ class OrderWorkflow
 
             $this->authorizeActor($actor, $order, $from, $to, $context);
             $this->validate($order, $from, $to, $reason, $context);
+
+            // La course repart (nouvelle date, départ en livraison, dépôt…) : le report ou retour à valider est remplacé
+            if ($from === OrderStatus::DeliveryFailed && $to !== OrderStatus::DeliveryFailed) {
+                app(OrderProposals::class)->settle($order, $actor);
+            }
 
             $assignment = $this->applyEffects($order, $from, $to, $reason, $context);
             if (in_array($to, [OrderStatus::Cancelled, OrderStatus::Rejected], true)) {
@@ -126,6 +144,10 @@ class OrderWorkflow
                     'pickup_check' => $to === OrderStatus::PickedUp ? ($context['pickup_check'] ?? null) : null,
                 ], fn ($v) => $v !== null),
             ]);
+
+            if ($proposal) {
+                app(OrderProposals::class)->propose($actor, $order, $event, $reason, $context['rescheduled_to'] ?? null);
+            }
 
             // Distribution, MAD : signature de la personne qui a reçu (ou qui a remis au ramassage), gardée avec la course
             if (in_array($to, [OrderStatus::Delivered, OrderStatus::PickedUp], true) && ($signature = $this->decodeSignature($context['signature'] ?? null)) !== null) {
@@ -253,6 +275,13 @@ class OrderWorkflow
                 default => false,
             };
 
+            // Remise au client confirmée par lui (ou remise de secours) quand l'entreprise l'exige : jamais par la simple
+            // étape « rendu » (la preuve est un bon de retour ou une remise, jamais une valeur venue de la requête)
+            if ($allowed && $to === OrderStatus::Returned && $order->company?->return_confirmation
+                && ! (($context['return_proof'] ?? null) instanceof Model)) {
+                throw new BusinessRuleException('Faites confirmer la remise par le client : touchez « Remettre au client ».', 'status');
+            }
+
             // Livraison prévue un autre jour (réglage par activité) : à régler avec l'agence
             if ($allowed && in_array($to, [OrderStatus::OutForDelivery, OrderStatus::Delivered, OrderStatus::DeliveryFailed, OrderStatus::Rescheduled], true)
                 && ($refusal = app(DeliveryDayRule::class)->refusal($order, $context['occurred_at'] ?? null)) !== null) {
@@ -310,6 +339,9 @@ class OrderWorkflow
     {
         $stage = $from->isBeforePickup() ? 'pickup' : 'delivery';
 
+        if ($reason?->isNote()) {
+            throw new BusinessRuleException("« {$reason->label} » est une simple information : envoyez-la comme note, la course continue.", 'incident_reason_id');
+        }
         if ($reason !== null && ! $reason->appliesTo($stage)) {
             throw new BusinessRuleException('Ce motif ne s\'applique pas à cette étape.', 'incident_reason_id');
         }
@@ -591,7 +623,8 @@ class OrderWorkflow
                     $order->delivery_scheduled_date = $context['rescheduled_to'];
                 }
 
-                if ($reason?->triggers_return) {
+                // Retour à valider : il ne part qu'une fois confirmé (OrderProposals)
+                if ($reason?->triggers_return && empty($context['proposal'])) {
                     $order->markForReturn(ReturnCause::Refused);
                 } elseif ($order->attempts_count >= $order->max_attempts) {
                     $order->markForReturn(ReturnCause::MaxAttempts);

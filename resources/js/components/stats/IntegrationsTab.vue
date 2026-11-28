@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-4">
     <!-- Alertes du matin (cloche des administrateurs, WhatsApp au choix) -->
-    <section v-if="canManage" class="card space-y-3 p-4">
+    <section v-if="canManage && shows('alerts')" class="card space-y-3 p-4">
       <div>
         <h2 class="flex items-center gap-1.5 font-semibold"><Icone nom="notifications" />Alertes du matin</h2>
         <p class="text-sm text-slate-600">Chaque matin à 7 h 35, les administrateurs sont prévenus quand un indicateur passe un seuil (une même alerte au plus une fois par semaine). Laissez vide pour ne pas être alerté.</p>
@@ -31,7 +31,7 @@
     </section>
 
     <!-- Rapports mensuels des clients : relus puis envoyés -->
-    <section v-if="auth.can('merchants.view')" class="card space-y-3 p-4">
+    <section v-if="auth.can('merchants.view') && shows('reports')" class="card space-y-3 p-4">
       <div class="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 class="flex items-center gap-1.5 font-semibold"><Icone nom="documents" />Rapports mensuels des clients sous contrat</h2>
@@ -53,7 +53,7 @@
     </section>
 
     <!-- Lien Google Sheets -->
-    <section v-if="canManage" class="card space-y-3 p-4">
+    <section v-if="canManage && shows('sheets')" class="card space-y-3 p-4">
       <div class="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 class="flex items-center gap-1.5 font-semibold"><Icone nom="tableur" />Google Sheets</h2>
@@ -78,7 +78,7 @@
     </section>
 
     <!-- Point par e-mail -->
-    <section v-if="canManage" class="card space-y-3 p-4">
+    <section v-if="canManage && shows('email')" class="card space-y-3 p-4">
       <h2 class="flex items-center gap-1.5 font-semibold"><Icone nom="mail" />Point par e-mail</h2>
       <p class="text-sm text-slate-600">Chiffres clés et fichier Excel complet en pièce jointe, aux adresses choisies.</p>
       <div class="grid gap-3 sm:grid-cols-2">
@@ -125,6 +125,10 @@ import { date } from '../../utils/format'
 import BottomSheet from '../mobile/BottomSheet.vue'
 import ClientReportView from './ClientReportView.vue'
 import { confirmDialog, promptDialog } from '../../composables/useDialog'
+
+// Dans l'onglet Outils, chaque outil n'affiche que sa partie : alerts, reports, sheets, email (vide : tout)
+const props = defineProps({ only: { type: Array, default: () => [] } })
+const shows = (part) => !props.only.length || props.only.includes(part)
 
 const auth = useAuthStore()
 const toasts = useToastStore()

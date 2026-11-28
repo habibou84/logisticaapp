@@ -28,6 +28,10 @@ class IncidentReasonResource extends JsonResource
             'destination_effect' => $this->destination_effect,
             'holds' => $this->holds,
             'visible_to_client' => $this->visible_to_client,
+            // status : échec, report ou retour ; note : simple information, la course continue
+            'effect' => $this->effect ?? 'status',
+            // Report ou retour du livreur validé par l'équipe ou le client avant de prendre effet
+            'needs_validation' => (bool) $this->needs_validation,
             'is_active' => $this->is_active,
             'sort_order' => $this->sort_order,
             // Motif commun (null) ou propre à l'entreprise

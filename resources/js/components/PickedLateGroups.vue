@@ -49,10 +49,11 @@
 
 <script setup>
 import Icone from './ui/Icone.vue'
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import http from '../bootstrap/axios'
 import { useDispatchCountStore } from '../stores/dispatchCounts'
+import { useActivityFilterStore } from '../stores/activityFilter'
 import { useAuthStore } from '../stores/auth'
 import { activityBadge, activityShort, myActivities } from '../utils/activities'
 import PickedLateDialog from './PickedLateDialog.vue'
@@ -97,8 +98,12 @@ function decide(mode, list) {
   dialog.orders = list
 }
 
+// Activité choisie au-dessus (commune aux écrans Courses)
+const activityFilter = useActivityFilterStore()
+watch(() => activityFilter.current, () => load())
+
 async function load() {
-  const { data } = await http.get('/orders', { params: { queue: 'picked_late', per_page: 200 } })
+  const { data } = await http.get('/orders', { params: { queue: 'picked_late', per_page: 200, activity: activityFilter.current || undefined } })
   orders.value = data.data
   loaded.value = true
   const first = groups.value[0]

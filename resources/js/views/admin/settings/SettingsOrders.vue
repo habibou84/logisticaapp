@@ -123,6 +123,16 @@
             <span class="block text-slate-600">Sans réseau, le livreur enregistre quand même ses étapes ; l'application les envoie au retour du réseau.</span>
           </span>
         </label>
+        <label class="flex items-start gap-2 text-sm">
+          <input v-model="form.return_confirmation" type="checkbox" class="mt-1">
+          <span>Faire confirmer chaque retour par le client
+            <span class="block text-slate-600">
+              À la remise, le livreur affiche un QR code : le client le scanne, WhatsApp s'ouvre sur votre numéro avec le message déjà écrit,
+              il touche Envoyer. Sans scan, il écrit « retour » à votre numéro ou confirme dans son application. Sans téléphone : signature ou
+              photo et motif, l'agence vérifie (Courses › Retours clients). Le bon de retour signé reste possible.
+            </span>
+          </span>
+        </label>
         <MoreHelp>
           Hors connexion, le livreur peut enregistrer « récupéré », « en route », « livré » (avec l'encaissement), un échec, un report ou une note,
           à l'heure où ils ont été faits. Une livraison avec un code du destinataire faux est gardée mais signalée (file « Codes à vérifier »).
@@ -420,7 +430,7 @@ import { useCompanySettings } from '../../../composables/useCompanySettings'
 import { ACCEPT_MODES, AUTO_MODES, CUSTODY_MODES, DELIVERY_MODES, RESCHEDULE_NO_ANSWER, VALIDATION_MODES, WEEKDAYS } from './options'
 
 const { form, dirty, saving, error, save, reset } = useCompanySettings([
-  'validation_mode', 'daily_cutoff_time', 'default_max_attempts', 'require_delivery_code', 'offline_courier_actions', 'pickup_mission_custody', 'depot_closes_at', 'auto_pickup',
+  'validation_mode', 'daily_cutoff_time', 'default_max_attempts', 'require_delivery_code', 'offline_courier_actions', 'return_confirmation', 'pickup_mission_custody', 'depot_closes_at', 'auto_pickup',
   'mission_acceptance', 'unreachable_minutes', 'late_pickup_alert_minutes', 'courier_available_alert',
   'auto_delivery', 'auto_delivery_max_cod', 'same_courier_delivery', 'cutoff_by_day', 'day_advice', 'internal_delays',
   'activity_options', 'label_settings', 'photo_settings', 'delivery_day_rules', 'dashboard_settings',
@@ -456,6 +466,7 @@ const DASHBOARD_CARDS = {
   invoices_to_issue: 'Factures à émettre',
   to_return: 'À retourner',
   failed: 'Échec de livraison',
+  to_validate: 'Reports et retours à valider',
   on_hold: 'En attente',
   follow_up: 'Suivi',
   to_prepare: 'À préparer',

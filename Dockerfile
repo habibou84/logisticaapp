@@ -62,6 +62,11 @@ RUN composer dump-autoload --optimize --no-dev \
 COPY docker/entrypoint.sh /usr/local/bin/app-entrypoint
 RUN chmod +x /usr/local/bin/app-entrypoint
 
+# Version du code (commit), donnée par deploy/update.sh : Sentry indique dans quelle version une erreur apparaît.
+# En dernier : ne refait pas les étapes précédentes à chaque version
+ARG APP_VERSION=dev
+ENV SENTRY_RELEASE=$APP_VERSION
+
 ENTRYPOINT ["app-entrypoint"]
 CMD ["php-fpm"]
 

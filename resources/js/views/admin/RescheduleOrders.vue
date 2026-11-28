@@ -152,12 +152,13 @@
 
 <script setup>
 import Icone from '../../components/ui/Icone.vue'
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import Modal from '../../components/Modal.vue'
 import { useAuthStore } from '../../stores/auth'
 import { useDispatchCountStore } from '../../stores/dispatchCounts'
+import { useActivityFilterStore } from '../../stores/activityFilter'
 import { useToastStore } from '../../stores/toasts'
 import { money } from '../../utils/format'
 
@@ -195,9 +196,13 @@ function toggle(id) {
   open.value = open.value.includes(id) ? open.value.filter((x) => x !== id) : [...open.value, id]
 }
 
+// Activité choisie au-dessus (commune aux écrans Courses)
+const activityFilter = useActivityFilterStore()
+watch(() => activityFilter.current, () => load())
+
 async function load() {
   try {
-    data.value = (await http.get('/orders/to-reschedule')).data.data
+    data.value = (await http.get('/orders/to-reschedule', { params: activityFilter.current ? { activity: activityFilter.current } : {} })).data.data
     checked.value = checked.value.filter((id) => data.value.groups.some((g) => g.merchant?.id === id))
     dispatchCounts.fetchCounts()
   } catch (e) {

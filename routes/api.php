@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\Connect\PublicConnectController;
 use App\Http\Controllers\Api\CspReportController;
 use App\Http\Controllers\Api\PublicV1\PublicAccountController;
 use App\Http\Controllers\Api\PublicV1\PublicApiController;
+use App\Http\Controllers\Api\V1\AlertWhatsAppController;
 use App\Http\Controllers\Api\V1\ApiKeyController;
 use App\Http\Controllers\Api\V1\AppearanceController;
 use App\Http\Controllers\Api\V1\AuthController;
@@ -61,6 +62,7 @@ use App\Http\Controllers\Api\V1\OrderController;
 use App\Http\Controllers\Api\V1\OrderDraftController;
 use App\Http\Controllers\Api\V1\OrderExpenseController;
 use App\Http\Controllers\Api\V1\OrderImportController;
+use App\Http\Controllers\Api\V1\OrderProposalController;
 use App\Http\Controllers\Api\V1\ParcelController;
 use App\Http\Controllers\Api\V1\PasswordController;
 use App\Http\Controllers\Api\V1\PasswordResetController;
@@ -77,6 +79,7 @@ use App\Http\Controllers\Api\V1\ReferenceController;
 use App\Http\Controllers\Api\V1\RepairController;
 use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\RescheduleController;
+use App\Http\Controllers\Api\V1\ReturnHandoverController;
 use App\Http\Controllers\Api\V1\ReturnSlipController;
 use App\Http\Controllers\Api\V1\RevenueController;
 use App\Http\Controllers\Api\V1\RoleController;
@@ -256,6 +259,7 @@ Route::prefix('v1')->name('v1.')->group(function () {
 
         // Référentiels
         Route::get('zones', [ZoneController::class, 'index'])->name('zones.index');
+        Route::get('zones/cities', [ZoneController::class, 'cities'])->name('zones.cities');
         Route::get('incident-reasons', [ReferenceController::class, 'incidentReasons'])->name('incident-reasons.index');
         Route::get('cancel-reasons', [ReferenceController::class, 'cancelReasons'])->name('cancel-reasons.index');
         Route::get('recipients', [ReferenceController::class, 'recipients'])->name('recipients.index');
@@ -279,6 +283,7 @@ Route::prefix('v1')->name('v1.')->group(function () {
         // Zones et dépôts
         Route::middleware('can:zones.manage')->group(function () {
             Route::post('zones', [ZoneController::class, 'store'])->name('zones.store');
+            Route::post('zones/standard', [ZoneController::class, 'sync'])->name('zones.sync');
             Route::patch('zones/{zone}', [ZoneController::class, 'update'])->name('zones.update');
             Route::delete('zones/{zone}', [ZoneController::class, 'destroy'])->name('zones.destroy');
             Route::post('hubs', [HubController::class, 'store'])->name('hubs.store');
@@ -312,6 +317,11 @@ Route::prefix('v1')->name('v1.')->group(function () {
             Route::post('whatsapp/signup-ticket', [WhatsAppSignupController::class, 'ticket'])->middleware('throttle:10,1')->name('whatsapp.signup-ticket');
             Route::post('whatsapp/templates/submit', [WhatsAppSettingsController::class, 'submitTemplates'])->middleware('throttle:5,1')->name('whatsapp.templates.submit');
             Route::post('whatsapp/simulate', [WhatsAppSettingsController::class, 'simulate'])->middleware('throttle:60,1')->name('whatsapp.simulate');
+            // WhatsApp › Connexion : numéro à part, relié par QR code, pour les alertes des administrateurs
+            Route::get('alert-whatsapp', [AlertWhatsAppController::class, 'show'])->middleware('throttle:120,1')->name('alert-whatsapp.show');
+            Route::post('alert-whatsapp/connect', [AlertWhatsAppController::class, 'connect'])->middleware('throttle:10,1')->name('alert-whatsapp.connect');
+            Route::post('alert-whatsapp/test', [AlertWhatsAppController::class, 'test'])->middleware('throttle:5,1')->name('alert-whatsapp.test');
+            Route::delete('alert-whatsapp', [AlertWhatsAppController::class, 'destroy'])->middleware('throttle:10,1')->name('alert-whatsapp.destroy');
         });
 
         // Remontées terrain des livreurs (notes, problèmes) : consultation et suivi par le dispatch
@@ -394,6 +404,13 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::post('return-slips/{returnSlip}/hand-over', [ReturnSlipController::class, 'handOver'])->middleware('throttle:30,1')->name('return-slips.hand-over');
         Route::post('return-slips/{returnSlip}/cancel', [ReturnSlipController::class, 'cancel'])->name('return-slips.cancel');
         Route::get('return-slips/{returnSlip}/proof/{kind}', [ReturnSlipController::class, 'proof'])->whereIn('kind', ['signature', 'photo', 'photo-original'])->name('return-slips.proof');
+        // Remises au client confirmées par lui : bandeau du client, remises à vérifier par l'agence (droits vérifiés dans le contrôleur)
+        Route::get('return-handovers/mine', [ReturnHandoverController::class, 'mine'])->name('return-handovers.mine');
+        Route::get('return-handovers/review', [ReturnHandoverController::class, 'review'])->name('return-handovers.review');
+        Route::post('return-handovers/{returnHandover}/confirm', [ReturnHandoverController::class, 'confirm'])->middleware('throttle:30,1')->name('return-handovers.confirm');
+        Route::post('return-handovers/{returnHandover}/dispute', [ReturnHandoverController::class, 'dispute'])->middleware('throttle:30,1')->name('return-handovers.dispute');
+        Route::post('return-handovers/{returnHandover}/resolve', [ReturnHandoverController::class, 'resolve'])->name('return-handovers.resolve');
+        Route::get('return-handovers/{returnHandover}/proof/{kind}', [ReturnHandoverController::class, 'proof'])->whereIn('kind', ['signature', 'photo'])->name('return-handovers.proof');
 
         // Colis chez les livreurs (droits vérifiés dans le contrôleur)
         Route::get('parcels/held', [ParcelController::class, 'index'])->name('parcels.held');
@@ -571,6 +588,9 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::post('orders/{order}/assign', [OrderActionController::class, 'assign'])->name('orders.assign');
         Route::post('orders/{order}/unassign', [OrderActionController::class, 'unassign'])->name('orders.unassign');
         Route::post('orders/{order}/decision', [OrderActionController::class, 'decide'])->name('orders.decision');
+        // Report ou retour signalé par le livreur, à valider par l'équipe ou le client
+        Route::post('orders/{order}/proposal/approve', [OrderProposalController::class, 'approve'])->name('orders.proposal.approve');
+        Route::post('orders/{order}/proposal/reject', [OrderProposalController::class, 'reject'])->name('orders.proposal.reject');
         Route::post('orders/{order}/approval', [OrderActionController::class, 'approval'])->name('orders.approval');
         Route::post('orders/{order}/follow-up', [OrderActionController::class, 'followUp'])->name('orders.follow-up');
         Route::post('orders/{order}/renew', [OrderActionController::class, 'renew'])->name('orders.renew');
@@ -692,8 +712,26 @@ Route::prefix('v1')->name('v1.')->group(function () {
             Route::get('clients', 'clients')->name('clients');
             Route::get('pivot', 'pivot')->name('pivot');
         });
+        // Statistiques de direction : les activités côte à côte, points à décider
+        Route::get('stats/direction', [StatisticsController::class, 'direction'])->middleware('can:direction.view')->name('stats.direction');
+        Route::get('stats/direction/forecast', [StatisticsController::class, 'directionForecast'])->middleware('can:direction.view')->name('stats.direction.forecast');
+        Route::get('stats/direction/simulator', [StatisticsController::class, 'directionSimulator'])->middleware('can:direction.view')->name('stats.direction.simulator');
+        Route::get('stats/direction/questions', [StatisticsController::class, 'directionQuestions'])->middleware('can:direction.ask')->name('stats.direction.questions');
+        Route::post('stats/direction/questions', [StatisticsController::class, 'askDirectionQuestion'])->middleware(['can:direction.ask', 'throttle:30,1'])->name('stats.direction.questions.ask');
+        Route::get('stats/direction/objectives', [StatisticsController::class, 'directionObjectives'])->middleware('can:direction.view')->name('stats.direction.objectives');
+        Route::put('stats/direction/objectives', [StatisticsController::class, 'saveDirectionObjectives'])->middleware('can:direction.view')->name('stats.direction.objectives.save');
+        Route::get('stats/direction/teams', [StatisticsController::class, 'directionTeams'])->middleware('can:direction.view')->name('stats.direction.teams');
+        Route::get('stats/direction/{activity}', [StatisticsController::class, 'directionActivity'])->whereIn('activity', ['ecommerce', 'distribution', 'mad'])
+            ->middleware('can:direction.view')->name('stats.direction.activity');
         // Intégrations : Excel, lien Google Sheets, point par e-mail ; rapports mensuels des clients
         Route::get('stats/export', [StatsIntegrationController::class, 'export'])->middleware('throttle:20,1')->name('stats.export');
+        Route::get('stats/export/options', [StatsIntegrationController::class, 'exportOptions'])->name('stats.export.options');
+        Route::post('stats/export/templates', [StatsIntegrationController::class, 'saveExportTemplate'])->name('stats.export.templates.store');
+        Route::delete('stats/export/templates/{template}', [StatsIntegrationController::class, 'deleteExportTemplate'])->name('stats.export.templates.destroy');
+        Route::put('stats/export/templates/{template}/schedule', [StatsIntegrationController::class, 'scheduleExportTemplate'])->name('stats.export.templates.schedule');
+        Route::get('stats/alerts', [StatsIntegrationController::class, 'alerts'])->name('stats.alerts');
+        Route::put('stats/alerts', [StatsIntegrationController::class, 'saveAlerts'])->name('stats.alerts.save');
+        Route::post('stats/export/send', [StatsIntegrationController::class, 'sendExport'])->middleware('throttle:5,1')->name('stats.export.send');
         Route::get('stats/feed-link', [StatsIntegrationController::class, 'feedLink'])->name('stats.feed-link');
         Route::post('stats/feed-link', [StatsIntegrationController::class, 'regenerateFeed'])->name('stats.feed-link.regenerate');
         Route::delete('stats/feed-link', [StatsIntegrationController::class, 'disableFeed'])->name('stats.feed-link.disable');
@@ -798,6 +836,12 @@ Route::prefix('v1')->name('v1.')->group(function () {
             Route::get('messages', [CourierMessageController::class, 'mine'])->name('messages');
             Route::post('messages/{message}/ack', [CourierMessageController::class, 'acknowledge'])->name('messages.ack');
             Route::get('return-slips', [ReturnSlipController::class, 'mine'])->name('return-slips');
+            // Remise au client : QR code à lui faire scanner, remise de secours
+            Route::post('return-handovers', [ReturnHandoverController::class, 'start'])->middleware('throttle:30,1')->name('return-handovers.start');
+            Route::get('return-handovers/{returnHandover}', [ReturnHandoverController::class, 'show'])->name('return-handovers.show');
+            Route::post('return-handovers/{returnHandover}/renew', [ReturnHandoverController::class, 'renew'])->middleware('throttle:30,1')->name('return-handovers.renew');
+            Route::post('return-handovers/{returnHandover}/cancel', [ReturnHandoverController::class, 'cancel'])->name('return-handovers.cancel');
+            Route::post('return-handovers/{returnHandover}/fallback', [ReturnHandoverController::class, 'fallback'])->middleware('throttle:30,1')->name('return-handovers.fallback');
             // Mon véhicule : état des lieux, pleins, papiers
             Route::controller(CourierVehicleController::class)->prefix('vehicle')->name('vehicle.')->group(function () {
                 Route::get('/', 'show')->name('show');

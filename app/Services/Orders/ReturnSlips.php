@@ -45,11 +45,12 @@ class ReturnSlips
      *
      * @return Collection<int, Order>
      */
-    public function candidates(?int $merchantId = null): Collection
+    public function candidates(?int $merchantId = null, ?string $activity = null): Collection
     {
         return Order::query()
             ->toGiveBack()
             ->when($merchantId, fn ($q) => $q->where('merchant_id', $merchantId))
+            ->when($activity, fn ($q) => $q->where('activity', $activity))
             ->with(['merchant', 'deliveryZone:id,name', 'lastIncidentReason:id,label', 'holder.user', 'returnCourier.user'])
             ->orderBy('merchant_id')->orderBy('id')
             ->get();
@@ -147,7 +148,7 @@ class ReturnSlips
                 if ($order->status === OrderStatus::ReturnAssigned) {
                     $order = $this->workflow->transition($actor, $order, OrderStatus::Returning, ['lat' => $lat, 'lng' => $lng]);
                 }
-                $this->workflow->transition($actor, $order, OrderStatus::Returned, ['note' => $note, 'lat' => $lat, 'lng' => $lng]);
+                $this->workflow->transition($actor, $order, OrderStatus::Returned, ['note' => $note, 'lat' => $lat, 'lng' => $lng, 'return_proof' => $slip]);
             }
 
             // Colis non remis : ils sortent du bon et restent à rendre
@@ -233,7 +234,7 @@ class ReturnSlips
     /**
      * Signature dessinée à l'écran (image PNG en data URL).
      */
-    private function decodeSignature(?string $signature): ?string
+    public static function decodeSignature(?string $signature): ?string
     {
         return SignatureImage::decode($signature);
     }

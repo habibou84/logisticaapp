@@ -7,6 +7,7 @@ export const REASON_FAMILIES = {
   address: { label: 'Adresse, contact', icon: 'adresse' },
   documents: { label: 'Documents', icon: 'document' },
   recipient: { label: 'Destinataire', icon: 'entreprise' },
+  info: { label: 'Information (la course continue)', icon: 'note' },
   pickup: { label: 'Ramassage', icon: 'course' },
   other: { label: 'Autre', icon: 'modifier' },
 }
@@ -23,4 +24,9 @@ export const DESTINATION_EFFECTS = {
   check_name: 'Nom à vérifier',
   check_address: 'Adresse à vérifier',
   check_phone: 'Numéro à vérifier',
+}
+
+/** Report ou retour du livreur validé par l'équipe ou le client avant de prendre effet (miroir de IncidentReason::validates) */
+export function reasonValidates(r) {
+  return !!r && r.needs_validation && r.effect !== 'note' && (r.requires_date || r.triggers_return)
 }

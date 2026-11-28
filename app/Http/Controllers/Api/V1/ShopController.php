@@ -42,7 +42,7 @@ class ShopController extends Controller
                 'photo_url' => $p->photoUrl(),
                 'available' => ShopCheckout::available($p),
             ])->values(),
-            'zones' => $this->zones($merchant)->map(fn (Zone $z) => ['id' => $z->id, 'name' => $z->fullName()])->values(),
+            'zones' => $this->zones($merchant)->map(fn (Zone $z) => ['id' => $z->id, 'parent_id' => $z->parent_id, 'short_name' => $z->name, 'name' => $z->fullName()])->values(),
         ]]);
     }
 

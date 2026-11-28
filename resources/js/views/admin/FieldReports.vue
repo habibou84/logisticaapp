@@ -49,6 +49,7 @@
         <select id="fr-kind" v-model="filters.kind" class="input" @change="load(1)">
           <option value="">Tous</option>
           <option v-for="(k, value) in KINDS" :key="value" :value="value">{{ k.label }}{{ store.open[value] ? ` (${store.open[value]} à traiter)` : '' }}</option>
+          <option value="to_validate">Reports et retours à valider{{ store.open.to_validate ? ` (${store.open.to_validate})` : '' }}</option>
         </select>
       </div>
       <div>
@@ -87,7 +88,12 @@
               <span v-if="!r.visible_to_merchant && r.kind === 'note'" class="ml-2 text-xs text-slate-600">· note interne</span>
             </p>
             <p v-if="r.note" class="font-medium">« {{ r.note }} »</p>
-            <p v-if="r.rescheduled_to" class="flex items-center gap-1 text-sm"><Icone nom="date" taille="petite" /> Reportée au {{ date(r.rescheduled_to) }}</p>
+            <p v-if="r.rescheduled_to" class="flex items-center gap-1 text-sm"><Icone nom="date" taille="petite" /> {{ r.proposal ? 'Report demandé au' : 'Reportée au' }} {{ date(r.rescheduled_to) }}</p>
+            <!-- Report ou retour du livreur : à valider, ou décision prise -->
+            <ProposalCard v-if="r.proposal?.status === 'pending' && r.order" :order-id="r.order.id" :proposal="{ ...r.proposal, can_decide: auth.can('orders.dispatch') }" class="mt-1" @updated="load(meta?.current_page || 1)" />
+            <p v-else-if="r.proposal" class="text-sm" :class="r.proposal.status === 'rejected' ? 'text-red-700' : 'text-slate-700'">
+              {{ r.proposal.summary }} : {{ r.proposal.status_label.toLowerCase() }}<template v-if="r.proposal.decided_by"> par {{ r.proposal.decided_by }}{{ r.proposal.decided_by_type === 'merchant' ? ' (client)' : '' }}</template><template v-if="r.proposal.decision_note"> · « {{ r.proposal.decision_note }} »</template>
+            </p>
             <p v-if="r.expense" class="flex items-center gap-1 text-sm"><Icone nom="frais" taille="petite" /> {{ money(r.expense) }}</p>
             <p class="text-sm text-slate-600">
               <Icone nom="livreur" taille="petite" class="inline" /> <strong>{{ r.courier.name }}</strong>
@@ -119,7 +125,7 @@
 
           <div class="flex flex-col gap-2 shrink-0 w-full sm:w-64">
             <button v-if="r.order && replying !== r.id" type="button" class="btn-primary" @click="replying = r.id"><Icone nom="message" /> Répondre au livreur</button>
-            <template v-if="!r.review">
+            <template v-if="!r.review && r.proposal?.status !== 'pending'">
               <input v-model="comments[r.id]" class="input text-sm" placeholder="Ce qui a été fait (facultatif)" :aria-label="`Commentaire sur la remontée ${r.id}`" @keydown.enter="handle(r)">
               <button type="button" class="btn-success" @click="handle(r)"><Icone nom="valider" /> Marquer comme traité</button>
             </template>
@@ -154,6 +160,8 @@ import { alertSound } from '../../composables/useAlertSound'
 import CourierMessageThread from '../../components/CourierMessageThread.vue'
 import FieldReportActions from '../../components/FieldReportActions.vue'
 import FieldEventsPanel from '../../components/FieldEventsPanel.vue'
+import ProposalCard from '../../components/ProposalCard.vue'
+import { useAuthStore } from '../../stores/auth'
 import { useRoute, useRouter } from 'vue-router'
 import { useFieldReportStore } from '../../stores/fieldReports'
 import { useToastStore } from '../../stores/toasts'
@@ -188,6 +196,7 @@ function setTab(value) {
   router.replace({ query: { ...route.query, onglet: value, evenement: undefined } })
 }
 const toasts = useToastStore()
+const auth = useAuthStore()
 const reports = ref([])
 const meta = ref(null)
 const loaded = ref(false)

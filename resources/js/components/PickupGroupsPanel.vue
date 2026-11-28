@@ -84,6 +84,8 @@ const props = defineProps({
   couriers: { type: Array, default: () => [] },
   // Jour choisi (AAAA-MM-JJ) : colis à livrer après ce jour masqués, sauf demande
   day: { type: String, default: '' },
+  // Activité choisie dans la liste (vide : toutes)
+  activity: { type: String, default: '' },
   includeLater: { type: Boolean, default: false },
 })
 const emit = defineEmits(['assigned'])
@@ -123,7 +125,7 @@ const excludedCount = (g) => visible(g).length - chosen(g).length
 
 async function load() {
   try {
-    const { data } = await http.get('/orders/pickup-groups', { params: props.day ? { day: props.day } : {} })
+    const { data } = await http.get('/orders/pickup-groups', { params: { day: props.day || undefined, activity: props.activity || undefined } })
     groups.value = data.data
   } catch (e) {
     toasts.error(apiErrorMessage(e))
@@ -153,7 +155,7 @@ async function assign(g) {
 
 // Temps réel : nouveaux colis validés, assignations faites ailleurs
 watch(orderListChanges, load)
-watch(() => props.day, load)
+watch(() => [props.day, props.activity], load)
 
 onMounted(load)
 </script>

@@ -115,6 +115,9 @@
         </p>
       </form>
 
+      <!-- Numéro à part, relié par QR code : alertes des administrateurs seulement -->
+      <AlertWhatsAppConnect />
+
       <!-- Webhook -->
       <div class="card p-4 space-y-2 text-sm">
         <h2 class="font-semibold">Accusés de réception (webhook)</h2>
@@ -169,6 +172,7 @@
 <script setup>
 import Icone from '../../components/ui/Icone.vue'
 import WhatsAppTabs from '../../components/WhatsAppTabs.vue'
+import AlertWhatsAppConnect from '../../components/AlertWhatsAppConnect.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import MessageStatus from '../../components/MessageStatus.vue'

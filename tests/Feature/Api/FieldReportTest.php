@@ -79,7 +79,8 @@ class FieldReportTest extends TestCase
 
     public function test_what_to_do_depends_on_the_failure_reason(): void
     {
-        // Refusé : le retour d'abord ; « Relivrer » annule le retour (le client a changé d'avis)
+        // Refusé (motif réglé sans validation) : le retour d'abord ; « Relivrer » annule le retour (le client a changé d'avis)
+        IncidentReason::where('code', 'refused')->update(['needs_validation' => false]);
         $refused = $this->failWith('refused');
         $this->assertSame(['return', 'call', 'reopen', 'open'], $refused['suggestions']);
         $this->assertSame('refused', $refused['incident_code']);

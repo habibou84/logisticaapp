@@ -8,13 +8,15 @@
     "require": {
         "php": "^8.2",
         "anthropic-ai/sdk": "^0.56.0",
-        "habibou84/socle": "^1.0@dev",
+        "dompdf/dompdf": "^3.1",
+        "habibou84/socle": "dev-main#18421fc as 1.12.x-dev",
         "laravel/framework": "^12.0",
         "laravel/horizon": "^5.50",
         "laravel/reverb": "^1.12",
         "laravel/sanctum": "^4.2",
         "laravel/tinker": "^2.10.1",
         "openspout/openspout": "^5.3",
+        "sentry/sentry-laravel": "^4.31",
         "spatie/laravel-permission": "^8.3"
     },
     "require-dev": {

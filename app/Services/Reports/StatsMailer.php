@@ -45,4 +45,40 @@ class StatsMailer
 
         return true;
     }
+
+    /**
+     * Modèles d'export à envoyer à date fixe (chaque lundi ou le 1er du mois), aux adresses du point par e-mail :
+     * le même export, sur la semaine ou le mois écoulé.
+     *
+     * @param  'weekly'|'monthly'  $frequency
+     */
+    public function sendTemplates(string $frequency, ?CarbonImmutable $now = null): int
+    {
+        $sent = 0;
+        foreach (Company::query()->where('status', CompanyStatus::Active->value)->get() as $company) {
+            $settings = $this->settings->for($company);
+            $recipients = $settings['email']['recipients'];
+            $moment = $now ?? CarbonImmutable::now($company->timezone ?: config('app.timezone'));
+            [$from, $to] = $frequency === 'monthly'
+                ? [$moment->subMonthNoOverflow()->startOfMonth(), $moment->subMonthNoOverflow()->endOfMonth()->startOfDay()]
+                : [$moment->startOfWeek()->subWeek(), $moment->startOfWeek()->subDay()];
+            $from = CarbonImmutable::parse($from->toDateString());
+            $to = CarbonImmutable::parse($to->toDateString());
+            foreach (collect($settings['exports'])->where('schedule', $frequency) as $template) {
+                if ($recipients === []) {
+                    continue;
+                }
+                $path = $this->export->file($company, $from, $to, [...$template, 'amounts' => ! $template['hide_amounts']]);
+                try {
+                    Mail::to($recipients)->send(new StatsReportMail($company, $template['name'], $this->export->summary($company, $from, $to, ! $template['hide_amounts']),
+                        $path, "statistiques-{$from->toDateString()}-au-{$to->toDateString()}.{$template['format']}"));
+                    $sent++;
+                } finally {
+                    @unlink($path);
+                }
+            }
+        }
+
+        return $sent;
+    }
 }

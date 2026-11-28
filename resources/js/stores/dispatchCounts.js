@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import http from '../bootstrap/axios'
+import { useActivityFilterStore } from './activityFilter'
 
 // Files du dispatch : courses à valider, à ramasser, à livrer, et celles qui attendent
 // un livreur au-delà du délai de l'entreprise (badge du menu « Courses »)
@@ -28,7 +29,12 @@ export const useDispatchCountStore = defineStore('dispatchCounts', {
         again ??= inFlight.catch(() => {}).then(() => { again = null; return this.fetchCounts() })
         return again
       }
-      inFlight = http.get('/orders/counts', { params: this.day ? { day: this.day } : {} })
+      const params = {}
+      if (this.day) params.day = this.day
+      // Activité choisie dans les écrans Courses ; les pastilles du menu (bloc « menu ») restent celles de l'entreprise
+      const activity = useActivityFilterStore().current
+      if (activity) params.activity = activity
+      inFlight = http.get('/orders/counts', { params })
         .then(({ data }) => {
           this.counts = data.data
           this.dayCounts = data.data.day || null
