@@ -52,7 +52,7 @@ jobs:
       - name: APK de test
         working-directory: mobile/${{ matrix.app }}/android
         run: ./gradlew assembleDebug --no-daemon
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: jibiat-${{ matrix.app }}-apk
           path: mobile/${{ matrix.app }}/android/app/build/outputs/apk/debug/app-debug.apk
