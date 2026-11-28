@@ -66,8 +66,8 @@ class DirectionActivities
                 'collected' => $k['collected'], 'previous_collected' => $p['collected'],
                 'first_attempt_rate' => $deliveries['first_attempt_rate'],
             ],
-            // Argent en circulation à cet instant (toutes activités : l'encaissement à la livraison est surtout e-commerce)
-            'cash' => $this->statistics->for($company)->finances($from, $to)['circulation'],
+            // Argent en circulation à cet instant, pour les courses e-commerce
+            'cash' => $stats->finances($from, $to)['circulation'],
             'funnel' => [
                 ['key' => 'created', 'label' => 'Créées', 'count' => $k['created']],
                 ['key' => 'picked_up', 'label' => 'Ramassées', 'count' => $pickedUp],

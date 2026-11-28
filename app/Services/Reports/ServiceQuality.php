@@ -77,7 +77,7 @@ class ServiceQuality
             'mad' => in_array($activity, [null, 'mad'], true) ? $this->mad($company, $start, $end) : [],
             'failures' => $this->failures($company, $start, $end, $tz, $orders, $delivered, $names),
             'distribution' => in_array($activity, [null, 'distribution'], true) ? $this->distribution($company, $start, $end, $delivered, $tz) : null,
-            'history' => $this->history($company, $start, $end),
+            'history' => $this->history($company, $start, $end, $activity),
         ];
     }
 
@@ -301,10 +301,13 @@ class ServiceQuality
      *
      * @return list<array<string, mixed>>
      */
-    private function history(Company $company, CarbonImmutable $start, CarbonImmutable $end): array
+    private function history(Company $company, CarbonImmutable $start, CarbonImmutable $end, ?string $activity = null): array
     {
         return DailySnapshot::forCompany($company->id)->whereBetween('day', [$start->toDateString(), $end->toDateString()])->orderBy('day')->get()
-            ->map(fn (DailySnapshot $s) => ['date' => $s->day->toDateString(), ...$s->data])->values()->all();
+            // Une activité : sa part du relevé ; les soirs relevés avant que l'activité soit notée n'ont que le total, on les laisse de côté
+            ->filter(fn (DailySnapshot $s) => $activity === null || isset($s->data['by_activity'][$activity]))
+            ->map(fn (DailySnapshot $s) => ['date' => $s->day->toDateString(), ...collect($activity === null ? $s->data : $s->data['by_activity'][$activity])->except('by_activity')->all()])
+            ->values()->all();
     }
 
     private function rate(int $part, int $total): ?float
