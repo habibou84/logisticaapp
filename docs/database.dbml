@@ -761,9 +761,26 @@ Table outbound_messages {
   delivered_at timestamp
   read_at timestamp
   failed_at timestamp
+  via varchar [note: 'qr : envoyé par le WhatsApp des alertes (QR code)']
   created_at timestamp
   updated_at timestamp
   indexes { (company_id, created_at); (company_id, status); (order_id) }
+}
+
+Table whatsapp_qr_sessions {
+  id bigint [pk, increment]
+  company_id bigint [ref: - companies.id, unique, not null]
+  status varchar [not null, default: 'disconnected', note: 'disconnected | scanning | connected']
+  phone varchar
+  name varchar
+  connected_at timestamp
+  disconnected_at timestamp
+  checked_at timestamp
+  warned_at timestamp [note: 'administrateurs prévenus de la déconnexion']
+  last_error varchar
+  created_at timestamp
+  updated_at timestamp
+  Note: 'WhatsApp des alertes, relié par QR code (conteneur whatsapp-qr, WAHA)'
 }
 
 Table scheduled_reports {

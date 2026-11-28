@@ -42,6 +42,12 @@ main() {
     project="${project:-logistica}"
     chown root:33 .env && chmod 640 .env
 
+    # WhatsApp des alertes (QR code) : clé du conteneur « whatsapp-qr », créée une fois
+    if ! grep -qE '^WHATSAPP_QR_API_KEY=.+' .env; then
+        sed -i '/^WHATSAPP_QR_API_KEY=/d' .env
+        echo "WHATSAPP_QR_API_KEY=$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 40)" >> .env
+    fi
+
     echo "==> Construction des images (le site reste en ligne)"
     # Numéro de version dans l'image : Sentry indique dans quelle version une erreur apparaît
     APP_VERSION="$version" docker compose build

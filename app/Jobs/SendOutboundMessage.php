@@ -9,7 +9,10 @@ use App\Models\Merchant;
 use App\Models\OutboundMessage;
 use App\Models\PushSubscription;
 use App\Models\WhatsAppAccount;
+use App\Services\Messaging\AlertWhatsApp;
+use App\Services\Messaging\Gateways\LogWhatsAppGateway;
 use App\Services\Messaging\Gateways\SmsGateway;
+use App\Services\Messaging\Gateways\WahaClient;
 use App\Services\Messaging\Gateways\WhatsAppGateway;
 use App\Services\Messaging\MessagingException;
 use App\Services\Messaging\Messenger;
@@ -67,6 +70,10 @@ class SendOutboundMessage implements ShouldQueue
 
             $providerId = match (true) {
                 $message->channel === MessageChannel::Sms => $sms->send($message->to, $message->body),
+                // WhatsApp des alertes, relié par QR code : texte libre, sans modèle Meta
+                // Simulation imposée (préproduction) : seul l'essai demandé par l'administrateur part pour de vrai
+                $message->via === 'qr' && AlertWhatsApp::simulated($message) => app(LogWhatsAppGateway::class)->sendReply(null, $message->to, $message->body),
+                $message->via === 'qr' => app(WahaClient::class)->sendText($message->to, $message->body),
                 // Réponse dans une conversation ouverte par l'expéditeur : texte libre et boutons
                 $message->template_name === null => $whatsapp->sendReply($account, $message->to, $message->body, $message->payload['buttons'] ?? []),
                 default => $whatsapp->sendTemplate(
@@ -140,6 +147,10 @@ class SendOutboundMessage implements ShouldQueue
     private function markFailed(OutboundMessage $message, string $error, Messenger $messenger): void
     {
         $message->advanceTo(MessageStatus::Failed, $error);
+        // WhatsApp des alertes : pas de SMS de repli (l'alerte reste dans la cloche des administrateurs)
+        if ($message->via === 'qr') {
+            return;
+        }
         $message->channel === MessageChannel::Push ? $messenger->fallbackToWhatsApp($message) : $messenger->fallbackToSms($message);
     }
 }

@@ -37,6 +37,8 @@ Schedule::command('vehicles:daily')->dailyAt('06:40')->withoutOverlapping();
 Schedule::command('whatsapp:tokens')->dailyAt('08:15')->withoutOverlapping();
 // Modèles WhatsApp ajoutés depuis la connexion du numéro : soumis à Meta chaque nuit, état relu
 Schedule::command('whatsapp:templates')->dailyAt('04:20')->withoutOverlapping();
+// WhatsApp des alertes (QR code) : session relancée si besoin, administrateurs prévenus d'une déconnexion
+Schedule::command('whatsapp-qr:watch')->everyFiveMinutes()->withoutOverlapping();
 Schedule::command('model:prune', ['--model' => [IdempotencyKey::class, WebhookDelivery::class, CourierLocation::class]])->daily();
 // Cloche : anciennes notifications supprimées chaque nuit
 Schedule::command('notifications:prune')->dailyAt('03:40')->withoutOverlapping();

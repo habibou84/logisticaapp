@@ -95,6 +95,8 @@ else
     env_set TRUSTED_PROXIES '*'
     [[ -n "$EMAIL" ]] && env_set VAPID_SUBJECT "mailto:$EMAIL"
     env_set WHATSAPP_VERIFY_TOKEN "$(random 16)"
+    # WhatsApp des alertes (QR code) : clé entre l'application et le conteneur « whatsapp-qr »
+    env_set WHATSAPP_QR_API_KEY "$(random 40)"
     if [[ "$INSTANCE" == preprod ]]; then
         # Préproduction : jamais de message réel à un client ou un livreur, page de code d'accès avant tout,
         # erreurs Sentry rangées à part (environnement « staging »), chaque commit de main installé
