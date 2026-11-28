@@ -290,7 +290,7 @@ const SECTIONS = [
     key: 'pilotage', label: 'Pilotage', icon: 'objectif',
     tabs: [
       { key: 'overview', label: 'Vue d\'ensemble', description: 'Les chiffres clés de la période comparés à la période précédente, les courses jour par jour et les heures de pointe.' },
-      { key: 'goals', label: 'Objectifs et tendances', period: false, description: 'Le mois en cours face à ses objectifs, sa projection de fin de mois, la comparaison avec l\'an dernier et 13 mois d\'historique.' },
+      { key: 'goals', label: 'Tendances', period: false, description: 'Le mois en cours et son estimation de fin de mois, la comparaison avec l\'an dernier et 13 mois d\'historique.' },
       // Vues de direction : les activités côte à côte, puis un écran par activité et les équipes, avec les points à décider
       { key: 'direction', label: 'Activités côte à côte', permission: 'direction.view', activity: false, description: 'Chiffre d\'affaires, marge, qualité et factures en retard de chaque activité, comparés à la période précédente, et les points à décider.' },
       { key: 'dir-ecommerce', label: 'E-commerce', permission: 'direction.view', activity: false, only: 'ecommerce', description: 'Parcours des colis, échecs, marge par zone, argent en circulation et clients principaux.' },
