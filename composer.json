@@ -7,7 +7,7 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
-        "anthropic-ai/sdk": "^0.56.0",
+        "anthropic-ai/sdk": "^1.14.0",
         "dompdf/dompdf": "^3.1",
         "habibou84/socle": "dev-main#18421fc as 1.12.x-dev",
         "laravel/framework": "^12.0",
