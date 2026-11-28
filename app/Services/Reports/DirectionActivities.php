@@ -11,7 +11,7 @@ use App\Models\Order;
 use Carbon\CarbonImmutable;
 
 /**
- * Tableau de direction › écrans par activité : chaque activité avec ses propres indicateurs.
+ * Statistiques de direction › écrans par activité : chaque activité avec ses propres indicateurs.
  * - e-commerce : parcours des colis, motifs d'échec, marge par zone, argent en circulation, clients principaux ;
  * - MAD : revenu des forfaits, consommation, présence et retards par contrat, marge, échéances ;
  * - distribution : volumes par type d'envoi, délai tenu par délai vendu, forfaits, lots, paiement des factures.

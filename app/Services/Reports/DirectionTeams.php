@@ -24,7 +24,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 
 /**
- * Tableau de direction › Équipes : les livreurs (productivité, temps par course, réussite, note, retards, écarts de
+ * Statistiques de direction › Équipes : les livreurs (productivité, temps par course, réussite, note, retards, écarts de
  * caisse, paie), la charge par zone, la paie par mois, les véhicules et les agents du bureau (répartition, caisse,
  * dépôt).
  *

@@ -90,9 +90,9 @@ const routes = [
     meta: { roles: SPACES.admin },
     children: [
       { path: '', name: 'admin', component: shared.dashboard },
-      { path: 'statistiques', component: () => import('../views/admin/Statistics.vue'), meta: { permission: 'orders.view' } },
-      // Tableau de direction : les activités côte à côte, points à décider
-      { path: 'direction', component: () => import('../views/admin/Direction.vue'), meta: { permission: 'direction.view' } },
+      { path: 'statistiques', component: () => import('../views/admin/StatisticsHome.vue'), meta: { permission: 'orders.view' } },
+      // Ancienne adresse des vues de direction : elles ouvrent la page Statistiques
+      { path: 'direction', redirect: '/admin/statistiques' },
       // Mon compte : mot de passe de la personne connectée (bouton profil de l'en-tête)
       { path: 'mon-compte', component: () => import('../views/admin/Account.vue') },
       { path: 'courses', component: shared.orders, meta: { permission: 'orders.view' } },

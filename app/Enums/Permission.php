@@ -46,7 +46,7 @@ enum Permission: string
     case InvoicesVoid = 'invoices.void';
     // Chiffre d'affaires par activité
     case RevenueView = 'revenue.view';
-    // Tableau de direction : chiffre d'affaires, marge, points à décider des trois activités
+    // Statistiques de direction : chiffre d'affaires, marge, points à décider des trois activités, équipes
     case DirectionView = 'direction.view';
 
     // Réglages et équipe
@@ -86,7 +86,7 @@ enum Permission: string
             self::InvoicesManage => 'Calculer, émettre et encaisser les factures',
             self::InvoicesVoid => 'Annuler une facture émise ou faire un avoir',
             self::RevenueView => 'Voir le chiffre d\'affaires',
-            self::DirectionView => 'Voir le tableau de direction',
+            self::DirectionView => 'Voir les statistiques de direction',
             self::SettingsManage => 'Réglages généraux',
             self::ZonesManage => 'Zones et dépôts',
             self::PricingManage => 'Grille des tarifs',
@@ -126,7 +126,7 @@ enum Permission: string
             self::InvoicesManage => 'Calculer, compléter, émettre et encaisser les factures.',
             self::InvoicesVoid => 'Annuler une facture déjà émise, ou la corriger par un avoir (total ou partiel).',
             self::RevenueView => 'Chiffre d\'affaires par activité.',
-            self::DirectionView => 'Chiffre d\'affaires, marge, impayés et points à décider de chaque activité.',
+            self::DirectionView => 'Onglets Vue d\'ensemble, E-commerce, MAD, Distribution et Équipes des statistiques, avec les points à décider.',
             self::SettingsManage => 'Entreprise et marque, courses, alertes, clients, mise en route, reprise de l\'ancienne application.',
             self::ZonesManage => 'Communes, quartiers, zones au forfait, dépôts.',
             self::PricingManage => 'Grilles de prix, suppléments, frais de retour.',

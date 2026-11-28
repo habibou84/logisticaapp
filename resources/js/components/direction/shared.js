@@ -1,4 +1,4 @@
-// Outils communs du tableau de direction
+// Outils communs des statistiques de direction
 import { SERIES } from '../stats/chart'
 
 // Une couleur par activité, toujours la même (ordre validé des séries)

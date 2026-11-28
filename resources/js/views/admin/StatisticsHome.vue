@@ -1,11 +1,13 @@
 <template>
-  <div class="space-y-4">
+  <!-- Sans l'autorisation de direction : les statistiques de toujours, telles quelles -->
+  <Statistics v-if="!direction" />
+  <div v-else class="space-y-4">
     <div class="flex flex-wrap items-end justify-between gap-2">
       <div>
-        <h1 class="text-xl font-bold">Tableau de direction</h1>
+        <h1 class="text-xl font-bold">Statistiques</h1>
         <p class="text-sm text-slate-600">{{ current.description }}</p>
       </div>
-      <div class="flex flex-wrap items-end gap-2">
+      <div v-if="tab !== 'detail'" class="flex flex-wrap items-end gap-2">
         <div>
           <label class="label" for="dr-preset">Période</label>
           <select id="dr-preset" v-model="preset" class="input w-auto" @change="applyPreset">
@@ -18,7 +20,7 @@
       </div>
     </div>
 
-    <nav class="flex gap-1 overflow-x-auto border-b" role="tablist" aria-label="Écrans du tableau de direction">
+    <nav class="flex gap-1 overflow-x-auto border-b" role="tablist" aria-label="Vues des statistiques">
       <button
         v-for="t in tabs" :key="t.key" type="button" role="tab" :aria-selected="tab === t.key"
         :class="['-mb-px inline-flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-2 text-sm font-medium', tab === t.key ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-600 hover:text-slate-800']"
@@ -26,10 +28,13 @@
       ><span class="inline-block h-2.5 w-2.5 rounded-sm" :style="{ background: t.color }" />{{ t.label }}</button>
     </nav>
 
-    <p v-if="error" class="rounded bg-red-50 border border-red-200 text-red-700 text-sm px-3 py-2">{{ error }}</p>
-    <p v-if="loading && !data[tab]" class="text-slate-600">Chargement…</p>
+    <!-- Les statistiques détaillées : leurs rubriques, leur période et leur filtre d'activité -->
+    <Statistics v-if="tab === 'detail'" embedded />
 
-    <template v-if="data[tab]">
+    <p v-if="error && tab !== 'detail'" class="rounded bg-red-50 border border-red-200 text-red-700 text-sm px-3 py-2">{{ error }}</p>
+    <p v-if="loading && !data[tab] && tab !== 'detail'" class="text-slate-600">Chargement…</p>
+
+    <template v-if="data[tab] && tab !== 'detail'">
       <DirectionOverview v-if="tab === 'overview'" :board="data.overview" />
       <DirectionEcommerce v-else-if="tab === 'ecommerce'" :data="data.ecommerce" />
       <DirectionMad v-else-if="tab === 'mad'" :data="data.mad" />
@@ -52,10 +57,12 @@ import { COLORS } from '../../components/direction/shared'
 import { useAuthStore } from '../../stores/auth'
 import { myActivities } from '../../utils/activities'
 import { today } from '../../utils/format'
+import Statistics from './Statistics.vue'
 
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
+const direction = computed(() => auth.can('direction.view'))
 
 function iso(d) {
   const copy = new Date(d)
@@ -90,20 +97,22 @@ const tabs = computed(() => [
   { key: 'overview', label: 'Vue d\'ensemble', color: '#0f172a', endpoint: '/stats/direction', description: 'Les activités côte à côte, comparées à la période précédente, et les points à décider.' },
   ...myActivities(auth.user).map((a) => ({ key: a.value, color: COLORS[a.value], endpoint: `/stats/direction/${a.value}`, ...SCREENS[a.value] })),
   { key: 'teams', label: 'Équipes', color: '#6a4ce2', endpoint: '/stats/direction/teams', description: 'Livreurs, charge par zone, temps par mission, paie, véhicules et agents du bureau.' },
+  { key: 'detail', label: 'Détail', color: '#94a3b8', description: 'Livraisons, délais et échecs, livreurs, zones, clients, rentabilité, trésorerie, analyse croisée, partage et alertes.' },
 ])
 
-const preset = ref(PRESETS[route.query.periode] ? route.query.periode : 'month')
-const [initialFrom, initialTo] = PRESETS[preset.value].range()
+const preset = ref('month')
+const [initialFrom, initialTo] = PRESETS.month.range()
 const from = ref(initialFrom)
 const to = ref(initialTo)
-const tab = ref(tabs.value.some((t) => t.key === route.query.onglet) ? route.query.onglet : 'overview')
+// « ?vue= » : l'onglet de cette page ; « ?onglet= » : une vue des statistiques détaillées (liens « À décider »)
+const tab = ref(tabs.value.some((t) => t.key === route.query.vue) ? route.query.vue : (route.query.onglet ? 'detail' : 'overview'))
 const current = computed(() => tabs.value.find((t) => t.key === tab.value) || tabs.value[0])
 const data = reactive({})
 const loading = ref(false)
 const error = ref('')
 
 async function load() {
-  if (!from.value || !to.value) return
+  if (!direction.value || tab.value === 'detail' || !from.value || !to.value) return
   const key = tab.value
   loading.value = true
   error.value = ''
@@ -131,7 +140,10 @@ function custom() {
 }
 
 watch(tab, () => { if (!data[tab.value]) load() })
-watch([tab, preset], () => router.replace({ query: { ...route.query, onglet: tab.value, periode: preset.value === 'custom' ? undefined : preset.value } }))
+// L'onglet de la page dans l'adresse ; hors du détail, les paramètres des statistiques détaillées n'ont plus cours
+watch(tab, () => router.replace({ query: tab.value === 'detail' ? { ...route.query, vue: 'detail' } : { vue: tab.value } }))
+// Lien « À décider » vers une vue détaillée, ouvert depuis cette page
+watch(() => route.query.onglet, (view) => { if (view && tab.value !== 'detail') tab.value = 'detail' })
 
 load()
 </script>
