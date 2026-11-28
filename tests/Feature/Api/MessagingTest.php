@@ -125,7 +125,7 @@ class MessagingTest extends TestCase
         ])->assertOk();
 
         $incident = OutboundMessage::where('template_name', 'incident_livraison')->sole();
-        $this->assertSame('livraison impossible, Destinataire injoignable, Appelé 3 fois', $incident->payload[3]);
+        $this->assertSame('livraison impossible, Le client ne répond pas au téléphone, Appelé 3 fois', $incident->payload[3]);
         $this->assertSame(url('/marchand/courses/'.$order->id), $incident->payload[4]);
     }
 

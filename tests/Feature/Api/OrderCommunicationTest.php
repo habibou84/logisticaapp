@@ -87,7 +87,7 @@ class OrderCommunicationTest extends TestCase
         ])->assertOk();
 
         Notification::assertSentTo($this->merchantUser, OrderAlert::class, fn (OrderAlert $n) => $n->kind === 'incident'
-            && str_contains($n->body, 'Destinataire injoignable')
+            && str_contains($n->body, 'Le client ne répond pas au téléphone')
             && str_contains($n->body, 'Téléphone éteint'));
         Notification::assertSentTo([$this->admin, $this->dispatcher], OrderAlert::class, fn (OrderAlert $n) => $n->kind === 'incident');
         Notification::assertNotSentTo($this->courierA->user, OrderAlert::class);
