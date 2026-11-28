@@ -3,8 +3,8 @@
 Application de livraison pour **une seule entreprise** (Laravel 12, Vue 3, PWA, Capacitor), reprise de Delivery App
 (`habibou84/deliverynew`) sans la partie plateforme : ni super administrateur, ni abonnements, ni sous-domaines.
 Elle est servie à `https://app.logisticadelivery.com` (Docker derrière Apache, voir `docs/DEPLOIEMENT.md`).
-L'application e-commerçant **Jibiat Marchand** (`habibou84/ecommerce`) s'y connecte par l'API publique
-`/api/public/v1` (clés d'API) et ses webhooks. Le code commun est dans `habibou84/socle`.
+Aucun contrat avec Jibiat Marchand (`habibou84/ecommerce`) : les évolutions ne tiennent pas compte de cette application.
+Le code commun (argent, téléphones, webhooks) vient de la bibliothèque `habibou84/socle`.
 
 ## Langue
 Toujours répondre en français. Textes de l'interface, messages, commits et PR en français.
@@ -31,13 +31,6 @@ npm run build                                      # build front-end
 ```
 Si PostgreSQL ou Redis sont arrêtés : `service postgresql start; service redis-server start`.
 Attention aux écarts SQLite / PostgreSQL (dates : utiliser `DATE()`, pas `CAST(... AS DATE)`).
-
-## Contrat avec Jibiat Marchand
-- L'API publique et les webhooks suivent le contrat de `habibou84/socle` (`contract/v1`), vérifié par
-  `tests/Feature/Api/PublicContractTest.php`.
-- Ajouter un champ, un statut ou un événement : libre (version 1.x suivante du contrat, Jibiat Marchand d'abord prêt).
-- Retirer, renommer ou changer le type d'un champ : interdit sans nouvelle version majeure annoncée des deux côtés.
-- Un changement de socle se fait dans son dépôt, puis `composer update habibou84/socle` ici et dans Jibiat Marchand.
 
  ## Mise en ligne : sur demande du propriétaire
 - « Ouvre la PR et fusionne » : ouvrir la PR vers `main`, attendre les contrôles verts, la fusionner (squash).
