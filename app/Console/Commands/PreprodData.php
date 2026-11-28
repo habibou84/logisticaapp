@@ -125,7 +125,6 @@ class PreprodData extends Command
 
         if ($this->option('seed') !== null) {
             mt_srand((int) $this->option('seed'));
-            fake()->seed((int) $this->option('seed'));
         }
 
         $this->mute();
@@ -448,16 +447,16 @@ class PreprodData extends Command
      */
     private function orderData(Merchant $merchant, Carbon $day): array
     {
-        [$commune, $address, $landmark] = fake()->randomElement(self::ADDRESSES);
+        [$commune, $address, $landmark] = $this->pick(self::ADDRESSES);
         $zone = $this->zones->get($commune) ?? $this->zones->random();
-        $item = fake()->randomElement(self::ITEMS);
+        $item = $this->pick(self::ITEMS);
         $quantity = mt_rand(1, 10) > 8 ? 2 : 1;
         // Une course sur dix est déjà payée par le destinataire : rien à encaisser
         $amount = mt_rand(1, 10) === 1 ? 0 : $item[1] * $quantity;
 
         return [
             'merchant_reference' => self::REFERENCE_PREFIX.$day->format('ymd').'-'.strtoupper(bin2hex(random_bytes(3))),
-            'recipient_name' => fake()->randomElement(self::FIRST_NAMES).' '.fake()->randomElement(self::LAST_NAMES),
+            'recipient_name' => $this->pick(self::FIRST_NAMES).' '.$this->pick(self::LAST_NAMES),
             'recipient_phone' => '+225'.self::PHONE_PREFIX.sprintf('%06d', mt_rand(100000, 999999)),
             'delivery_zone_id' => $zone->id,
             'delivery_address' => $address,
@@ -571,7 +570,7 @@ class PreprodData extends Command
         $order = $order->fresh();
         $cod = (int) $order->cod_amount;
         // Paiement mobile pour une partie des encaissements
-        $method = $cod > 0 && mt_rand(1, 5) === 1 ? fake()->randomElement([PaymentMethod::Wave, PaymentMethod::OrangeMoney]) : PaymentMethod::Cash;
+        $method = $cod > 0 && mt_rand(1, 5) === 1 ? $this->pick([PaymentMethod::Wave, PaymentMethod::OrangeMoney]) : PaymentMethod::Cash;
 
         $this->move($order, OrderStatus::Delivered, [
             'delivery_code' => $order->delivery_code,
@@ -669,6 +668,20 @@ class PreprodData extends Command
                 // Rien à reverser cette semaine
             }
         }
+    }
+
+    /**
+     * Élément tiré au hasard (mt_rand, que --seed rend reproductible). Pas de fake() : Faker est une
+     * dépendance de développement, absente des images Docker de production et de préproduction.
+     *
+     * @template T
+     *
+     * @param  list<T>  $list
+     * @return T
+     */
+    private function pick(array $list): mixed
+    {
+        return $list[mt_rand(0, count($list) - 1)];
     }
 
     private function count(string $key): void
