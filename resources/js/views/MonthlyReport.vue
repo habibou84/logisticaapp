@@ -31,14 +31,6 @@
         </div>
       </section>
 
-      <section v-if="goals.length" class="mb-6">
-        <h2 class="mb-2 text-lg font-semibold">Objectifs</h2>
-        <table class="w-full text-sm">
-          <thead><tr class="border-b text-left"><th class="py-1">Objectif</th><th class="py-1 text-right">Visé</th><th class="py-1 text-right">Réalisé</th><th class="py-1 text-right">%</th></tr></thead>
-          <tbody><tr v-for="g in goals" :key="g.label" class="border-b"><td class="py-1">{{ g.label }}</td><td class="py-1 text-right">{{ g.target }}</td><td class="py-1 text-right">{{ g.realized }}</td><td class="py-1 text-right">{{ g.percent }}</td></tr></tbody>
-        </table>
-      </section>
-
       <section v-if="profit" class="mb-6">
         <h2 class="mb-2 text-lg font-semibold">Rentabilité</h2>
         <table class="w-full text-sm">
@@ -110,17 +102,6 @@ const keyFigures = computed(() => [
   { label: 'Taux de réussite', value: row.value?.success_rate === null || row.value?.success_rate === undefined ? '—' : `${row.value.success_rate} %` },
   ...(row.value?.revenue !== null && row.value?.revenue !== undefined ? [{ label: 'Chiffre d\'affaires', value: money(row.value.revenue), hint: `marge ${money(row.value.margin)}` }] : []),
 ])
-// Objectifs : seulement pour le mois en cours (les objectifs sont ceux du mois)
-const goals = computed(() => {
-  if (!perf.value || perf.value.current.month !== month.value) return []
-  const labels = { delivered: 'Courses livrées', revenue: 'Chiffre d\'affaires', success_rate: 'Taux de réussite', margin: 'Marge nette' }
-  return Object.entries(perf.value.current.goals).filter(([, g]) => g && g.target !== null).map(([k, g]) => ({
-    label: labels[k],
-    target: ['revenue', 'margin'].includes(k) ? money(g.target) : g.target,
-    realized: ['revenue', 'margin'].includes(k) ? money(g.realized) : g.realized,
-    percent: `${g.percent} %`,
-  }))
-})
 const topClients = computed(() => [...(profit.value?.clients || [])].sort((a, b) => b.revenue - a.revenue).slice(0, 10))
 
 async function load() {

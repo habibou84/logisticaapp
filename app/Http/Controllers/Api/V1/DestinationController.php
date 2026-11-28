@@ -11,6 +11,7 @@ use App\Models\Company;
 use App\Models\Destination;
 use App\Models\DestinationLocation;
 use App\Models\Order;
+use App\Models\Zone;
 use App\Services\Destinations\DestinationImporter;
 use App\Services\Destinations\DestinationLocations;
 use App\Services\Destinations\DestinationPhones;
@@ -70,7 +71,8 @@ class DestinationController extends Controller
 
         $page = Destination::query()->forCompany($companyId)->with(['zone:id,name', 'locator:id,name'])
             ->tap(fn ($q) => $filters($q, $data['filtre'] ?? null))
-            ->when($data['zone_id'] ?? null, fn ($q, $z) => $q->where('zone_id', $z))
+            // Une commune : elle et ses quartiers
+            ->when($data['zone_id'] ?? null, fn ($q, $z) => $q->whereIn('zone_id', Zone::query()->where('id', $z)->orWhere('parent_id', $z)->pluck('id')))
             ->where(function ($q) use ($words) {
                 foreach ($words as $word) {
                     $q->where('search', 'like', '%'.$word.'%');
@@ -241,6 +243,13 @@ class DestinationController extends Controller
             if (filled($data[$field] ?? null)) {
                 $data[$field] = DestinationPhones::valid($data[$field])
                     ?? throw new BusinessRuleException('Numéro au format à 10 chiffres attendu (ex. : 07 48 20 86 66, 27 20 32 07 58).', $field);
+            }
+        }
+        // Lieu choisi (commune puis quartier) : quartier et ville tirés de la zone
+        if (filled($data['zone_id'] ?? null) && ($zone = Zone::query()->find($data['zone_id']))) {
+            $data['city'] = $zone->city;
+            if ($zone->parent_id !== null) {
+                $data['district'] = $zone->name;
             }
         }
 

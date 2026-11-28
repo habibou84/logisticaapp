@@ -106,12 +106,11 @@
       <section v-if="!internal" class="m-card p-4 space-y-4" aria-labelledby="step-where">
         <h2 id="step-where" class="m-step"><ColorIcon name="lieu" :size="34" />Où livrer</h2>
         <div id="zone-field">
-          <label class="m-label" for="zone">Commune ou quartier <span class="text-red-600">*</span></label>
           <p v-if="zoneChoices.length > 1" class="text-sm text-slate-600 mb-2">
             D'après le message :
             <button v-for="z in zoneChoices" :key="z.id" type="button" :class="['tap mr-1 mt-1 rounded-full px-3 py-1 text-sm ring-1', form.delivery_zone_id === z.id ? 'text-white ring-transparent' : 'bg-white ring-slate-200']" :style="form.delivery_zone_id === z.id ? { backgroundColor: 'var(--app-color)' } : {}" @click="form.delivery_zone_id = z.id">{{ z.full_name }}</button>
           </p>
-          <ZoneSelect id="zone" v-model="form.delivery_zone_id" :zones="zones" mobile :input-class="['m-input', missing.zone ? 'ring-2 ring-red-500' : '']" />
+          <CommuneQuartier id="zone" v-model="form.delivery_zone_id" :zones="zones" required mobile stacked :input-class="['m-input', missing.zone ? 'ring-2 ring-red-500' : '']" />
           <p v-if="selectedZone?.is_shipping && !billed" class="mt-2 rounded-xl bg-indigo-50 text-indigo-900 text-sm p-3">
             <Icone nom="expedition" taille="petite" class="inline align-[-0.15em]" /> <strong>Expédition</strong> : notre livreur dépose le colis à la gare et paie l'envoi
             <template v-if="selectedZone.shipping_fee_estimate">(environ {{ money(selectedZone.shipping_fee_estimate) }})</template>.
@@ -318,7 +317,7 @@ import http, { apiErrorMessage } from '../../bootstrap/axios'
 import ChoiceChips from '../../components/mobile/ChoiceChips.vue'
 import StatusIcon from '../../components/mobile/StatusIcon.vue'
 import PasteMessage from '../../components/PasteMessage.vue'
-import ZoneSelect from '../../components/ZoneSelect.vue'
+import CommuneQuartier from '../../components/CommuneQuartier.vue'
 import { keyboardOpen } from '../../composables/useKeyboard'
 import { useDepartments } from '../../composables/useDepartments'
 import DestinationSearch from '../../components/destinations/DestinationSearch.vue'

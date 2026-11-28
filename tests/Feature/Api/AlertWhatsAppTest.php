@@ -30,7 +30,7 @@ class AlertWhatsAppTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        config(['messaging.qr.url' => self::BASE, 'messaging.qr.api_key' => 'cle-secrete']);
+        config(['messaging.qr.url' => self::BASE, 'messaging.qr.api_key' => 'cle-secrete', 'messaging.whatsapp.driver' => 'auto']);
         $this->buildWorld();
     }
 
@@ -144,6 +144,23 @@ class AlertWhatsAppTest extends TestCase
         $this->assertSame([MessageStatus::Sent, MessageStatus::Sent, MessageStatus::Failed], array_map(fn ($m) => $m->fresh()->status, $messages));
         Http::assertSentCount(2);
         $this->assertSame(0, OutboundMessage::query()->where('channel', 'sms')->count());
+    }
+
+    public function test_forced_simulation_keeps_alerts_simulated_but_sends_the_test(): void
+    {
+        config(['messaging.whatsapp.driver' => 'log']);
+        $this->fakeWaha('WORKING');
+        $this->connected();
+        $alerts = app(AlertWhatsApp::class);
+
+        $alert = $alerts->send($this->company->id, ['0700000002'], 'Zone Cocody : 62 % de réussite')[0]->fresh();
+        $this->assertSame(MessageStatus::Sent, $alert->status);
+        $this->assertStringStartsWith('log-', $alert->provider_message_id);
+        Http::assertNothingSent();
+
+        $test = $alerts->test($this->company->id, $this->admin->phone)->fresh();
+        $this->assertStringStartsWith('qr-', $test->provider_message_id);
+        Http::assertSentCount(1);
     }
 
     public function test_send_failure_when_the_session_dropped_does_not_fall_back_to_sms(): void

@@ -117,6 +117,15 @@ class AlertWhatsApp
         return $session;
     }
 
+    /**
+     * Simulation imposée par le serveur (WHATSAPP_DRIVER=log, préproduction) : les alertes ne partent pas
+     * pour de vrai ; seul l'essai, envoyé au numéro de l'administrateur qui le demande, reste réel.
+     */
+    public static function simulated(OutboundMessage $message): bool
+    {
+        return config('messaging.whatsapp.driver') === 'log' && $message->event !== 'stats.alert_test';
+    }
+
     public function isConnected(int $companyId): bool
     {
         return WahaClient::available() && WhatsAppQrSession::forCompanyId($companyId)->isConnected();

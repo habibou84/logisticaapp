@@ -28,7 +28,10 @@ class InstallCompanyTest extends TestCase
 
         $company = Company::sole();
         $this->assertSame('logistica-delivery', $company->slug);
-        $this->assertSame(13, Zone::forCompany($company->id)->count());
+        // Liste des lieux : 13 communes d'Abidjan livrées (10 au forfait), villes de l'intérieur masquées
+        $communes = Zone::forCompany($company->id)->whereNull('parent_id')->where('city', 'Abidjan');
+        $this->assertSame([13, 13, 10], [(clone $communes)->count(), (clone $communes)->where('is_active', true)->count(), (clone $communes)->where('in_forfait', true)->count()]);
+        $this->assertFalse(Zone::forCompany($company->id)->where('place_code', 'bouake')->value('is_active'));
         $this->assertTrue(PricingGrid::forCompany($company->id)->where('is_default', true)->exists());
 
         $admin = User::where('phone', '+2250102030405')->sole();
