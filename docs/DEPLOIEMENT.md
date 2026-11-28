@@ -302,7 +302,16 @@ Depuis `/opt/logistica` :
 | Sauvegarde immédiate | `bash deploy/backup.sh` |
 | Versions sur le serveur / retour arrière | `bash deploy/rollback.sh` / `bash deploy/rollback.sh <version>` |
 | État de la mise à jour automatique | `bash deploy/auto-update.sh --status` |
+| Données fictives (préproduction seulement, depuis `/opt/logistica-preprod`) | `docker compose exec -u www-data app php artisan app:preprod-data` |
 | Arrêter / redémarrer | `docker compose stop` / `docker compose up -d` |
+
+**Données fictives de la préproduction** (`app:preprod-data`, refusée si `APP_ENV=production`) : 10 clients,
+8 livreurs, un dispatcher, un caissier, un agent d'entrepôt et 30 jours de courses (≈ 18 par jour) passées par les
+vrais services : prix, journal, encaissements, versements des livreurs chaque soir, reversements aux clients le
+vendredi. Les courses du jour restent à différentes étapes (à valider, en ramassage, en chemin…). Aucun message ne
+part pendant la génération (WhatsApp, SMS, notifications, webhooks). Comptes en `07 99 …`, mot de passe
+`Preprod2026` (option `--password`). Relançable : les jours déjà remplis sont sautés, donc la relancer le matin
+ajoute seulement les courses du jour. Options : `--days=30`, `--per-day=18`, `--seed=` (mêmes données).
 
 Les variables `VITE_*` (temps réel vu du navigateur) sont compilées dans l'interface : après les avoir changées,
 lancez `bash deploy/update.sh`.
