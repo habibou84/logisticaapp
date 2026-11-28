@@ -38,7 +38,6 @@ use App\Services\Orders\OrderDispatcher;
 use App\Services\Orders\OrderService;
 use App\Services\Orders\OrderWorkflow;
 use App\Services\Webhooks\WebhookDispatcher;
-use Database\Seeders\DemoSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
@@ -64,6 +63,8 @@ class PreprodData extends Command
 
     private const REFERENCE_PREFIX = 'DEMO-';
 
+    private const GRID_NAME = 'Clients fictifs (préproduction)';
+
     protected $signature = 'app:preprod-data
         {--days=30 : Nombre de jours d\'historique (aujourd\'hui compris)}
         {--per-day=18 : Courses par jour, environ}
@@ -85,7 +86,15 @@ class PreprodData extends Command
     /** @var Collection<string, Zone> */
     private Collection $zones;
 
+    /** @var Collection<string, Zone> */
+    private Collection $pickupZones;
+
+    private PricingGrid $grid;
+
     private ?IncidentReason $failReason = null;
+
+    /** @var array<string, int> erreur → nombre de courses */
+    private array $errors = [];
 
     /** @var array<string, int> */
     private array $stats = [];
@@ -116,7 +125,6 @@ class PreprodData extends Command
 
         if ($this->option('seed') !== null) {
             mt_srand((int) $this->option('seed'));
-            fake()->seed((int) $this->option('seed'));
         }
 
         $this->mute();
@@ -174,13 +182,17 @@ class PreprodData extends Command
 
     private function setUp(): void
     {
-        $this->zones = Zone::forCompany($this->company->id)->whereNull('parent_id')->where('is_shipping', false)->get()->keyBy('name');
+        $this->zones = $this->deliveryZones();
         if ($this->zones->isEmpty()) {
             app(CompanyProvisioner::class)->provision($this->company);
-            $this->zones = Zone::forCompany($this->company->id)->whereNull('parent_id')->where('is_shipping', false)->get()->keyBy('name');
+            $this->zones = $this->deliveryZones();
+        }
+        $this->pickupZones = $this->zones->filter(fn (Zone $z) => $z->is_pickup);
+        if ($this->pickupZones->isEmpty()) {
+            $this->pickupZones = $this->zones;
         }
 
-        $this->pricing();
+        $this->grid = $this->pricing();
         $this->payPlan();
         $this->team();
         $this->couriers = $this->couriers();
@@ -191,15 +203,41 @@ class PreprodData extends Command
             && $r->counts_as_attempt && ! $r->requires_note && ! $r->requires_date && $r->photo !== 'required');
     }
 
-    /** Grille vide (installation neuve) : les tarifs de démonstration, sinon aucune course n'a de prix */
-    private function pricing(): void
+    /**
+     * Communes (ou villes) actives où l'on livre, hors gares d'expédition ; celles d'Abidjan d'abord,
+     * puisque les adresses fictives y sont.
+     *
+     * @return Collection<string, Zone>
+     */
+    private function deliveryZones(): Collection
     {
-        $grid = PricingGrid::forCompany($this->company->id)->where('is_default', true)->first();
+        $zones = Zone::forCompany($this->company->id)->whereNull('parent_id')->where('is_shipping', false)
+            ->where('is_active', true)->orderBy('sort_order')->get();
+        $abidjan = $zones->filter(fn (Zone $z) => $z->city === 'Abidjan');
 
-        if ($grid && ! PricingRule::query()->where('pricing_grid_id', $grid->id)->exists()) {
-            (new DemoSeeder)->pricing($this->company);
-            $this->line('Tarifs de démonstration ajoutés à la grille standard (elle était vide).');
+        return ($abidjan->isNotEmpty() ? $abidjan : $zones)->keyBy('name');
+    }
+
+    /**
+     * Grille à part pour les clients fictifs : les tarifs réglés de l'entreprise ne sont pas touchés, et chaque
+     * course fictive a un prix (1 000 F dans la même commune, 1 500 F entre communes).
+     */
+    private function pricing(): PricingGrid
+    {
+        $grid = PricingGrid::withoutGlobalScopes()->firstOrCreate(
+            ['company_id' => $this->company->id, 'name' => self::GRID_NAME],
+            ['is_default' => false, 'base_price' => 1500],
+        );
+        $grid->update(['base_price' => 1500]);
+
+        foreach ($this->zones as $zone) {
+            PricingRule::query()->firstOrCreate(
+                ['pricing_grid_id' => $grid->id, 'origin_zone_id' => $zone->id, 'destination_zone_id' => $zone->id],
+                ['price' => 1000, 'is_symmetric' => true],
+            );
         }
+
+        return $grid;
     }
 
     private function payPlan(): void
@@ -268,17 +306,19 @@ class PreprodData extends Command
         return collect($shops)->map(function (array $shop, int $i) {
             [$name, $contact, $commune, $address, $landmark, $lat, $lng, $hasAccount, $feePayer] = $shop;
             $phone = '+225'.self::PHONE_PREFIX.sprintf('0002%02d', $i + 1);
-            $zone = $this->zones->get($commune) ?? $this->zones->first();
+            $zone = $this->pickupZones->get($commune) ?? $this->pickupZones->values()->get($i % $this->pickupZones->count());
 
             $merchant = Merchant::withoutGlobalScopes()->firstOrCreate(
                 ['company_id' => $this->company->id, 'phone' => $phone],
                 [
                     'business_name' => $name, 'contact_name' => $contact, 'whatsapp_phone' => $phone,
-                    'pickup_zone_id' => $zone->id, 'pickup_address' => $address, 'pickup_landmark' => $landmark,
-                    'pickup_lat' => $lat, 'pickup_lng' => $lng, 'default_fee_payer' => $feePayer, 'status' => 'active',
+                    'pickup_address' => $address, 'pickup_landmark' => $landmark,
+                    'pickup_lat' => $lat, 'pickup_lng' => $lng, 'default_fee_payer' => $feePayer,
                     'notes' => 'Client fictif (données de préproduction)',
                 ],
             );
+            // Aussi pour un client fictif déjà créé : zone où l'on ramasse, grille fictive, compte actif
+            $merchant->forceFill(['pickup_zone_id' => $zone->id, 'pricing_grid_id' => $this->grid->id, 'status' => 'active'])->save();
 
             if ($hasAccount) {
                 $this->account($contact, sprintf('000002%02d', $i + 1), Role::MerchantOwner, $merchant);
@@ -370,8 +410,10 @@ class PreprodData extends Command
             $this->count('→ '.$order->fresh()->status->label());
         } catch (Throwable $e) {
             $this->count('courses en erreur');
+            $message = $e->getMessage() !== '' ? $e->getMessage() : class_basename($e);
+            $this->errors[$message] = ($this->errors[$message] ?? 0) + 1;
             if ($this->output->isVerbose()) {
-                $this->warn($e->getMessage());
+                $this->warn($message);
             }
         }
     }
@@ -405,16 +447,16 @@ class PreprodData extends Command
      */
     private function orderData(Merchant $merchant, Carbon $day): array
     {
-        [$commune, $address, $landmark] = fake()->randomElement(self::ADDRESSES);
+        [$commune, $address, $landmark] = $this->pick(self::ADDRESSES);
         $zone = $this->zones->get($commune) ?? $this->zones->random();
-        $item = fake()->randomElement(self::ITEMS);
+        $item = $this->pick(self::ITEMS);
         $quantity = mt_rand(1, 10) > 8 ? 2 : 1;
         // Une course sur dix est déjà payée par le destinataire : rien à encaisser
         $amount = mt_rand(1, 10) === 1 ? 0 : $item[1] * $quantity;
 
         return [
             'merchant_reference' => self::REFERENCE_PREFIX.$day->format('ymd').'-'.strtoupper(bin2hex(random_bytes(3))),
-            'recipient_name' => fake()->randomElement(self::FIRST_NAMES).' '.fake()->randomElement(self::LAST_NAMES),
+            'recipient_name' => $this->pick(self::FIRST_NAMES).' '.$this->pick(self::LAST_NAMES),
             'recipient_phone' => '+225'.self::PHONE_PREFIX.sprintf('%06d', mt_rand(100000, 999999)),
             'delivery_zone_id' => $zone->id,
             'delivery_address' => $address,
@@ -528,7 +570,7 @@ class PreprodData extends Command
         $order = $order->fresh();
         $cod = (int) $order->cod_amount;
         // Paiement mobile pour une partie des encaissements
-        $method = $cod > 0 && mt_rand(1, 5) === 1 ? fake()->randomElement([PaymentMethod::Wave, PaymentMethod::OrangeMoney]) : PaymentMethod::Cash;
+        $method = $cod > 0 && mt_rand(1, 5) === 1 ? $this->pick([PaymentMethod::Wave, PaymentMethod::OrangeMoney]) : PaymentMethod::Cash;
 
         $this->move($order, OrderStatus::Delivered, [
             'delivery_code' => $order->delivery_code,
@@ -628,6 +670,20 @@ class PreprodData extends Command
         }
     }
 
+    /**
+     * Élément tiré au hasard (mt_rand, que --seed rend reproductible). Pas de fake() : Faker est une
+     * dépendance de développement, absente des images Docker de production et de préproduction.
+     *
+     * @template T
+     *
+     * @param  list<T>  $list
+     * @return T
+     */
+    private function pick(array $list): mixed
+    {
+        return $list[mt_rand(0, count($list) - 1)];
+    }
+
     private function count(string $key): void
     {
         $this->stats[$key] = ($this->stats[$key] ?? 0) + 1;
@@ -637,6 +693,12 @@ class PreprodData extends Command
     {
         ksort($this->stats);
         $this->table(['Élément', 'Nombre'], collect($this->stats)->map(fn ($n, $k) => [$k, $n])->values());
+
+        if ($this->errors !== []) {
+            arsort($this->errors);
+            $this->warn('Erreurs les plus fréquentes :');
+            $this->table(['Erreur', 'Nombre'], collect($this->errors)->take(8)->map(fn ($n, $m) => [mb_strimwidth($m, 0, 110, '…'), $n])->values());
+        }
         $this->info('Comptes fictifs : téléphones en +225 07 99 …, mot de passe « '.$this->option('password').' ».');
         $this->line('  Dispatcher 07 99 00 00 01 · Caissier 07 99 00 00 02 · Entrepôt 07 99 00 00 03');
         $this->line('  Livreurs 07 99 00 01 01 à 07 99 00 01 08 · Clients 07 99 00 02 01, 02 et 04');

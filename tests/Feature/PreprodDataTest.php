@@ -10,8 +10,11 @@ use App\Models\Courier;
 use App\Models\Merchant;
 use App\Models\Order;
 use App\Models\OutboundMessage;
+use App\Models\PricingGrid;
+use App\Models\PricingRule;
 use App\Models\User;
 use App\Models\WebhookDelivery;
+use App\Models\Zone;
 use App\Services\CompanyProvisioner;
 use Database\Seeders\IncidentReasonsSeeder;
 use Database\Seeders\RolesAndPermissionsSeeder;
@@ -63,6 +66,35 @@ class PreprodDataTest extends TestCase
         // Relance : les jours déjà remplis sont sautés
         $this->artisan('app:preprod-data', ['--days' => 4, '--per-day' => 8])->assertSuccessful();
         $this->assertSame($orders->count(), Order::forCompany($company->id)->count());
+    }
+
+    public function test_it_does_not_depend_on_the_company_tariffs_or_pickup_zones(): void
+    {
+        // Préproduction déjà réglée : grille standard avec un seul trajet, une commune où l'on ne ramasse pas
+        $company = $this->installedCompany();
+        $grid = PricingGrid::forCompany($company->id)->where('is_default', true)->sole();
+        $zones = Zone::forCompany($company->id)->whereNull('parent_id')->get()->keyBy('name');
+        PricingRule::create(['pricing_grid_id' => $grid->id, 'origin_zone_id' => $zones['Plateau']->id, 'destination_zone_id' => $zones['Plateau']->id, 'price' => 1000, 'is_symmetric' => true]);
+        $zones['Cocody']->update(['is_pickup' => false]);
+
+        $this->artisan('app:preprod-data', ['--days' => 2, '--per-day' => 6, '--seed' => 3])
+            ->doesntExpectOutputToContain('courses en erreur')->assertSuccessful();
+
+        $this->assertGreaterThan(5, Order::forCompany($company->id)->count());
+        // Les tarifs de l'entreprise ne sont pas touchés : les clients fictifs ont leur grille
+        $this->assertSame(1, PricingRule::where('pricing_grid_id', $grid->id)->count());
+        $fictive = PricingGrid::forCompany($company->id)->where('name', 'Clients fictifs (préproduction)')->sole();
+        $this->assertTrue(Merchant::forCompany($company->id)->get()->every(fn (Merchant $m) => $m->pricing_grid_id === $fictive->id && $m->pickup_zone_id !== $zones['Cocody']->id));
+    }
+
+    public function test_it_does_not_rely_on_development_packages(): void
+    {
+        // Les images Docker (production, préproduction) sont construites sans les dépendances de développement :
+        // ni Faker (fake()), ni les fabriques de modèles
+        $source = file_get_contents(app_path('Console/Commands/PreprodData.php'));
+
+        // fake()->… (Faker), new Faker\…, Modèle::factory(…) ; Notification::fake() reste permis (Laravel)
+        $this->assertDoesNotMatchRegularExpression('/(?<![\w:>$])fake\(\)\s*->|new\s+\\\\?Faker|::factory\(/', $source);
     }
 
     public function test_it_refuses_production_and_needs_an_installed_company(): void
