@@ -180,6 +180,18 @@ class StatisticsTest extends TestCase
         $this->assertSame(1, $data['totals']['inactive']);
         $this->assertEquals(100, $data['totals']['top5_share']);
 
+        // Une activité choisie : seuls ses clients comptent. Tous les clients sont en e-commerce : rien en distribution
+        $ecommerce = $this->getJson('/api/v1/stats/merchants?activity=ecommerce')->assertOk()->json('data.totals');
+        $this->assertSame([$data['totals']['total'], $data['totals']['new'], 1], [$ecommerce['total'], $ecommerce['new'], $ecommerce['inactive']]);
+        $this->assertGreaterThan(0, $ecommerce['new']);
+        $distribution = $this->getJson('/api/v1/stats/merchants?activity=distribution')->assertOk()->json('data');
+        $this->assertSame([0, 0, 0, 0], [$distribution['totals']['total'], $distribution['totals']['new'], $distribution['totals']['inactive'], $distribution['totals']['active']]);
+        $this->assertSame([[], []], [$distribution['merchants'], $distribution['inactive']]);
+        $this->assertSame(0, $distribution['totals']['to_pay']);
+        // Un client qui a aussi la distribution y est compté
+        $sleeping->activityRows()->firstOrCreate(['activity' => 'distribution']);
+        $this->assertSame(1, $this->getJson('/api/v1/stats/merchants?activity=distribution')->json('data.totals.total'));
+
         // Sans accès à la caisse : pas de montants ; sans accès aux clients : rien
         Sanctum::actingAs($this->dispatcher);
         $this->getJson('/api/v1/stats/merchants')->assertOk()->assertJsonPath('data.merchants.0.revenue', null)->assertJsonPath('data.totals.to_pay', null);

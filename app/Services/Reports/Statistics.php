@@ -319,13 +319,16 @@ class Statistics
         $returned = $this->ordersBetween('returned_at', $from, $to, ['id', 'merchant_id'])->countBy('merchant_id');
         $lost = $this->ordersBetween('lost_at', $from, $to, ['id', 'merchant_id'])->countBy('merchant_id');
         $cancelled = $this->ordersBetween('cancelled_at', $from, $to, ['id', 'merchant_id'])->countBy('merchant_id');
-        $lastOrder = Order::forCompany($this->company->id)->groupBy('merchant_id')->selectRaw('merchant_id, MAX(created_at) AS last_at')->pluck('last_at', 'merchant_id');
+        // Dernière course de chaque client, dans l'activité regardée
+        $lastOrder = $this->orders()->groupBy('merchant_id')->selectRaw('merchant_id, MAX(created_at) AS last_at')->pluck('last_at', 'merchant_id');
         $balances = $withAmounts ? app(MerchantPayouts::class)->summaries() : [];
 
         [$start, $end] = $this->utcRange($from, $to);
         $inactiveSince = now()->subDays(self::INACTIVE_DAYS);
 
-        $merchants = Merchant::forCompany($this->company->id)->get(['id', 'business_name', 'contact_name', 'phone', 'status', 'created_at']);
+        // Une activité choisie : seuls les clients qui l'ont comptent (nouveaux, à relancer, total)
+        $merchants = Merchant::forCompany($this->company->id)->when($this->activity !== null, fn ($q) => $q->withActivity([$this->activity]))
+            ->get(['id', 'business_name', 'contact_name', 'phone', 'status', 'created_at']);
 
         $rows = $merchants->map(function (Merchant $m) use ($created, $delivered, $returned, $lost, $cancelled, $lastOrder, $balances, $withAmounts) {
             $own = $delivered->get($m->id, collect());
@@ -376,7 +379,7 @@ class Statistics
                 'total' => $merchants->where('status', MerchantStatus::Active)->count(),
                 // Part des courses des 5 premiers : dépendance à quelques gros clients
                 'top5_share' => $this->rate($active->sortByDesc('created')->take(5)->sum('created'), $active->sum('created')),
-                'to_pay' => $withAmounts ? (int) collect($balances)->sum(fn ($b) => max(0, $b['unpaid_total'])) : null,
+                'to_pay' => $withAmounts ? (int) collect($balances)->only($merchants->modelKeys())->sum(fn ($b) => max(0, $b['unpaid_total'])) : null,
             ],
         ];
     }
