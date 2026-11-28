@@ -54,14 +54,3 @@ npm run build                                      # build front-end
 ```
 Si PostgreSQL ou Redis sont arrêtés : `service postgresql start; service redis-server start`.
 Attention aux écarts SQLite / PostgreSQL (dates : utiliser `DATE()`, pas `CAST(... AS DATE)`).
-
- ## Mise en ligne : sur demande du propriétaire
-- « Ouvre la PR et fusionne » : ouvrir la PR vers `main`, attendre les contrôles verts, la fusionner (squash).
-  La préproduction (preprod.logisticadelivery.com) l'installe toute seule.
-- « Mets en production » : vérifier les contrôles verts sur `main`, publier la version suivante vX.Y.Z
-  (étiquette sur `main`, liste des changements) ; la production l'installe toute seule.
-- Ne jamais fusionner ni publier sans cette demande explicite ; contrôle rouge = corriger d'abord, ne pas fusionner.
-- Sans demande de fusion : travail terminé, testé et poussé → ouvrir la PR et s'arrêter là.
-- Une PR = un sujet ; description : ce qui change, migrations, risques, ce qu'il faut essayer en préproduction.
-- Migrations compatibles avec la version précédente (ajouter avant de retirer) : retour arrière par
-  `deploy/rollback.sh` sans toucher à la base.
