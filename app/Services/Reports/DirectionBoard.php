@@ -128,7 +128,7 @@ class DirectionBoard
                 'label' => $label,
                 'revenue' => collect($values)->mapWithKeys(fn (string $a) => [$a => (int) (collect($months[$a])->firstWhere('month', $month)['revenue'] ?? 0)])->all(),
             ])->values()->all(),
-            'decisions' => $this->decisions($company, $now, $values, $rows, $current, $quality, $payments, $settings),
+            'decisions' => $this->decisions($company, $values, $current, $quality, $payments, $rows),
         ];
     }
 
@@ -162,7 +162,7 @@ class DirectionBoard
      *
      * @param  array<string, mixed>  $payments
      */
-    private function overdue(array $payments): int
+    public function overdue(array $payments): int
     {
         return (int) ($payments['buckets']['31_60'] + $payments['buckets']['61_90'] + $payments['buckets']['over_90']);
     }
@@ -171,30 +171,31 @@ class DirectionBoard
      * Points « À décider », du plus grave au moins grave.
      *
      * @param  list<string>  $values
-     * @param  list<array<string, mixed>>  $rows
-     * @param  array<string, array<string, mixed>>  $current
+     * @param  list<array<string, mixed>>  $rows  lignes de la vue d'ensemble (hausse du chiffre d'affaires) ; vide ailleurs
+     * @param  array<string, array<string, mixed>>  $current  rentabilité de chaque activité
      * @param  array<string, mixed>  $quality
      * @param  array<string, array<string, mixed>>  $payments
-     * @param  array<string, mixed>  $settings
      * @return list<array<string, mixed>>
      */
-    private function decisions(Company $company, CarbonImmutable $now, array $values, array $rows, array $current, array $quality, array $payments, array $settings): array
+    public function decisions(Company $company, array $values, array $current, array $quality, array $payments, array $rows = []): array
     {
         $out = [];
+        $now = CarbonImmutable::now($company->timezone ?: (string) config('app.timezone', 'UTC'));
+        $settings = $this->settings->for($company);
         $labels = collect(Activity::cases())->mapWithKeys(fn (Activity $a) => [$a->value => $a->label()]);
         $min = (int) $settings['alerts']['min_volume'];
         $money = fn (int|float $v) => number_format(abs((int) round($v)), 0, ',', ' ').' F';
         $names = fn (Collection $list, callable $text) => $list->take(3)->map($text)->implode(', ').($list->count() > 3 ? '…' : '');
         $add = function (string $level, string $activity, string $topic, string $title, string $body, string $href, string $action, int $weight = 0) use (&$out, $labels) {
             $out[] = ['level' => $level, 'activity' => $activity, 'activity_label' => $labels[$activity] ?? null, 'topic' => $topic,
-                'title' => $title, 'body' => $body, 'href' => $href, 'action' => $action, 'weight' => $weight];
+                'title' => $title, 'body' => str_replace('….', '…', $body), 'href' => $href, 'action' => $action, 'weight' => $weight];
         };
 
         foreach ($values as $a) {
             $data = $current[$a];
 
-            // Zones livrées à perte
-            $zones = collect($data['zones'])->filter(fn ($z) => $z['margin'] < 0 && $z['delivered'] >= $min)->sortBy('margin')->values();
+            // Zones livrées à perte (e-commerce : chaque course a son prix ; ailleurs le forfait n'est pas rattaché aux zones)
+            $zones = collect($a === 'ecommerce' ? $data['zones'] : [])->filter(fn ($z) => $z['margin'] < 0 && $z['delivered'] >= $min)->sortBy('margin')->values();
             if ($zones->isNotEmpty()) {
                 $loss = (int) $zones->sum('margin');
                 $add('critical', $a, 'Rentabilité', $zones->count() === 1 ? "1 zone livrée à perte : −{$money($loss)}" : "{$zones->count()} zones livrées à perte : −{$money($loss)}",
@@ -244,7 +245,7 @@ class DirectionBoard
 
             // Bonne nouvelle : forte hausse du chiffre d'affaires
             $row = collect($rows)->firstWhere('value', $a);
-            if ($row['previous_revenue'] > 0 && ($growth = (int) round(($row['revenue'] / $row['previous_revenue'] - 1) * 100)) >= self::GROWTH_GOOD) {
+            if ($row !== null && $row['previous_revenue'] > 0 && ($growth = (int) round(($row['revenue'] / $row['previous_revenue'] - 1) * 100)) >= self::GROWTH_GOOD) {
                 $add('good', $a, 'Croissance', "Chiffre d'affaires en hausse de {$growth} %",
                     "{$money($row['revenue'])} contre {$money($row['previous_revenue'])} sur la période précédente.",
                     "/admin/statistiques?onglet=goals&activite={$a}", 'Voir les tendances', $growth);
