@@ -87,6 +87,16 @@ class PreprodDataTest extends TestCase
         $this->assertTrue(Merchant::forCompany($company->id)->get()->every(fn (Merchant $m) => $m->pricing_grid_id === $fictive->id && $m->pickup_zone_id !== $zones['Cocody']->id));
     }
 
+    public function test_it_does_not_rely_on_development_packages(): void
+    {
+        // Les images Docker (production, préproduction) sont construites sans les dépendances de développement :
+        // ni Faker (fake()), ni les fabriques de modèles
+        $source = file_get_contents(app_path('Console/Commands/PreprodData.php'));
+
+        // fake()->… (Faker), new Faker\…, Modèle::factory(…) ; Notification::fake() reste permis (Laravel)
+        $this->assertDoesNotMatchRegularExpression('/(?<![\w:>$])fake\(\)\s*->|new\s+\\\\?Faker|::factory\(/', $source);
+    }
+
     public function test_it_refuses_production_and_needs_an_installed_company(): void
     {
         $this->artisan('app:preprod-data')->expectsOutputToContain('app:install')->assertFailed();
