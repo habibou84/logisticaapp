@@ -51,6 +51,8 @@ export function adminMenuGroups(badges = {}) {
         { to: '/admin/caisse', icon: 'caisse', label: 'Caisse', permission: 'finance.view' },
         { to: '/admin/factures', icon: 'facture', label: 'Factures', permission: 'invoices.view', activities: DM, tags: DM },
         { to: '/admin/chiffre-affaires', icon: 'tendance', label: 'Chiffre d\'affaires', permission: 'revenue.view' },
+        // Loyer, équipe, téléphone… : comptés dans la marge nette des statistiques
+        { to: '/admin/frais-fixes', icon: 'facture', label: 'Frais fixes', permission: 'fixed_costs.manage' },
         { to: '/admin/paie-livreurs', icon: 'paie', label: 'Paie des livreurs', permission: 'pay.manage' },
       ],
     },

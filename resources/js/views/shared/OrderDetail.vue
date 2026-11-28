@@ -258,13 +258,7 @@
       <form class="space-y-3" @submit.prevent="saveEdit">
         <div><label class="label">Téléphone</label><input v-model="edit.recipient_phone" class="input" required></div>
         <div><label class="label">Second téléphone</label><input v-model="edit.recipient_phone2" class="input"></div>
-        <div>
-          <label class="label">Zone</label>
-          <SearchSelect
-            v-model="edit.delivery_zone_id" search-placeholder="Commune ou quartier…" aria-label="Zone de livraison"
-            :options="zones.map((z) => ({ value: z.id, label: z.full_name }))"
-          />
-        </div>
+        <CommuneQuartier id="edit-lieu" v-model="edit.delivery_zone_id" :zones="zones" required stacked @added="(z) => zones.push(z)" />
         <div><label class="label">Adresse</label><input v-model="edit.delivery_address" class="input"></div>
         <div><label class="label">Repère</label><input v-model="edit.delivery_landmark" class="input"></div>
         <p v-if="editError" class="field-error">{{ editError }}</p>
@@ -283,6 +277,7 @@
 <script setup>
 import Icone from '../../components/ui/Icone.vue'
 import SearchSelect from '../../components/SearchSelect.vue'
+import CommuneQuartier from '../../components/CommuneQuartier.vue'
 import { madSuffix } from '../../utils/mad'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'

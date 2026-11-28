@@ -282,12 +282,7 @@
       <div class="space-y-3">
         <div><label class="m-label">Téléphone</label><input v-model="edit.recipient_phone" class="m-input" inputmode="tel"></div>
         <div><label class="m-label">Autre numéro</label><input v-model="edit.recipient_phone2" class="m-input" inputmode="tel"></div>
-        <div>
-          <label class="m-label">Commune / quartier</label>
-          <select v-model="edit.delivery_zone_id" class="m-input">
-            <option v-for="z in zones" :key="z.id" :value="z.id">{{ z.full_name }}</option>
-          </select>
-        </div>
+        <CommuneQuartier id="edit-lieu" v-model="edit.delivery_zone_id" :zones="zones" required mobile stacked />
         <div><label class="m-label">Adresse</label><input v-model="edit.delivery_address" class="m-input"></div>
         <div><label class="m-label">Repère</label><input v-model="edit.delivery_landmark" class="m-input"></div>
         <button class="m-btn-primary" :disabled="busy" @click="doEdit">Enregistrer</button>
@@ -299,6 +294,7 @@
 
 <script setup>
 import Icone from '../../components/ui/Icone.vue'
+import CommuneQuartier from '../../components/CommuneQuartier.vue'
 import CancelReasonPicker from '../../components/CancelReasonPicker.vue'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -514,6 +510,7 @@ async function doRenew() {
 }
 
 async function doEdit() {
+  if (!edit.delivery_zone_id) return toasts.error('Choisissez la commune puis le quartier de livraison.')
   await run(
     () => http.patch(`/orders/${order.value.id}`, Object.fromEntries(Object.entries(edit).filter(([, v]) => v !== ''))),
     'Livraison modifiée.',

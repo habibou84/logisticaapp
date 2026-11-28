@@ -2,12 +2,14 @@
 
 namespace App\Services\Reports;
 
+use App\Enums\Activity;
 use App\Enums\DeliveryDelay;
 use App\Enums\LedgerEntryType;
 use App\Enums\MerchantStatus;
 use App\Enums\OrderEventType;
 use App\Enums\OrderStatus;
 use App\Enums\ShipmentType;
+use App\Models\CashCollection;
 use App\Models\Company;
 use App\Models\Courier;
 use App\Models\CourierEarning;
@@ -319,13 +321,16 @@ class Statistics
         $returned = $this->ordersBetween('returned_at', $from, $to, ['id', 'merchant_id'])->countBy('merchant_id');
         $lost = $this->ordersBetween('lost_at', $from, $to, ['id', 'merchant_id'])->countBy('merchant_id');
         $cancelled = $this->ordersBetween('cancelled_at', $from, $to, ['id', 'merchant_id'])->countBy('merchant_id');
-        $lastOrder = Order::forCompany($this->company->id)->groupBy('merchant_id')->selectRaw('merchant_id, MAX(created_at) AS last_at')->pluck('last_at', 'merchant_id');
+        // Dernière course de chaque client, dans l'activité regardée
+        $lastOrder = $this->orders()->groupBy('merchant_id')->selectRaw('merchant_id, MAX(created_at) AS last_at')->pluck('last_at', 'merchant_id');
         $balances = $withAmounts ? app(MerchantPayouts::class)->summaries() : [];
 
         [$start, $end] = $this->utcRange($from, $to);
         $inactiveSince = now()->subDays(self::INACTIVE_DAYS);
 
-        $merchants = Merchant::forCompany($this->company->id)->get(['id', 'business_name', 'contact_name', 'phone', 'status', 'created_at']);
+        // Une activité choisie : seuls les clients qui l'ont comptent (nouveaux, à relancer, total)
+        $merchants = Merchant::forCompany($this->company->id)->when($this->activity !== null, fn ($q) => $q->withActivity([$this->activity]))
+            ->get(['id', 'business_name', 'contact_name', 'phone', 'status', 'created_at']);
 
         $rows = $merchants->map(function (Merchant $m) use ($created, $delivered, $returned, $lost, $cancelled, $lastOrder, $balances, $withAmounts) {
             $own = $delivered->get($m->id, collect());
@@ -376,7 +381,7 @@ class Statistics
                 'total' => $merchants->where('status', MerchantStatus::Active)->count(),
                 // Part des courses des 5 premiers : dépendance à quelques gros clients
                 'top5_share' => $this->rate($active->sortByDesc('created')->take(5)->sum('created'), $active->sum('created')),
-                'to_pay' => $withAmounts ? (int) collect($balances)->sum(fn ($b) => max(0, $b['unpaid_total'])) : null,
+                'to_pay' => $withAmounts ? (int) collect($balances)->only($merchants->modelKeys())->sum(fn ($b) => max(0, $b['unpaid_total'])) : null,
             ],
         ];
     }
@@ -470,10 +475,6 @@ class Statistics
         $costTotal = array_sum($costs);
         $delivered = $this->ordersBetween('delivered_at', $from, $to, ['id'])->count();
 
-        // Argent en circulation, à cet instant
-        $courierCash = collect(app(CourierCash::class)->balances());
-        $merchantBalances = collect(app(MerchantPayouts::class)->summaries());
-
         return [
             'period' => $this->period($from, $to),
             'revenue' => [...$revenue, 'total' => $revenueTotal],
@@ -483,15 +484,66 @@ class Statistics
             'margin_per_order' => $delivered ? (int) round(($revenueTotal - $costTotal) / $delivered) : null,
             'delivered' => $delivered,
             // Frais avancés puis refacturés aux clients : ni revenu ni dépense
-            'rebilled' => -$entry(LedgerEntryType::ShippingFee) - $entry(LedgerEntryType::OtherFee),
+            'rebilled' => $this->activity === null
+                ? -$entry(LedgerEntryType::ShippingFee) - $entry(LedgerEntryType::OtherFee)
+                : (int) -$this->inActivity(MerchantLedgerEntry::forCompany($this->company->id)->whereBetween('created_at', [$start, $end])
+                    ->whereIn('type', [LedgerEntryType::ShippingFee->value, LedgerEntryType::OtherFee->value]))->sum('amount'),
             'months' => $this->monthly($from, $to),
-            'circulation' => [
-                'with_couriers' => (int) $courierCash->sum(fn ($b) => max(0, $b['due'])),
-                'to_merchants' => (int) $merchantBalances->sum(fn ($b) => max(0, $b['unpaid_total'])),
-                'to_merchants_available' => (int) $merchantBalances->sum(fn ($b) => max(0, $b['available'])),
-                'owed_by_merchants' => (int) -$merchantBalances->sum(fn ($b) => min(0, $b['unpaid_total'])),
-            ],
+            'circulation' => $this->circulation(),
+            // Activités facturées au mois : ce que les clients doivent encore sur leurs factures
+            'invoices' => in_array($this->activity, [Activity::Distribution->value, Activity::Mad->value], true)
+                ? collect(app(ClientInsights::class)->payments($this->company, CarbonImmutable::now($this->tz), $this->activity))->only(['outstanding', 'buckets', 'average_days'])->all()
+                : null,
         ];
+    }
+
+    /**
+     * Argent en circulation, à cet instant. Une activité choisie : seulement l'argent de ses courses (les avances
+     * faites aux livreurs, sans course, ne comptent que pour toute l'entreprise ; une écriture sans course au compte
+     * d'un client est comptée en e-commerce).
+     *
+     * @return array{with_couriers: int, to_merchants: int, to_merchants_available: int, owed_by_merchants: int}
+     */
+    private function circulation(): array
+    {
+        if ($this->activity === null) {
+            $courierCash = collect(app(CourierCash::class)->balances());
+            $balances = collect(app(MerchantPayouts::class)->summaries());
+
+            return [
+                'with_couriers' => (int) $courierCash->sum(fn ($b) => max(0, $b['due'])),
+                'to_merchants' => (int) $balances->sum(fn ($b) => max(0, $b['unpaid_total'])),
+                'to_merchants_available' => (int) $balances->sum(fn ($b) => max(0, $b['available'])),
+                'owed_by_merchants' => (int) -$balances->sum(fn ($b) => min(0, $b['unpaid_total'])),
+            ];
+        }
+
+        $orderIds = fn () => $this->orders()->select('id');
+        $collected = CashCollection::forCompany($this->company->id)->inCourierHands()->whereIn('order_id', $orderIds())
+            ->groupBy('courier_id')->selectRaw('courier_id, SUM(amount_collected) AS total')->pluck('total', 'courier_id');
+        $spent = OrderExpense::forCompany($this->company->id)->owedToCourier()->whereIn('order_id', $orderIds())
+            ->groupBy('courier_id')->selectRaw('courier_id, SUM(amount) AS total')->pluck('total', 'courier_id');
+        $unpaid = $this->inActivity(MerchantLedgerEntry::forCompany($this->company->id)->whereNull('payout_id')->where('type', '!=', LedgerEntryType::Payout->value))
+            ->groupBy('merchant_id')->selectRaw('merchant_id, SUM(amount) AS total')->pluck('total', 'merchant_id');
+        $available = $this->inActivity(app(MerchantPayouts::class)->eligibleEntries())
+            ->groupBy('merchant_id')->selectRaw('merchant_id, SUM(amount) AS total')->pluck('total', 'merchant_id');
+
+        return [
+            'with_couriers' => (int) $collected->keys()->sum(fn ($id) => max(0, (int) $collected[$id] - (int) ($spent[$id] ?? 0))),
+            'to_merchants' => (int) $unpaid->sum(fn ($v) => max(0, (int) $v)),
+            'to_merchants_available' => (int) $available->sum(fn ($v) => max(0, (int) $v)),
+            'owed_by_merchants' => (int) -$unpaid->sum(fn ($v) => min(0, (int) $v)),
+        ];
+    }
+
+    /** Écritures au compte des clients qui relèvent de l'activité regardée (sans course : e-commerce) */
+    private function inActivity($query)
+    {
+        $ids = $this->orders()->select('id');
+
+        return $this->activity === Activity::Ecommerce->value
+            ? $query->where(fn ($q) => $q->whereIn('order_id', $ids)->orWhereNull('order_id'))
+            : $query->whereIn('order_id', $ids);
     }
 
     /**

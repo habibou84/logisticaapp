@@ -177,11 +177,14 @@ class AwaitingCourier
     /**
      * Courses qui attendent un livreur dans une entreprise, avec leur état.
      *
+     * Avec une activité : seulement les courses de cette activité.
+     *
      * @return Collection<int, array{order: Order, stage: string, minutes: int, late: bool}>
      */
-    public function waiting(Company $company): Collection
+    public function waiting(Company $company, ?string $activity = null): Collection
     {
-        return self::scope(Order::withoutGlobalScopes()->where('company_id', $company->id))
+        return self::scope(Order::withoutGlobalScopes()->where('company_id', $company->id)
+            ->when($activity, fn (Builder $q) => $q->where('activity', $activity)))
             ->get()
             ->map(fn (Order $order) => ($state = $this->describe($order, $company)) ? ['order' => $order, ...$state] : null)
             ->filter()
@@ -189,13 +192,13 @@ class AwaitingCourier
     }
 
     /**
-     * Compteurs du menu et des onglets : courses en retard, par étape.
+     * Compteurs du menu et des onglets : courses en retard, par étape (avec une activité : seulement celle-ci).
      *
      * @return array{pickup: int, delivery: int, total: int}
      */
-    public function lateCounts(Company $company): array
+    public function lateCounts(Company $company, ?string $activity = null): array
     {
-        $late = $this->waiting($company)->where('late', true);
+        $late = $this->waiting($company, $activity)->where('late', true);
         $pickup = $late->where('stage', self::PICKUP)->count();
         $delivery = $late->where('stage', self::DELIVERY)->count();
 

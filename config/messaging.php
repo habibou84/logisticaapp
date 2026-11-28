@@ -33,6 +33,29 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | WhatsApp des alertes (connexion par QR code)
+    |--------------------------------------------------------------------------
+    |
+    | Numéro WhatsApp ordinaire, relié en scannant un QR code, qui envoie
+    | seulement les alertes de la direction (pas de modèle Meta à faire
+    | approuver). La session est tenue par le conteneur « whatsapp-qr »
+    | (WAHA, docker-compose.yml) ; sans clé, la connexion est indisponible.
+    |
+    */
+
+    'qr' => [
+        'url' => env('WHATSAPP_QR_URL', 'http://whatsapp-qr:3000'),
+        'api_key' => env('WHATSAPP_QR_API_KEY'),
+        'session' => 'default',
+        // Envois espacés (secondes, tirées au hasard) et plafonnés, pour rester discret auprès de WhatsApp
+        'spacing' => [4, 12],
+        'max_per_hour' => 30,
+        // Déconnexion signalée aux administrateurs après ce délai (minutes), une fois
+        'warn_after' => 10,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | SMS de repli
     |--------------------------------------------------------------------------
     |

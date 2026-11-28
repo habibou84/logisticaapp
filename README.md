@@ -623,6 +623,12 @@ Créés par `DemoSeeder` (environnements `local` et `testing` uniquement). Mot d
 
 On se connecte avec le **téléphone** (format local `07 xx xx xx xx` ou international `+225…`) **ou** l'e-mail.
 
+### Données fictives de la préproduction
+
+`php artisan app:preprod-data` (refusée en production) ajoute à l'entreprise installée des clients, des livreurs,
+une équipe et 30 jours de courses cohérentes (prix, journal, caisse, reversements), sans envoyer aucun message.
+Comptes en `07 99 …`, mot de passe `Preprod2026`. Détails : `docs/DEPLOIEMENT.md` (Commandes utiles).
+
 ### Production
 
 ```bash

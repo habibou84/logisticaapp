@@ -165,7 +165,7 @@ class DemoSeeder extends Seeder
      * Grille par défaut : 1 000 F dans la même commune, 1 500 F entre communes,
      * 2 000 F vers ou depuis la périphérie (Anyama, Bingerville, Songon).
      */
-    private function pricing(Company $company): void
+    public function pricing(Company $company): void
     {
         $grid = PricingGrid::forCompany($company->id)->where('is_default', true)->first();
         $zones = Zone::forCompany($company->id)->whereNull('parent_id')->get();

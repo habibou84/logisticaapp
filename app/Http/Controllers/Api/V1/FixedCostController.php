@@ -11,13 +11,15 @@ use Illuminate\Validation\Rule;
 
 /**
  * Frais fixes de l'entreprise (Statistiques › Rentabilité) : loyer, salaires de l'équipe, téléphone… comptés dans la
- * marge nette. Lecture avec la caisse, saisie avec « Encaisser et reverser ».
+ * marge nette. Lecture avec la caisse, saisie avec « Saisir les frais fixes » (menu Frais fixes).
  */
 class FixedCostController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        abort_unless($request->user()->can(Permission::FinanceView->value) && $request->user()->merchant_id === null, 403);
+        // Lecture : qui voit la caisse, ou qui saisit les frais fixes
+        abort_unless($request->user()->merchant_id === null
+            && ($request->user()->can(Permission::FinanceView->value) || $request->user()->can(Permission::FixedCostsManage->value)), 403);
 
         return response()->json([
             'data' => FixedCost::query()->orderByDesc('starts_on')->orderBy('label')->get()->map(fn (FixedCost $c) => $this->present($c))->values(),
@@ -67,7 +69,7 @@ class FixedCostController extends Controller
 
     private function authorizeManage(Request $request): void
     {
-        abort_unless($request->user()->can(Permission::FinanceManage->value) && $request->user()->merchant_id === null, 403);
+        abort_unless($request->user()->can(Permission::FixedCostsManage->value) && $request->user()->merchant_id === null, 403);
     }
 
     /** @return array<string, mixed> */

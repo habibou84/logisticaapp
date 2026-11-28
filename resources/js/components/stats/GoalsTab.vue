@@ -1,20 +1,16 @@
 <template>
   <div class="space-y-4">
-    <!-- Objectifs du mois : réalisé, projection au rythme actuel -->
-    <section class="card space-y-3 p-4">
+    <!-- Seuils des statistiques (les objectifs par activité viendront avec l'aide à la décision) -->
+    <section v-if="canEdit" class="card space-y-3 p-4">
       <div class="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 class="flex items-center gap-1.5 font-semibold"><Icone nom="objectif" />Objectifs de {{ data.current.label }}</h2>
-          <p class="text-sm text-slate-600">Jour {{ data.current.elapsed_days }} sur {{ data.current.days_in_month }} · la projection suit le rythme actuel jusqu'à la fin du mois.</p>
+          <h2 class="flex items-center gap-1.5 font-semibold"><Icone nom="objectif" />Seuils des statistiques</h2>
+          <p class="text-sm text-slate-600">Ils décident de ce qui est signalé : client « à renégocier », forfait « à revoir à la hausse » ou « sous-utilisé ».</p>
         </div>
-        <button v-if="canEdit" type="button" class="btn-secondary" @click="editing = !editing"><Icone v-if="!editing" nom="modifier" />{{ editing ? 'Fermer' : 'Objectifs et seuils' }}</button>
+        <button type="button" class="btn-secondary" @click="editing = !editing"><Icone v-if="!editing" nom="modifier" />{{ editing ? 'Fermer' : 'Modifier les seuils' }}</button>
       </div>
 
       <form v-if="editing" class="grid gap-3 rounded-lg bg-slate-50 p-3 sm:grid-cols-2 lg:grid-cols-4" @submit.prevent="save">
-        <div v-for="g in GOALS" :key="g.key">
-          <label class="label" :for="`goal-${g.key}`">{{ g.label }} {{ g.unit ? `(${g.unit})` : '' }}</label>
-          <input :id="`goal-${g.key}`" v-model="form.goals[g.key]" type="number" :step="g.key === 'success_rate' ? '0.1' : '1'" class="input" placeholder="Pas d'objectif">
-        </div>
         <div>
           <label class="label" for="renegotiate">Client « à renégocier » sous une marge de (%)</label>
           <input id="renegotiate" v-model.number="form.renegotiate_margin" type="number" min="0" max="100" class="input">
@@ -32,32 +28,14 @@
           <span v-if="error" class="text-sm text-red-700">{{ error }}</span>
         </div>
       </form>
-
-      <p v-if="!data.goals_set && !editing" class="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">
-        Aucun objectif fixé. {{ canEdit ? 'Fixez-en pour suivre le mois en cours et sa projection.' : 'Un administrateur peut les fixer.' }}
-      </p>
-      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div v-for="g in shownGoals" :key="g.key" class="rounded-xl border border-slate-200 p-3">
-          <p class="text-sm text-slate-600">{{ g.label }}</p>
-          <p class="text-2xl font-bold">{{ fmt(g, g.goal.realized) }}</p>
-          <template v-if="g.goal.target !== null">
-            <div class="mt-2 h-2 rounded-full bg-slate-100" role="progressbar" :aria-valuenow="g.goal.percent" aria-valuemin="0" aria-valuemax="100">
-              <div :class="['h-2 rounded-full', g.goal.on_track ? 'bg-emerald-500' : 'bg-amber-500']" :style="{ width: `${Math.min(100, Math.max(0, g.goal.percent || 0))}%` }" />
-            </div>
-            <p class="mt-1 text-xs text-slate-600">
-              objectif {{ fmt(g, g.goal.target) }} · {{ g.goal.percent }} %
-              <template v-if="g.key !== 'success_rate'"> · fin de mois estimée {{ fmt(g, g.goal.projection) }}</template>
-            </p>
-            <p :class="['mt-1 text-xs font-semibold', g.goal.on_track ? 'text-emerald-700' : 'text-amber-700']"><Icone :nom="g.goal.on_track ? 'valider' : 'alerte'" taille="petite" class="inline align-text-bottom" /> {{ g.goal.on_track ? 'En bonne voie' : 'En retard sur l\'objectif' }}</p>
-          </template>
-          <p v-else class="mt-1 text-xs text-slate-400">pas d'objectif</p>
-        </div>
-      </div>
     </section>
 
     <!-- Comparaisons : mois en cours (ramené au mois entier), même mois l'an dernier, moyenne des 3 mois précédents -->
     <section class="card overflow-x-auto">
-      <h2 class="p-4 pb-2 font-semibold">Comparer {{ data.current.label }}</h2>
+      <div class="p-4 pb-2">
+        <h2 class="font-semibold">Comparer {{ data.current.label }}</h2>
+        <p class="text-sm text-slate-600">Jour {{ data.current.elapsed_days }} sur {{ data.current.days_in_month }} · l'estimation suit le rythme actuel jusqu'à la fin du mois.</p>
+      </div>
       <table class="w-full text-sm">
         <thead class="bg-slate-50 text-left text-slate-600">
           <tr><th class="p-2">Indicateur</th><th class="p-2 text-right">Ce mois (à ce jour)</th><th class="p-2 text-right">Ce mois (estimé)</th><th class="p-2 text-right">Même mois l'an dernier</th><th class="p-2 text-right">Moyenne des 3 mois précédents</th></tr>
@@ -114,13 +92,6 @@ const auth = useAuthStore()
 const withAmounts = computed(() => auth.can('finance.view'))
 const canEdit = computed(() => auth.can('settings.manage'))
 
-const GOALS = [
-  { key: 'delivered', label: 'Courses livrées' },
-  { key: 'revenue', label: 'Chiffre d\'affaires', unit: 'F', money: true },
-  { key: 'success_rate', label: 'Taux de réussite', unit: '%', percent: true },
-  { key: 'margin', label: 'Marge nette', unit: 'F', money: true },
-]
-const shownGoals = computed(() => GOALS.map((g) => ({ ...g, goal: props.data.current.goals[g.key] })).filter((g) => g.goal))
 const comparisonRows = computed(() => [
   { key: 'created', label: 'Courses créées' },
   { key: 'delivered', label: 'Courses livrées' },
@@ -151,7 +122,7 @@ const monthColumns = [
   ] : []),
 ]
 
-// Objectifs et seuils (Réglages de l'entreprise, droit Réglages)
+// Seuils (Réglages de l'entreprise, droit Réglages) ; les anciens objectifs enregistrés sont renvoyés tels quels
 const editing = ref(false)
 const saving = ref(false)
 const error = ref('')

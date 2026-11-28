@@ -181,9 +181,14 @@ class OrderController extends Controller
     {
         Gate::authorize('dispatch', Order::class);
 
-        $day = $request->validate(['day' => ['nullable', 'date']])['day'] ?? null;
+        $data = $request->validate([
+            'day' => ['nullable', 'date'],
+            // Page Courses filtrée sur une activité : seulement ses ramassages
+            'activity' => ['nullable', Rule::enum(Activity::class)],
+        ]);
+        $day = $data['day'] ?? null;
 
-        return response()->json(['data' => $groups->toAssign($request->user(), $day ? Carbon::parse($day)->toDateString() : null)]);
+        return response()->json(['data' => $groups->toAssign($request->user(), $day ? Carbon::parse($day)->toDateString() : null, $data['activity'] ?? null)]);
     }
 
     public function counts(Request $request, AwaitingCourier $awaiting): JsonResponse
@@ -192,13 +197,18 @@ class OrderController extends Controller
 
         $data = $request->validate([
             'day' => ['nullable', 'date'],
-            // Tableau de bord : une seule activité (les compteurs d'attente et l'heure limite restent ceux de l'entreprise)
+            // Une seule activité (page Courses) : files, retards et jour de cette activité ; le bloc « menu »,
+            // l'attente par étape et l'heure limite restent ceux de toute l'entreprise
             'activity' => ['nullable', Rule::enum(Activity::class)],
         ]);
         $activity = $data['activity'] ?? null;
         $base = fn (): Builder => Order::query()->when($activity, fn ($q) => $q->where('activity', $activity));
         $count = fn (string $queue) => $this->applyQueue($base(), $queue)->count();
         $day = $data['day'] ?? null;
+        $company = $request->user()->company;
+        $late = $awaiting->lateCounts($company, $activity);
+        $toReschedule = $count('to_reschedule');
+        $exceptions = collect(self::EXCEPTION_QUEUES)->mapWithKeys(fn (string $queue) => [$queue => $count($queue)])->all();
 
         return response()->json(['data' => [
             'to_confirm' => $count('to_confirm'),
@@ -206,14 +216,24 @@ class OrderController extends Controller
             'to_deliver' => $count('to_deliver'),
             'internal_late' => $count('internal_late'),
             'unassigned' => AwaitingCourier::scope($base())->count(),
-            'to_reschedule' => $count('to_reschedule'),
+            'to_reschedule' => $toReschedule,
             // Cas à régler, toutes dates (tant qu'ils ne sont pas réglés) : cartes et onglets visibles s'il y en a
-            'exceptions' => collect(self::EXCEPTION_QUEUES)->mapWithKeys(fn (string $queue) => [$queue => $count($queue)])->all(),
-            'late' => $awaiting->lateCounts($request->user()->company),
+            'exceptions' => $exceptions,
+            'late' => $late,
+            // Pastilles du menu : toujours toute l'entreprise, quelle que soit l'activité choisie dans la page
+            'menu' => $activity ? [
+                'late' => $awaiting->lateCounts($company)['total'],
+                'untreated' => $this->applyQueue(Order::query(), 'untreated')->count(),
+                'to_reschedule' => $this->applyQueue(Order::query(), 'to_reschedule')->count(),
+            ] : [
+                'late' => $late['total'],
+                'untreated' => $exceptions['untreated'],
+                'to_reschedule' => $toReschedule,
+            ],
             // Tableau de bord : en attente d'un livreur, par étape
-            'waiting' => $awaiting->summary($request->user()->company),
+            'waiting' => $awaiting->summary($company),
             // Heure limite du jour : passée ou non, et courses encore sans livreur
-            'cutoff' => $awaiting->cutoff($request->user()->company),
+            'cutoff' => $awaiting->cutoff($company),
             // Liste de l'agence sur un jour : files limitées à ce jour, courses prévues plus tard à part
             ...($day ? ['day' => $this->dayCounts(Carbon::parse($day)->toDateString(), $base)] : []),
         ]]);

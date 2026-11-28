@@ -5,6 +5,14 @@
 #
 #   DOMAIN=app.logisticadelivery.com EMAIL=vous@exemple.com bash deploy/install.sh
 #
+# Préproduction (copie d'essai sur le même serveur, dans un autre dossier, voir docs/DEPLOIEMENT.md) :
+#
+#   INSTANCE=preprod DOMAIN=preprod.logisticadelivery.com APP_PORT=8091 COMPOSE_PROJECT_NAME=logistica-preprod \
+#     EMAIL=vous@exemple.com bash deploy/install.sh
+#
+#   → fermée au public par un code d'accès, messages WhatsApp, SMS et e-mails simulés (rien n'est envoyé),
+#     base et fichiers séparés de la production, suit la branche main.
+#
 # Étapes (chacune est sautée si elle est déjà faite ; le script peut être relancé sans risque) :
 #   1. .env de production (mots de passe et clés générés une seule fois) ;
 #   2. construction des images et démarrage des conteneurs (site, PostgreSQL, Redis, files d'attente,
@@ -22,6 +30,8 @@ DOMAIN="${DOMAIN:-app.logisticadelivery.com}"
 EMAIL="${EMAIL:-}"
 APP_PORT="${APP_PORT:-8090}"
 PROJECT="${COMPOSE_PROJECT_NAME:-logistica}"
+INSTANCE="${INSTANCE:-production}"
+[[ "$INSTANCE" == production || "$INSTANCE" == preprod ]] || { echo "INSTANCE : production ou preprod" >&2; exit 1; }
 
 step() { printf '\n\033[1;34m==> %s\033[0m\n' "$*"; }
 info() { printf '    %s\n' "$*"; }
@@ -85,7 +95,19 @@ else
     env_set TRUSTED_PROXIES '*'
     [[ -n "$EMAIL" ]] && env_set VAPID_SUBJECT "mailto:$EMAIL"
     env_set WHATSAPP_VERIFY_TOKEN "$(random 16)"
-    info ".env créé pour https://$DOMAIN."
+    # WhatsApp des alertes (QR code) : clé entre l'application et le conteneur « whatsapp-qr »
+    env_set WHATSAPP_QR_API_KEY "$(random 40)"
+    if [[ "$INSTANCE" == preprod ]]; then
+        # Préproduction : jamais de message réel à un client ou un livreur, page de code d'accès avant tout,
+        # erreurs Sentry rangées à part (environnement « staging »), chaque commit de main installé
+        env_set APP_ENV staging
+        env_set PREPROD_ACCESS_CODE "$(random 12)"
+        env_set WHATSAPP_DRIVER log
+        env_set SMS_DRIVER log
+        env_set MAIL_MAILER log
+        env_set AUTO_UPDATE_TRACK branch
+    fi
+    info ".env créé pour https://$DOMAIN ($INSTANCE)."
 fi
 # Lisible par root et par le groupe www-data des conteneurs (gid 33) : l'application y lit sa configuration
 chown root:33 .env
@@ -95,6 +117,10 @@ APP_PORT="${APP_PORT:-8090}"
 
 # ───────────────────────────── 2. Conteneurs ─────────────────────────────
 step "Construction des images (quelques minutes la première fois)"
+# Images nommées d'après la version (deploy/update.sh, deploy/rollback.sh)
+env_set APP_VERSION "$(git -C "$APP_DIR" rev-parse --short HEAD)"
+chown root:33 .env
+chmod 640 .env
 compose build
 
 # Clés des notifications push : une seule fois (les changer désabonne les appareils)
@@ -151,6 +177,13 @@ cat > "/etc/cron.d/$PROJECT-backup" <<CRON
 CRON
 
 step "Terminé"
+if [[ "$INSTANCE" == preprod ]]; then
+    cat <<TXT
+    Préproduction : https://$DOMAIN — code d'accès : $(env_get PREPROD_ACCESS_CODE)
+    Messages WhatsApp, SMS et e-mails simulés (journal de l'application), rien n'est envoyé.
+    Suivre main automatiquement : bash $APP_DIR/deploy/auto-update.sh --install
+TXT
+fi
 cat <<TXT
     Back-office : https://$DOMAIN/admin
     Livreurs    : https://$DOMAIN/livreur

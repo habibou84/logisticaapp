@@ -15,11 +15,34 @@ Toujours répondre en français. Textes de l'interface, messages, commits et PR 
 - Liens envoyés (WhatsApp, SMS, API) : `Company::url()`, c'est-à-dire `APP_URL`.
 - Première mise en service : `php artisan app:install` (entreprise + premier administrateur).
 
+## Mise en ligne : sur demande du propriétaire
+- « Ouvre la PR et fusionne » : PR vers `main`, attendre les contrôles verts, fusionner (squash).
+  La préproduction (preprod.logisticadelivery.com) l'installe toute seule.
+- « Mets en production » : PR `main` → `production`, contrôles verts, fusionner (commit de fusion, pas squash).
+  La production l'installe entre 20 h et 7 h.
+- « Mets en production immédiatement » : pareil, avec « [immédiat] » dans le titre de la fusion ;
+  installation dès que les contrôles du commit de fusion sont verts.
+- Ne jamais fusionner sans cette demande explicite ; contrôle rouge = corriger d'abord, ne pas fusionner.
+- Sans demande de fusion : travail terminé, testé et poussé → ouvrir la PR et s'arrêter là.
+- Ne jamais pousser directement sur `main` ni sur `production`.
+- Une PR = un sujet ; description : ce qui change, migrations, risques, ce qu'il faut essayer en préproduction.
+- Migrations compatibles avec la version précédente (ajouter avant de retirer) : retour arrière par
+  `deploy/rollback.sh` sans toucher à la base.
+
 ## Déploiement
-- `docker-compose.yml` + `Dockerfile` (images `app` et `web`) ; `deploy/install.sh`, `deploy/update.sh`, `deploy/backup.sh`.
+- `docker-compose.yml` + `Dockerfile` (images `app` et `web`, nommées d'après la version `APP_VERSION`).
+- Scripts : `deploy/install.sh` (production, ou préproduction avec `INSTANCE=preprod`), `deploy/update.sh`,
+  `deploy/auto-update.sh`, `deploy/rollback.sh`, `deploy/backup.sh`.
+- Deux installations sur le même serveur : production dans `/opt/logistica` (branche `production`), préproduction
+  dans `/opt/logistica-preprod` (branche `main`, code d'accès, messages WhatsApp, SMS et e-mails simulés).
 - Les conteneurs n'écoutent que sur `127.0.0.1` ; Apache du serveur fait le HTTPS (`deploy/apache-site.conf`).
 - Le serveur héberge d'autres sites (PHP 7.4, MySQL) : ne rien installer directement sur le système.
-- On ouvre une PR seulement à la demande.
+- Avant chaque mise à jour, `deploy/update.sh` sauvegarde la base puis contrôle `/up` (base et Redis compris).
+- Sauvegardes chaque nuit, copiées chiffrées chez Cloudflare R2 (base et fichiers, `.env.offsite`).
+- Sentry (`SENTRY_LARAVEL_DSN`) reçoit les erreurs : ne jamais y envoyer de données personnelles.
+- Données fictives (`app:preprod-data`, téléphones `07 99 …`, références `DEMO-`) : préproduction et développement
+  seulement, **jamais en production**. Ne pas affaiblir les verrous de la commande ; ne jamais restaurer une
+  sauvegarde de la préproduction dans la production.
 
 ## Tests et style
 ```bash
