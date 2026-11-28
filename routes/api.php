@@ -696,6 +696,9 @@ Route::prefix('v1')->name('v1.')->group(function () {
         });
         // Tableau de direction : les activités côte à côte, points à décider
         Route::get('stats/direction', [StatisticsController::class, 'direction'])->middleware('can:direction.view')->name('stats.direction');
+        Route::get('stats/direction/teams', [StatisticsController::class, 'directionTeams'])->middleware('can:direction.view')->name('stats.direction.teams');
+        Route::get('stats/direction/{activity}', [StatisticsController::class, 'directionActivity'])->whereIn('activity', ['ecommerce', 'distribution', 'mad'])
+            ->middleware('can:direction.view')->name('stats.direction.activity');
         // Intégrations : Excel, lien Google Sheets, point par e-mail ; rapports mensuels des clients
         Route::get('stats/export', [StatsIntegrationController::class, 'export'])->middleware('throttle:20,1')->name('stats.export');
         Route::get('stats/feed-link', [StatsIntegrationController::class, 'feedLink'])->name('stats.feed-link');

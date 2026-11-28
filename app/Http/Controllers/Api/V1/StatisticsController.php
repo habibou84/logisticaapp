@@ -7,7 +7,9 @@ use App\Enums\Permission;
 use App\Http\Controllers\Controller;
 use App\Services\Reports\ClientInsights;
 use App\Services\Reports\ClientReports;
+use App\Services\Reports\DirectionActivities;
 use App\Services\Reports\DirectionBoard;
+use App\Services\Reports\DirectionTeams;
 use App\Services\Reports\Performance;
 use App\Services\Reports\Pivot;
 use App\Services\Reports\Profitability;
@@ -194,6 +196,32 @@ class StatisticsController extends Controller
         $activities = array_values(array_filter(Activity::cases(), fn (Activity $a) => $user->seesActivity($a)));
 
         return response()->json(['data' => $board->overview($user->company->fresh(), $from, $to, $activities)]);
+    }
+
+    /**
+     * Tableau de direction › une activité (e-commerce, MAD, distribution) : ses indicateurs propres.
+     * Refusé hors du périmètre d'activités de la personne.
+     */
+    public function directionActivity(Request $request, string $activity, DirectionActivities $screens): JsonResponse
+    {
+        $user = $request->user();
+        abort_if($user->merchant_id !== null || $user->company === null, 403);
+        abort_unless(Activity::tryFrom($activity) !== null && $user->seesActivity($activity), 403);
+        [$from, $to] = $this->period($request);
+
+        return response()->json(['data' => $screens->{$activity}($user->company->fresh(), $from, $to)]);
+    }
+
+    /**
+     * Tableau de direction › Équipes : livreurs, charge par zone, paie, véhicules, agents du bureau.
+     */
+    public function directionTeams(Request $request, DirectionTeams $teams): JsonResponse
+    {
+        $user = $request->user();
+        abort_if($user->merchant_id !== null || $user->company === null, 403);
+        [$from, $to] = $this->period($request);
+
+        return response()->json(['data' => $teams->build($user->company->fresh(), $from, $to)]);
     }
 
     private function withAmounts(Request $request): bool

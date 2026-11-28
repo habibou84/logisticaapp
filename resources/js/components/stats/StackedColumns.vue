@@ -53,7 +53,7 @@ const totals = computed(() => props.labels.map((_, i) => props.series.reduce((su
 const ticks = computed(() => niceTicks(Math.max(0, ...totals.value)))
 const top = computed(() => ticks.value.at(-1) || 1)
 const slot = computed(() => (width.value - pad.left - pad.right) / Math.max(1, props.labels.length))
-const xLabels = computed(() => labelIndexes(props.labels.length, Math.max(2, Math.floor(width.value / 70))))
+const xLabels = computed(() => labelIndexes(props.labels.length, Math.max(2, Math.floor(width.value / 100))))
 
 function y(v) {
   return pad.top + (1 - v / top.value) * (props.height - pad.top - pad.bottom)
