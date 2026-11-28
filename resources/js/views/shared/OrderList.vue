@@ -248,11 +248,13 @@
           <option value="delivery">Livraison</option>
           <option value="return">Retour</option>
         </select>
-        <SearchSelect
-          v-model="bulk.courier_id" input-class="input w-auto min-w-[14rem]" placeholder="Livreur…" :allow-empty="false" :empty-value="null" aria-label="Livreur"
-          :options="couriers.map((c) => ({ value: c.id, label: c.name, hint: `${c.active_assignments_count} en cours${c.is_available ? '' : ' · indisponible'}${madSuffix(c)}`, search: c.phone }))"
+        <!-- Choix du livreur : même fenêtre que dans le tableau (recherche, état de chacun) -->
+        <button class="btn-primary" :disabled="assigning" @click="bulkPicking = true"><Icone nom="livreur" />{{ assigning ? 'Assignation…' : 'Choisir le livreur' }}</button>
+        <AssignCourierModal
+          :open="bulkPicking" :title="`Assigner ${selected.length} course(s)`" :subtitle="bulkSubtitle" :zone="bulkZone"
+          :what="selected.length > 1 ? `ces ${selected.length} courses` : 'cette course'" :busy="assigning"
+          @close="bulkPicking = false" @pick="(c) => { bulk.courier_id = c.id; bulkPicking = false; bulkAssign() }"
         />
-        <button class="btn-primary" :disabled="!bulk.courier_id || assigning" @click="bulkAssign">Assigner</button>
         <button v-if="auth.can('orders.dispatch') && withCourierSelected.length" class="btn-secondary text-red-700" :disabled="assigning" @click="bulkUnassign">
           Retirer le livreur ({{ withCourierSelected.length }})
         </button>
@@ -292,7 +294,7 @@
           </div>
           <div class="text-xs text-slate-600">{{ o.pickup.zone_name }} → {{ o.delivery.zone_name }}<span v-if="isStaff && o.merchant"> · {{ o.merchant.business_name }}</span></div>
           <OrderStatusCell :order="o" :late="isLate(o)" :carried="isCarried(o)" :late-day="deliveryDay(o)" @decide="deciding = $event" />
-          <CourierCell v-if="o.pickup_courier || o.delivery_courier || o.held_by || (isDispatch && o.awaiting_courier)" :order="o" :couriers="couriers" :can-dispatch="isDispatch" class="text-slate-700" @updated="replaceOrder" />
+          <CourierCell v-if="isDispatch || o.pickup_courier || o.delivery_courier || o.held_by" :order="o" :couriers="couriers" :can-dispatch="isDispatch" class="text-slate-700" @updated="replaceOrder" />
           <div v-if="o.internal_late || o.internal_risk" :class="['text-xs font-medium', o.internal_late ? 'text-red-600' : 'text-amber-700']"><Icone :nom="o.internal_late ? 'rappel' : 'alerte'" taille="petite" class="inline align-[-0.15em]" /> {{ o.internal_late ? 'Délai interne dépassé' : 'Risque de retard' }} ({{ dateTime(o.internal_due_at) }})</div>
           <div class="text-xs text-slate-500">Livraison {{ date(o.delivery.scheduled_date || o.created_at) }} · créée {{ dateTime(o.created_at) }}</div>
         </article>
@@ -308,7 +310,7 @@
               <th class="p-2">Destinataire</th>
               <th class="p-2">Trajet</th>
               <th class="p-2">Statut</th>
-              <th class="p-2">Livreur</th>
+              <th class="p-2">Ramasseur / Livreur</th>
               <th class="p-2 text-right">À encaisser</th>
               <th class="p-2">Livraison · création</th>
             </tr>
@@ -365,7 +367,6 @@
 <script setup>
 import Icone from '../../components/ui/Icone.vue'
 import SearchSelect from '../../components/SearchSelect.vue'
-import { madSuffix } from '../../utils/mad'
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
@@ -378,6 +379,7 @@ import PickupGroupsPanel from '../../components/PickupGroupsPanel.vue'
 import DeliveryDayBar from '../../components/DeliveryDayBar.vue'
 import AutoAssignBanner from '../../components/AutoAssignBanner.vue'
 import CoursesTabs from '../../components/CoursesTabs.vue'
+import AssignCourierModal from '../../components/AssignCourierModal.vue'
 import ActivityFilter from '../../components/ActivityFilter.vue'
 import { useActivityFilterStore } from '../../stores/activityFilter'
 import DayPoint from '../../components/DayPoint.vue'
@@ -424,7 +426,7 @@ const pick = computed(() => (collectsOnly(myActivities(auth.user).map((a) => a.v
 const STAGES = computed(() => [
   { key: 'validation', label: 'Validation', items: [{ value: 'to_confirm', label: 'À valider', action: true }] },
   { key: 'pickup', label: pick.value, items: [
-    { value: 'pickup_unassigned', label: 'À assigner', hint: 'sans livreur', action: true },
+    { value: 'pickup_unassigned', label: 'À assigner', hint: 'sans ramasseur', action: true },
     { value: 'to_pickup', label: 'En cours', hint: 'livreur désigné' },
     // Commandes stockées à l'entrepôt : préparées au lieu d'être ramassées
     { value: 'to_prepare', label: 'À préparer', hint: 'au stock' },
@@ -541,6 +543,18 @@ const AWAITING = [
   { value: 'delivery', label: 'Livraison' },
 ]
 const assigning = ref(false)
+// Assignation groupée : fenêtre de choix, zone commune des courses cochées (suggestions)
+const bulkPicking = ref(false)
+const BULK_STEP = { auto: 'ramassage ou livraison selon la course', pickup: 'ramassage', delivery: 'livraison', return: 'retour' }
+const bulkZone = computed(() => {
+  const zones = new Set(selected.value.map((id) => {
+    const o = orders.value.find((x) => x.id === id)
+    const stage = bulk.type === 'auto' ? o?.awaiting_courier?.stage || 'pickup' : bulk.type
+    return stage === 'pickup' ? o?.pickup?.zone_name : o?.delivery?.zone_name
+  }))
+  return zones.size === 1 ? [...zones][0] || '' : ''
+})
+const bulkSubtitle = computed(() => `Étape : ${BULK_STEP[bulk.type]}${bulkZone.value ? ` · zone ${bulkZone.value}` : ''}`)
 // Téléphone : panneau des filtres et nombre de filtres actifs
 const filtersOpen = ref(false)
 const activeFilters = computed(() => [filters.status, filters.merchant_id, filters.from || filters.to].filter(Boolean).length)
