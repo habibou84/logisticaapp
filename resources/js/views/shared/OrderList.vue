@@ -1,7 +1,30 @@
 <template>
   <div class="space-y-4">
     <div class="flex flex-wrap items-center justify-between gap-2">
-      <h1 class="text-xl font-bold">Courses</h1>
+      <!-- Titre et, juste en face, le jour affiché : aujourd'hui par défaut (retards compris), gardé d'un onglet à l'autre -->
+      <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <h1 class="text-xl font-bold">Courses</h1>
+        <div
+          v-if="isStaff" class="flex flex-wrap items-center gap-2 text-sm" role="group" aria-label="Jour affiché"
+          :title="filters.day ? 'Seulement les courses prévues ce jour (jours passés dans « Courses en retard »)' : null"
+        >
+          <Icone nom="date" taille="petite" class="text-slate-600" />
+          <button
+            v-for="d in DAY_CHOICES" :key="d.label" type="button"
+            :class="['rounded-full px-3 py-1 ring-1', filters.day === d.value ? 'bg-slate-900 text-white ring-slate-900' : 'bg-white ring-slate-300']"
+            :aria-pressed="filters.day === d.value"
+            @click="setDay(d.value)"
+          >
+            {{ d.label }}<span v-if="d.count" class="ml-1 opacity-75">({{ d.count }})</span>
+          </button>
+          <input
+            type="date" class="input w-auto py-1"
+            :value="filters.day && filters.day !== todayIso && filters.day !== tomorrowIso ? filters.day : ''"
+            aria-label="Autre jour" title="Autre jour"
+            @change="$event.target.value && setDay($event.target.value)"
+          >
+        </div>
+      </div>
       <div class="flex gap-2">
         <RouterLink v-if="isStaff && auth.can('settings.manage')" to="/admin/reglages/courses" class="btn-secondary" title="Réglages des courses" aria-label="Réglages des courses"><Icone nom="reglages" /></RouterLink>
         <RouterLink v-if="auth.can('orders.create')" :to="`${auth.homeRoute}/courses/import`" class="btn-secondary"><Icone nom="importer" />Importer</RouterLink>
@@ -16,26 +39,6 @@
     <AutoAssignBanner v-if="isStaff" />
 
     <DeliveryDayBar v-if="isStaff && auth.can('orders.dispatch')" @changed="load(1); dispatchCounts.fetchCounts().catch(() => {})" />
-
-    <!-- Jour affiché : aujourd'hui par défaut (retards compris), gardé d'un onglet à l'autre -->
-    <div v-if="isStaff" class="flex flex-wrap items-center gap-2 text-sm" role="group" aria-label="Jour affiché">
-      <span class="inline-flex items-center gap-1 text-slate-600"><Icone nom="date" taille="petite" />Jour :</span>
-      <button
-        v-for="d in DAY_CHOICES" :key="d.label" type="button"
-        :class="['rounded-full px-3 py-1 ring-1', filters.day === d.value ? 'bg-slate-900 text-white ring-slate-900' : 'bg-white ring-slate-300']"
-        :aria-pressed="filters.day === d.value"
-        @click="setDay(d.value)"
-      >
-        {{ d.label }}<span v-if="d.count" class="ml-1 opacity-75">({{ d.count }})</span>
-      </button>
-      <input
-        type="date" class="input w-auto py-1"
-        :value="filters.day && filters.day !== todayIso && filters.day !== tomorrowIso ? filters.day : ''"
-        aria-label="Autre jour" title="Autre jour"
-        @change="$event.target.value && setDay($event.target.value)"
-      >
-      <span v-if="filters.day" class="hidden sm:inline text-slate-600">· seulement les courses prévues ce jour (jours passés dans « Courses en retard »)</span>
-    </div>
 
     <!-- Point du jour : livrées, argent (e-commerce), plis et accusés (distribution), MAD -->
     <DayPoint v-if="isStaff && isDispatch && filters.day" :day="filters.day" :activity="filters.activity" @delivered="showDelivered" />
