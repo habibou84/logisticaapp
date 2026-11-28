@@ -218,6 +218,55 @@ class DirectionBoardTest extends TestCase
         $this->getJson('/api/v1/stats/direction/objectives')->assertForbidden();
     }
 
+    public function test_forecast_follows_the_trend_and_never_goes_under_signed_contracts(): void
+    {
+        // Distribution : 100 000 F, 120 000 F puis 140 000 F de courses facturées sur les trois derniers mois terminés
+        foreach (['2026-09-10' => 100000, '2026-10-10' => 120000, '2026-11-10' => 140000] as $day => $amount) {
+            $order = $this->createOrder();
+            $order->forceFill(['activity' => 'distribution', 'status' => 'delivered', 'delivered_at' => "{$day} 10:00", 'created_at' => "{$day} 08:00", 'billing_amount' => $amount])->saveQuietly();
+        }
+        // MAD : un contrat signé, sans historique
+        BillingPlan::create(['company_id' => $this->company->id, 'merchant_id' => $this->merchant->id, 'formula' => 'mad_contract', 'monthly_fee' => 300000,
+            'included_quantity' => 100, 'overage_price' => 500, 'starts_on' => '2026-12-01']);
+
+        Sanctum::actingAs($this->admin);
+        $data = $this->getJson('/api/v1/stats/direction/forecast')->assertOk()->json('data');
+        $rows = collect($data['activities'])->keyBy('value');
+        // Tendance régulière de +20 000 F par mois : décembre est le premier pas, janvier à mars suivent
+        $this->assertSame(20000, $rows['distribution']['trend']);
+        $this->assertSame(['2027-01', '2027-02', '2027-03'], array_column($rows['distribution']['forecast'], 'month'));
+        $this->assertSame([180000, 200000, 220000], array_column($rows['distribution']['forecast'], 'value'));
+        $this->assertSame([180000, 180000], [$rows['distribution']['forecast'][0]['low'], $rows['distribution']['forecast'][0]['high']]);
+        $this->assertCount(12, $rows['distribution']['history']);
+        // Pas assez d'historique : pas de prévision
+        $this->assertSame([], $rows['ecommerce']['forecast']);
+        $this->assertSame([], $rows['mad']['forecast']);
+        $this->assertSame(3, $data['min_months']);
+
+        Sanctum::actingAs($this->dispatcher);
+        $this->getJson('/api/v1/stats/direction/forecast')->assertForbidden();
+        $this->getJson('/api/v1/stats/direction/simulator')->assertForbidden();
+    }
+
+    public function test_simulator_starts_from_the_last_finished_month(): void
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-11-20 10:00', 'UTC'));
+        $order = $this->deliver();
+        CourierEarning::query()->withoutGlobalScopes()->delete();
+        CourierEarning::create(['company_id' => $this->company->id, 'courier_id' => $this->courierB->id, 'order_id' => $order->id, 'type' => 'delivery', 'amount' => 2000]);
+        $this->travelTo(CarbonImmutable::parse('2026-12-15 10:00', 'UTC'));
+        $fee = $order->delivery_fee + $order->surcharges_total;
+
+        Sanctum::actingAs($this->admin);
+        $data = $this->getJson('/api/v1/stats/direction/simulator')->assertOk()->json('data');
+        $this->assertSame(['2026-11', $fee, $fee - 2000], [$data['month'], $data['revenue'], $data['margin']]);
+        $this->assertSame([1, $fee, 2000, 0], [$data['ecommerce']['delivered'], $data['ecommerce']['revenue_per_delivery'], $data['ecommerce']['direct_cost_per_delivery'], $data['ecommerce']['returned']]);
+        // La seule zone livrée l'a été à perte (2 000 F de paie pour des frais inférieurs)
+        $this->assertSame([1, 1, $fee - 2000], [$data['ecommerce']['loss_zones']['count'], $data['ecommerce']['loss_zones']['delivered'], $data['ecommerce']['loss_zones']['margin']]);
+        $this->assertSame(0, $data['mad']['couriers']);
+        $this->assertNull($data['mad']['revenue_per_courier']);
+    }
+
     public function test_reserved_to_the_permission_and_limited_to_the_scope(): void
     {
         // Sans l'autorisation : refusé, même avec les statistiques

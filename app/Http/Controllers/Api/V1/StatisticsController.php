@@ -9,6 +9,7 @@ use App\Services\Reports\ClientInsights;
 use App\Services\Reports\ClientReports;
 use App\Services\Reports\DirectionActivities;
 use App\Services\Reports\DirectionBoard;
+use App\Services\Reports\DirectionForecast;
 use App\Services\Reports\DirectionObjectives;
 use App\Services\Reports\DirectionTeams;
 use App\Services\Reports\Performance;
@@ -224,6 +225,34 @@ class StatisticsController extends Controller
         [$from, $to] = $this->period($request);
 
         return response()->json(['data' => $teams->build($user->company->fresh(), $from, $to)]);
+    }
+
+    /**
+     * Statistiques de direction › Aide à la décision : prévision du chiffre d'affaires sur trois mois, par activité.
+     */
+    public function directionForecast(Request $request, DirectionForecast $forecast): JsonResponse
+    {
+        $user = $request->user();
+        abort_if($user->merchant_id !== null || $user->company === null, 403);
+
+        return response()->json(['data' => $forecast->forecast($user->company->fresh(), $this->visibleActivities($request))]);
+    }
+
+    /**
+     * Statistiques de direction › Aide à la décision : chiffres du dernier mois terminé, point de départ du simulateur.
+     */
+    public function directionSimulator(Request $request, DirectionForecast $forecast): JsonResponse
+    {
+        $user = $request->user();
+        abort_if($user->merchant_id !== null || $user->company === null, 403);
+
+        return response()->json(['data' => $forecast->baseline($user->company->fresh(), $this->visibleActivities($request))]);
+    }
+
+    /** @return list<Activity> activités du périmètre de la personne */
+    private function visibleActivities(Request $request): array
+    {
+        return array_values(array_filter(Activity::cases(), fn (Activity $a) => $request->user()->seesActivity($a)));
     }
 
     /**

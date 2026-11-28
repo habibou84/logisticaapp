@@ -696,6 +696,8 @@ Route::prefix('v1')->name('v1.')->group(function () {
         });
         // Statistiques de direction : les activités côte à côte, points à décider
         Route::get('stats/direction', [StatisticsController::class, 'direction'])->middleware('can:direction.view')->name('stats.direction');
+        Route::get('stats/direction/forecast', [StatisticsController::class, 'directionForecast'])->middleware('can:direction.view')->name('stats.direction.forecast');
+        Route::get('stats/direction/simulator', [StatisticsController::class, 'directionSimulator'])->middleware('can:direction.view')->name('stats.direction.simulator');
         Route::get('stats/direction/objectives', [StatisticsController::class, 'directionObjectives'])->middleware('can:direction.view')->name('stats.direction.objectives');
         Route::put('stats/direction/objectives', [StatisticsController::class, 'saveDirectionObjectives'])->middleware('can:direction.view')->name('stats.direction.objectives.save');
         Route::get('stats/direction/teams', [StatisticsController::class, 'directionTeams'])->middleware('can:direction.view')->name('stats.direction.teams');
