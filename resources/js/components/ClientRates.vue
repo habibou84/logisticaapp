@@ -73,7 +73,7 @@
 
       <div v-if="report" class="rounded border p-3 text-sm space-y-1" :class="report.applied ? 'bg-emerald-50 border-emerald-200' : 'bg-sky-50 border-sky-200'">
         <p class="font-medium">{{ report.applied ? 'Import terminé' : 'Aperçu de l\'import (rien n\'est encore enregistré)' }} : {{ fileName }}</p>
-        <p>{{ report.created }} tarif(s) nouveau(x), {{ report.updated }} mis à jour<template v-if="report.zones_created.length"> · zones créées : {{ report.zones_created.join(', ') }}</template>.</p>
+        <p>{{ report.created }} tarif(s) nouveau(x), {{ report.updated }} mis à jour<template v-if="report.zones_created.length"> · villes ouvertes à la livraison : {{ report.zones_created.join(', ') }}</template>.</p>
         <ul v-if="report.errors.length" class="text-red-700 list-disc pl-5">
           <li v-for="e in report.errors" :key="e">{{ e }}</li>
         </ul>
@@ -103,7 +103,7 @@
       </div>
 
       <form class="flex flex-wrap items-end gap-2 border-t pt-3" @submit.prevent="addRate">
-        <div><label class="label" for="ir-city">Ville</label><input id="ir-city" v-model="draft.city" class="input w-40" required></div>
+        <div><label class="label" for="ir-city">Ville</label><input id="ir-city" v-model="draft.city" class="input w-40" required list="ir-cities" autocomplete="off"><datalist id="ir-cities"><option v-for="c in cityList" :key="c" :value="c" /></datalist></div>
         <div>
           <label class="label" for="ir-delay">Délai</label>
           <select id="ir-delay" v-model="draft.delivery_delay" class="input w-auto"><option value="24h">24 h</option><option value="48h">48 h</option><option value="72h">72 h</option></select>
@@ -141,6 +141,9 @@ const distribution = ref([])
 const distributionDirty = ref(false)
 const saving = ref(false)
 const interior = ref([])
+// Villes de l'intérieur de la liste des lieux, proposées à la saisie
+const cityList = ref([])
+http.get('/zones/cities').then(({ data }) => { cityList.value = data.data }).catch(() => {})
 const draft = reactive({ city: '', delivery_delay: '24h', pli_price: null, colis_price: null, extra_kg_price: 0 })
 const report = ref(null)
 const fileName = ref('')

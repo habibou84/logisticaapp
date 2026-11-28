@@ -3,6 +3,7 @@
 namespace App\Http\Resources\V1;
 
 use App\Models\Zone;
+use App\Services\Zones\PlaceList;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -16,6 +17,11 @@ class ZoneResource extends JsonResource
         return [
             'id' => $this->id,
             'parent_id' => $this->parent_id,
+            // Code du lieu de la liste commune du socle (null : zone propre à l'entreprise, ou ville pas encore dans
+            // la liste commune). Contrat 1.7
+            'place' => PlaceList::isCommon($this->place_code) ? $this->place_code : null,
+            // Lieu de la liste des lieux de l'application (nom fixé) ; hors de l'API publique
+            'is_standard' => $this->when(! $request->is('api/public/*'), fn () => $this->place_code !== null),
             'name' => $this->name,
             'full_name' => $this->relationLoaded('parent') ? $this->fullName() : $this->name,
             'city' => $this->city,

@@ -253,10 +253,7 @@
       <form class="space-y-3" @submit.prevent="saveHub">
         <div><label class="label" for="h-name">Nom *</label><input id="h-name" v-model="hub.form.name" class="input" required placeholder="Ex. : Entrepôt Cocody"></div>
         <div>
-          <label class="label" for="h-zone">Zone *</label>
-          <select id="h-zone" v-model="hub.form.zone_id" class="input" required>
-            <option v-for="z in zones" :key="z.id" :value="z.id">{{ z.full_name }}</option>
-          </select>
+          <CommuneQuartier id="h-lieu" v-model="hub.form.zone_id" :zones="zones" required @added="(z) => zones.push(z)" />
           <p class="text-xs text-slate-600 mt-1">Point de départ des livraisons : sert au calcul du tarif.</p>
         </div>
         <div><label class="label" for="h-address">Adresse</label><input id="h-address" v-model="hub.form.address" class="input"></div>
@@ -314,6 +311,7 @@
 
 <script setup>
 import Icone from '../../components/ui/Icone.vue'
+import CommuneQuartier from '../../components/CommuneQuartier.vue'
 import SearchSelect from '../../components/SearchSelect.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'

@@ -38,16 +38,37 @@
         </select>
       </div>
       <div>
-        <label class="label">Zones desservies</label>
-        <div class="max-h-56 divide-y overflow-y-auto rounded border">
-          <div v-for="z in zones" :key="z.id" class="flex items-center justify-between gap-2 px-2 py-1 text-sm">
-            <span class="min-w-0 truncate">{{ z.full_name }}</span>
-            <select :value="zoneRole(z.id)" class="input w-36 py-1" :aria-label="`Rôle de la zone ${z.full_name}`" @change="setZoneRole(z.id, $event.target.value)">
-              <option value="">—</option>
-              <option value="main">Principale</option>
-              <option value="backup">De secours</option>
-            </select>
-          </div>
+        <label class="label" for="courier-zone-search">Zones desservies</label>
+        <!-- Par commune : la commune couvre tous ses quartiers ; un quartier à part seulement si besoin -->
+        <input id="courier-zone-search" v-model="zoneQuery" type="search" class="input mb-1 py-1.5" placeholder="Chercher une commune, une ville, un quartier…">
+        <div class="max-h-64 divide-y overflow-y-auto rounded border">
+          <template v-for="c in shownCommunes" :key="c.id">
+            <div class="flex items-center justify-between gap-2 px-2 py-1 text-sm">
+              <span class="min-w-0 truncate">
+                <span class="font-medium">{{ c.name }}</span>
+                <button v-if="quartiersOf(c).length" type="button" class="ml-2 text-xs text-emerald-700 hover:underline" @click="toggleCommune(c)">
+                  {{ zoneOpen(c) ? '▾' : '▸' }} {{ quartiersOf(c).length }} quartier{{ quartiersOf(c).length > 1 ? 's' : '' }}<template v-if="pickedIn(c)"> · {{ pickedIn(c) }} choisi{{ pickedIn(c) > 1 ? 's' : '' }}</template>
+                </button>
+              </span>
+              <select :value="zoneRole(c.id)" class="input w-36 py-1" :aria-label="`Rôle de la zone ${c.name}`" @change="setZoneRole(c.id, $event.target.value)">
+                <option value="">—</option>
+                <option value="main">Principale</option>
+                <option value="backup">De secours</option>
+              </select>
+            </div>
+            <template v-if="zoneOpen(c)">
+              <div v-for="q in quartiersOf(c)" :key="q.id" class="flex items-center justify-between gap-2 bg-slate-50 py-1 pl-6 pr-2 text-sm">
+                <span class="min-w-0 truncate">↳ {{ q.name }}</span>
+                <span v-if="zoneRole(c.id)" class="text-xs text-slate-600">couvert par {{ c.name }}</span>
+                <select v-else :value="zoneRole(q.id)" class="input w-36 py-1" :aria-label="`Rôle de la zone ${q.full_name}`" @change="setZoneRole(q.id, $event.target.value)">
+                  <option value="">—</option>
+                  <option value="main">Principale</option>
+                  <option value="backup">De secours</option>
+                </select>
+              </div>
+            </template>
+          </template>
+          <p v-if="!shownCommunes.length" class="p-3 text-center text-sm text-slate-600">Aucune zone ne correspond.</p>
         </div>
         <p class="mt-1 text-xs text-slate-600">Zone de secours : il y livre automatiquement quand personne de la zone principale n'est libre.</p>
       </div>
@@ -153,6 +174,21 @@ watch(() => [props.open, props.courier], ([open, c]) => {
   // Valeur de l'entreprise : celle du livreur quand il n'a rien de propre
   defaults.value = Object.fromEntries(Object.keys(CAPABILITIES).map((k) => [k, c.capabilities?.[k] == null ? c.can?.[k] : k === 'offline' ? !!auth.user?.company?.offline_courier_actions : true]))
 }, { immediate: true })
+
+// Zones par commune (ou ville), quartiers dépliables ; la recherche ouvre la commune d'un quartier trouvé
+const zoneQuery = ref('')
+const openedCommunes = ref(new Set())
+const plainText = (t) => (t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+const quartiersOf = (c) => zones.value.filter((z) => z.parent_id === c.id)
+const communeMatches = (c) => { const q = plainText(zoneQuery.value.trim()); return !q || plainText(c.name).includes(q) || quartiersOf(c).some((z) => plainText(z.name).includes(q)) }
+const shownCommunes = computed(() => zones.value.filter((z) => !z.parent_id && communeMatches(z)))
+const zoneOpen = (c) => openedCommunes.value.has(c.id) || (!!zoneQuery.value.trim() && !plainText(c.name).includes(plainText(zoneQuery.value.trim())) && communeMatches(c))
+function toggleCommune(c) {
+  const next = new Set(openedCommunes.value)
+  next.has(c.id) ? next.delete(c.id) : next.add(c.id)
+  openedCommunes.value = next
+}
+const pickedIn = (c) => quartiersOf(c).filter((q) => zoneRole(q.id)).length
 
 const zoneRole = (z) => (data.value.zone_ids?.includes(z) ? 'main' : data.value.backup_zone_ids?.includes(z) ? 'backup' : '')
 function setZoneRole(z, role) {

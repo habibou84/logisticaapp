@@ -66,8 +66,11 @@
           </RouterLink>
         </div>
         <div class="sm:col-span-2">
-          <label class="label" for="zone">Commune / quartier de livraison * <span v-if="parsed.delivery_zone_id" class="check">à vérifier</span></label>
-          <ZoneSelect id="zone" v-model="form.delivery_zone_id" :zones="zones" required :input-class="['input', mark('delivery_zone_id')]" @update:model-value="touched('delivery_zone_id')" />
+          <p v-if="parsed.delivery_zone_id" class="mb-1 text-sm"><span class="check">Lieu de livraison à vérifier</span></p>
+          <CommuneQuartier
+            id="zone" v-model="form.delivery_zone_id" :zones="zones" required commune-label="Commune ou ville de livraison"
+            :input-class="['input', mark('delivery_zone_id')]" @update:model-value="touched('delivery_zone_id')" @added="(z) => zones.push(z)"
+          />
           <div v-if="zoneChoices.length > 1" class="flex flex-wrap items-center gap-2 mt-1 text-sm">
             <span class="text-slate-600">Ou peut-être :</span>
             <button
@@ -287,12 +290,8 @@
 
         <div v-if="!form.pickup_hub_id" class="grid sm:grid-cols-2 gap-3 border-t pt-3">
           <p class="sm:col-span-2 text-sm text-slate-600">Lieu de ramassage, s'il diffère de l'adresse habituelle du client :</p>
-          <div>
-            <label class="label" for="pzone">Zone de {{ pickupWord(form.activity) }}</label>
-            <SearchSelect
-              id="pzone" v-model="form.pickup_zone_id" placeholder="Adresse habituelle" :empty-value="null" search-placeholder="Commune ou quartier…"
-              :options="zones.map((z) => ({ value: z.id, label: z.full_name }))"
-            />
+          <div class="sm:col-span-2">
+            <CommuneQuartier id="pzone" v-model="form.pickup_zone_id" :zones="zones" :commune-label="`Commune ou ville de ${pickupWord(form.activity)}`" @added="(z) => zones.push(z)" />
           </div>
           <div>
             <label class="label" for="paddress">Adresse de {{ pickupWord(form.activity) }}</label>
@@ -332,7 +331,7 @@ import { useAuthStore } from '../stores/auth'
 import { money, pickupWord } from '../utils/format'
 import { myActivities } from '../utils/activities'
 import PasteMessage from './PasteMessage.vue'
-import ZoneSelect from './ZoneSelect.vue'
+import CommuneQuartier from './CommuneQuartier.vue'
 import DepartmentFields from './departments/DepartmentFields.vue'
 import { useDepartments } from '../composables/useDepartments'
 import DestinationSearch from './destinations/DestinationSearch.vue'
