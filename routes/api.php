@@ -694,6 +694,8 @@ Route::prefix('v1')->name('v1.')->group(function () {
             Route::get('clients', 'clients')->name('clients');
             Route::get('pivot', 'pivot')->name('pivot');
         });
+        // Tableau de direction : les activités côte à côte, points à décider
+        Route::get('stats/direction', [StatisticsController::class, 'direction'])->middleware('can:direction.view')->name('stats.direction');
         // Intégrations : Excel, lien Google Sheets, point par e-mail ; rapports mensuels des clients
         Route::get('stats/export', [StatsIntegrationController::class, 'export'])->middleware('throttle:20,1')->name('stats.export');
         Route::get('stats/feed-link', [StatsIntegrationController::class, 'feedLink'])->name('stats.feed-link');

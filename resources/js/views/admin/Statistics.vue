@@ -340,7 +340,8 @@ const loading = ref(false)
 const error = ref('')
 // Statistiques d'une seule activité (vide : toutes celles de son périmètre)
 const activities = computed(() => myActivities(auth.user))
-const activity = ref('')
+// « ?activite= » : lien venu du tableau de direction
+const activity = ref(activities.value.some((a) => a.value === route.query.activite) ? route.query.activite : '')
 const showTable = ref(false)
 
 const section = computed(() => sections.value.find((g) => g.tabs.some((t) => t.key === tab.value)) || sections.value[0])
