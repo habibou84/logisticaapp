@@ -312,6 +312,8 @@ vendredi. Les courses du jour restent à différentes étapes (à valider, en ra
 part pendant la génération (WhatsApp, SMS, notifications, webhooks). Comptes en `07 99 …`, mot de passe
 `Preprod2026` (option `--password`). Relançable : les jours déjà remplis sont sautés, donc la relancer le matin
 ajoute seulement les courses du jour. Options : `--days=30`, `--per-day=18`, `--seed=` (mêmes données).
+Les clients fictifs ont leur propre grille de tarifs (« Clients fictifs (préproduction) ») : les tarifs réglés de
+l'entreprise ne sont pas touchés. Si des courses échouent, la commande affiche les erreurs les plus fréquentes.
 
 Les variables `VITE_*` (temps réel vu du navigateur) sont compilées dans l'interface : après les avoir changées,
 lancez `bash deploy/update.sh`.
