@@ -26,7 +26,7 @@
 
 <script setup>
 import Icone from './ui/Icone.vue'
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import http from '../bootstrap/axios'
 import { useAuthStore } from '../stores/auth'
@@ -49,7 +49,8 @@ const fieldReports = useFieldReportStore()
 const heldParcels = useHeldParcelStore()
 const returns = ref(null)
 const activity = ref(null)
-// Hors de la liste des courses (ou « Toutes les dates ») : compteurs d'aujourd'hui, chargés ici
+// Hors de la liste des courses (ou « Toutes les dates ») : compteurs d'aujourd'hui, chargés ici ;
+// liste filtrée sur une activité : compteurs du jour affiché, toutes activités
 const own = ref(null)
 
 const todayIso = new Date().toLocaleDateString('sv-SE')
@@ -61,8 +62,10 @@ const mine = computed(() => myActivities(auth.user).map((a) => a.value))
 const picked = computed(() => (collectsOnly(mine.value) ? 'collecté' : 'ramassé'))
 
 const cards = computed(() => {
-  const general = counts.day ? counts.counts : (own.value || counts.counts)
-  const day = counts.day ? counts.dayCounts : own.value?.day
+  // Cartes de navigation : toutes activités (liste filtrée sur une activité : leurs propres compteurs)
+  const shared = counts.day && !counts.activity
+  const general = shared ? counts.counts : (own.value || counts.counts)
+  const day = shared ? counts.dayCounts : own.value?.day
   const isToday = !day || day.date === todayIso
   const all = day?.all ?? null
   const delivered = day?.delivered ?? 0
@@ -122,7 +125,7 @@ async function load() {
     http.get('/return-slips/count'),
     http.get('/couriers/activity'),
     // Liste des courses sur un jour : ses compteurs (déjà chargés par la liste) ; sinon ceux d'aujourd'hui
-    counts.day ? Promise.resolve(null) : http.get('/orders/counts', { params: { day: todayIso } }),
+    counts.day && !counts.activity ? Promise.resolve(null) : http.get('/orders/counts', { params: { day: counts.day || todayIso } }),
     fieldReports.fetchCounts(),
     heldParcels.fetchCounts(),
   ])
@@ -137,4 +140,10 @@ onMounted(() => {
   timer = setInterval(() => !document.hidden && load(), 60000)
 })
 onBeforeUnmount(() => clearInterval(timer))
+// Liste filtrée sur une activité, ou autre jour choisi : les cartes rechargent leurs compteurs toutes activités
+watch(() => [counts.activity, counts.day], async () => {
+  if (!isDispatch.value || !counts.activity) return
+  const { data } = await http.get('/orders/counts', { params: { day: counts.day || todayIso } }).catch(() => ({ data: null }))
+  if (data) own.value = data.data
+})
 </script>

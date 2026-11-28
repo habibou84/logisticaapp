@@ -147,7 +147,7 @@
     </p>
 
     <!-- Ramassages regroupés par client -->
-    <PickupGroupsPanel v-if="byClient" :couriers="couriers" :day="filters.day" :include-later="filters.include_later" @assigned="dispatchCounts.fetchCounts().catch(() => {})" />
+    <PickupGroupsPanel v-if="byClient" :couriers="couriers" :day="filters.day" :activity="filters.activity" :include-later="filters.include_later" @assigned="dispatchCounts.fetchCounts().catch(() => {})" />
 
     <template v-else>
       <!-- Téléphone : recherche et filtres dans un panneau -->
@@ -508,6 +508,8 @@ const activityChoices = computed(() => (auth.user?.merchant_id
   : myActivities(auth.user)))
 function setActivity(value) {
   filters.activity = value
+  // Cases des étapes, jours et files : compteurs de cette activité seulement
+  dispatchCounts.activity = value || null
   syncQuery()
   load(1)
 }
@@ -788,7 +790,7 @@ watch(() => route.query.search, (value) => {
 })
 
 // Ailleurs (menu, tableau de bord) : compteurs généraux seulement
-onUnmounted(() => { dispatchCounts.day = null })
+onUnmounted(() => { dispatchCounts.day = null; dispatchCounts.activity = null })
 
 // Rafraîchissement temps réel
 watch(orderListChanges, async () => {
@@ -799,6 +801,7 @@ watch(orderListChanges, async () => {
 
 onMounted(async () => {
   dispatchCounts.day = filters.day || null
+  dispatchCounts.activity = filters.activity || null
   await load()
   if (isStaff.value) {
     const empty = { data: { data: [] } }
