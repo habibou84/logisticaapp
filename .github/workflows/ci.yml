@@ -16,7 +16,7 @@ jobs:
     name: Style (Pint)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
@@ -59,7 +59,7 @@ jobs:
       QUEUE_CONNECTION: sync
       BROADCAST_CONNECTION: log
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
@@ -80,7 +80,7 @@ jobs:
     name: Build front-end
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -119,7 +119,7 @@ jobs:
       QUEUE_CONNECTION: sync
       BROADCAST_CONNECTION: log
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
