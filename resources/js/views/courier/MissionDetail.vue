@@ -41,6 +41,8 @@
       <p v-if="order.proposal" class="rounded-xl bg-amber-50 p-3 text-sm text-amber-900">
         <Icone nom="sablier" taille="petite" class="inline" /> Envoyé, en attente de validation : <strong>{{ order.proposal.summary }}</strong> ({{ order.proposal.reason }})
       </p>
+      <!-- Distribution, MAD : consignes permanentes de l'adresse (annuaire) -->
+      <p v-if="mission.type === 'delivery' && order.destination?.instructions" class="rounded-xl bg-violet-50 p-3 text-sm text-violet-900 whitespace-pre-line"><Icone nom="annuaire" taille="petite" class="inline" /> {{ order.destination.instructions }}</p>
       <!-- Consignes du destinataire déjà signalées (heure, personne, lieu, repère) -->
       <div v-if="order.instructions?.length" class="rounded-xl bg-sky-50 p-3 text-sm text-sky-900 space-y-1">
         <p class="font-semibold"><Icone nom="note" taille="petite" class="inline" /> Consignes du destinataire</p>

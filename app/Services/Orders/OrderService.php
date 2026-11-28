@@ -369,6 +369,9 @@ class OrderService
      * Consigne du destinataire signalée par le livreur (événement « information ») : notée dans l'historique ; l'heure de
      * livraison demandée et le repère sont aussi enregistrés sur la course (affichés au livreur, à l'équipe, au client).
      */
+    /** Consignes du destinataire gardées sur l'adresse de l'annuaire (distribution, MAD) */
+    public const STANDING_INSTRUCTIONS = ['d_receiving_hours', 'd_reception_desk', 'd_other_department'];
+
     public function addInformation(User $actor, Order $order, IncidentReason $reason, ?string $note, ?string $time, ?float $lat = null, ?float $lng = null): void
     {
         $note = filled($note) ? trim($note) : null;
@@ -382,6 +385,15 @@ class OrderService
         DB::transaction(function () use ($actor, $order, $reason, $note, $time, $text, $lat, $lng) {
             if ($reason->asks === 'delivery_time' && $time !== null) {
                 $order->forceFill(['delivery_time' => $time])->save();
+            }
+            // Distribution, MAD : consigne permanente de l'adresse (heures de réception, accueil, autre service),
+            // gardée sur la fiche de l'annuaire et rappelée aux prochaines livraisons ; même consigne : remplacée
+            if (in_array($reason->code, self::STANDING_INSTRUCTIONS, true) && $note !== null && $order->destination) {
+                $line = "{$reason->label} : {$note}";
+                $kept = collect(preg_split('/\R/', (string) $order->destination->instructions))
+                    ->filter(fn ($l) => trim($l) !== '' && ! str_starts_with($l, $reason->label.' :'))
+                    ->push($line)->implode("\n");
+                $order->destination->forceFill(['instructions' => mb_substr($kept, 0, 2000)])->save();
             }
             // Repère : gardé sur la course et dans le carnet du destinataire (prochaines livraisons)
             if ($reason->code === 'i_landmark' && $note !== null) {

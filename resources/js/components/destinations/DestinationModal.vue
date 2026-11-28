@@ -9,6 +9,7 @@
       <p v-if="form.district && !quartierChosen" class="-mt-1 text-xs text-slate-600">Quartier noté auparavant : {{ form.district }}</p>
       <div><label class="label" for="ds-address">Adresse</label><textarea id="ds-address" v-model="form.address" rows="2" class="input" /></div>
       <div><label class="label" for="ds-landmark">Repère</label><input id="ds-landmark" v-model="form.landmark" class="input" maxlength="255"></div>
+      <div><label class="label" for="ds-instructions">Consignes pour le livreur</label><textarea id="ds-instructions" v-model="form.instructions" rows="2" class="input" maxlength="2000" placeholder="Ex. : réceptionne de 8h à 12h · déposer au service courrier" /></div>
 
       <fieldset class="rounded-lg border border-slate-200 p-3 space-y-2">
         <legend class="px-1 text-sm font-medium">Téléphones</legend>
@@ -87,7 +88,7 @@ import { confirmDialog } from '../../composables/useDialog'
 const props = defineProps({ open: Boolean, destination: { type: Object, default: null }, zones: { type: Array, default: () => [] } })
 const emit = defineEmits(['close', 'saved'])
 
-const FIELDS = ['acronym', 'name', 'zone_id', 'district', 'address', 'landmark', 'phone', 'phone2', 'phone3', 'phone_check', 'email', 'sector']
+const FIELDS = ['acronym', 'name', 'zone_id', 'district', 'address', 'landmark', 'instructions', 'phone', 'phone2', 'phone3', 'phone_check', 'email', 'sector']
 const SOURCES = { courier: 'confirmée par un livreur', staff: 'posée par l\'équipe' }
 const OUTCOMES = { replaced: ['retenue', 'bg-emerald-100 text-emerald-800'], kept: ['confirme', 'bg-slate-100'], conflict: ['écart', 'bg-red-100 text-red-800'], rejected: ['refusée', 'bg-slate-100'] }
 const form = ref({})
