@@ -698,6 +698,8 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::get('stats/direction', [StatisticsController::class, 'direction'])->middleware('can:direction.view')->name('stats.direction');
         Route::get('stats/direction/forecast', [StatisticsController::class, 'directionForecast'])->middleware('can:direction.view')->name('stats.direction.forecast');
         Route::get('stats/direction/simulator', [StatisticsController::class, 'directionSimulator'])->middleware('can:direction.view')->name('stats.direction.simulator');
+        Route::get('stats/direction/questions', [StatisticsController::class, 'directionQuestions'])->middleware('can:direction.ask')->name('stats.direction.questions');
+        Route::post('stats/direction/questions', [StatisticsController::class, 'askDirectionQuestion'])->middleware(['can:direction.ask', 'throttle:30,1'])->name('stats.direction.questions.ask');
         Route::get('stats/direction/objectives', [StatisticsController::class, 'directionObjectives'])->middleware('can:direction.view')->name('stats.direction.objectives');
         Route::put('stats/direction/objectives', [StatisticsController::class, 'saveDirectionObjectives'])->middleware('can:direction.view')->name('stats.direction.objectives.save');
         Route::get('stats/direction/teams', [StatisticsController::class, 'directionTeams'])->middleware('can:direction.view')->name('stats.direction.teams');

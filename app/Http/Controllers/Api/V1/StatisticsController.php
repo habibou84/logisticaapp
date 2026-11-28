@@ -17,6 +17,7 @@ use App\Services\Reports\Pivot;
 use App\Services\Reports\Profitability;
 use App\Services\Reports\ServiceQuality;
 use App\Services\Reports\Statistics;
+use App\Services\Reports\StatsQuestions;
 use App\Services\Reports\StatsSettings;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
@@ -247,6 +248,29 @@ class StatisticsController extends Controller
         abort_if($user->merchant_id !== null || $user->company === null, 403);
 
         return response()->json(['data' => $forecast->baseline($user->company->fresh(), $this->visibleActivities($request))]);
+    }
+
+    /**
+     * Statistiques de direction › Questions (IA) : la fonction est-elle active (clé Anthropic réglée) ?
+     */
+    public function directionQuestions(Request $request, StatsQuestions $questions): JsonResponse
+    {
+        abort_if($request->user()->merchant_id !== null || $request->user()->company === null, 403);
+
+        return response()->json(['data' => ['enabled' => $questions->enabled()]]);
+    }
+
+    /**
+     * Pose une question : Claude la traduit en demande (il ne reçoit que la question), l'application calcule.
+     */
+    public function askDirectionQuestion(Request $request, StatsQuestions $questions): JsonResponse
+    {
+        $user = $request->user();
+        abort_if($user->merchant_id !== null || $user->company === null, 403);
+        abort_unless($questions->enabled(), 409, 'Réglez la clé Anthropic pour poser des questions.');
+        $data = $request->validate(['question' => ['required', 'string', 'min:5', 'max:500']]);
+
+        return response()->json(['data' => ['question' => $data['question'], ...$questions->ask($user->company->fresh(), $user, $data['question'])]]);
     }
 
     /** @return list<Activity> activités du périmètre de la personne */

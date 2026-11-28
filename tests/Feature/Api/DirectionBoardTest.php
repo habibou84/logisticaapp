@@ -9,6 +9,8 @@ use App\Models\CourierEarning;
 use App\Models\CourierShift;
 use App\Models\Order;
 use App\Models\OrderAssignment;
+use App\Services\Reports\Pivot;
+use App\Services\Reports\StatsQuestions;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
@@ -265,6 +267,75 @@ class DirectionBoardTest extends TestCase
         $this->assertSame([1, 1, $fee - 2000], [$data['ecommerce']['loss_zones']['count'], $data['ecommerce']['loss_zones']['delivered'], $data['ecommerce']['loss_zones']['margin']]);
         $this->assertSame(0, $data['mad']['couriers']);
         $this->assertNull($data['mad']['revenue_per_courier']);
+    }
+
+    public function test_questions_are_translated_by_the_ai_and_computed_by_the_application(): void
+    {
+        $this->deliver();
+        // Claude remplacé : il ne renvoie qu'une demande, jamais de chiffres
+        $questions = new class(app(Pivot::class)) extends StatsQuestions
+        {
+            public ?array $plan = null;
+
+            public ?string $asked = null;
+
+            protected function interpret(string $question, CarbonImmutable $today): ?array
+            {
+                $this->asked = $question;
+
+                return $this->plan;
+            }
+        };
+        $this->app->instance(StatsQuestions::class, $questions);
+        $plan = fn (array $over) => ['kind' => 'table', 'rows' => null, 'cols' => null, 'metric' => null, 'activity' => null, 'from' => null, 'to' => null,
+            'order' => 'desc', 'limit' => null, 'view' => null, 'reason' => 'Vous demandez les zones.', ...$over];
+
+        // Sans clé Anthropic : la fonction se dit inactive et refuse les questions
+        config(['messaging.ai.api_key' => null]);
+        Sanctum::actingAs($this->admin);
+        $this->getJson('/api/v1/stats/direction/questions')->assertOk()->assertJsonPath('data.enabled', false);
+        $this->postJson('/api/v1/stats/direction/questions', ['question' => 'Quelles zones livrent le plus ?'])->assertStatus(409);
+
+        config(['messaging.ai.api_key' => 'sk-test']);
+        $this->getJson('/api/v1/stats/direction/questions')->assertOk()->assertJsonPath('data.enabled', true);
+
+        // Un tableau : calculé par l'application sur la période par défaut (le mois en cours)
+        $questions->plan = $plan(['rows' => 'zone', 'metric' => 'delivered']);
+        $data = $this->postJson('/api/v1/stats/direction/questions', ['question' => 'Quelles zones livrent le plus ?'])->assertOk()->json('data');
+        $this->assertSame('Quelles zones livrent le plus ?', $questions->asked);
+        $this->assertSame(['table', 'Livrées', 'Zone de livraison', 1], [$data['kind'], $data['metric_label'], $data['rows_label'], $data['table'][0]['total']]);
+        $this->assertSame($this->yopougon->name, $data['table'][0]['label']);
+        $this->assertSame(['from' => '2026-12-01', 'to' => '2026-12-15'], $data['period']);
+        $this->assertContains('Du 01/12/2026 au 15/12/2026', $data['understood']);
+
+        // Une période dans le futur ou trop longue est ramenée dans les bornes
+        $questions->plan = $plan(['rows' => 'activity', 'metric' => 'courses', 'from' => '2020-01-01', 'to' => '2030-01-01']);
+        $data = $this->postJson('/api/v1/stats/direction/questions', ['question' => 'Combien de courses par activité ?'])->assertOk()->json('data');
+        $this->assertSame('2026-12-15', $data['period']['to']);
+        $this->assertSame('2025-12-15', $data['period']['from']);
+
+        // Une vue : renvoi vers l'écran qui répond ; une demande incohérente : pas de réponse inventée
+        $questions->plan = $plan(['kind' => 'view', 'view' => 'mad:profitability']);
+        $this->postJson('/api/v1/stats/direction/questions', ['question' => 'Quel contrat MAD est le plus rentable ?'])->assertOk()
+            ->assertJsonPath('data.kind', 'view')->assertJsonPath('data.href', '/admin/statistiques?vue=mad&detail=profitability');
+        $questions->plan = $plan(['rows' => 'planète', 'metric' => 'delivered']);
+        $this->postJson('/api/v1/stats/direction/questions', ['question' => 'Une question étrange'])->assertOk()->assertJsonPath('data.kind', 'none');
+        $questions->plan = null;
+        $this->postJson('/api/v1/stats/direction/questions', ['question' => 'Une question refusée'])->assertOk()->assertJsonPath('data.kind', 'none');
+
+        // Les droits de la personne s'appliquent : pas de montants sans la caisse, pas d'activité hors périmètre
+        $manager = $this->userWithRole(Role::ActivityManager, ['activities' => ['distribution']]);
+        $manager->givePermissionTo('direction.ask');
+        Sanctum::actingAs($manager->fresh());
+        $questions->plan = $plan(['rows' => 'zone', 'metric' => 'revenue']);
+        $this->postJson('/api/v1/stats/direction/questions', ['question' => 'Quel chiffre par zone ?'])->assertOk()->assertJsonPath('data.kind', 'none');
+        $questions->plan = $plan(['rows' => 'zone', 'metric' => 'delivered', 'activity' => 'ecommerce']);
+        $this->postJson('/api/v1/stats/direction/questions', ['question' => 'Zones en e-commerce ?'])->assertOk()->assertJsonPath('data.kind', 'none');
+
+        // Sans l'autorisation : refusé
+        Sanctum::actingAs($this->dispatcher);
+        $this->getJson('/api/v1/stats/direction/questions')->assertForbidden();
+        $this->postJson('/api/v1/stats/direction/questions', ['question' => 'Quelles zones livrent le plus ?'])->assertForbidden();
     }
 
     public function test_reserved_to_the_permission_and_limited_to_the_scope(): void

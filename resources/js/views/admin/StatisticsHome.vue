@@ -74,6 +74,7 @@ import DirectionForecast from '../../components/direction/DirectionForecast.vue'
 import DirectionMad from '../../components/direction/DirectionMad.vue'
 import DirectionObjectives from '../../components/direction/DirectionObjectives.vue'
 import DirectionOverview from '../../components/direction/DirectionOverview.vue'
+import DirectionQuestions from '../../components/direction/DirectionQuestions.vue'
 import DirectionSimulator from '../../components/direction/DirectionSimulator.vue'
 import DirectionTeams from '../../components/direction/DirectionTeams.vue'
 import { COLORS } from '../../components/direction/shared'
@@ -144,6 +145,7 @@ const DETAILS = {
   vehicles: { label: 'Véhicules', endpoint: '/vehicles/stats', component: VehiclesTab, permission: 'fleet.manage', activity: false, description: 'Coûts, consommation et immobilisations du parc.' },
   forecast: { label: 'Prévisions', endpoint: '/stats/direction/forecast', component: DirectionForecast, period: false, activity: false, description: 'Le chiffre d\'affaires des trois prochains mois, par activité, d\'après la tendance des derniers mois.' },
   simulator: { label: 'Simulateur « et si »', endpoint: '/stats/direction/simulator', component: DirectionSimulator, period: false, activity: false, description: 'L\'effet d\'une décision sur la marge, à partir des chiffres du dernier mois terminé.' },
+  questions: { label: 'Questions (IA)', component: DirectionQuestions, permission: 'direction.ask', period: false, description: 'Une question en français, une réponse calculée par l\'application. Seule la question est envoyée à Anthropic.' },
   costs: { label: 'Frais fixes', component: FixedCostsPanel, permission: 'finance.view', period: false, description: 'Loyer, équipe, téléphone… : les frais fixes comptés dans la marge nette.' },
   pivot: { label: 'Analyse croisée', component: PivotTab, props: () => ({ from: from.value, to: to.value }), description: 'Croisez deux axes (client, zone, livreur, activité, jour, mois, heure) avec l\'indicateur de votre choix.' },
   share: { label: 'Alertes et partage', component: IntegrationsTab, permission: ['settings.manage', 'merchants.view'], period: false, description: 'Alertes du matin, point par e-mail, lien Google Sheets et rapports mensuels des clients sous contrat.' },
@@ -165,7 +167,7 @@ const tabs = computed(() => [
   })),
   { key: 'teams', label: 'Équipes', color: '#6a4ce2', endpoint: '/stats/direction/teams', description: 'Livreurs, charge par zone, temps par mission, paie, véhicules et agents du bureau.', views: [SUMMARY, ...details(['field', 'vehicles'])] },
   { key: 'objectives', label: 'Objectifs', color: '#ec1d27', description: 'Les objectifs du mois, par activité et pour les équipes, comparés au réalisé.', views: [{ key: '', period: false }] },
-  { key: 'decision', label: 'Aide à la décision', color: '#c9400c', description: 'Prévisions et simulateur.', views: details(['forecast', 'simulator']) },
+  { key: 'decision', label: 'Aide à la décision', color: '#c9400c', description: 'Prévisions, simulateur et questions.', views: details(['forecast', 'simulator', 'questions']) },
   { key: 'tools', label: 'Outils', color: '#94a3b8', description: 'Réglages et outils des statistiques.', views: details(['costs', 'pivot', 'share']) },
 ].filter((t) => t.views.length))
 

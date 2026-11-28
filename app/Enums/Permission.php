@@ -48,6 +48,8 @@ enum Permission: string
     case RevenueView = 'revenue.view';
     // Statistiques de direction : chiffre d'affaires, marge, points à décider des trois activités, équipes
     case DirectionView = 'direction.view';
+    // Questions en français sur les statistiques, traduites par l'IA (clé Anthropic)
+    case DirectionAsk = 'direction.ask';
 
     // Réglages et équipe
     case SettingsManage = 'settings.manage';
@@ -87,6 +89,7 @@ enum Permission: string
             self::InvoicesVoid => 'Annuler une facture émise ou faire un avoir',
             self::RevenueView => 'Voir le chiffre d\'affaires',
             self::DirectionView => 'Voir les statistiques de direction',
+            self::DirectionAsk => 'Poser des questions aux statistiques (IA)',
             self::SettingsManage => 'Réglages généraux',
             self::ZonesManage => 'Zones et dépôts',
             self::PricingManage => 'Grille des tarifs',
@@ -127,6 +130,7 @@ enum Permission: string
             self::InvoicesVoid => 'Annuler une facture déjà émise, ou la corriger par un avoir (total ou partiel).',
             self::RevenueView => 'Chiffre d\'affaires par activité.',
             self::DirectionView => 'Onglets Vue d\'ensemble, E-commerce, MAD, Distribution et Équipes des statistiques, avec les points à décider.',
+            self::DirectionAsk => 'Statistiques › Aide à la décision › Questions (IA) : seule la question est envoyée à Anthropic, jamais les chiffres.',
             self::SettingsManage => 'Entreprise et marque, courses, alertes, clients, mise en route, reprise de l\'ancienne application.',
             self::ZonesManage => 'Communes, quartiers, zones au forfait, dépôts.',
             self::PricingManage => 'Grilles de prix, suppléments, frais de retour.',
@@ -144,7 +148,7 @@ enum Permission: string
             self::RepairsManage, self::RepairsPurchases => 'workshop',
             self::MerchantsView, self::MerchantsManage, self::RatesManage, self::DepartmentsManage, self::DestinationsManage,
             self::StockManage, self::IntegrationsManage => 'merchants',
-            self::FinanceView, self::FinanceManage, self::InvoicesView, self::InvoicesManage, self::InvoicesVoid, self::RevenueView, self::DirectionView => 'money',
+            self::FinanceView, self::FinanceManage, self::InvoicesView, self::InvoicesManage, self::InvoicesVoid, self::RevenueView, self::DirectionView, self::DirectionAsk => 'money',
             self::SettingsManage, self::ZonesManage, self::PricingManage, self::MessagingManage, self::UsersView, self::UsersManage => 'settings',
         };
     }
