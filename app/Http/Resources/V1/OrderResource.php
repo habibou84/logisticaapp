@@ -12,6 +12,7 @@ use App\Services\Labels\LabelSettings;
 use App\Services\Orders\ActivityOptions;
 use App\Services\Orders\AwaitingCourier;
 use App\Services\Orders\Cancellations;
+use App\Services\Orders\OrderProposals;
 use App\Services\Orders\Reschedules;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -185,6 +186,11 @@ class OrderResource extends JsonResource
             'max_attempts' => $this->max_attempts,
             // Colis non livré : décision attendue, ou décision déjà prise par le client
             'needs_decision' => $this->needsDecision(),
+            // Report ou retour signalé par le livreur, à valider par l'équipe ou le client (fiche de la course)
+            'proposal' => $this->whenLoaded('pendingProposal', fn () => $this->pendingProposal ? [
+                ...$this->pendingProposal->present(),
+                'can_decide' => $request->user() !== null && OrderProposals::canDecide($request->user(), $this->resource),
+            ] : null),
             // Note de suivi de l'équipe : tout pour l'équipe ; au client, seulement celles qu'on lui montre
             'follow_up' => $this->followUp($request),
             // Course reconduite à partir d'une autre

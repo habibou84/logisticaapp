@@ -81,6 +81,8 @@ class IncidentReasonController extends Controller
             'destination_effect' => ['sometimes', 'nullable', Rule::in(IncidentReason::DESTINATION_EFFECTS)],
             'holds' => ['sometimes', 'boolean'],
             'visible_to_client' => ['sometimes', 'boolean'],
+            'effect' => ['sometimes', Rule::in(IncidentReason::EFFECTS)],
+            'needs_validation' => ['sometimes', 'boolean'],
             'is_active' => ['sometimes', 'boolean'],
             'sort_order' => ['sometimes', 'integer', 'min:0', 'max:10000'],
         ], [], ['label' => 'libellé', 'applies_to' => 'étape']);

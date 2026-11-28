@@ -400,6 +400,18 @@ class Order extends Model
         return $this->hasMany(OrderEvent::class);
     }
 
+    /** Reports et retours signalés par les livreurs, à valider ou déjà décidés */
+    public function proposals(): HasMany
+    {
+        return $this->hasMany(OrderProposal::class);
+    }
+
+    /** Report ou retour du livreur en attente de validation (équipe ou client) */
+    public function pendingProposal(): HasOne
+    {
+        return $this->hasOne(OrderProposal::class)->where('status', OrderProposal::PENDING)->latestOfMany();
+    }
+
     public function cashCollection(): HasOne
     {
         return $this->hasOne(CashCollection::class);

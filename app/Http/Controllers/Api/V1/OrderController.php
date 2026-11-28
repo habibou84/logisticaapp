@@ -13,6 +13,7 @@ use App\Models\Courier;
 use App\Models\IncidentReason;
 use App\Models\Merchant;
 use App\Models\Order;
+use App\Models\OrderProposal;
 use App\Services\Orders\AwaitingCourier;
 use App\Services\Orders\OrderService;
 use App\Services\Orders\PickupGroups;
@@ -43,7 +44,7 @@ class OrderController extends Controller
             'status' => ['nullable', 'array'],
             'status.*' => [Rule::enum(OrderStatus::class)],
             // File d'attente du dispatch : à valider, à ramasser, à livrer, à retourner
-            'queue' => ['nullable', Rule::in(['to_confirm', 'to_approve', 'on_hold', 'follow_up', 'to_pickup', 'to_reschedule', 'to_prepare', 'to_deliver', 'unassigned', 'pickup_unassigned', 'delivery_unassigned', 'delivery_assigned', 'on_the_way', 'delivered', 'to_decide', 'scheduled', 'to_return', 'incidents', 'failed', 'code_to_verify', 'internal_late', 'untreated', 'untreated_picked', 'picked_late'])],
+            'queue' => ['nullable', Rule::in(['to_confirm', 'to_approve', 'to_validate', 'on_hold', 'follow_up', 'to_pickup', 'to_reschedule', 'to_prepare', 'to_deliver', 'unassigned', 'pickup_unassigned', 'delivery_unassigned', 'delivery_assigned', 'on_the_way', 'delivered', 'to_decide', 'scheduled', 'to_return', 'incidents', 'failed', 'code_to_verify', 'internal_late', 'untreated', 'untreated_picked', 'picked_late'])],
             // Courses non traitées : celles qui n'ont pas de livreur
             'without_courier' => ['nullable', 'boolean'],
             // Courses non traitées : livreur de la livraison, à défaut du ramassage
@@ -249,7 +250,7 @@ class OrderController extends Controller
     private const DAY_QUEUES = ['to_confirm', 'failed'];
 
     /** Cas à régler comptés toutes dates : la page Courses ne montre leur onglet ou leur carte que s'il y en a */
-    private const EXCEPTION_QUEUES = ['untreated', 'untreated_picked', 'picked_late', 'to_approve', 'to_return', 'failed', 'to_decide', 'incidents', 'scheduled', 'on_hold', 'follow_up', 'code_to_verify', 'internal_late', 'to_prepare'];
+    private const EXCEPTION_QUEUES = ['untreated', 'untreated_picked', 'picked_late', 'to_approve', 'to_validate', 'to_return', 'failed', 'to_decide', 'incidents', 'scheduled', 'on_hold', 'follow_up', 'code_to_verify', 'internal_late', 'to_prepare'];
 
     /** Files de travail : limitées au jour choisi (les jours passés sont dans « Courses non traitées ») */
     private const WORK_QUEUES = ['to_pickup', 'to_prepare', 'to_deliver', 'unassigned', 'pickup_unassigned', 'delivery_unassigned', 'delivery_assigned', 'on_the_way', 'delivered'];
@@ -315,6 +316,7 @@ class OrderController extends Controller
                 ->with(['incidentReason', 'attachments'])
                 ->orderBy('id'),
             'assignments' => fn ($q) => $q->with(['courier.user', 'assignedBy'])->orderBy('id'),
+            'pendingProposal' => fn ($q) => $q->with(['proposer', 'reason', 'event']),
             // Le client ne voit que les frais qui lui sont facturés
             'expenses' => fn ($q) => $q->when($isMerchant, fn ($q) => $q->where('billed_to', 'merchant'))
                 ->with('courier.user')->orderBy('id'),
@@ -334,6 +336,8 @@ class OrderController extends Controller
             // Les demandes d'agents pas encore validées par leur chef de service ne sont pas encore à valider ici
             'to_confirm' => $query->where('status', OrderStatus::Pending)->where(fn ($q) => $q->whereNull('approval_requested_at')->orWhereNotNull('approved_at')),
             'to_approve' => $query->where('status', OrderStatus::Pending)->whereNotNull('approval_requested_at')->whereNull('approved_at'),
+            // Reports et retours signalés par les livreurs, à valider par l'équipe ou le client
+            'to_validate' => $query->whereHas('proposals', fn ($q) => $q->where('status', OrderProposal::PENDING)),
             // Mises en attente par une note de suivi de l'équipe
             'on_hold' => $query->whereIn('follow_up_reason_id', IncidentReason::query()->where('holds', true)->select('id')),
             'follow_up' => $query->whereNotNull('follow_up_reason_id'),

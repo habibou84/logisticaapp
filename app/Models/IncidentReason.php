@@ -21,11 +21,15 @@ class IncidentReason extends Model
         'address' => 'Adresse, contact',
         'documents' => 'Documents',
         'recipient' => 'Destinataire',
+        'info' => 'Information (la course continue)',
         'pickup' => 'Ramassage',
         'other' => 'Autre',
     ];
 
     public const PHOTO = ['off', 'optional', 'required'];
+
+    /** status : échec, report ou retour (la course change de statut) ; note : simple information, la course continue */
+    public const EFFECTS = ['status', 'note'];
 
     /** Effet sur la fiche de l'annuaire */
     public const DESTINATION_EFFECTS = ['inactive', 'check_name', 'check_address', 'check_phone'];
@@ -45,6 +49,8 @@ class IncidentReason extends Model
         'destination_effect',
         'holds',
         'visible_to_client',
+        'effect',
+        'needs_validation',
         'is_active',
         'sort_order',
     ];
@@ -59,6 +65,7 @@ class IncidentReason extends Model
             'triggers_return' => 'boolean',
             'holds' => 'boolean',
             'visible_to_client' => 'boolean',
+            'needs_validation' => 'boolean',
             'is_active' => 'boolean',
         ];
     }
@@ -67,6 +74,18 @@ class IncidentReason extends Model
     {
         return $query->where('is_active', true)
             ->where(fn ($q) => $q->whereNull('company_id')->orWhere('company_id', $companyId));
+    }
+
+    /** Simple information : rien ne change sur la course */
+    public function isNote(): bool
+    {
+        return $this->effect === 'note';
+    }
+
+    /** Report ou retour du livreur à faire valider (équipe ou client) avant qu'il prenne effet */
+    public function validates(): bool
+    {
+        return $this->needs_validation && ! $this->isNote() && ($this->requires_date || $this->triggers_return);
     }
 
     public function appliesTo(string $stage): bool

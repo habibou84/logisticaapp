@@ -94,6 +94,12 @@ class OrderEvent extends Model
         return $this->hasOne(FieldReportReview::class);
     }
 
+    /** Report ou retour à valider proposé avec cet événement */
+    public function proposal(): HasOne
+    {
+        return $this->hasOne(OrderProposal::class);
+    }
+
     /**
      * Remontées terrain : notes et problèmes enregistrés par les livreurs
      * (incident, échec ou report, refus de mission, frais déclarés).

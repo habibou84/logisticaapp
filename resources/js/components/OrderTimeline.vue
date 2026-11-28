@@ -11,8 +11,12 @@
         {{ dateTime(event.created_at) }} · {{ event.actor_name || 'Système' }}<span v-if="event.actor_role"> ({{ ROLE_LABELS[event.actor_role] || event.actor_role }})</span><span v-if="event.meta?.channel" class="text-indigo-700"> · via {{ event.meta.channel }}</span>
         <a v-if="event.lat && event.lng" :href="mapsLink(event.lat, event.lng)" target="_blank" class="ml-1 text-blue-600"><Icone nom="adresse" taille="petite" class="inline align-text-bottom" /> position</a>
       </p>
-      <p v-if="event.incident_reason" class="text-sm text-red-700">Motif : {{ event.incident_reason.label }}</p>
-      <p v-if="event.rescheduled_to" class="text-sm text-orange-700">Reporté au {{ date(event.rescheduled_to) }}</p>
+      <!-- Événement « information » choisi dans la liste par le livreur : la course continue -->
+      <p v-if="event.incident_reason && event.type === 'note'" class="text-sm font-medium text-slate-800">{{ event.incident_reason.label }}</p>
+      <p v-else-if="event.incident_reason" class="text-sm text-red-700">Motif : {{ event.incident_reason.label }}</p>
+      <!-- Échec avec une date : report demandé par le livreur, à valider -->
+      <p v-if="event.rescheduled_to && event.to_status === 'delivery_failed'" class="text-sm text-orange-700">Report demandé au {{ date(event.rescheduled_to) }} (à valider)</p>
+      <p v-else-if="event.rescheduled_to" class="text-sm text-orange-700">Reporté au {{ date(event.rescheduled_to) }}</p>
       <p v-if="event.meta?.courier_name" class="text-sm text-slate-700">{{ event.meta.type_label }} → {{ event.meta.courier_name }}</p>
       <p v-if="event.meta?.collected_amount !== undefined" class="text-sm text-slate-700">Encaissé : {{ money(event.meta.collected_amount) }}</p>
       <p v-if="event.meta?.pickup_check" class="text-xs text-slate-600"><Icone :nom="event.meta.pickup_check === 'scan' ? 'scanner' : 'clavier'" taille="petite" class="inline align-text-bottom" /> {{ event.meta.pickup_check === 'scan' ? 'Étiquette scannée à la collecte' : 'Code du colis tapé à la main à la collecte' }}</p>

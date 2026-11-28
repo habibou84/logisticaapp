@@ -85,6 +85,8 @@ class OrderIncidentTest extends TestCase
 
     public function test_postponement_reason_becomes_a_dated_reschedule_without_counting_an_attempt(): void
     {
+        // Motif réglé sans validation : le report prend effet tout de suite (sinon : OrderProposalTest)
+        IncidentReason::where('code', 'postponed')->update(['needs_validation' => false]);
         $order = $this->orderOutForDelivery();
         $date = today()->addDays(2)->toDateString();
 
@@ -160,6 +162,7 @@ class OrderIncidentTest extends TestCase
 
     public function test_refusal_triggers_a_return_request(): void
     {
+        IncidentReason::where('code', 'refused')->update(['needs_validation' => false]);
         $order = $this->orderOutForDelivery();
 
         Notification::fake();

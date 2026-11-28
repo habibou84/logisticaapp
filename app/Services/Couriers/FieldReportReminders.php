@@ -8,6 +8,7 @@ use App\Models\Company;
 use App\Models\FieldEvent;
 use App\Models\FieldReportReminder;
 use App\Models\OrderEvent;
+use App\Models\OrderProposal;
 use App\Models\User;
 use App\Notifications\OrderAlert;
 use App\Services\FieldEvents\FieldEventAlerts;
@@ -33,6 +34,11 @@ class FieldReportReminders
             $sent += $this->forCompany($company);
         });
 
+        // Reports et retours à valider : relancés tant que personne n'a répondu, même sans relance des remontées
+        Company::query()->each(function (Company $company) use (&$sent) {
+            $sent += $this->proposals($company);
+        });
+
         return $sent;
     }
 
@@ -50,6 +56,8 @@ class FieldReportReminders
             ->where('created_at', '<=', now()->subMinutes($delay))
             ->whereDoesntHave('review')
             ->whereDoesntHave('replies')
+            // Report ou retour à valider : relancé à part (proposals)
+            ->whereDoesntHave('proposal', fn ($q) => $q->withoutGlobalScopes()->where('status', OrderProposal::PENDING))
             ->with(['order' => fn ($q) => $q->withoutGlobalScopes(), 'incidentReason'])
             ->get();
 
@@ -90,6 +98,56 @@ class FieldReportReminders
         }
 
         return $sent + $this->fieldEvents($company, $delay);
+    }
+
+    /**
+     * Report ou retour signalé par un livreur et pas encore validé (ni refusé) : l'équipe et le client sont relancés
+     * à chaque délai de l'entreprise (une heure par défaut), puis une fois par jour après six relances.
+     */
+    private function proposals(Company $company): int
+    {
+        $interval = $company->field_alert_reminder_minutes > 0 ? (int) $company->field_alert_reminder_minutes : 60;
+        $sent = 0;
+
+        $proposals = OrderProposal::withoutGlobalScopes()->where('company_id', $company->id)
+            ->where('status', OrderProposal::PENDING)
+            ->where('created_at', '<=', now()->subMinutes($interval))
+            ->whereHas('order', fn ($q) => $q->withoutGlobalScopes()->where('status', 'delivery_failed')
+                ->whereDoesntHave('assignments', fn ($a) => $a->active()))
+            ->with(['order' => fn ($q) => $q->withoutGlobalScopes(), 'reason', 'proposer'])
+            ->get();
+
+        foreach ($proposals as $proposal) {
+            $since = $proposal->last_reminded_at ?? $proposal->created_at;
+            $wait = $proposal->reminders >= 6 ? 24 * 60 : $interval;
+            if ($since->gt(now()->subMinutes($wait))) {
+                continue;
+            }
+
+            $order = $proposal->order;
+            $hours = max(1, (int) round($proposal->created_at->diffInMinutes(now()) / 60));
+            $what = $proposal->summary();
+            $staff = User::forCompany($company->id)->where('status', 'active')
+                ->role([Role::Admin->value, Role::ActivityManager->value, Role::Dispatcher->value])->get();
+            if ($staff->isNotEmpty()) {
+                Notification::send($staff, new OrderAlert($order, 'proposal_reminder',
+                    "Toujours à valider : {$order->tracking_code}",
+                    ($proposal->proposer?->name ?? 'Le livreur')." : {$proposal->reason?->label} · {$what}, signalé il y a {$hours} h. Validez ou refusez.",
+                    ['field' => true, 'severity' => 'alert', 'event_id' => $proposal->order_event_id, 'reminder' => $proposal->reminders + 1]));
+            }
+            $merchant = User::where('merchant_id', $order->merchant_id)->where('status', 'active')->get()
+                ->filter(fn (User $u) => $u->can('orders.create'));
+            if ($merchant->isNotEmpty()) {
+                Notification::send($merchant, new OrderAlert($order, 'proposal_reminder',
+                    "À confirmer : {$order->tracking_code}",
+                    "Le livreur indique : {$proposal->reason?->label} · {$what}. Confirmez-le ou refusez-le dans le suivi du colis."));
+            }
+
+            $proposal->forceFill(['reminders' => $proposal->reminders + 1, 'last_reminded_at' => now()])->save();
+            $sent++;
+        }
+
+        return $sent;
     }
 
     /**

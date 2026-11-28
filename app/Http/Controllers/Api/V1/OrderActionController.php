@@ -11,6 +11,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\V1\TransitionOrderRequest;
 use App\Http\Resources\V1\OrderResource;
 use App\Models\Courier;
+use App\Models\IncidentReason;
 use App\Models\Order;
 use App\Models\OrderAttachment;
 use App\Services\Orders\Cancellations;
@@ -315,19 +316,33 @@ class OrderActionController extends Controller
         Gate::authorize('addNote', $order);
 
         $data = $request->validate([
-            'note' => ['required', 'string', 'max:2000'],
+            'note' => ['required_without:incident_reason_id', 'nullable', 'string', 'max:2000'],
+            // Événement de la liste (« Le client demande un créneau »…) : simple information, la course continue
+            'incident_reason_id' => ['nullable', 'integer'],
             'visible_to_merchant' => ['sometimes', 'boolean'],
             'lat' => ['nullable', 'numeric', 'between:-90,90'],
             'lng' => ['nullable', 'numeric', 'between:-180,180'],
-        ]);
+        ], [], ['incident_reason_id' => 'événement']);
+
+        $reason = null;
+        if (isset($data['incident_reason_id'])) {
+            $reason = IncidentReason::availableTo($order->company_id)->find($data['incident_reason_id']);
+            if ($reason === null || ! $reason->isNote() || ! $reason->forActivity($order->activity)) {
+                throw new BusinessRuleException('Cet événement ne se signale pas comme une note : utilisez « Signaler » sur la course.', 'incident_reason_id');
+            }
+            if ($reason->requires_note && blank($data['note'] ?? null)) {
+                throw new BusinessRuleException("« {$reason->label} » : précisez dans la note.", 'note');
+            }
+        }
 
         $this->orders->addNote(
             $request->user(),
             $order,
-            $data['note'],
-            $data['visible_to_merchant'] ?? true,
+            filled($data['note'] ?? null) ? $data['note'] : null,
+            $reason ? (bool) $reason->visible_to_client : ($data['visible_to_merchant'] ?? true),
             $data['lat'] ?? null,
             $data['lng'] ?? null,
+            $reason,
         );
 
         return response()->json(['message' => 'Note ajoutée.'], 201);

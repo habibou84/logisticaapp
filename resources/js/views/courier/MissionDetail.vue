@@ -102,9 +102,9 @@
             <Icone :nom="pickupCheck ? 'valider' : 'scanner'" />{{ pickupCheck ? (pickupCheck === 'scan' ? 'Étiquette scannée' : 'Code du colis vérifié') : 'Scanner l\'étiquette' }}
           </button>
           <button v-if="primary" :class="[primary.class, 'text-lg py-5']" :disabled="busy" @click="primary.action()"><Icone :nom="primary.icon" />{{ primary.label }}</button>
-          <div class="grid grid-cols-4 gap-2">
-            <button v-if="canReportIncident" class="m-btn-secondary py-3 px-1 text-sm text-red-600" @click="openIncident"><Icone nom="alerte" taille="petite" />Problème</button>
-            <button class="m-btn-secondary py-3 px-1 text-sm" @click="sheet = 'note'"><Icone nom="note" taille="petite" />Note</button>
+          <div class="grid grid-cols-3 gap-2">
+            <!-- Signaler : un événement de la liste (information, échec, report, retour) ou une note libre -->
+            <button class="m-btn-secondary py-3 px-1 text-sm text-red-600" @click="openIncident"><Icone nom="alerte" taille="petite" />Signaler</button>
             <button class="m-btn-secondary py-3 px-1 text-sm" @click="openExpense"><Icone nom="frais" taille="petite" />Frais</button>
             <PhotoCapture class="m-btn-secondary py-3 px-1 text-sm" @captured="uploadPhoto"><Icone nom="photo" taille="petite" />Photo</PhotoCapture>
           </div>
@@ -212,7 +212,18 @@
 
     <BottomSheet :open="sheet === 'incident'" title="Que se passe-t-il ?" @close="sheet = null">
       <div class="space-y-4">
-        <ReasonPicker v-model="incident.reason" :reasons="stageReasons" />
+        <template v-if="!freeNote">
+          <ReasonPicker v-model="incident.reason" :reasons="reportReasons" />
+          <p v-if="!canReportIncident" class="text-xs text-slate-600">Échec, report ou retour : une fois parti en {{ stage === 'pickup' ? 'ramassage' : 'livraison' }}.</p>
+          <button v-if="!incident.reason" type="button" class="text-sm font-medium text-[var(--app-color)]" @click="freeNote = true"><Icone nom="modifier" taille="petite" class="inline" /> Autre chose : écrire une note</button>
+        </template>
+        <template v-else>
+          <button type="button" class="text-sm font-medium text-[var(--app-color)]" @click="freeNote = false">← Choisir dans la liste</button>
+          <textarea v-model="noteText" rows="3" class="m-input" placeholder="Ex. : le portail est fermé, j'attends le gardien" aria-label="Note pour l'agence et le client" />
+          <p class="text-xs text-slate-600">Note pour l'agence et le client. Elle ne change rien à la course.</p>
+          <button class="m-btn-primary" :disabled="busy || !noteText.trim()" @click="sendNote()">Envoyer</button>
+        </template>
+        <template v-if="!freeNote && selectedReason">
         <div v-if="selectedReason?.requires_date">
           <p class="m-label">Nouvelle date demandée par le client</p>
           <ChoiceChips v-model="incident.when" :options="dateOptions" :columns="3" label="Date" />
@@ -223,9 +234,14 @@
         <PhotoCapture v-if="selectedReason && selectedReason.photo !== 'off'" :class="['m-btn-secondary', selectedReason.photo === 'required' && !incidentPhoto ? 'ring-2 ring-amber-400' : '']" @captured="uploadIncidentPhoto">
           <Icone :nom="incidentPhoto ? 'valider' : 'photo'" />{{ incidentPhoto ? 'Photo envoyée' : `Prendre une photo${selectedReason.photo === 'required' ? ' *' : ' (conseillée)'}` }}
         </PhotoCapture>
-        <p class="text-xs text-slate-600">L'agence et le client sont prévenus immédiatement.</p>
+        <p v-if="selectedReason.effect === 'note'" class="text-xs text-slate-600">Information pour l'agence{{ selectedReason.visible_to_client ? ' et le client' : '' }} : la course continue.</p>
+        <p v-else-if="reasonValidates(selectedReason)" class="rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-900">
+          <Icone nom="sablier" taille="petite" class="inline" /> {{ selectedReason.requires_date ? 'Le report' : 'Le retour' }} sera vérifié par l'agence ou le client avant d'être pris en compte.
+        </p>
+        <p v-else class="text-xs text-slate-600">L'agence et le client sont prévenus immédiatement.</p>
         <p v-if="sheetError" class="text-red-600 text-sm">{{ sheetError }}</p>
-        <button class="m-btn-danger" :disabled="busy || !incident.reason" @click="confirmIncident">Envoyer</button>
+        <button :class="selectedReason.effect === 'note' ? 'm-btn-primary' : 'm-btn-danger'" :disabled="busy" @click="confirmIncident">Envoyer</button>
+        </template>
       </div>
     </BottomSheet>
 
@@ -257,14 +273,6 @@
       </div>
     </BottomSheet>
 
-    <!-- Note -->
-    <BottomSheet :open="sheet === 'note'" title="Note pour l'agence et le client" @close="sheet = null">
-      <div class="space-y-3">
-        <textarea v-model="noteText" rows="3" class="m-input" placeholder="Ex. : le client demande de rappeler après 17h" />
-        <button class="m-btn-primary" :disabled="busy || !noteText.trim()" @click="sendNote">Envoyer</button>
-      </div>
-    </BottomSheet>
-
     <!-- Scan de l'étiquette à la collecte -->
     <QrScanner :open="labelScan" title="Scanner l'étiquette du colis" :message="labelMessage" @code="onLabel($event, 'scan')" @close="labelScan = false">
       <form class="flex gap-2" @submit.prevent="typeLabel">
@@ -286,7 +294,7 @@ import DispatchMessages from '../../components/mobile/DispatchMessages.vue'
 import BottomSheet from '../../components/mobile/BottomSheet.vue'
 import ChoiceChips from '../../components/mobile/ChoiceChips.vue'
 import ReasonPicker from '../../components/mobile/ReasonPicker.vue'
-import { reasonsFor } from '../../utils/reasons'
+import { reasonsFor, reasonValidates } from '../../utils/reasons'
 import HandoverFields from '../../components/courier/HandoverFields.vue'
 import { asksHandover, blankHandover, handoverPayload } from '../../utils/handover'
 import SignaturePad from '../../components/mobile/SignaturePad.vue'
@@ -426,6 +434,9 @@ const primary = computed(() => {
 const stage = computed(() => (mission.value?.type === 'pickup' ? 'pickup' : 'delivery'))
 // Motifs de l'étape et de l'activité de la course (distribution, MAD : les leurs)
 const stageReasons = computed(() => reasonsFor(reasons.value, stage.value, order.value?.activity))
+// Signaler : les informations toujours ; échec, report, retour une fois parti (ramassage ou livraison)
+const reportReasons = computed(() => stageReasons.value.filter((r) => r.effect === 'note' || canReportIncident.value))
+const freeNote = ref(false)
 const incidentPhoto = ref(false)
 const selectedReason = computed(() => reasons.value.find((r) => r.id === incident.reason))
 
@@ -613,6 +624,8 @@ async function saveExpense() {
 function openIncident() {
   Object.assign(incident, { reason: null, when: 'tomorrow', date: null, note: '' })
   incidentPhoto.value = false
+  freeNote.value = false
+  noteText.value = ''
   sheetError.value = ''
   sheet.value = 'incident'
 }
@@ -621,9 +634,15 @@ async function confirmIncident() {
   busy.value = true
   sheetError.value = ''
   try {
+    if (selectedReason.value?.requires_note && !incident.note.trim()) throw new Error('Précisez ce qui se passe dans la note.')
+    // Simple information : une note avec l'événement choisi, la course continue
+    if (selectedReason.value?.effect === 'note') {
+      busy.value = false
+      await sendNote({ incident_reason_id: incident.reason, note: incident.note.trim() || undefined })
+      return
+    }
     // Ramassage : retour à « Validée » ; livraison : échec (ou report daté selon le motif)
     const status = stage.value === 'pickup' ? 'confirmed' : 'delivery_failed'
-    if (selectedReason.value?.requires_note && !incident.note.trim()) throw new Error('Précisez ce qui se passe dans la note.')
     if (selectedReason.value?.photo === 'required' && !incidentPhoto.value) throw new Error('Prenez une photo avant d\'envoyer.')
     const extra = { incident_reason_id: incident.reason, note: incident.note || undefined }
     if (selectedReason.value?.requires_date) {
@@ -631,7 +650,8 @@ async function confirmIncident() {
     }
     const result = await post(status, extra)
     sheet.value = null
-    toasts.success(result.offline ? OFFLINE_SAVED : 'Problème signalé à l\'agence et au client.')
+    const validated = reasonValidates(selectedReason.value)
+    toasts.success(result.offline ? OFFLINE_SAVED : (validated ? 'Envoyé : à valider par l\'agence ou le client.' : 'Problème signalé à l\'agence et au client.'))
     if (!result.offline) await load()
   } catch (e) {
     sheetError.value = apiErrorMessage(e)
@@ -663,11 +683,12 @@ async function refuse() {
   }
 }
 
-async function sendNote() {
+// Note libre (texte) ou événement « information » de la liste (fields : incident_reason_id, note)
+async function sendNote(fields = null) {
   busy.value = true
   try {
     const position = await currentPosition()
-    const payload = { note: noteText.value, ...(position || {}) }
+    const payload = { ...(fields || { note: noteText.value }), ...(position || {}) }
     let offline = offlineEnabled.value && !navigator.onLine
     if (!offline) {
       try {
@@ -680,9 +701,10 @@ async function sendNote() {
     if (offline) keep('note', payload)
     noteText.value = ''
     sheet.value = null
-    toasts.success(offline ? OFFLINE_SAVED : 'Note envoyée.')
+    toasts.success(offline ? OFFLINE_SAVED : (fields ? 'Information envoyée.' : 'Note envoyée.'))
   } catch (e) {
-    toasts.error(apiErrorMessage(e))
+    if (fields) sheetError.value = apiErrorMessage(e)
+    else toasts.error(apiErrorMessage(e))
   } finally {
     busy.value = false
   }

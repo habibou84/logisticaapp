@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Courier;
 use App\Models\FieldReportReview;
 use App\Models\OrderEvent;
+use App\Models\OrderProposal;
 use App\Services\Orders\OrderDecisions;
 use App\Services\Orders\OrderService;
 use App\Support\PhoneNumber;
@@ -36,7 +37,7 @@ class FieldReportController extends Controller
     {
         $request->validate([
             'state' => ['nullable', Rule::in(['open', 'handled', 'all'])],
-            'kind' => ['nullable', Rule::in(array_keys(self::KINDS))],
+            'kind' => ['nullable', Rule::in([...array_keys(self::KINDS), 'to_validate'])],
             'courier_id' => ['nullable', 'integer'],
             'from' => ['nullable', 'date'],
             'to' => ['nullable', 'date'],
@@ -47,7 +48,7 @@ class FieldReportController extends Controller
         $reports = $this->query($request)
             ->with([
                 'order' => fn ($q) => $q->with(['merchant', 'deliveryZone', 'pickupZone', 'company']),
-                'incidentReason', 'attachments', 'review.handler', 'replies.sender',
+                'incidentReason', 'attachments', 'review.handler', 'replies.sender', 'proposal.reason', 'proposal.proposer', 'proposal.decider',
             ])
             ->orderByDesc('id')
             ->paginate(min(max($request->integer('per_page', 30), 1), 500));
@@ -73,6 +74,9 @@ class FieldReportController extends Controller
     {
         $this->ensureFieldReport($event);
         $data = $request->validate(['comment' => ['nullable', 'string', 'max:500']]);
+        if (OrderProposal::where('order_event_id', $event->id)->where('status', OrderProposal::PENDING)->exists()) {
+            throw new BusinessRuleException('Validez ou refusez d\'abord ce que le livreur a signalé.', 'comment');
+        }
 
         FieldReportReview::updateOrCreate(['order_event_id' => $event->id], [
             'company_id' => $request->user()->company_id,
@@ -81,7 +85,7 @@ class FieldReportController extends Controller
             'handled_at' => now(),
         ]);
 
-        return response()->json(['data' => $this->present($event->fresh(['order.merchant', 'order.deliveryZone', 'order.pickupZone', 'incidentReason', 'attachments', 'review.handler', 'replies.sender'])), 'open' => $this->openCounts()]);
+        return response()->json(['data' => $this->present($event->fresh(['order.merchant', 'order.deliveryZone', 'order.pickupZone', 'incidentReason', 'attachments', 'review.handler', 'replies.sender', 'proposal.reason', 'proposal.proposer', 'proposal.decider'])), 'open' => $this->openCounts()]);
     }
 
     /**
@@ -135,7 +139,7 @@ class FieldReportController extends Controller
             'handled_at' => now(),
         ]);
 
-        return response()->json(['data' => $this->present($event->fresh(['order.merchant', 'order.deliveryZone', 'order.pickupZone', 'incidentReason', 'attachments', 'review.handler', 'replies.sender'])), 'open' => $this->openCounts()]);
+        return response()->json(['data' => $this->present($event->fresh(['order.merchant', 'order.deliveryZone', 'order.pickupZone', 'incidentReason', 'attachments', 'review.handler', 'replies.sender', 'proposal.reason', 'proposal.proposer', 'proposal.decider'])), 'open' => $this->openCounts()]);
     }
 
     public function reopen(OrderEvent $event): JsonResponse
@@ -143,7 +147,7 @@ class FieldReportController extends Controller
         $this->ensureFieldReport($event);
         FieldReportReview::where('order_event_id', $event->id)->delete();
 
-        return response()->json(['data' => $this->present($event->fresh(['order.merchant', 'order.deliveryZone', 'order.pickupZone', 'incidentReason', 'attachments', 'review.handler', 'replies.sender'])), 'open' => $this->openCounts()]);
+        return response()->json(['data' => $this->present($event->fresh(['order.merchant', 'order.deliveryZone', 'order.pickupZone', 'incidentReason', 'attachments', 'review.handler', 'replies.sender', 'proposal.reason', 'proposal.proposer', 'proposal.decider'])), 'open' => $this->openCounts()]);
     }
 
     private function query(Request $request): Builder
@@ -156,7 +160,8 @@ class FieldReportController extends Controller
             ->whereHas('order')
             ->when($request->input('state', 'open') === 'open', fn ($q) => $q->whereDoesntHave('review'))
             ->when($request->input('state') === 'handled', fn ($q) => $q->whereHas('review'))
-            ->when($request->filled('kind'), fn ($q) => $q->whereIn('type', array_map(fn ($t) => $t->value, self::KINDS[$request->string('kind')->value()])))
+            ->when($request->input('kind') === 'to_validate', fn ($q) => $q->whereHas('proposal', fn ($p) => $p->where('status', OrderProposal::PENDING)))
+            ->when($request->filled('kind') && $request->input('kind') !== 'to_validate', fn ($q) => $q->whereIn('type', array_map(fn ($t) => $t->value, self::KINDS[$request->string('kind')->value()])))
             ->when($courierUserId !== null, fn ($q) => $q->where('actor_id', $courierUserId))
             ->when($request->filled('from'), fn ($q) => $q->whereDate('created_at', '>=', $request->date('from')))
             ->when($request->filled('to'), fn ($q) => $q->whereDate('created_at', '<=', $request->date('to')))
@@ -186,6 +191,7 @@ class FieldReportController extends Controller
         foreach (array_keys(self::KINDS) as $kind) {
             $counts[$kind] = $events->filter(fn (OrderEvent $e) => $e->fieldKind() === $kind)->count();
         }
+        $counts['to_validate'] = OrderProposal::query()->where('status', OrderProposal::PENDING)->whereHas('order')->count();
 
         return $counts;
     }
@@ -210,6 +216,10 @@ class FieldReportController extends Controller
     private function suggestions(OrderEvent $e): array
     {
         $order = $e->order;
+        // Report ou retour à valider : on valide ou on refuse d'abord (boutons de la remontée)
+        if ($e->relationLoaded('proposal') && $e->proposal?->isPending()) {
+            return ['open'];
+        }
         if ($order === null || $e->type === OrderEventType::Note || $e->type === OrderEventType::AssignmentRefused || $e->type === OrderEventType::ExpenseAdded) {
             return [];
         }
@@ -287,6 +297,8 @@ class FieldReportController extends Controller
                 'max_attempts' => $order->max_attempts,
             ] : null,
             'incident_code' => $e->incidentReason?->code,
+            // Report ou retour signalé par le livreur, à valider (ou déjà décidé)
+            'proposal' => $e->relationLoaded('proposal') && $e->proposal ? $e->proposal->setRelation('event', $e)->present() : null,
             'suggestions' => $e->relationLoaded('review') && $e->review ? [] : $this->suggestions($e),
             'replies' => $e->relationLoaded('replies') ? $e->replies->map(fn ($m) => $m->present())->values() : [],
             'review' => $e->review ? [

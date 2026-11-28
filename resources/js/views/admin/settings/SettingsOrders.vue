@@ -456,6 +456,7 @@ const DASHBOARD_CARDS = {
   invoices_to_issue: 'Factures à émettre',
   to_return: 'À retourner',
   failed: 'Échec de livraison',
+  to_validate: 'Reports et retours à valider',
   on_hold: 'En attente',
   follow_up: 'Suivi',
   to_prepare: 'À préparer',
