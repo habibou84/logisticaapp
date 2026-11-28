@@ -11,10 +11,10 @@
     </div>
     <div
       v-if="order.awaiting_courier"
-      :class="['mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap', order.awaiting_courier.late ? 'bg-red-600 text-white' : 'bg-amber-100 text-amber-800']"
+      :class="['mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap', order.awaiting_courier.late ? 'bg-red-600 text-white' : order.awaiting_courier.stage === 'pickup' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800']"
       :title="`Seuil d'alerte : ${duration(order.awaiting_courier.threshold_minutes)}`"
     >
-      <Icone :nom="order.awaiting_courier.late ? 'rappel' : 'livreur'" taille="petite" />Sans livreur · {{ order.awaiting_courier.stage === 'pickup' ? 'ramassage' : 'livraison' }} · {{ duration(order.awaiting_courier.minutes) }}
+      <Icone :nom="order.awaiting_courier.late ? 'rappel' : 'livreur'" taille="petite" />{{ order.awaiting_courier.stage === 'pickup' ? 'Sans ramasseur' : 'Sans livreur' }} · {{ duration(order.awaiting_courier.minutes) }}
     </div>
     <div
       v-if="order.awaiting_courier?.after_cutoff"
