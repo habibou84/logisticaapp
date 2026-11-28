@@ -115,8 +115,8 @@
           </button>
           <button v-if="primary" :class="[primary.class, 'text-lg py-5']" :disabled="busy" @click="primary.action()"><Icone :nom="primary.icon" />{{ primary.label }}</button>
           <div class="grid grid-cols-3 gap-2">
-            <!-- Signaler : un événement de la liste (information, échec, report, retour) ou une note libre -->
-            <button class="m-btn-secondary py-3 px-1 text-sm text-red-600" @click="openIncident"><Icone nom="alerte" taille="petite" />Signaler</button>
+            <!-- Note : un choix de la liste (consigne, report, échec, refus) ou une note libre -->
+            <button class="m-btn-secondary py-3 px-1 text-sm" @click="openIncident"><Icone nom="note" taille="petite" />Note</button>
             <button class="m-btn-secondary py-3 px-1 text-sm" @click="openExpense"><Icone nom="frais" taille="petite" />Frais</button>
             <PhotoCapture class="m-btn-secondary py-3 px-1 text-sm" @captured="uploadPhoto"><Icone nom="photo" taille="petite" />Photo</PhotoCapture>
           </div>
@@ -222,7 +222,7 @@
       </div>
     </BottomSheet>
 
-    <BottomSheet :open="sheet === 'incident'" title="Que se passe-t-il ?" @close="sheet = null">
+    <BottomSheet :open="sheet === 'incident'" title="Note" @close="sheet = null">
       <div class="space-y-4">
         <template v-if="!freeNote">
           <ReasonPicker v-model="incident.reason" :reasons="reportReasons" />
@@ -459,7 +459,7 @@ const primary = computed(() => {
 const stage = computed(() => (mission.value?.type === 'pickup' ? 'pickup' : 'delivery'))
 // Motifs de l'étape et de l'activité de la course (distribution, MAD : les leurs)
 const stageReasons = computed(() => reasonsFor(reasons.value, stage.value, order.value?.activity))
-// Signaler : consignes du client toujours ; report et refus (à valider) dès que la livraison est confiée ;
+// Note : consignes du client toujours ; report et refus (à valider) dès que la livraison est confiée ;
 // échecs une fois parti (ramassage ou livraison)
 const reportReasons = computed(() => stageReasons.value.filter((r) => r.effect === 'note' || canReportIncident.value
   || (mission.value?.type === 'delivery' && reasonValidates(r))))
