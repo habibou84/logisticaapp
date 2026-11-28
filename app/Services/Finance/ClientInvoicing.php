@@ -398,7 +398,9 @@ class ClientInvoicing
 
         return $this->orders($company->id, $invoice->merchant_id, $invoice->activity, $from, $to)->with(['deliveryZone:id,name,city', 'department', 'toDepartment'])
             // Facture d'un département : ses courses
-            ->when($invoice->department_id !== null, fn ($q) => $q->where('department_id', $invoice->department_id));
+            ->when($invoice->department_id !== null, fn ($q) => $q->where('department_id', $invoice->department_id))
+            // Ordre de création : sans tri, PostgreSQL peut rendre les courses dans un ordre différent d'une fois à l'autre
+            ->orderBy('id');
     }
 
     public function addLine(ClientInvoice $invoice, string $label, int $quantity, int $unitPrice, ?int $departmentId = null): ClientInvoice
