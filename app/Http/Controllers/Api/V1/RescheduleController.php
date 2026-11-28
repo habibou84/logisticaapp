@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Enums\Activity;
 use App\Enums\AssignmentType;
 use App\Http\Controllers\Controller;
 use App\Models\Merchant;
@@ -12,6 +13,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\Rule;
 
 /**
  * File « À reporter » du dispatch : colis pas ramassés dont la date de livraison est passée, regroupés par
@@ -26,8 +28,11 @@ class RescheduleController extends Controller
         Gate::authorize('dispatch', Order::class);
         $company = $request->user()->company;
         $today = Reschedules::today($company);
+        // Activité choisie dans les écrans Courses (vide : toutes)
+        $activity = $request->validate(['activity' => ['nullable', Rule::enum(Activity::class)]])['activity'] ?? null;
 
         $orders = Order::query()->toReschedule($today)
+            ->when($activity, fn ($q) => $q->where('activity', $activity))
             ->with(['deliveryZone:id,name', 'rescheduleRequest',
                 'assignments' => fn ($q) => $q->active()->where('type', AssignmentType::Pickup->value)->with('courier.user:id,name')])
             ->orderByRaw(Order::DELIVERY_DAY_SQL)->orderBy('id')

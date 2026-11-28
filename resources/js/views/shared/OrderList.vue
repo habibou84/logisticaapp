@@ -1,31 +1,35 @@
 <template>
   <div class="space-y-4">
-    <div class="flex flex-wrap items-center justify-between gap-2">
-      <!-- Titre et, juste en face, le jour affiché : aujourd'hui par défaut (retards compris), gardé d'un onglet à l'autre -->
-      <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <h1 class="text-xl font-bold">Courses</h1>
-        <div
-          v-if="isStaff" class="flex flex-wrap items-center gap-2 text-sm" role="group" aria-label="Jour affiché"
-          :title="filters.day ? 'Seulement les courses prévues ce jour (jours passés dans « Courses en retard »)' : null"
-        >
-          <Icone nom="date" taille="petite" class="text-slate-600" />
-          <button
-            v-for="d in DAY_CHOICES" :key="d.label" type="button"
-            :class="['rounded-full px-3 py-1 ring-1', filters.day === d.value ? 'bg-slate-900 text-white ring-slate-900' : 'bg-white ring-slate-300']"
-            :aria-pressed="filters.day === d.value"
-            @click="setDay(d.value)"
+    <div class="flex flex-wrap items-start justify-between gap-2">
+      <!-- Titre et, juste en face, le jour affiché : aujourd'hui par défaut (retards compris), gardé d'un onglet à l'autre ;
+           juste en dessous, l'activité (commune aux quatre écrans Courses) -->
+      <div class="min-w-0 flex-1 basis-[30rem] space-y-2">
+        <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <h1 class="text-xl font-bold">Courses</h1>
+          <div
+            v-if="isStaff" class="flex flex-wrap items-center gap-2 text-sm" role="group" aria-label="Jour affiché"
+            :title="filters.day ? 'Seulement les courses prévues ce jour (jours passés dans « Courses en retard »)' : null"
           >
-            {{ d.label }}<span v-if="d.count" class="ml-1 opacity-75">({{ d.count }})</span>
-          </button>
-          <input
-            type="date" class="input w-auto py-1"
-            :value="filters.day && filters.day !== todayIso && filters.day !== tomorrowIso ? filters.day : ''"
-            aria-label="Autre jour" title="Autre jour"
-            @change="$event.target.value && setDay($event.target.value)"
-          >
+            <Icone nom="date" taille="petite" class="text-slate-600" />
+            <button
+              v-for="d in DAY_CHOICES" :key="d.label" type="button"
+              :class="['rounded-full px-3 py-1 ring-1', filters.day === d.value ? 'bg-slate-900 text-white ring-slate-900' : 'bg-white ring-slate-300']"
+              :aria-pressed="filters.day === d.value"
+              @click="setDay(d.value)"
+            >
+              {{ d.label }}<span v-if="d.count" class="ml-1 opacity-75">({{ d.count }})</span>
+            </button>
+            <input
+              type="date" class="input w-auto py-1"
+              :value="filters.day && filters.day !== todayIso && filters.day !== tomorrowIso ? filters.day : ''"
+              aria-label="Autre jour" title="Autre jour"
+              @change="$event.target.value && setDay($event.target.value)"
+            >
+          </div>
         </div>
+        <ActivityFilter v-if="isStaff" note="Cartes, étapes et listes des écrans Courses suivent ce choix." @change="setActivity" />
       </div>
-      <div class="flex gap-2">
+      <div class="flex shrink-0 gap-2">
         <RouterLink v-if="isStaff && auth.can('settings.manage')" to="/admin/reglages/courses" class="btn-secondary" title="Réglages des courses" aria-label="Réglages des courses"><Icone nom="reglages" /></RouterLink>
         <RouterLink v-if="auth.can('orders.create')" :to="`${auth.homeRoute}/courses/import`" class="btn-secondary"><Icone nom="importer" />Importer</RouterLink>
         <RouterLink v-if="auth.can('orders.create')" :to="`${auth.homeRoute}/courses/nouvelle`" :class="['btn-primary', isStaff ? 'hidden md:inline-flex' : '']">+ Nouvelle course</RouterLink>
@@ -56,8 +60,8 @@
       </button>
     </div>
 
-    <!-- Activités côte à côte : toutes, ou une seule (e-commerce, distribution, MAD) -->
-    <div v-if="activityChoices.length > 1" class="flex flex-wrap items-center gap-2 text-sm" role="group" aria-label="Activité">
+    <!-- Client : activités de son entreprise côte à côte (l'équipe choisit l'activité sous le jour) -->
+    <div v-if="!isStaff && activityChoices.length > 1" class="flex flex-wrap items-center gap-2 text-sm" role="group" aria-label="Activité">
       <span class="text-slate-600">Activité :</span>
       <button
         v-for="a in [{ value: '', label: 'Toutes' }, ...activityChoices]" :key="a.value" type="button"
@@ -374,6 +378,8 @@ import PickupGroupsPanel from '../../components/PickupGroupsPanel.vue'
 import DeliveryDayBar from '../../components/DeliveryDayBar.vue'
 import AutoAssignBanner from '../../components/AutoAssignBanner.vue'
 import CoursesTabs from '../../components/CoursesTabs.vue'
+import ActivityFilter from '../../components/ActivityFilter.vue'
+import { useActivityFilterStore } from '../../stores/activityFilter'
 import DayPoint from '../../components/DayPoint.vue'
 import { useAuthStore } from '../../stores/auth'
 import { useToastStore } from '../../stores/toasts'
@@ -402,6 +408,13 @@ const initialDay = () => {
   const q = route.query.day
   if (q === 'all') return ''
   return /^\d{4}-\d{2}-\d{2}$/.test(q || '') ? q : todayIso
+}
+// Activité : celle de l'adresse (lien partagé), sinon le choix commun aux écrans Courses
+const activityFilter = useActivityFilterStore()
+function initialActivity() {
+  if (!auth.user || auth.user.merchant_id) return route.query.activity || ''
+  if (route.query.activity) activityFilter.set(route.query.activity)
+  return activityFilter.current
 }
 // Files de travail (limitées au jour) ; on peut y ajouter les courses prévues plus tard (ramassage en avance)
 const LATER_QUEUES = { to_pickup: 'à ramasser', by_client: 'à ramasser', to_prepare: 'à préparer', unassigned: 'à ramasser', pickup_unassigned: 'à ramasser' }
@@ -486,7 +499,7 @@ const filters = reactive({
   search: route.query.search || '',
   status: '',
   merchant_id: route.query.merchant_id || '',
-  activity: route.query.activity || '',
+  activity: initialActivity(),
   billing_plan_id: route.query.billing_plan_id || '',
   courier_id: route.query.courier_id || '',
   // File « Sans livreur » : pickup, delivery ou les deux
@@ -506,10 +519,9 @@ const orders = ref([])
 const activityChoices = computed(() => (auth.user?.merchant_id
   ? ACTIVITIES.filter((a) => (auth.user.merchant?.activities || []).includes(a.value))
   : myActivities(auth.user)))
+// Client : ses activités ; équipe : choix commun aux écrans Courses (composant ActivityFilter)
 function setActivity(value) {
   filters.activity = value
-  // Cases des étapes, jours et files : compteurs de cette activité seulement
-  dispatchCounts.activity = value || null
   syncQuery()
   load(1)
 }
@@ -790,7 +802,7 @@ watch(() => route.query.search, (value) => {
 })
 
 // Ailleurs (menu, tableau de bord) : compteurs généraux seulement
-onUnmounted(() => { dispatchCounts.day = null; dispatchCounts.activity = null })
+onUnmounted(() => { dispatchCounts.day = null })
 
 // Rafraîchissement temps réel
 watch(orderListChanges, async () => {
@@ -801,7 +813,6 @@ watch(orderListChanges, async () => {
 
 onMounted(async () => {
   dispatchCounts.day = filters.day || null
-  dispatchCounts.activity = filters.activity || null
   await load()
   if (isStaff.value) {
     const empty = { data: { data: [] } }

@@ -229,6 +229,9 @@ class OrderController extends Controller
                 'untreated' => $exceptions['untreated'],
                 'to_reschedule' => $toReschedule,
             ],
+            // Choix de l'activité (écrans Courses) : courses du jour par activité, toute l'entreprise
+            'activities_today' => Order::query()->ofDay(today()->toDateString())
+                ->toBase()->selectRaw('activity, COUNT(*) AS n')->groupBy('activity')->pluck('n', 'activity')->map(fn ($n) => (int) $n)->all(),
             // Tableau de bord : en attente d'un livreur, par étape
             'waiting' => $awaiting->summary($company),
             // Heure limite du jour : passée ou non, et courses encore sans livreur

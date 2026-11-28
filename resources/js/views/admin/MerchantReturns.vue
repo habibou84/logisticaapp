@@ -8,6 +8,8 @@
         WhatsApp ; à la remise, il signe dans l'application du livreur et toutes les courses passent « Retourné ».
       </p>
     </div>
+    <!-- Activité commune aux écrans Courses -->
+    <ActivityFilter note="Colis à rendre et bons de retour de cette activité seulement." />
 
     <ReturnHandoverReview />
 
@@ -79,9 +81,11 @@
 <script setup>
 import Icone from '../../components/ui/Icone.vue'
 import SearchSelect from '../../components/SearchSelect.vue'
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import CoursesTabs from '../../components/CoursesTabs.vue'
+import ActivityFilter from '../../components/ActivityFilter.vue'
+import { useActivityFilterStore } from '../../stores/activityFilter'
 import ReturnHandoverReview from '../../components/admin/ReturnHandoverReview.vue'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import { useToastStore } from '../../stores/toasts'
@@ -102,8 +106,12 @@ const candidateCount = computed(() => candidates.value.reduce((s, g) => s + g.or
 const selectedOf = (g) => g.orders.filter((o) => selected.value.includes(o.id)).map((o) => o.id)
 const holderCount = (g, courierId) => g.orders.filter((o) => o.held_by?.id === courierId).length
 
+// Activité choisie au-dessus (commune aux écrans Courses)
+const activityFilter = useActivityFilterStore()
+watch(() => activityFilter.current, () => load())
+
 async function load() {
-  const { data } = await http.get('/return-slips')
+  const { data } = await http.get('/return-slips', { params: activityFilter.current ? { activity: activityFilter.current } : {} })
   candidates.value = data.candidates
   slips.value = data.data
   // Par défaut : tous les colis cochés, livreur qui en a déjà le plus en main

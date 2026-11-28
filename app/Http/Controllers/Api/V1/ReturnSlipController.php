@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Enums\Activity;
 use App\Enums\Permission;
 use App\Http\Controllers\Controller;
 use App\Models\Courier;
@@ -30,13 +31,16 @@ class ReturnSlipController extends Controller
     public function index(Request $request): JsonResponse
     {
         $this->authorizeDispatch($request);
+        $activity = $this->activity($request);
 
-        $candidates = $this->slips->candidates()->groupBy('merchant_id')->map(fn ($orders) => [
+        $candidates = $this->slips->candidates(null, $activity)->groupBy('merchant_id')->map(fn ($orders) => [
             'merchant' => $this->merchantData($orders->first()->merchant),
             'orders' => $orders->map(fn (Order $o) => $this->orderData($o))->values(),
         ])->values();
 
         $slips = ReturnSlip::with(['merchant', 'courier.user'])->withCount('orders')
+            // Activité choisie (écrans Courses) : les bons qui contiennent au moins un colis de cette activité
+            ->when($activity, fn ($q) => $q->whereHas('orders', fn ($o) => $o->where('activity', $activity)))
             ->where(fn ($q) => $q->where('status', ReturnSlip::OPEN)->orWhere('updated_at', '>=', now()->subDays(30)))
             ->latest('id')->limit(100)->get();
 
@@ -53,8 +57,10 @@ class ReturnSlipController extends Controller
     {
         $this->authorizeDispatch($request);
 
-        $waiting = $this->slips->candidates();
-        $onSlips = Order::query()->whereIn('return_slip_id', ReturnSlip::query()->where('status', ReturnSlip::OPEN)->select('id'));
+        $activity = $this->activity($request);
+        $waiting = $this->slips->candidates(null, $activity);
+        $onSlips = Order::query()->whereIn('return_slip_id', ReturnSlip::query()->where('status', ReturnSlip::OPEN)->select('id'))
+            ->when($activity, fn ($q) => $q->where('activity', $activity));
         $oldest = $waiting->map(fn (Order $o) => $o->status_changed_at ?? $o->updated_at)->filter()->min();
 
         return response()->json(['data' => [
@@ -242,5 +248,11 @@ class ReturnSlipController extends Controller
             'held_by' => $o->relationLoaded('holder') && $o->holder ? ['id' => $o->holder->id, 'name' => $o->holder->user?->name] : null,
             'return_courier' => $o->relationLoaded('returnCourier') && $o->returnCourier ? ['id' => $o->returnCourier->id, 'name' => $o->returnCourier->user?->name] : null,
         ];
+    }
+
+    /** Activité choisie dans les écrans Courses (vide : toutes) */
+    private function activity(Request $request): ?string
+    {
+        return $request->validate(['activity' => ['nullable', Rule::enum(Activity::class)]])['activity'] ?? null;
     }
 }
