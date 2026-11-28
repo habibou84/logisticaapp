@@ -38,7 +38,7 @@
     <template v-if="view === 'clients'">
       <div class="flex flex-wrap gap-2 text-sm">
         <span v-for="v in VERDICTS" :key="v.key" :class="['rounded-full px-3 py-1', v.class]">{{ v.label }} : {{ data.clients.filter((c) => c.verdict === v.key).length }}</span>
-        <span class="text-xs text-slate-600 self-center">« À renégocier » : marge sous {{ data.settings.renegotiate_margin }} % (réglable dans Pilotage › Tendances)</span>
+        <span class="text-xs text-slate-600 self-center">« À renégocier » : marge sous {{ data.settings.renegotiate_margin }} % (réglable dans Tendances)</span>
       </div>
       <SortableTable title="Rentabilité par client" :columns="clientColumns" :rows="data.clients" initial-sort="margin" filename="rentabilite-clients.csv" empty="Aucun client sur la période.">
         <template #verdict="{ row }"><span :class="['rounded-full px-2 py-0.5 text-xs font-semibold', verdict(row.verdict).class]">{{ verdict(row.verdict).label }}</span></template>

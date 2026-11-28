@@ -126,7 +126,7 @@ enum Permission: string
             self::InvoicesManage => 'Calculer, compléter, émettre et encaisser les factures.',
             self::InvoicesVoid => 'Annuler une facture déjà émise, ou la corriger par un avoir (total ou partiel).',
             self::RevenueView => 'Chiffre d\'affaires par activité.',
-            self::DirectionView => 'Statistiques › Pilotage : activités côte à côte, écran de chaque activité, équipes et points à décider.',
+            self::DirectionView => 'Onglets Vue d\'ensemble, E-commerce, MAD, Distribution et Équipes des statistiques, avec les points à décider.',
             self::SettingsManage => 'Entreprise et marque, courses, alertes, clients, mise en route, reprise de l\'ancienne application.',
             self::ZonesManage => 'Communes, quartiers, zones au forfait, dépôts.',
             self::PricingManage => 'Grilles de prix, suppléments, frais de retour.',
