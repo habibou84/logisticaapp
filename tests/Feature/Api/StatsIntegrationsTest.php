@@ -57,6 +57,84 @@ class StatsIntegrationsTest extends TestCase
         $this->getJson('/api/v1/stats/export?from=2026-11-01')->assertJsonValidationErrors('to');
     }
 
+    public function test_advanced_export_sections_formats_and_privacy(): void
+    {
+        $this->deliveredIn('2026-11-10 10:00', ['delivery_courier_id' => $this->courierB->id]);
+        Sanctum::actingAs($this->admin);
+        $base = '/api/v1/stats/export?from=2026-11-01&to=2026-11-30';
+
+        // Rubriques au choix : seules les feuilles demandées
+        $file = $this->get($base.'&sections[]=zones&sections[]=orders')->assertOk()->baseResponse->getFile()->getPathname();
+        $zip = new \ZipArchive;
+        $this->assertTrue($zip->open($file) === true);
+        $workbook = $zip->getFromName('xl/workbook.xml');
+        $this->assertStringContainsString('Rentabilité zones', $workbook);
+        $this->assertStringContainsString('Liste des courses', $workbook);
+        $this->assertStringNotContainsString('Synthèse', $workbook);
+
+        // CSV : les rubriques l'une sous l'autre ; la course, son livreur et son montant
+        $csv = file_get_contents($this->get($base.'&format=csv&sections[]=orders&sections[]=failures')->assertOk()->baseResponse->getFile()->getPathname());
+        $this->assertStringStartsWith("\u{FEFF}", $csv);
+        $this->assertStringContainsString('Liste des courses', $csv);
+        $this->assertStringContainsString('Code;"Créée le";Client', $csv);
+        $this->assertStringContainsString($this->courierB->user->name, $csv);
+        $this->assertStringContainsString('Montant facturé', $csv);
+
+        // Montants masqués et livreurs anonymisés : ni montant, ni nom, ni rubrique à montants
+        $csv = file_get_contents($this->get($base.'&format=csv&sections[]=orders&sections[]=zones&hide_amounts=1&anonymize=1')->assertOk()->baseResponse->getFile()->getPathname());
+        $this->assertStringNotContainsString('Montant facturé', $csv);
+        $this->assertStringNotContainsString('Tarif moyen', $csv);
+        $this->assertStringNotContainsString($this->courierB->user->name, $csv);
+        $this->assertStringContainsString('Livreur 1', $csv);
+
+        // PDF mis en page
+        $response = $this->get($base.'&format=pdf&sections[]=summary&sections[]=zones')->assertOk();
+        $this->assertStringStartsWith('%PDF', file_get_contents($response->baseResponse->getFile()->getPathname()));
+        $this->assertStringEndsWith('.pdf', $response->baseResponse->getFile()->getFilename() ?: '.pdf');
+
+        $this->getJson($base.'&format=doc')->assertJsonValidationErrors('format');
+        $this->getJson($base.'&sections[]=inconnue')->assertJsonValidationErrors('sections.0');
+
+        // Sans le droit caisse : pas de rubriques à montants proposées, pas de montants exportés
+        Sanctum::actingAs($this->dispatcher);
+        $options = $this->getJson('/api/v1/stats/export/options')->assertOk()->json('data');
+        $this->assertFalse($options['can_amounts']);
+        $this->assertNotContains('zones', array_column($options['sections'], 'key'));
+        $csv = file_get_contents($this->get($base.'&format=csv&sections[]=orders&sections[]=zones')->assertOk()->baseResponse->getFile()->getPathname());
+        $this->assertStringNotContainsString('Montant facturé', $csv);
+    }
+
+    public function test_export_templates_and_send_by_email(): void
+    {
+        Mail::fake();
+        $this->deliveredIn('2026-11-10 10:00');
+        Sanctum::actingAs($this->admin);
+        $options = ['sections' => ['summary', 'zones', 'inconnue'], 'format' => 'pdf', 'activity' => 'ecommerce', 'hide_amounts' => true];
+
+        $templates = $this->postJson('/api/v1/stats/export/templates', ['name' => 'Dossier banque', 'options' => $options])->assertOk()->json('data.templates');
+        $this->assertSame(['Dossier banque', ['summary', 'zones'], 'pdf', 'ecommerce', true, false],
+            [$templates[0]['name'], $templates[0]['sections'], $templates[0]['format'], $templates[0]['activity'], $templates[0]['hide_amounts'], $templates[0]['anonymize']]);
+        // Même nom : remplacé, pas doublé
+        $this->postJson('/api/v1/stats/export/templates', ['name' => 'dossier banque', 'options' => [...$options, 'format' => 'csv']])->assertOk()->assertJsonCount(1, 'data.templates');
+        $this->getJson('/api/v1/stats/export/options')->assertOk()->assertJsonPath('data.templates.0.format', 'csv')->assertJsonPath('data.can_save', true);
+        // Les autres réglages des statistiques n'effacent pas les modèles
+        $this->patchJson("/api/v1/companies/{$this->company->id}", ['stats_settings' => ['forfait_high' => 120]])->assertOk();
+        $id = $this->getJson('/api/v1/stats/export/options')->json('data.templates.0.id');
+        $this->assertNotNull($id);
+        $this->deleteJson("/api/v1/stats/export/templates/{$id}")->assertOk()->assertJsonCount(0, 'data.templates');
+
+        // Envoi par e-mail : le fichier en pièce jointe, au format demandé
+        $this->postJson('/api/v1/stats/export/send', ['from' => '2026-11-01', 'to' => '2026-11-30', 'format' => 'csv', 'sections' => ['summary'], 'recipients' => ['direction@exemple.ci']])
+            ->assertOk()->assertJsonPath('data.sent', 1);
+        Mail::assertSent(StatsReportMail::class, fn ($mail) => $mail->hasTo('direction@exemple.ci') && str_ends_with($mail->filename, '.csv'));
+        $this->postJson('/api/v1/stats/export/send', ['from' => '2026-11-01', 'to' => '2026-11-30', 'recipients' => ['pas-un-email']])->assertJsonValidationErrors('recipients.0');
+
+        // Modèles : autorisation de direction ; envoi : réglages
+        Sanctum::actingAs($this->dispatcher);
+        $this->postJson('/api/v1/stats/export/templates', ['name' => 'X', 'options' => $options])->assertForbidden();
+        $this->postJson('/api/v1/stats/export/send', ['from' => '2026-11-01', 'to' => '2026-11-30', 'recipients' => ['a@exemple.ci']])->assertForbidden();
+    }
+
     public function test_google_sheets_link(): void
     {
         $this->deliveredIn('2026-11-25 10:00');
