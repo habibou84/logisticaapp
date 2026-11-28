@@ -9,6 +9,8 @@
       </p>
     </div>
 
+    <ReturnHandoverReview />
+
     <!-- Colis à rendre, par marchand -->
     <section class="space-y-3">
       <h2 class="font-semibold">À rendre ({{ candidateCount }} colis)</h2>
@@ -80,6 +82,7 @@ import SearchSelect from '../../components/SearchSelect.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import CoursesTabs from '../../components/CoursesTabs.vue'
+import ReturnHandoverReview from '../../components/admin/ReturnHandoverReview.vue'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import { useToastStore } from '../../stores/toasts'
 import { dateTime, money } from '../../utils/format'

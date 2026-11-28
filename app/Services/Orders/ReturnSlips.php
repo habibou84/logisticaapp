@@ -147,7 +147,7 @@ class ReturnSlips
                 if ($order->status === OrderStatus::ReturnAssigned) {
                     $order = $this->workflow->transition($actor, $order, OrderStatus::Returning, ['lat' => $lat, 'lng' => $lng]);
                 }
-                $this->workflow->transition($actor, $order, OrderStatus::Returned, ['note' => $note, 'lat' => $lat, 'lng' => $lng]);
+                $this->workflow->transition($actor, $order, OrderStatus::Returned, ['note' => $note, 'lat' => $lat, 'lng' => $lng, 'return_proof' => $slip]);
             }
 
             // Colis non remis : ils sortent du bon et restent à rendre
@@ -233,7 +233,7 @@ class ReturnSlips
     /**
      * Signature dessinée à l'écran (image PNG en data URL).
      */
-    private function decodeSignature(?string $signature): ?string
+    public static function decodeSignature(?string $signature): ?string
     {
         return SignatureImage::decode($signature);
     }

@@ -47,6 +47,7 @@ class CompanyResource extends JsonResource
             'default_max_attempts' => $this->default_max_attempts,
             'require_delivery_code' => $this->require_delivery_code,
             'offline_courier_actions' => $this->offline_courier_actions,
+            'return_confirmation' => (bool) $this->return_confirmation,
             'return_fee_percent' => $this->return_fee_percent,
             'field_alert_reminder_minutes' => $this->field_alert_reminder_minutes,
             'parcel_hold_alert_hours' => $this->parcel_hold_alert_hours,
