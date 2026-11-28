@@ -147,7 +147,22 @@ class PreprodDataTest extends TestCase
 
         $this->installedCompany();
         $this->app['env'] = 'production';
-        $this->artisan('app:preprod-data')->expectsOutputToContain('Refusé')->assertFailed();
+        $this->artisan('app:preprod-data')->expectsOutputToContain('Refusé : APP_ENV=production')->assertFailed();
+
+        // Tout environnement inconnu est refusé, pas seulement « production »
+        $this->app['env'] = 'prod';
+        $this->artisan('app:preprod-data')->expectsOutputToContain('Refusé : APP_ENV=prod')->assertFailed();
+
+        // Adresse de la production, même avec un APP_ENV de préproduction (.env mal réglé)
+        $this->app['env'] = 'staging';
+        config(['app.url' => 'https://app.logisticadelivery.com', 'platform.preprod_access_code' => 'code']);
+        $this->artisan('app:preprod-data')->expectsOutputToContain('adresse de la production')->assertFailed();
+
+        // Préproduction sans son code d'accès : pas reconnue
+        config(['app.url' => 'https://preprod.logisticadelivery.com', 'platform.preprod_access_code' => '']);
+        $this->artisan('app:preprod-data')->expectsOutputToContain('PREPROD_ACCESS_CODE vide')->assertFailed();
+
         $this->assertSame(0, Order::count());
+        $this->assertSame(0, User::where('phone', 'like', '+2250799%')->count());
     }
 }

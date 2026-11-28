@@ -40,6 +40,9 @@ Toujours répondre en français. Textes de l'interface, messages, commits et PR 
 - Avant chaque mise à jour, `deploy/update.sh` sauvegarde la base puis contrôle `/up` (base et Redis compris).
 - Sauvegardes chaque nuit, copiées chiffrées chez Cloudflare R2 (base et fichiers, `.env.offsite`).
 - Sentry (`SENTRY_LARAVEL_DSN`) reçoit les erreurs : ne jamais y envoyer de données personnelles.
+- Données fictives (`app:preprod-data`, téléphones `07 99 …`, références `DEMO-`) : préproduction et développement
+  seulement, **jamais en production**. Ne pas affaiblir les verrous de la commande ; ne jamais restaurer une
+  sauvegarde de la préproduction dans la production.
 
 ## Tests et style
 ```bash

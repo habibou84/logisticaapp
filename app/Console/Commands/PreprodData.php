@@ -70,6 +70,10 @@ class PreprodData extends Command
 
     private const GRID_NAME = 'Clients fictifs (préproduction)';
 
+    private const ALLOWED_ENVIRONMENTS = ['local', 'testing', 'staging'];
+
+    private const PRODUCTION_HOST = 'app.logisticadelivery.com';
+
     protected $signature = 'app:preprod-data
         {--days=30 : Nombre de jours d\'historique (aujourd\'hui compris)}
         {--per-day=18 : Courses par jour, environ}
@@ -117,8 +121,8 @@ class PreprodData extends Command
 
     public function handle(): int
     {
-        if (app()->environment('production')) {
-            $this->error('Refusé : APP_ENV=production. Ces données fictives sont réservées à la préproduction et aux postes de développement.');
+        if (($refusal = $this->refusal()) !== null) {
+            $this->error("Refusé : {$refusal} Ces données fictives sont réservées à la préproduction et aux postes de développement.");
 
             return self::FAILURE;
         }
@@ -196,6 +200,26 @@ class PreprodData extends Command
 
             public function dispatch(int $companyId, int $merchantId, string $event, array $data): void {}
         });
+    }
+
+    /**
+     * Ces données ne doivent jamais aller en production : trois verrous indépendants, pour qu'un seul réglage
+     * faux ne suffise pas. Environnement de développement, de test ou de préproduction seulement ; jamais
+     * l'adresse de la production ; préproduction reconnue à son code d'accès (posé par deploy/install.sh).
+     */
+    private function refusal(): ?string
+    {
+        if (! app()->environment(self::ALLOWED_ENVIRONMENTS)) {
+            return 'APP_ENV='.app()->environment().' (permis : '.implode(', ', self::ALLOWED_ENVIRONMENTS).').';
+        }
+        if (strcasecmp((string) parse_url((string) config('app.url'), PHP_URL_HOST), self::PRODUCTION_HOST) === 0) {
+            return 'APP_URL est l\'adresse de la production ('.self::PRODUCTION_HOST.').';
+        }
+        if (app()->environment('staging') && (string) config('platform.preprod_access_code') === '') {
+            return 'préproduction sans code d\'accès (PREPROD_ACCESS_CODE vide) : est-ce bien la préproduction ?';
+        }
+
+        return null;
     }
 
     // ───────────────────────────── Référentiel ─────────────────────────────
