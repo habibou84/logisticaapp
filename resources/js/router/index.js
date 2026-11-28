@@ -212,6 +212,7 @@ const routes = [
       { path: 'stock', component: () => import('../views/admin/Stock.vue'), meta: { permission: 'stock.manage' } },
       { path: 'caisse', component: () => import('../views/courier/Wallet.vue'), meta: { title: 'Ma caisse' } },
       { path: 'messages', component: () => import('../views/courier/Messages.vue'), meta: { title: 'Consignes de l\'agence', back: true } },
+      { path: 'remise/:merchant(\\d+)', component: () => import('../views/courier/ReturnConfirm.vue'), meta: { title: 'Remise au client', back: true } },
       { path: 'retours/:id(\\d+)', component: () => import('../views/courier/ReturnHandOver.vue'), meta: { title: 'Remise au client', back: true } },
       { path: 'evenements/:id(\\d+)', component: () => import('../views/courier/FieldEvent.vue'), meta: { title: 'Mon signalement', back: true } },
       { path: 'vehicule', component: () => import('../views/courier/MyVehicle.vue'), meta: { title: 'Mon véhicule', back: true } },
