@@ -14,15 +14,6 @@
       <RouterLink to="/admin/activite/mural" class="btn-secondary">Écran mural</RouterLink>
     </div>
 
-    <!-- Activité : e-commerce, distribution, MAD (comptes limités : leurs activités seulement) -->
-    <div v-if="activityChoices.length > 1" class="flex flex-wrap gap-2" role="group" aria-label="Activité">
-      <button
-        v-for="a in [{ value: '', label: 'Toutes' }, ...activityChoices]" :key="a.value" type="button" :aria-pressed="activity === a.value"
-        :class="['rounded-full px-3 py-1.5 text-sm font-medium', activity === a.value ? 'bg-slate-900 text-white' : 'bg-white ring-1 ring-slate-300 text-slate-700']"
-        @click="setActivity(a.value)"
-      >{{ a.label }}</button>
-    </div>
-
     <!-- Chiffres de l'équipe -->
     <div class="grid grid-cols-2 lg:grid-cols-6 gap-3">
       <div class="card p-3">
@@ -312,7 +303,7 @@ import { downloadCsv } from '../../../components/stats/chart'
 import { useAuthStore } from '../../../stores/auth'
 import { useToastStore } from '../../../stores/toasts'
 import { money, telLink, whatsappLink } from '../../../utils/format'
-import { myActivities } from '../../../utils/activities'
+import { useActivityFilterStore } from '../../../stores/activityFilter'
 
 defineProps({ embedded: { type: Boolean, default: false } })
 
@@ -363,9 +354,10 @@ const isFuture = ref(false)
 // Réassigner : aujourd'hui et les jours à venir
 const canAct = computed(() => isToday.value || isFuture.value)
 const closesAt = ref(null)
-// Activité suivie (?activite=) : e-commerce, distribution, MAD ; seulement celles du compte
-const activityChoices = computed(() => myActivities(auth.user).map((a) => ({ value: a.value, label: a.value === 'mad' ? 'MAD' : a.label })))
-const activity = ref(activityChoices.value.some((a) => a.value === route.query.activite) ? route.query.activite : '')
+// Activité suivie : choix commun aux écrans Courses (au-dessus des onglets) ; ?activite= dans l'adresse l'impose
+const activityFilter = useActivityFilterStore()
+if (route.query.activite) activityFilter.set(route.query.activite)
+const activity = computed(() => activityFilter.current)
 const lots = ref([])
 const couriers = ref([])
 const totals = ref({})
@@ -465,10 +457,8 @@ function changeDay() {
   load()
 }
 
-function setActivity(value) {
-  activity.value = value
-  changeDay()
-}
+// Autre activité choisie au-dessus des onglets
+watch(activity, () => changeDay())
 
 async function loadMissions(c) {
   missionsLoading.value = true
