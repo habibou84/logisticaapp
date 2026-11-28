@@ -61,12 +61,18 @@
             <p>{{ order.delivery.address || '—' }}</p>
             <p v-if="order.delivery.landmark" class="text-slate-600">Repère : {{ order.delivery.landmark }}</p>
             <p v-if="order.delivery.scheduled_date">
-              {{ order.status === 'delivered' ? 'Livrée le' : 'Date de livraison :' }} {{ date(order.delivery.scheduled_date) }} {{ order.delivery.time_slot && order.status !== 'delivered' ? `(${order.delivery.time_slot}h)` : '' }}
+              {{ order.status === 'delivered' ? 'Livrée le' : 'Date de livraison :' }} {{ date(order.delivery.scheduled_date) }}<strong v-if="order.delivery.time && order.status !== 'delivered'"> à {{ hour(order.delivery.time) }}</strong> {{ !order.delivery.time && order.delivery.time_slot && order.status !== 'delivered' ? `(${order.delivery.time_slot}h)` : '' }}
               <span v-if="order.delivery.first_date && order.delivery.first_date !== order.delivery.scheduled_date" class="block text-xs text-slate-600">Prévue d'abord le {{ date(order.delivery.first_date) }}</span>
             </p>
             <p v-if="order.delivery_courier" class="pt-1">Livreur : <strong>{{ order.delivery_courier.name }}</strong></p>
             <button v-if="canEditDelivery" class="text-blue-600 text-xs underline pt-1" @click="openEdit">Modifier la livraison</button>
           </div>
+        </div>
+
+        <!-- Consignes du client signalées par le livreur (heure, personne, lieu, repère) -->
+        <div v-if="order.instructions?.length" class="rounded-lg bg-sky-50 ring-1 ring-sky-200 px-4 py-3 text-sm text-sky-900 space-y-0.5">
+          <p class="font-semibold"><Icone nom="note" taille="petite" class="inline align-[-0.15em]" /> Consignes du client</p>
+          <p v-for="c in order.instructions" :key="c.id">{{ c.label }}<template v-if="c.note"> : <strong>{{ c.note }}</strong></template> <span class="text-sky-700">· {{ c.by }}, {{ dateTime(c.at) }}</span></p>
         </div>
 
         <!-- Report ou retour signalé par le livreur : à valider avant qu'il prenne effet -->
@@ -296,7 +302,7 @@ import { useAuthStore } from '../../stores/auth'
 import { useToastStore } from '../../stores/toasts'
 import { orderChanges, lastOrderChange } from '../../composables/useRealtime'
 import DepartmentTrace from '../../components/departments/DepartmentTrace.vue'
-import { date, dateTime, isCollect, money, shipmentLabel, telLink } from '../../utils/format'
+import { date, dateTime, hour, isCollect, money, shipmentLabel, telLink } from '../../utils/format'
 import { activityBadge } from '../../utils/activities'
 import SupplementsModal from '../../components/SupplementsModal.vue'
 import OrderRatings from '../../components/OrderRatings.vue'

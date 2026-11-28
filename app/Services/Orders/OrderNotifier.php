@@ -104,7 +104,13 @@ class OrderNotifier
 
             case OrderEventType::StatusChanged:
             case OrderEventType::Incident:
-                [$toMerchant, $toStaff] = $this->forStatus($order, $event, $actorIsMerchant, $reason, $note);
+                // Report ou retour signalé par le livreur, à valider (avant ou après le départ)
+                $proposal = $event->type === OrderEventType::Incident
+                    ? OrderProposal::withoutGlobalScopes()->where('order_event_id', $event->id)->first() : null;
+                [$toMerchant, $toStaff] = $proposal !== null ? [
+                    ['proposal', "À confirmer : {$code}", "Le livreur indique : {$reason}.{$note} {$proposal->summary()} : confirmez-le ou refusez-le dans le suivi du colis."],
+                    ['proposal', "À valider : {$code}", trim("{$reason}{$note}")." · {$proposal->summary()} demandé par le livreur."],
+                ] : $this->forStatus($order, $event, $actorIsMerchant, $reason, $note);
                 break;
 
             default:
@@ -159,10 +165,7 @@ class OrderNotifier
                 : [['delivered', "Colis {$code} livré", 'Votre colis a été livré.'
                     .($order->received_by_name ? " Reçu par {$order->received_by_name}".($order->received_by_role ? " ({$order->received_by_role})" : '').'.' : '')], $this->moneyAlert($order, $note)],
             // Report ou retour signalé par le livreur, à valider : le client confirme ou refuse dans son espace
-            OrderStatus::DeliveryFailed => ($proposal = OrderProposal::withoutGlobalScopes()->where('order_event_id', $event->id)->first()) !== null ? [
-                ['proposal', "À confirmer : {$code}", "Le livreur indique : {$reason}.{$note} {$proposal->summary()} : confirmez-le ou refusez-le dans le suivi du colis."],
-                ['proposal', "À valider : {$code}", trim("{$reason}{$note}")." · {$proposal->summary()} demandé par le livreur."],
-            ] : [
+            OrderStatus::DeliveryFailed => [
                 ['incident', "Échec de livraison {$code}", "La livraison n'a pas pu être effectuée.{$why}{$note}"
                     // Refusé ou tentatives épuisées : le colis repart chez le client
                     .($order->return_requested && $order->return_cause ? ' '.$order->return_cause->merchantLabel().'.' : '')],

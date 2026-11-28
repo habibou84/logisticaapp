@@ -18,32 +18,46 @@ class IncidentReasonsSeeder extends Seeder
     {
         // [code, libellé, étape, famille, activités, options]
         $reasons = [
-            // E-commerce
-            ['unreachable', 'Destinataire injoignable', 'delivery', 'unavailable', ['ecommerce'], ['counts_as_attempt' => true]],
-            ['absent', 'Destinataire absent', 'delivery', 'unavailable', ['ecommerce'], ['counts_as_attempt' => true]],
-            ['wrong_address', 'Adresse introuvable ou erronée', 'delivery', 'address', ['ecommerce'], ['counts_as_attempt' => true]],
-            ['postponed', 'Livraison reportée à la demande du client', 'delivery', 'postponed', ['ecommerce'], ['requires_date' => true]],
+            // E-commerce : livraison impossible maintenant (nouvelle tentative)
+            ['unreachable', 'Le client ne répond pas au téléphone', 'delivery', 'unavailable', ['ecommerce'], ['counts_as_attempt' => true]],
+            ['absent', 'Le client est absent à l\'adresse', 'delivery', 'unavailable', ['ecommerce'], ['counts_as_attempt' => true]],
+            ['wrong_address', 'Je ne trouve pas l\'adresse', 'delivery', 'address', ['ecommerce'], ['counts_as_attempt' => true, 'destination_effect' => 'check_address']],
+            ['wrong_number', 'Le numéro du client est faux', 'delivery', 'address', ['ecommerce'], ['counts_as_attempt' => true, 'destination_effect' => 'check_phone']],
             ['no_money', 'Le client n\'a pas l\'argent', 'delivery', 'recipient', ['ecommerce'], ['counts_as_attempt' => true]],
-            ['refused', 'Colis refusé par le client', 'delivery', 'recipient', ['ecommerce'], ['counts_as_attempt' => true, 'triggers_return' => true]],
-            ['other', 'Autre (préciser dans la note)', 'both', 'other', ['ecommerce'], ['counts_as_attempt' => true]],
-            // Toutes activités
-            ['damaged', 'Colis endommagé', 'both', 'other', null, []],
-            ['merchant_unavailable', 'Marchand absent ou injoignable', 'pickup', 'pickup', null, []],
-            ['package_not_ready', 'Colis pas prêt', 'pickup', 'pickup', null, []],
-            // E-commerce : refus et annulations (retour au client, après validation)
+            ['inaccessible', 'Zone inaccessible (route coupée, pluie…)', 'delivery', 'address', ['ecommerce'], []],
+            ['refuses_location', 'Le client refuse de donner sa position', 'delivery', 'address', ['ecommerce'], ['counts_as_attempt' => true]],
+            // Autre date : report (à valider)
+            ['postponed', 'Le client demande à être livré un autre jour', 'delivery', 'postponed', ['ecommerce'], ['requires_date' => true]],
+            ['travelling', 'Le client est en voyage, pas en ville', 'delivery', 'postponed', ['ecommerce'], ['requires_date' => true, 'note_hint' => 'Date de retour annoncée, précisions']],
+            ['other_address_later', 'Le client veut être livré à une autre adresse un autre jour', 'delivery', 'postponed', ['ecommerce'], ['requires_date' => true, 'requires_note' => true, 'note_hint' => 'La nouvelle adresse']],
+            // Le client ne veut pas du colis : retour au marchand (à valider)
+            ['refused', 'Le client refuse le colis', 'delivery', 'recipient', ['ecommerce'], ['counts_as_attempt' => true, 'triggers_return' => true, 'note_hint' => 'Raison donnée par le client']],
             ['recipient_cancelled', 'Le client annule la commande', 'delivery', 'recipient', ['ecommerce'], ['counts_as_attempt' => true, 'triggers_return' => true]],
             ['not_ordered', 'Le client dit ne pas avoir commandé', 'delivery', 'recipient', ['ecommerce'], ['counts_as_attempt' => true, 'triggers_return' => true, 'requires_note' => true]],
-            ['not_compliant', 'Produit non conforme à la commande', 'delivery', 'recipient', ['ecommerce'], ['counts_as_attempt' => true, 'triggers_return' => true, 'photo' => 'required']],
-            ['price_disputed', 'Le client conteste le prix', 'delivery', 'recipient', ['ecommerce'], ['counts_as_attempt' => true, 'requires_note' => true]],
-            ['unsafe', 'Situation dangereuse, client agressif', 'both', 'other', null, ['requires_note' => true]],
+            ['not_compliant', 'Le produit ne correspond pas à la commande', 'delivery', 'recipient', ['ecommerce'], ['counts_as_attempt' => true, 'triggers_return' => true, 'photo' => 'required']],
+            ['already_received', 'Le client a déjà reçu ce colis (commande en double)', 'delivery', 'recipient', ['ecommerce'], ['counts_as_attempt' => true, 'triggers_return' => true]],
+            ['price_disputed', 'Le client conteste le prix', 'delivery', 'recipient', ['ecommerce'], ['counts_as_attempt' => true, 'requires_note' => true, 'note_hint' => 'Prix annoncé par le client']],
+            // Problème grave
+            ['unsafe', 'Client agressif, situation dangereuse', 'both', 'other', null, ['requires_note' => true]],
+            ['fraud', 'Je soupçonne une fraude (faux billets…)', 'delivery', 'other', ['ecommerce'], ['requires_note' => true]],
+            ['parcel_missing', 'Le colis a disparu, ou on me l\'a volé', 'delivery', 'other', null, ['requires_note' => true]],
+            ['other', 'Autre (préciser dans la note)', 'both', 'other', ['ecommerce'], ['counts_as_attempt' => true, 'requires_note' => true]],
+            // Toutes activités
+            ['damaged', 'Le colis est abîmé', 'both', 'other', null, ['photo' => 'required', 'triggers_return' => true, 'requires_note' => true, 'note_hint' => 'Abîmé chez le marchand ou pendant le transport ?']],
+            // Ramassage chez le marchand
+            ['merchant_unavailable', 'Le marchand est absent ou ne répond pas', 'pickup', 'pickup', null, []],
+            ['package_not_ready', 'Le colis n\'est pas prêt', 'pickup', 'pickup', null, []],
+            ['p_packaging', 'L\'emballage est insuffisant : je ne ramasse pas', 'pickup', 'pickup', null, ['photo' => 'optional']],
+            ['p_cancelled', 'Le marchand annule', 'pickup', 'pickup', null, []],
+            ['p_mismatch', 'Le colis ne correspond pas à ce qui a été déclaré (poids, taille)', 'pickup', 'info', null, ['effect' => 'note', 'requires_note' => true, 'note_hint' => 'Ce qui ne correspond pas']],
 
-            // Information : la course continue, rien ne change de statut (le livreur choisit au lieu d'écrire)
-            ['i_time_slot', 'Le client demande un créneau', 'delivery', 'info', null, ['effect' => 'note', 'requires_note' => true, 'visible_to_client' => true]],
-            ['i_call_back', 'Le client demande d\'être rappelé', 'delivery', 'info', null, ['effect' => 'note', 'visible_to_client' => true]],
-            ['i_waiting', 'Client en route : j\'attends sur place', 'delivery', 'info', null, ['effect' => 'note', 'visible_to_client' => true]],
-            ['i_third_party', 'Remise à un tiers (gardien, voisin, collègue)', 'delivery', 'info', null, ['effect' => 'note', 'requires_note' => true, 'visible_to_client' => true]],
-            ['i_meeting_point', 'Lieu de rencontre changé', 'delivery', 'info', null, ['effect' => 'note', 'requires_note' => true, 'visible_to_client' => true]],
-            ['i_landmark', 'Repère, indications d\'accès', 'both', 'info', null, ['effect' => 'note', 'requires_note' => true]],
+            // Consignes du client : la course continue, rien ne change de statut
+            ['i_time_slot', 'Le client veut être livré à une heure précise', 'delivery', 'info', null, ['effect' => 'note', 'asks' => 'delivery_time', 'visible_to_client' => true]],
+            ['i_call_back', 'Le client demande qu\'on le rappelle', 'delivery', 'info', null, ['effect' => 'note', 'asks' => 'time', 'visible_to_client' => true]],
+            ['i_waiting', 'Le client est en route, j\'attends sur place', 'delivery', 'info', null, ['effect' => 'note', 'visible_to_client' => true]],
+            ['i_third_party', 'Le client veut que le colis soit remis à quelqu\'un d\'autre (gardien, voisin, collègue)', 'delivery', 'info', null, ['effect' => 'note', 'requires_note' => true, 'note_hint' => 'Nom de la personne', 'visible_to_client' => true]],
+            ['i_meeting_point', 'Le client donne un autre lieu de rencontre, tout près', 'delivery', 'info', null, ['effect' => 'note', 'requires_note' => true, 'note_hint' => 'Le lieu de rencontre', 'visible_to_client' => true]],
+            ['i_landmark', 'Le client donne un repère pour trouver l\'adresse', 'both', 'info', null, ['effect' => 'note', 'requires_note' => true, 'note_hint' => 'Le repère']],
 
             // Distribution et MAD : indisponible (nouvelle tentative)
             ['d_unreachable', 'Injoignable', 'delivery', 'unavailable', self::DIST, ['counts_as_attempt' => true]],

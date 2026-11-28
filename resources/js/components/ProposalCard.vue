@@ -16,7 +16,10 @@
     <template v-if="proposal.can_decide">
       <div v-if="proposal.kind === 'reschedule'">
         <label :class="mobile ? 'm-label' : 'label'" :for="`proposal-date-${proposal.id}`">Date de livraison</label>
-        <input :id="`proposal-date-${proposal.id}`" v-model="day" type="date" :min="today()" :class="mobile ? 'm-input' : 'input'">
+        <div class="flex gap-2">
+          <input :id="`proposal-date-${proposal.id}`" v-model="day" type="date" :min="today()" :class="mobile ? 'm-input' : 'input'">
+          <input v-model="time" type="time" step="300" :class="[mobile ? 'm-input' : 'input', 'w-32']" aria-label="Heure (facultatif)">
+        </div>
       </div>
       <p v-if="error" class="text-sm text-red-600">{{ error }}</p>
       <div class="grid grid-cols-2 gap-2">
@@ -51,10 +54,12 @@ const toasts = useToastStore()
 const busy = ref(false)
 const error = ref('')
 const day = ref(null)
+const time = ref('')
 
 // Date proposée par le livreur, ou aujourd'hui si elle est passée
 watch(() => props.proposal, (p) => {
   day.value = p.proposed_date && p.proposed_date >= today() ? p.proposed_date : today()
+  time.value = p.proposed_time || ''
   error.value = ''
 }, { immediate: true })
 
@@ -62,7 +67,7 @@ async function approve() {
   busy.value = true
   error.value = ''
   try {
-    const payload = props.proposal.kind === 'reschedule' ? { date: day.value } : {}
+    const payload = props.proposal.kind === 'reschedule' ? { date: day.value, time: time.value || undefined } : {}
     const { data } = await http.post(`/orders/${props.orderId}/proposal/approve`, payload)
     toasts.success(props.proposal.kind === 'reschedule' ? 'Report validé.' : 'Retour validé.')
     emit('updated', data.data)

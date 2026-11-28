@@ -61,7 +61,8 @@ enum OrderStatus: string
             // Échec au ramassage : retour à « Validée » pour réassignation
             self::PickupAssigned => [self::PickupInProgress, self::PickedUp, self::Confirmed, self::Cancelled],
             self::PickupInProgress => [self::PickedUp, self::Confirmed, self::Cancelled],
-            self::PickedUp => [self::AtHub, self::OutForDelivery, self::Lost],
+            // Report validé alors que le livreur a encore le colis (client joint avant le départ)
+            self::PickedUp => [self::AtHub, self::OutForDelivery, self::Rescheduled, self::Lost],
             // « Retourné » direct = remis en stock à l'entrepôt (commande d'entrepôt)
             self::AtHub => [self::OutForDelivery, self::Rescheduled, self::Returned, self::Lost],
             self::DeliveryAssigned => [self::OutForDelivery, self::AtHub, self::Lost],

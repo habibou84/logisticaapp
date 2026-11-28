@@ -319,6 +319,8 @@ class OrderActionController extends Controller
             'note' => ['required_without:incident_reason_id', 'nullable', 'string', 'max:2000'],
             // Événement de la liste (« Le client demande un créneau »…) : simple information, la course continue
             'incident_reason_id' => ['nullable', 'integer'],
+            // Heure donnée par le client (« 17:30 ») : heure de livraison ou heure de rappel selon l'événement
+            'time' => ['nullable', 'date_format:H:i'],
             'visible_to_merchant' => ['sometimes', 'boolean'],
             'lat' => ['nullable', 'numeric', 'between:-90,90'],
             'lng' => ['nullable', 'numeric', 'between:-180,180'],
@@ -331,8 +333,15 @@ class OrderActionController extends Controller
                 throw new BusinessRuleException('Cet événement ne se signale pas comme une note : utilisez « Signaler » sur la course.', 'incident_reason_id');
             }
             if ($reason->requires_note && blank($data['note'] ?? null)) {
-                throw new BusinessRuleException("« {$reason->label} » : précisez dans la note.", 'note');
+                throw new BusinessRuleException("« {$reason->label} » : ".($reason->note_hint ? mb_strtolower($reason->note_hint).' à préciser.' : 'précisez dans la note.'), 'note');
             }
+            if ($reason->asks === 'delivery_time' && blank($data['time'] ?? null)) {
+                throw new BusinessRuleException("« {$reason->label} » : indiquez l'heure.", 'time');
+            }
+
+            $this->orders->addInformation($request->user(), $order, $reason, $data['note'] ?? null, $data['time'] ?? null, $data['lat'] ?? null, $data['lng'] ?? null);
+
+            return response()->json(['message' => 'Information envoyée.'], 201);
         }
 
         $this->orders->addNote(

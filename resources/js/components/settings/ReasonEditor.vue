@@ -29,6 +29,21 @@
       </select>
     </div>
 
+    <div v-if="tab !== 'follow_up'" class="grid sm:grid-cols-2 gap-3">
+      <div>
+        <label class="label" for="reason-asks">Le livreur saisit aussi</label>
+        <select id="reason-asks" v-model="model.asks" class="input">
+          <option :value="null">Rien de plus</option>
+          <option value="delivery_time">L'heure de livraison demandée (affichée partout)</option>
+          <option value="time">Une heure (ex. heure de rappel)</option>
+        </select>
+      </div>
+      <div>
+        <label class="label" for="reason-hint">Aide à la saisie de la note</label>
+        <input id="reason-hint" v-model="model.note_hint" class="input" maxlength="120" placeholder="Ex. : Nom de la personne">
+      </div>
+    </div>
+
     <fieldset v-if="tab !== 'follow_up'">
       <legend class="label">Activités (rien de coché : toutes)</legend>
       <div class="flex flex-wrap gap-3">

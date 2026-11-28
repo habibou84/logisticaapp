@@ -17,7 +17,12 @@
       <p v-if="order.status === 'delivered' && order.delivery.first_date && order.delivery.scheduled_date && order.delivery.first_date !== order.delivery.scheduled_date" class="rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-700">
         Livrée le <strong>{{ longDay(order.delivery.scheduled_date) }}</strong> · prévue d'abord le {{ longDay(order.delivery.first_date) }}
       </p>
-      <p v-if="plannedDay" class="flex items-center gap-2 rounded-xl bg-sky-50 px-3 py-2 text-sm text-sky-900"><StatusIcon name="calendar" class="h-4 w-4 shrink-0" /><span>Livraison prévue le <strong>{{ plannedDay }}</strong></span></p>
+      <p v-if="plannedDay" class="flex items-center gap-2 rounded-xl bg-sky-50 px-3 py-2 text-sm text-sky-900"><StatusIcon name="calendar" class="h-4 w-4 shrink-0" /><span>Livraison prévue le <strong>{{ plannedDay }}</strong><template v-if="order.delivery.time"> à <strong>{{ clockTime(order.delivery.time) }}</strong></template></span></p>
+      <p v-else-if="order.delivery.time && !isFinal" class="flex items-center gap-2 rounded-xl bg-sky-50 px-3 py-2 text-sm text-sky-900"><Icone nom="rappel" taille="petite" /><span>Le client veut être livré à <strong>{{ clockTime(order.delivery.time) }}</strong></span></p>
+      <!-- Consignes du client données au livreur -->
+      <div v-if="order.instructions?.length && !isFinal" class="rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-700 space-y-0.5">
+        <p v-for="c in order.instructions" :key="c.id">{{ c.label }}<template v-if="c.note"> : <strong>{{ c.note }}</strong></template></p>
+      </div>
 
       <!-- Note de suivi de l'agence, quand elle est montrée au client (Réglages › Motifs) -->
       <p v-if="order.follow_up" class="rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-700"><Icone nom="epingle" taille="petite" class="inline align-[-0.15em]" /> <strong>{{ order.follow_up.label }}</strong><template v-if="order.follow_up.note"> · {{ order.follow_up.note }}</template></p>
@@ -313,7 +318,7 @@ import { useAuthStore } from '../../stores/auth'
 import { useToastStore } from '../../stores/toasts'
 import { orderChanges, lastOrderChange } from '../../composables/useRealtime'
 import DepartmentTrace from '../../components/departments/DepartmentTrace.vue'
-import { localPhone, money, shipmentLabel, telLink, today } from '../../utils/format'
+import { hour as clockTime, localPhone, money, shipmentLabel, telLink, today } from '../../utils/format'
 import { BEFORE_PICKUP, FINAL } from '../../utils/workflow'
 import { siteOrigin } from '../../native'
 import StarRating from '../../components/StarRating.vue'

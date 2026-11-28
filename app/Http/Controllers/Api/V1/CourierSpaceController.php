@@ -49,6 +49,9 @@ class CourierSpaceController extends Controller
                 ...OrderController::LIST_RELATIONS,
                 'billingPlan',
                 'expenses' => fn ($e) => $e->active()->where('courier_id', $courier->id)->orderBy('id'),
+                // Consignes du client déjà signalées, report ou retour en attente de validation
+                'instructionEvents' => fn ($q) => $q->with('incidentReason'),
+                'pendingProposal' => fn ($q) => $q->with(['proposer', 'reason', 'event']),
             ])])
             ->orderByRaw("CASE type WHEN 'pickup' THEN 0 WHEN 'delivery' THEN 1 ELSE 2 END")
             // Tournée organisée : livraisons dans l'ordre choisi, les nouvelles ensuite

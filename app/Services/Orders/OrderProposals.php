@@ -2,6 +2,7 @@
 
 namespace App\Services\Orders;
 
+use App\Enums\AssignmentType;
 use App\Enums\OrderEventType;
 use App\Enums\OrderStatus;
 use App\Enums\ReturnCause;
@@ -26,7 +27,7 @@ class OrderProposals
         private readonly OrderJournal $journal,
     ) {}
 
-    public function propose(User $courier, Order $order, OrderEvent $event, IncidentReason $reason, ?string $date): OrderProposal
+    public function propose(User $courier, Order $order, OrderEvent $event, IncidentReason $reason, ?string $date, ?string $time = null): OrderProposal
     {
         // Une seule proposition en cours par course : la nouvelle remplace l'ancienne
         $this->settle($order, $courier);
@@ -39,45 +40,59 @@ class OrderProposals
             'proposed_by' => $courier->id,
             'kind' => $reason->requires_date ? OrderProposal::RESCHEDULE : OrderProposal::RETURN,
             'proposed_date' => $reason->requires_date ? $date : null,
+            'proposed_time' => $reason->requires_date ? $time : null,
             'status' => OrderProposal::PENDING,
         ]);
     }
 
     /**
      * Validation : le report (à la date proposée, ou à une autre si elle est passée ou corrigée) ou le retour prend
-     * effet, comme si le motif n'avait rien demandé.
+     * effet, comme si le motif n'avait rien demandé. Proposé avant le départ du livreur : sa mission est retirée.
      */
-    public function approve(User $actor, Order $order, ?string $date = null, ?string $note = null): Order
+    public function approve(User $actor, Order $order, ?string $date = null, ?string $note = null, ?string $time = null): Order
     {
         $proposal = $this->pending($order);
         $note = filled($note) ? trim($note) : null;
 
-        return DB::transaction(function () use ($actor, $order, $proposal, $date, $note) {
+        return DB::transaction(function () use ($actor, $order, $proposal, $date, $note, $time) {
             $this->decide($actor, $proposal, OrderProposal::APPROVED, $note);
+            $order = Order::query()->lockForUpdate()->findOrFail($order->id);
+            if ($order->status->isFinal() || $order->status === OrderStatus::OutForDelivery) {
+                throw new BusinessRuleException('La course a avancé : ce n\'est plus à valider.', 'status');
+            }
+            $what = $proposal->kind === OrderProposal::RESCHEDULE ? 'Report validé' : 'Retour validé';
+
+            // Proposé avant le départ : la livraison prévue est annulée (le livreur est prévenu)
+            if ($order->activeAssignment(AssignmentType::Delivery) !== null) {
+                $order = app(OrderDispatcher::class)->unassign($actor, $order, AssignmentType::Delivery, $this->line($actor, $what, $note));
+            }
 
             if ($proposal->kind === OrderProposal::RESCHEDULE) {
                 $date ??= $proposal->proposed_date?->toDateString();
                 if ($date === null || Carbon::parse($date)->isBefore(today())) {
                     throw new BusinessRuleException('La date proposée est passée : choisissez une nouvelle date.', 'date');
                 }
-                $order = app(OrderDecisions::class)->decide($actor, $order, [
-                    'decision' => OrderDecisions::REDELIVER,
-                    'date' => $date,
-                    'note' => $this->line($actor, 'Report validé', $note),
+                if ($order->return_requested) {
+                    throw new BusinessRuleException('Le retour de ce colis est demandé : il ne peut plus être reporté.', 'date');
+                }
+                if ($order->attempts_count >= $order->max_attempts) {
+                    throw new BusinessRuleException('Nombre maximal de tentatives atteint : organisez le retour du colis.', 'date');
+                }
+                $order = $this->workflow()->transition($actor, $order, OrderStatus::Rescheduled, [
+                    'rescheduled_to' => $date,
+                    'delivery_time' => $time ?? $proposal->proposed_time,
+                    'note' => $this->line($actor, $what, $note),
+                    'proposal_approved' => true,
                 ]);
             } else {
-                $order = Order::query()->lockForUpdate()->findOrFail($order->id);
-                if ($order->status !== OrderStatus::DeliveryFailed) {
-                    throw new BusinessRuleException('La course a avancé : ce retour n\'est plus à valider.', 'status');
-                }
                 $order->markForReturn(ReturnCause::Refused);
                 $order->save();
                 $this->journal->record($order, $actor, OrderEventType::ReturnRequested, [
-                    'note' => $this->line($actor, 'Retour validé', $note),
+                    'note' => $this->line($actor, $what, $note),
                 ]);
             }
 
-            $this->closeReport($actor, $proposal, ($proposal->kind === OrderProposal::RESCHEDULE ? 'Report validé' : 'Retour validé').($note ? " : {$note}" : ''));
+            $this->closeReport($actor, $proposal, $what.($note ? " : {$note}" : ''));
 
             return $order->fresh();
         });
@@ -124,6 +139,11 @@ class OrderProposals
         }
 
         return $user->can('orders.dispatch');
+    }
+
+    private function workflow(): OrderWorkflow
+    {
+        return app(OrderWorkflow::class);
     }
 
     private function pending(Order $order): OrderProposal

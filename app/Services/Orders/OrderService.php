@@ -13,6 +13,7 @@ use App\Models\Hub;
 use App\Models\IncidentReason;
 use App\Models\Merchant;
 use App\Models\Order;
+use App\Models\OrderProposal;
 use App\Models\Product;
 use App\Models\Recipient;
 use App\Models\User;
@@ -362,6 +363,41 @@ class OrderService
             // Une note du client est toujours visible par lui
             'visible_to_merchant' => $actor->merchant_id !== null || $visibleToMerchant,
         ]);
+    }
+
+    /**
+     * Consigne du client signalée par le livreur (événement « information ») : notée dans l'historique ; l'heure de
+     * livraison demandée et le repère sont aussi enregistrés sur la course (affichés au livreur, à l'équipe, au client).
+     */
+    public function addInformation(User $actor, Order $order, IncidentReason $reason, ?string $note, ?string $time, ?float $lat = null, ?float $lng = null): void
+    {
+        $note = filled($note) ? trim($note) : null;
+        $hour = $time ? OrderProposal::hour($time) : null;
+        $text = match (true) {
+            $reason->asks === 'delivery_time' && $hour !== null => "À {$hour}".($note ? " · {$note}" : ''),
+            $reason->asks === 'time' && $hour !== null => "Vers {$hour}".($note ? " · {$note}" : ''),
+            default => $note,
+        };
+
+        DB::transaction(function () use ($actor, $order, $reason, $note, $time, $text, $lat, $lng) {
+            if ($reason->asks === 'delivery_time' && $time !== null) {
+                $order->forceFill(['delivery_time' => $time])->save();
+            }
+            // Repère : gardé sur la course et dans le carnet du destinataire (prochaines livraisons)
+            if ($reason->code === 'i_landmark' && $note !== null) {
+                $landmark = mb_substr(trim(($order->delivery_landmark ? $order->delivery_landmark.' · ' : '').$note), 0, 255);
+                $order->forceFill(['delivery_landmark' => $landmark])->save();
+                $order->recipient?->forceFill(['landmark' => $landmark])->save();
+            }
+            $this->journal->record($order, $actor, OrderEventType::Note, [
+                'note' => $text,
+                'incident_reason_id' => $reason->id,
+                'lat' => $lat,
+                'lng' => $lng,
+                'visible_to_merchant' => (bool) $reason->visible_to_client,
+                'meta' => array_filter(['time' => $time]),
+            ]);
+        });
     }
 
     /** Le destinataire peut envoyer sa position depuis le lien de suivi tant que le colis n'est pas livré */
