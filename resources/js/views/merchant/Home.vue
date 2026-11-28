@@ -1,5 +1,6 @@
 <template>
   <div class="space-y-5 pb-14 lg:pb-0">
+    <ReturnHandoverBanner v-if="auth.user?.merchant_id" />
     <ActivitySwitch @change="reload" />
     <div class="grid gap-4 lg:grid-cols-3 lg:gap-6">
       <!-- Carte du jour : les courses de la période en un coup d'œil (un appui filtre la liste) -->
@@ -248,6 +249,7 @@ import StatusIcon from '../../components/mobile/StatusIcon.vue'
 import AccountTile from '../../components/client/AccountTile.vue'
 import InstallBanner from '../../components/mobile/InstallBanner.vue'
 import PushInvite from '../../components/mobile/PushInvite.vue'
+import ReturnHandoverBanner from '../../components/merchant/ReturnHandoverBanner.vue'
 import PeriodPicker from '../../components/mobile/PeriodPicker.vue'
 import ActivitySwitch from '../../components/client/ActivitySwitch.vue'
 import ForfaitCard from '../../components/client/ForfaitCard.vue'

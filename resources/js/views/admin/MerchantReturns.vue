@@ -11,6 +11,8 @@
     <!-- Activité commune aux écrans Courses -->
     <ActivityFilter note="Colis à rendre et bons de retour de cette activité seulement." />
 
+    <ReturnHandoverReview />
+
     <!-- Colis à rendre, par marchand -->
     <section class="space-y-3">
       <h2 class="font-semibold">À rendre ({{ candidateCount }} colis)</h2>
@@ -84,6 +86,7 @@ import { useRouter } from 'vue-router'
 import CoursesTabs from '../../components/CoursesTabs.vue'
 import ActivityFilter from '../../components/ActivityFilter.vue'
 import { useActivityFilterStore } from '../../stores/activityFilter'
+import ReturnHandoverReview from '../../components/admin/ReturnHandoverReview.vue'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import { useToastStore } from '../../stores/toasts'
 import { dateTime, money } from '../../utils/format'
