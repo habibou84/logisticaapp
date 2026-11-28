@@ -57,7 +57,7 @@ Le script :
 
 1. crée le fichier `.env` de production (mots de passe de la base, clés du temps réel et des notifications
    générés une seule fois) ;
-2. construit les images et démarre les conteneurs ; les migrations s'appliquent au démarrage ;
+2. construit les images, applique les migrations puis démarre les conteneurs ;
 3. demande le **nom de l'entreprise** et le **premier administrateur** (nom, téléphone, mot de passe) ;
 4. active les modules Apache `proxy`, `proxy_http`, `proxy_wstunnel` et `headers` (sans effet sur les
    autres sites), obtient le certificat HTTPS et ajoute le site `app.logisticadelivery.com` ;
@@ -98,8 +98,13 @@ Journal : `/var/log/logistica-update.log` (versions installées, écartées, éc
 bash /opt/logistica/deploy/update.sh
 ```
 
-Récupère la dernière version de la branche suivie, construit les nouvelles images pendant que le site reste
-en ligne, puis redémarre les conteneurs (quelques secondes ; migrations comprises).
+Récupère la dernière version de la branche suivie, construit les nouvelles images et applique les migrations
+pendant que le site reste en ligne, puis bascule sur la nouvelle version : environ une seconde de coupure
+(le journal indique « nouvelle version prête en … s »). Pendant ce court instant, l'interface réessaie seule
+les lectures en échec ; un enregistrement envoyé à ce moment-là affiche une erreur et peut être renvoyé.
+
+Les migrations tournent avec la nouvelle version pendant que l'ancienne sert encore les visites : elles
+doivent rester compatibles avec la version précédente (ajouter avant de retirer).
 
 ## 5. Commandes utiles
 

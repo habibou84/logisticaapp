@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 #
-# Mise à jour : dernière version de la branche suivie, nouvelles images, redémarrage des conteneurs.
-# Les migrations s'appliquent au démarrage du conteneur « app ». À lancer en root :
+# Mise à jour : dernière version de la branche suivie, nouvelles images, migrations, bascule. À lancer en root :
 #
 #   bash /chemin/de/l/application/deploy/update.sh
 #
-# Le site reste en ligne pendant la construction ; la bascule ne coupe que quelques secondes.
+# Le site reste en ligne pendant la construction et les migrations (lancées avec la nouvelle image pendant que
+# l'ancienne version sert encore : elles doivent rester compatibles avec elle, voir CLAUDE.md). Seule la
+# bascule coupe, environ une seconde : le nouveau conteneur « app » n'a presque plus rien à faire au démarrage,
+# et l'interface réessaie seule les lectures qui tombent pendant ce temps.
 
 set -euo pipefail
 
@@ -35,7 +37,20 @@ main() {
     echo "==> Construction des images (le site reste en ligne)"
     docker compose build
 
-    echo "==> Bascule (migrations comprises)"
+    echo "==> Migrations (le site reste en ligne)"
+    docker compose run --rm -T -e CONTAINER_ROLE=migrate app
+
+    # Bascule du site seul, un conteneur à la fois : « docker compose up » d'un bloc arrêterait d'abord TOUS les
+    # conteneurs, Horizon compris (jusqu'à 60 s pour finir ses tâches), avant d'en redémarrer un seul : le site
+    # serait coupé tout ce temps. Ici, PHP-FPM puis Nginx sont remplacés chacun en une fraction de seconde
+    # (Nginx retrouve tout seul la nouvelle adresse de « app » : voir docker/nginx.conf).
+    echo "==> Bascule du site"
+    local started=$SECONDS
+    docker compose up -d --no-deps --wait app
+    docker compose up -d --no-deps --wait web
+    echo "    nouvelle version en ligne en $((SECONDS - started)) s"
+
+    echo "==> Files d'attente, temps réel, tâches planifiées (sans effet sur le site)"
     docker compose up -d --remove-orphans --wait
     docker image prune -f >/dev/null
 

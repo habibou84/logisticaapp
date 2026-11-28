@@ -105,6 +105,9 @@ if [[ -z "$(env_get VAPID_PUBLIC_KEY)" ]]; then
     env_set VAPID_PRIVATE_KEY "$(echo "$vapid" | grep '^VAPID_PRIVATE_KEY=' | cut -d= -f2- | tr -d '\r')"
 fi
 
+step "Base de données (migrations, rôles et droits)"
+compose run --rm -T -e CONTAINER_ROLE=migrate app
+
 step "Démarrage des conteneurs"
 compose up -d --remove-orphans --wait
 compose ps

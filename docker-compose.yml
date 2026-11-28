@@ -2,8 +2,11 @@
 # Rien n'est exposé sur Internet : seul le conteneur « web » écoute, sur 127.0.0.1:${APP_PORT},
 # et Apache (HTTPS, certificat Let's Encrypt) lui transmet les visites (deploy/apache-site.conf).
 #
-#   docker compose up -d --build     # installation et mises à jour (deploy/update.sh)
-#   docker compose exec app php artisan …
+#   bash deploy/install.sh / bash deploy/update.sh   # installation et mises à jour (migrations comprises)
+#   docker compose exec -u www-data app php artisan …
+#
+# Les migrations ne s'appliquent pas au démarrage des conteneurs : elles passent avant, par
+# « docker compose run --rm -e CONTAINER_ROLE=migrate app » (voir deploy/update.sh).
 #
 # Les valeurs ${…} viennent du fichier .env de l'application (même dossier).
 
@@ -22,6 +25,9 @@ x-app: &app
       VITE_REVERB_PORT: ${VITE_REVERB_PORT:-443}
       VITE_REVERB_SCHEME: ${VITE_REVERB_SCHEME:-https}
   restart: unless-stopped
+  # Petit processus d'init : transmet l'arrêt (SIGTERM) à PHP, sinon ignoré par le processus n° 1 du conteneur
+  # (Docker attendait alors 10 s avant de le tuer, à chaque mise à jour)
+  init: true
   volumes:
     - ./.env:/var/www/html/.env:ro
     - storage:/var/www/html/storage
@@ -36,12 +42,15 @@ services:
     <<: *app
     environment:
       CONTAINER_ROLE: app
+    # Prêt = démarrage terminé (/tmp/ready) et PHP-FPM accepte les connexions. Vérifié chaque seconde au
+    # démarrage pour que la bascule d'une mise à jour soit la plus courte possible, puis toutes les 10 s.
     healthcheck:
-      test: ["CMD", "test", "-f", "/tmp/ready"]
-      interval: 5s
+      test: ["CMD-SHELL", "test -f /tmp/ready && php -r 'exit(@fsockopen(\"127.0.0.1\", 9000) ? 0 : 1);'"]
+      interval: 10s
       timeout: 3s
-      retries: 60
+      retries: 3
       start_period: 120s
+      start_interval: 1s
 
   # Files d'attente : messages WhatsApp, notifications, webhooks, rapports
   horizon:
