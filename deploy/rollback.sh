@@ -64,6 +64,10 @@ else
     printf 'APP_VERSION=%s\n' "$target" >> .env
 fi
 chown root:33 .env && chmod 640 .env
+# Site seul d'abord, un conteneur à la fois (coupure d'une fraction de seconde), puis le reste : un « up » d'un bloc
+# arrêterait d'abord tous les conteneurs, Horizon compris, et couperait le site jusqu'à une minute (deploy/update.sh)
+docker compose up -d --no-build --no-deps --wait app
+docker compose up -d --no-build --no-deps --wait web
 docker compose up -d --no-build --remove-orphans --wait
 
 echo "==> Contrôle du site"

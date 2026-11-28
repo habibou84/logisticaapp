@@ -47,8 +47,16 @@ RUN composer install --no-dev --no-scripts --no-autoloader --no-interaction --no
 
 COPY . .
 COPY --from=assets /app/public/build ./public/build
+# Vues compilées dans l'image (pas dans le volume storage partagé entre versions) : chaque version a les siennes
+ENV VIEW_COMPILED_PATH=/var/www/html/bootstrap/cache/views
+# Routes, événements et vues mis en cache ici, une fois pour toutes : le conteneur démarre plus vite et la
+# bascule d'une mise à jour coupe moins longtemps (au démarrage, il ne reste que la configuration : .env)
 RUN composer dump-autoload --optimize --no-dev \
-    && mkdir -p storage/app/public storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
+    && mkdir -p storage/app/public storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache/views \
+    && php artisan route:cache \
+    && php artisan event:cache \
+    && php artisan view:cache \
+    && od -An -N8 -tx1 /dev/urandom | tr -d ' \n' > bootstrap/build-id \
     && chown -R www-data:www-data storage bootstrap/cache
 
 COPY docker/entrypoint.sh /usr/local/bin/app-entrypoint

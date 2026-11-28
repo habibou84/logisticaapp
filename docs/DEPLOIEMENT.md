@@ -56,7 +56,7 @@ Le script :
 
 1. crée le fichier `.env` de production (mots de passe de la base, clés du temps réel et des notifications
    générés une seule fois) ;
-2. construit les images et démarre les conteneurs ; les migrations s'appliquent au démarrage ;
+2. construit les images, applique les migrations puis démarre les conteneurs ;
 3. demande le **nom de l'entreprise** et le **premier administrateur** (nom, téléphone, mot de passe) ;
 4. active les modules Apache `proxy`, `proxy_http`, `proxy_wstunnel` et `headers` (sans effet sur les
    autres sites), obtient le certificat HTTPS et ajoute le site `app.logisticadelivery.com` ;
@@ -161,9 +161,17 @@ bash deploy/update.sh
 
 Étapes : récupère la dernière version de `main`, construit les nouvelles images pendant que le site reste en
 ligne, **sauvegarde la base** (`/var/backups/<projet>/…_avant-<version>.sql.gz`, les 10 dernières gardées),
-redémarre les conteneurs (quelques secondes ; migrations comprises), puis **vérifie que le site répond**
+applique les migrations (le site reste en ligne), bascule sur la nouvelle version, puis **vérifie que le site répond**
 (`/up` contrôle aussi la base et Redis). Si une étape échoue, elle s'arrête et le dit. Les images sont nommées
 d'après la version ; les 3 précédentes restent sur le serveur pour le retour arrière.
+
+**Coupure pendant la bascule : une fraction de seconde.** Le site est basculé seul, un conteneur à la fois
+(PHP-FPM, puis Nginx) ; les files d'attente, le temps réel et les tâches planifiées redémarrent ensuite, sans effet
+sur le site. Le journal indique « version … en ligne en … s ». Pendant ce court instant, l'interface réessaie seule
+les lectures en échec ; un enregistrement envoyé à ce moment-là affiche une erreur et peut être renvoyé.
+
+Les migrations tournent avec la nouvelle version pendant que l'ancienne sert encore les visites : elles doivent
+rester compatibles avec la version précédente (ajouter avant de retirer).
 
 ### Revenir en arrière
 

@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 #
 # Mise à jour : dernière version de la branche suivie (main), nouvelles images, sauvegarde de la base,
-# redémarrage des conteneurs, contrôle du site. Les migrations s'appliquent au démarrage du conteneur « app ».
-# À lancer en root :
+# migrations, bascule, contrôle du site. À lancer en root :
 #
 #   bash /chemin/de/l/application/deploy/update.sh
 #
@@ -10,7 +9,9 @@
 # sinon le commit abrégé. Les images sont nommées d'après la version ; les 3 précédentes sont gardées pour revenir
 # en arrière en quelques secondes (deploy/rollback.sh).
 #
-# Le site reste en ligne pendant la construction ; la bascule ne coupe que quelques secondes.
+# Le site reste en ligne pendant la construction, la sauvegarde et les migrations (lancées avec la nouvelle image
+# pendant que l'ancienne version sert encore : elles doivent rester compatibles avec elle, voir CLAUDE.md). Seule
+# la bascule coupe, une fraction de seconde, et l'interface réessaie seule les lectures qui tombent à ce moment-là.
 
 set -euo pipefail
 
@@ -60,10 +61,12 @@ main() {
     fi
     BACKUP_LOCAL_ONLY=1 bash deploy/backup.sh "avant-$version"
 
-    echo "==> Bascule (migrations comprises)"
+    echo "==> Migrations (le site reste en ligne)"
+    APP_VERSION="$version" docker compose run --rm -T -e CONTAINER_ROLE=migrate app
+
     # Version en service notée dans .env : toute commande « docker compose … » lancée à la main la reprend
     env_set APP_VERSION "$version"
-    APP_VERSION="$version" docker compose up -d --remove-orphans --wait
+    switch_over "$version"
     keep_images "$project-app" "$version"
     keep_images "$project-web" "$version"
     docker image prune -f >/dev/null
@@ -89,6 +92,20 @@ site_up() {
         sleep 3
     done
     curl -fsS -m 10 -o /dev/null "$1"
+}
+
+# Bascule du site seul, un conteneur à la fois, puis le reste. « docker compose up » d'un bloc arrêterait d'abord
+# TOUS les conteneurs, Horizon compris (jusqu'à 60 s pour finir ses tâches), avant d'en redémarrer un seul : le site
+# serait coupé tout ce temps. Ici, PHP-FPM puis Nginx sont remplacés chacun en une fraction de seconde (Nginx
+# retrouve tout seul la nouvelle adresse de « app » : docker/nginx.conf). Même bascule pour deploy/rollback.sh.
+switch_over() {
+    local started=$SECONDS
+    echo "==> Bascule du site"
+    APP_VERSION="$1" docker compose up -d --no-build --no-deps --wait app
+    APP_VERSION="$1" docker compose up -d --no-build --no-deps --wait web
+    echo "    version $1 en ligne en $((SECONDS - started)) s"
+    echo "==> Files d'attente, temps réel, tâches planifiées (sans effet sur le site)"
+    APP_VERSION="$1" docker compose up -d --no-build --remove-orphans --wait
 }
 
 env_get() { grep -E "^$1=" .env | tail -n1 | cut -d= -f2- | sed -e 's/^"//' -e 's/"$//' || true; }
