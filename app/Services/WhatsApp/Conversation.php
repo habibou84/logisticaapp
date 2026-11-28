@@ -60,6 +60,7 @@ class Conversation
         private readonly ZoneMatcher $zoneMatcher,
         private readonly PhoneVerifier $verifier,
         private readonly RescheduleConversation $reschedules,
+        private readonly ReturnConversation $returns,
     ) {}
 
     /**
@@ -98,6 +99,14 @@ class Conversation
         if ($merchant === null) {
             $this->reply("Bonjour 👋 Ce numéro n'est pas enregistré comme client chez {$company->name}."
                 .($company->phone ? " Contactez l'agence au ".PhoneNumber::display($company->phone).'.' : ''));
+
+            return $this->done();
+        }
+
+        // Confirmation de la remise des colis retournés (QR code du livreur, « retour »), même sans la création de courses
+        if (in_array($type, ['text', 'button'], true)
+            && ($answer = $this->returns->handle($company, $merchant, $this->phone, $text, $buttonId)) !== null) {
+            $this->reply($answer[0], $answer[1]);
 
             return $this->done();
         }

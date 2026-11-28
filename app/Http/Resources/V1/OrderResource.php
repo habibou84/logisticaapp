@@ -30,6 +30,8 @@ class OrderResource extends JsonResource
         return [
             'id' => $this->id,
             'tracking_code' => $this->tracking_code,
+            // Colis sur un bon de retour : remis depuis l'écran du bon
+            'return_slip_id' => $this->return_slip_id,
             'merchant_reference' => $this->merchant_reference,
             'source' => $this->source,
             // E-commerce, distribution ou MAD
