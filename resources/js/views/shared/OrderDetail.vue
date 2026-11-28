@@ -69,6 +69,9 @@
           </div>
         </div>
 
+        <!-- Report ou retour signalé par le livreur : à valider avant qu'il prenne effet -->
+        <ProposalCard v-if="order.proposal" :order-id="order.id" :proposal="order.proposal" @updated="(o) => (order = o)" />
+
         <p v-if="order.status === 'lost'" class="rounded-lg bg-red-50 ring-1 ring-red-200 px-4 py-2 text-sm text-red-900">
           <Icone nom="alerte" taille="petite" class="inline align-[-0.15em]" /> Colis déclaré perdu le {{ dateTime(order.lost_at) }}<span v-if="order.lost_reason"> : {{ order.lost_reason }}</span>
         </p>
@@ -281,6 +284,7 @@ import { useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import StatusBadge from '../../components/StatusBadge.vue'
 import OrderTimeline from '../../components/OrderTimeline.vue'
+import ProposalCard from '../../components/ProposalCard.vue'
 import Modal from '../../components/Modal.vue'
 import OrderDecision from '../../components/OrderDecision.vue'
 import LostParcelDialog from '../../components/LostParcelDialog.vue'

@@ -8,6 +8,7 @@ use App\Enums\Role;
 use App\Models\Company;
 use App\Models\Order;
 use App\Models\OrderEvent;
+use App\Models\OrderProposal;
 use App\Models\User;
 use App\Notifications\OrderAlert;
 use App\Services\Departments\Departments;
@@ -65,6 +66,10 @@ class OrderNotifier
                 break;
 
             case OrderEventType::Note:
+                // Événement de la liste (« Le client demande un créneau ») : son libellé, puis la précision
+                if ($reason !== null) {
+                    $note = ' '.$reason.($event->note ? ' « '.$event->note.' »' : '');
+                }
                 if ($actorIsMerchant) {
                     $toStaff = ['note', "Note du client sur {$code}", $merchantName.' :'.$note];
                 } else {
@@ -153,7 +158,11 @@ class OrderNotifier
                 ? [['delivered', "Colis {$code} expédié", "Déposé chez {$order->shipping_carrier}. Frais d'expédition : ".Money::format((int) $order->shipping_fee).'.'], null]
                 : [['delivered', "Colis {$code} livré", 'Votre colis a été livré.'
                     .($order->received_by_name ? " Reçu par {$order->received_by_name}".($order->received_by_role ? " ({$order->received_by_role})" : '').'.' : '')], $this->moneyAlert($order, $note)],
-            OrderStatus::DeliveryFailed => [
+            // Report ou retour signalé par le livreur, à valider : le client confirme ou refuse dans son espace
+            OrderStatus::DeliveryFailed => ($proposal = OrderProposal::withoutGlobalScopes()->where('order_event_id', $event->id)->first()) !== null ? [
+                ['proposal', "À confirmer : {$code}", "Le livreur indique : {$reason}.{$note} {$proposal->summary()} : confirmez-le ou refusez-le dans le suivi du colis."],
+                ['proposal', "À valider : {$code}", trim("{$reason}{$note}")." · {$proposal->summary()} demandé par le livreur."],
+            ] : [
                 ['incident', "Échec de livraison {$code}", "La livraison n'a pas pu être effectuée.{$why}{$note}"
                     // Refusé ou tentatives épuisées : le colis repart chez le client
                     .($order->return_requested && $order->return_cause ? ' '.$order->return_cause->merchantLabel().'.' : '')],

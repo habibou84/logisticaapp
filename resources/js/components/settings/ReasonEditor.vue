@@ -21,6 +21,14 @@
       </div>
     </div>
 
+    <div v-if="tab !== 'follow_up'">
+      <label class="label" for="reason-kind">Ce que fait l'événement</label>
+      <select id="reason-kind" v-model="model.effect" class="input">
+        <option value="status">Échec, report ou retour : la course change de statut</option>
+        <option value="note">Simple information : la course continue</option>
+      </select>
+    </div>
+
     <fieldset v-if="tab !== 'follow_up'">
       <legend class="label">Activités (rien de coché : toutes)</legend>
       <div class="flex flex-wrap gap-3">
@@ -32,11 +40,17 @@
 
     <fieldset class="grid sm:grid-cols-2 gap-2 text-sm">
       <legend class="label">Ce que le motif demande et ce qu'il fait</legend>
-      <label class="flex items-start gap-2"><input v-model="model.requires_date" type="checkbox" class="mt-1">
+      <label v-if="model.effect !== 'note'" class="flex items-start gap-2"><input v-model="model.requires_date" type="checkbox" class="mt-1">
         <span>Demande une date<span class="block text-slate-600">{{ tab === 'follow_up' ? 'La course est reprogrammée à cette date.' : 'Report : nouvelle date de livraison.' }}</span></span></label>
       <label class="flex items-start gap-2"><input v-model="model.requires_note" type="checkbox" class="mt-1">
         <span>Note obligatoire<span class="block text-slate-600">Préciser ce qui se passe (« Autres »).</span></span></label>
-      <template v-if="tab !== 'follow_up'">
+      <template v-if="tab !== 'follow_up' && model.effect === 'note'">
+        <label class="flex items-start gap-2"><input v-model="model.visible_to_client" type="checkbox" class="mt-1">
+          <span>Visible du client<span class="block text-slate-600">L'information apparaît dans son suivi de la course.</span></span></label>
+      </template>
+      <template v-else-if="tab !== 'follow_up'">
+        <label class="flex items-start gap-2"><input v-model="model.needs_validation" type="checkbox" class="mt-1" :disabled="!model.requires_date && !model.triggers_return">
+          <span>À faire valider<span class="block text-slate-600">Report ou retour signalé par le livreur : il ne prend effet qu'une fois validé par l'équipe ou le client (relances sans réponse).</span></span></label>
         <label class="flex items-start gap-2"><input v-model="model.counts_as_attempt" type="checkbox" class="mt-1">
           <span>Compte une tentative<span class="block text-slate-600">Au bout du nombre de tentatives réglé, la course part en retour.</span></span></label>
         <label class="flex items-start gap-2"><input v-model="model.triggers_return" type="checkbox" class="mt-1">

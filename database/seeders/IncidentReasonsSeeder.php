@@ -30,6 +30,20 @@ class IncidentReasonsSeeder extends Seeder
             ['damaged', 'Colis endommagé', 'both', 'other', null, []],
             ['merchant_unavailable', 'Marchand absent ou injoignable', 'pickup', 'pickup', null, []],
             ['package_not_ready', 'Colis pas prêt', 'pickup', 'pickup', null, []],
+            // E-commerce : refus et annulations (retour au client, après validation)
+            ['recipient_cancelled', 'Le client annule la commande', 'delivery', 'recipient', ['ecommerce'], ['counts_as_attempt' => true, 'triggers_return' => true]],
+            ['not_ordered', 'Le client dit ne pas avoir commandé', 'delivery', 'recipient', ['ecommerce'], ['counts_as_attempt' => true, 'triggers_return' => true, 'requires_note' => true]],
+            ['not_compliant', 'Produit non conforme à la commande', 'delivery', 'recipient', ['ecommerce'], ['counts_as_attempt' => true, 'triggers_return' => true, 'photo' => 'required']],
+            ['price_disputed', 'Le client conteste le prix', 'delivery', 'recipient', ['ecommerce'], ['counts_as_attempt' => true, 'requires_note' => true]],
+            ['unsafe', 'Situation dangereuse, client agressif', 'both', 'other', null, ['requires_note' => true]],
+
+            // Information : la course continue, rien ne change de statut (le livreur choisit au lieu d'écrire)
+            ['i_time_slot', 'Le client demande un créneau', 'delivery', 'info', null, ['effect' => 'note', 'requires_note' => true, 'visible_to_client' => true]],
+            ['i_call_back', 'Le client demande d\'être rappelé', 'delivery', 'info', null, ['effect' => 'note', 'visible_to_client' => true]],
+            ['i_waiting', 'Client en route : j\'attends sur place', 'delivery', 'info', null, ['effect' => 'note', 'visible_to_client' => true]],
+            ['i_third_party', 'Remise à un tiers (gardien, voisin, collègue)', 'delivery', 'info', null, ['effect' => 'note', 'requires_note' => true, 'visible_to_client' => true]],
+            ['i_meeting_point', 'Lieu de rencontre changé', 'delivery', 'info', null, ['effect' => 'note', 'requires_note' => true, 'visible_to_client' => true]],
+            ['i_landmark', 'Repère, indications d\'accès', 'both', 'info', null, ['effect' => 'note', 'requires_note' => true]],
 
             // Distribution et MAD : indisponible (nouvelle tentative)
             ['d_unreachable', 'Injoignable', 'delivery', 'unavailable', self::DIST, ['counts_as_attempt' => true]],
@@ -94,6 +108,9 @@ class IncidentReasonsSeeder extends Seeder
                 'requires_date' => false,
                 'counts_as_attempt' => false,
                 'triggers_return' => false,
+                // Report ou retour signalé par le livreur : validé par l'équipe ou le client avant de prendre effet
+                'needs_validation' => in_array($stage, ['delivery', 'both'], true)
+                    && (($options['requires_date'] ?? false) || ($options['triggers_return'] ?? false)),
                 'sort_order' => $i,
                 ...$options,
             ]);

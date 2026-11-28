@@ -62,6 +62,7 @@ use App\Http\Controllers\Api\V1\OrderController;
 use App\Http\Controllers\Api\V1\OrderDraftController;
 use App\Http\Controllers\Api\V1\OrderExpenseController;
 use App\Http\Controllers\Api\V1\OrderImportController;
+use App\Http\Controllers\Api\V1\OrderProposalController;
 use App\Http\Controllers\Api\V1\ParcelController;
 use App\Http\Controllers\Api\V1\PasswordController;
 use App\Http\Controllers\Api\V1\PasswordResetController;
@@ -587,6 +588,9 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::post('orders/{order}/assign', [OrderActionController::class, 'assign'])->name('orders.assign');
         Route::post('orders/{order}/unassign', [OrderActionController::class, 'unassign'])->name('orders.unassign');
         Route::post('orders/{order}/decision', [OrderActionController::class, 'decide'])->name('orders.decision');
+        // Report ou retour signalé par le livreur, à valider par l'équipe ou le client
+        Route::post('orders/{order}/proposal/approve', [OrderProposalController::class, 'approve'])->name('orders.proposal.approve');
+        Route::post('orders/{order}/proposal/reject', [OrderProposalController::class, 'reject'])->name('orders.proposal.reject');
         Route::post('orders/{order}/approval', [OrderActionController::class, 'approval'])->name('orders.approval');
         Route::post('orders/{order}/follow-up', [OrderActionController::class, 'followUp'])->name('orders.follow-up');
         Route::post('orders/{order}/renew', [OrderActionController::class, 'renew'])->name('orders.renew');

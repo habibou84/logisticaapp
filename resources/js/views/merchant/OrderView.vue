@@ -33,8 +33,11 @@
       </div>
       <p v-else-if="order.approval?.approved_at" class="text-xs text-slate-600">Validée par {{ order.approval.approved_by || 'le chef de service' }}.</p>
 
+      <!-- Report ou retour signalé par le livreur : le client confirme ou refuse -->
+      <ProposalCard v-if="order.proposal" mobile :order-id="order.id" :proposal="order.proposal" @updated="(o) => (order = o)" />
+
       <!-- Échec de livraison : la décision d'abord (seulement si elle est encore attendue) -->
-      <div v-if="order.needs_decision" class="grid grid-cols-2 gap-2">
+      <div v-if="order.needs_decision && !order.proposal" class="grid grid-cols-2 gap-2">
         <button class="m-btn-primary py-3" @click="openReschedule"><Icone nom="date" />Reporter</button>
         <button class="m-btn-secondary py-3" @click="openEdit(true)"><Icone nom="modifier" />Corriger et relivrer</button>
         <button class="m-btn-secondary py-3 col-span-2" @click="sheet = 'return'"><Icone nom="retour" />Faire revenir le colis</button>
@@ -297,6 +300,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import OrderTimeline from '../../components/OrderTimeline.vue'
+import ProposalCard from '../../components/ProposalCard.vue'
 import OrderProgress from '../../components/mobile/OrderProgress.vue'
 import ColorIcon from '../../components/mobile/ColorIcon.vue'
 import MerchantHistory from '../../components/mobile/MerchantHistory.vue'

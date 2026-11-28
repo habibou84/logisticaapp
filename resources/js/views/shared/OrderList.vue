@@ -464,6 +464,8 @@ const queues = [
   // Colis à rendre, pas encore sur un bon (même liste que Retours clients)
   { value: 'to_return', icon: 'retour', label: 'À retourner', extra: true },
   { value: 'to_approve', icon: 'entreprise', label: 'À approuver', extra: true },
+  // Reports et retours signalés par les livreurs, à valider avant qu'ils prennent effet
+  { value: 'to_validate', icon: 'valider', label: 'À valider (livreurs)', extra: true },
   { value: 'to_decide', label: 'À décider', extra: true },
   // Notes de suivi de l'équipe (Réglages › Motifs) ; « En attente » : celles qui retiennent la course
   { value: 'on_hold', icon: 'pause', label: 'En attente', extra: true },

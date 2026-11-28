@@ -10,6 +10,7 @@ use App\Enums\ReturnCause;
 use App\Exceptions\BusinessRuleException;
 use App\Models\Company;
 use App\Models\Hub;
+use App\Models\IncidentReason;
 use App\Models\Merchant;
 use App\Models\Order;
 use App\Models\Product;
@@ -351,10 +352,11 @@ class OrderService
         });
     }
 
-    public function addNote(User $actor, Order $order, string $note, bool $visibleToMerchant = true, ?float $lat = null, ?float $lng = null): void
+    public function addNote(User $actor, Order $order, ?string $note, bool $visibleToMerchant = true, ?float $lat = null, ?float $lng = null, ?IncidentReason $reason = null): void
     {
         $this->journal->record($order, $actor, OrderEventType::Note, [
             'note' => $note,
+            'incident_reason_id' => $reason?->id,
             'lat' => $lat,
             'lng' => $lng,
             // Une note du client est toujours visible par lui
@@ -415,6 +417,8 @@ class OrderService
         }
 
         DB::transaction(function () use ($actor, $order, $note) {
+            // Report ou retour du livreur encore à valider : cette décision le remplace
+            app(OrderProposals::class)->settle($order, $actor);
             $order->markForReturn($actor->merchant_id !== null ? ReturnCause::Merchant : ReturnCause::Company);
             $order->save();
             $this->journal->record($order, $actor, OrderEventType::ReturnRequested, ['note' => $note]);
