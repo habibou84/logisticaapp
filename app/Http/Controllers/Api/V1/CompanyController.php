@@ -75,7 +75,7 @@ class CompanyController extends Controller
         if (array_key_exists('stats_settings', $data)) {
             // Objectifs et modèles d'export se règlent dans Statistiques : cet enregistrement ne les efface pas
             $data['stats_settings'] = [
-                ...array_filter(['objectives' => $company->stats_settings['objectives'] ?? null, 'exports' => $company->stats_settings['exports'] ?? null]),
+                ...array_filter(collect(['objectives', 'exports', 'alert_events', 'alert_recipients'])->mapWithKeys(fn (string $k) => [$k => $company->stats_settings[$k] ?? null])->all(), fn ($v) => $v !== null),
                 ...StatsSettings::clean((array) ($data['stats_settings'] ?? [])),
             ];
         }

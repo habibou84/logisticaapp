@@ -88,8 +88,10 @@ import DirectionOverview from '../../components/direction/DirectionOverview.vue'
 import DirectionQuestions from '../../components/direction/DirectionQuestions.vue'
 import DirectionSimulator from '../../components/direction/DirectionSimulator.vue'
 import DirectionTeams from '../../components/direction/DirectionTeams.vue'
+import ToolsAlerts from '../../components/direction/ToolsAlerts.vue'
 import ToolsExport from '../../components/direction/ToolsExport.vue'
 import ToolsReport from '../../components/direction/ToolsReport.vue'
+import ToolsSends from '../../components/direction/ToolsSends.vue'
 import { COLORS } from '../../components/direction/shared'
 import ClientInsightsTab from '../../components/stats/ClientInsightsTab.vue'
 import DailyTab from '../../components/stats/DailyTab.vue'
@@ -163,8 +165,8 @@ const DETAILS = {
   export: { group: 'Exporter et partager', label: 'Export avancé', component: ToolsExport, props: () => ({ from: from.value, to: to.value }), description: 'Choisissez ce que vous exportez, en Excel, CSV ou PDF ; enregistrez vos exports comme modèles.' },
   report: { group: 'Exporter et partager', label: 'Rapport du mois', component: ToolsReport, period: false, description: 'Le rapport du mois à imprimer, et les rapports des clients sous contrat.' },
   sheets: { group: 'Exporter et partager', label: 'Google Sheets', component: IntegrationsTab, props: () => ({ only: ['sheets'] }), permission: 'settings.manage', period: false, description: 'Vos statistiques dans un tableur Google, mises à jour toutes seules.' },
-  alerts: { group: 'Alertes', label: 'Alertes', component: IntegrationsTab, props: () => ({ only: ['alerts'] }), permission: 'settings.manage', period: false, description: 'Être prévenu quand un indicateur passe un seuil.' },
-  sends: { group: 'Alertes', label: 'Envois réguliers', component: IntegrationsTab, props: () => ({ only: ['email'] }), permission: 'settings.manage', period: false, description: 'Le point du lundi et celui du 1er du mois, par e-mail.' },
+  alerts: { group: 'Alertes', label: 'Alertes par événement', component: ToolsAlerts, permission: 'settings.manage', period: false, description: 'Être prévenu quand un événement se produit, sur le canal de votre choix : cloche, WhatsApp ou e-mail.' },
+  sends: { group: 'Alertes', label: 'Envois réguliers', component: ToolsSends, permission: 'settings.manage', period: false, description: 'Le point du lundi, celui du 1er du mois et vos modèles d\'export, par e-mail.' },
 }
 const SUMMARY = { key: '', label: 'Synthèse' }
 const details = (keys) => keys.filter((k) => !DETAILS[k].permission || [DETAILS[k].permission].flat().some((p) => auth.can(p))).map((k) => ({ key: k, ...DETAILS[k] }))
