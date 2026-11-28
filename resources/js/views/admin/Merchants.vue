@@ -187,13 +187,7 @@
               <div><label class="label">WhatsApp</label><input v-model="form.data.whatsapp_phone" class="input"></div>
               <div><label class="label">E-mail</label><input v-model="form.data.email" type="email" class="input"></div>
             </div>
-            <div>
-              <label class="label">Zone de ramassage</label>
-              <select v-model="form.data.pickup_zone_id" class="input">
-                <option :value="null">—</option>
-                <option v-for="z in zones" :key="z.id" :value="z.id">{{ z.full_name }}</option>
-              </select>
-            </div>
+            <CommuneQuartier id="m-pickup" v-model="form.data.pickup_zone_id" :zones="zones" :commune-label="`Commune ou ville de ${collectsOnly(form.activities) ? 'collecte' : 'ramassage'}`" @added="(z) => zones.push(z)" />
             <div><label class="label">Adresse de {{ collectsOnly(form.activities) ? 'collecte' : 'ramassage' }}</label><input v-model="form.data.pickup_address" class="input"></div>
             <div><label class="label">Repère</label><input v-model="form.data.pickup_landmark" class="input"></div>
             <fieldset class="border rounded p-3 space-y-2">
@@ -314,6 +308,7 @@
 
 <script setup>
 import Icone from '../../components/ui/Icone.vue'
+import CommuneQuartier from '../../components/CommuneQuartier.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import http, { apiErrorMessage } from '../../bootstrap/axios'

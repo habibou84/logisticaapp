@@ -67,8 +67,7 @@
       </div>
       <template v-if="ownAddress">
         <div>
-          <label class="label" for="d-zone">Commune ou quartier</label>
-          <ZoneSelect id="d-zone" v-model="form.pickup_zone_id" :zones="zones" />
+          <CommuneQuartier id="d-lieu" v-model="form.pickup_zone_id" :zones="zones" required />
           <p v-if="errors.pickup_zone_id" class="field-error">{{ errors.pickup_zone_id }}</p>
         </div>
         <div>
@@ -161,7 +160,7 @@ import { computed, ref, watch } from 'vue'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import BottomSheet from '../mobile/BottomSheet.vue'
 import LocationPicker from '../LocationPicker.vue'
-import ZoneSelect from '../ZoneSelect.vue'
+import CommuneQuartier from '../CommuneQuartier.vue'
 
 const props = defineProps({
   open: Boolean,

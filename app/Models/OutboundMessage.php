@@ -19,7 +19,7 @@ class OutboundMessage extends Model
     protected $fillable = [
         'company_id', 'channel', 'whatsapp_account_id', 'to', 'recipient_type', 'event', 'template_name',
         'payload', 'body', 'order_id', 'merchant_id', 'fallback_for_id', 'status', 'provider_message_id',
-        'error', 'attempts', 'sent_at', 'delivered_at', 'read_at', 'failed_at',
+        'error', 'attempts', 'sent_at', 'delivered_at', 'read_at', 'failed_at', 'via',
     ];
 
     protected function casts(): array

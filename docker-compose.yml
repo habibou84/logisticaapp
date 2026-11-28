@@ -11,7 +11,9 @@ name: ${COMPOSE_PROJECT_NAME:-logistica}
 
 # Site, files d'attente, temps réel et tâches planifiées : la même image
 x-app: &app
-  image: ${COMPOSE_PROJECT_NAME:-logistica}-app
+  # Une image par version (APP_VERSION, écrit dans .env par deploy/update.sh) : les précédentes restent sur le
+  # serveur pour revenir en arrière en quelques secondes (deploy/rollback.sh)
+  image: ${COMPOSE_PROJECT_NAME:-logistica}-app:${APP_VERSION:-latest}
   build:
     context: .
     target: app
@@ -21,6 +23,8 @@ x-app: &app
       VITE_REVERB_HOST: ${VITE_REVERB_HOST}
       VITE_REVERB_PORT: ${VITE_REVERB_PORT:-443}
       VITE_REVERB_SCHEME: ${VITE_REVERB_SCHEME:-https}
+      # Commit installé (deploy/update.sh), transmis à Sentry
+      APP_VERSION: ${APP_VERSION:-dev}
   restart: unless-stopped
   volumes:
     - ./.env:/var/www/html/.env:ro
@@ -75,7 +79,7 @@ services:
         condition: service_healthy
 
   web:
-    image: ${COMPOSE_PROJECT_NAME:-logistica}-web
+    image: ${COMPOSE_PROJECT_NAME:-logistica}-web:${APP_VERSION:-latest}
     build:
       context: .
       target: web
@@ -86,6 +90,24 @@ services:
     depends_on:
       app:
         condition: service_healthy
+
+  # WhatsApp des alertes : numéro WhatsApp ordinaire relié en scannant un QR code (WAHA, moteur léger NOWEB).
+  # Joignable seulement par les autres conteneurs (http://whatsapp-qr:3000), avec la clé WHATSAPP_QR_API_KEY.
+  # La session reliée est gardée dans le volume « whatsapp-qr » : pas de nouveau scan après une mise à jour.
+  whatsapp-qr:
+    image: devlikeapro/waha:noweb-2026.10.1
+    restart: unless-stopped
+    environment:
+      WAHA_API_KEY: ${WHATSAPP_QR_API_KEY:-}
+      WHATSAPP_DEFAULT_ENGINE: NOWEB
+      WAHA_DASHBOARD_ENABLED: "false"
+      WHATSAPP_SWAGGER_ENABLED: "false"
+      WAHA_PRINT_QR: "false"
+      WHATSAPP_DOWNLOAD_MEDIA: "false"
+      WAHA_LOG_LEVEL: warn
+      NODE_OPTIONS: --max-old-space-size=512
+    volumes:
+      - whatsapp-qr:/app/.sessions
 
   postgres:
     image: postgres:16-alpine
@@ -119,3 +141,5 @@ volumes:
   storage:
   postgres:
   redis:
+  # Session du WhatsApp des alertes (QR code)
+  whatsapp-qr:

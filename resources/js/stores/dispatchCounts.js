@@ -19,6 +19,8 @@ export const useDispatchCountStore = defineStore('dispatchCounts', {
     // Jour affiché dans la liste des courses (AAAA-MM-JJ) et ses compteurs : dû ce jour-là, prévu plus tard
     day: null,
     dayCounts: null,
+    // Activité choisie dans la liste des courses (vide : toutes) ; les pastilles du menu restent celles de toute l'entreprise
+    activity: null,
   }),
   actions: {
     // Appels regroupés : pendant un chargement, les demandes suivantes attendent sa fin et n'en relancent
@@ -28,7 +30,10 @@ export const useDispatchCountStore = defineStore('dispatchCounts', {
         again ??= inFlight.catch(() => {}).then(() => { again = null; return this.fetchCounts() })
         return again
       }
-      inFlight = http.get('/orders/counts', { params: this.day ? { day: this.day } : {} })
+      const params = {}
+      if (this.day) params.day = this.day
+      if (this.activity) params.activity = this.activity
+      inFlight = http.get('/orders/counts', { params })
         .then(({ data }) => {
           this.counts = data.data
           this.dayCounts = data.data.day || null

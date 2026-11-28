@@ -73,7 +73,11 @@ class CompanyController extends Controller
             $data['delivery_day_rules'] = DeliveryDayRule::clean((array) ($data['delivery_day_rules'] ?? []));
         }
         if (array_key_exists('stats_settings', $data)) {
-            $data['stats_settings'] = StatsSettings::clean((array) ($data['stats_settings'] ?? []));
+            // Objectifs et modèles d'export se règlent dans Statistiques : cet enregistrement ne les efface pas
+            $data['stats_settings'] = [
+                ...array_filter(collect(['objectives', 'exports', 'alert_events', 'alert_recipients'])->mapWithKeys(fn (string $k) => [$k => $company->stats_settings[$k] ?? null])->all(), fn ($v) => $v !== null),
+                ...StatsSettings::clean((array) ($data['stats_settings'] ?? [])),
+            ];
         }
         if (array_key_exists('dashboard_settings', $data)) {
             $data['dashboard_settings'] = DashboardSettings::clean((array) ($data['dashboard_settings'] ?? []));
