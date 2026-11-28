@@ -15,7 +15,7 @@ class Zone extends Model
     /** @use HasFactory<ZoneFactory> */
     use BelongsToCompany, HasFactory;
 
-    protected $fillable = ['company_id', 'parent_id', 'name', 'city', 'is_shipping', 'in_forfait', 'shipping_fee_estimate', 'is_active', 'is_pickup', 'sort_order'];
+    protected $fillable = ['company_id', 'parent_id', 'place_code', 'name', 'city', 'is_shipping', 'in_forfait', 'shipping_fee_estimate', 'is_active', 'is_pickup', 'sort_order'];
 
     protected function casts(): array
     {
@@ -42,6 +42,12 @@ class Zone extends Model
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true);
+    }
+
+    /** Lieu de la liste des lieux (commune, quartier, ville) : nom et rattachement fixés par la liste */
+    public function isStandard(): bool
+    {
+        return $this->place_code !== null;
     }
 
     /**

@@ -3,10 +3,11 @@
        départ, qui ouvre sa fenêtre (paliers, puis un palier par destination) ; vue d'ensemble départ × arrivée -->
   <section class="space-y-3">
     <div class="flex flex-wrap items-center gap-2">
-      <input v-model="query" type="search" class="input w-full sm:w-80" placeholder="Chercher une commune ou un quartier" aria-label="Chercher un lieu">
+      <input v-model="query" type="search" class="input w-full sm:w-80" placeholder="Chercher un quartier, une ville…" aria-label="Chercher un lieu">
       <span class="flex-1" />
       <template v-if="canZones">
-        <button type="button" class="btn-secondary" @click="open('place')">+ Commune ou quartier</button>
+        <button type="button" class="btn-secondary" :disabled="syncing" title="Ajoute les communes, quartiers et villes qui manquent, sans rien retirer" @click="syncPlaces">{{ syncing ? 'Mise à jour…' : 'Compléter la liste des lieux' }}</button>
+        <button type="button" class="btn-secondary" @click="open('place')">+ Lieu</button>
         <button type="button" class="btn-secondary" @click="open('shipping')">+ Zone d'expédition</button>
       </template>
     </div>
@@ -24,13 +25,14 @@
       <div class="flex flex-wrap items-end gap-2">
         <div class="min-w-40 flex-1">
           <label class="label" for="zp-name">Nom</label>
-          <input id="zp-name" v-model.trim="draft.name" class="input" required maxlength="100" :placeholder="adding === 'shipping' ? 'Ex. : Expédition Bouaké (gare UTB Adjamé)' : 'Ex. : Angré'">
+          <input id="zp-name" v-model.trim="draft.name" class="input" required maxlength="100" :placeholder="adding === 'shipping' ? 'Ex. : Expédition Bouaké (gare UTB Adjamé)' : 'Ex. : Cité Synacass-ci'">
         </div>
         <div v-if="adding === 'place'" class="min-w-40 flex-1">
-          <label class="label" for="zp-parent">Dans la commune</label>
+          <label class="label" for="zp-parent">Dans la commune ou la ville</label>
           <select id="zp-parent" v-model="draft.parent_id" class="input">
-            <option :value="null">— (c'est une commune)</option>
-            <option v-for="c in communes" :key="c.id" :value="c.id">{{ c.name }}</option>
+            <option :value="null">— (c'est une commune ou une ville)</option>
+            <optgroup label="Abidjan"><option v-for="c in abidjan" :key="c.id" :value="c.id">{{ c.name }}</option></optgroup>
+            <optgroup label="Intérieur"><option v-for="c in cities" :key="c.id" :value="c.id">{{ c.name }}</option></optgroup>
           </select>
         </div>
         <div v-else class="w-44">
@@ -40,6 +42,10 @@
         <button class="btn-primary" :disabled="draft.saving">Ajouter</button>
         <button type="button" class="btn-secondary" @click="adding = false">Annuler</button>
       </div>
+      <p v-if="adding === 'place'" class="text-sm text-slate-600">
+        Les communes et quartiers d'Abidjan et les villes de l'intérieur sont déjà dans la liste : cherchez-les avant d'en ajouter un.
+        Un lieu ajouté ici est propre à l'entreprise.
+      </p>
       <p v-if="adding === 'shipping'" class="text-sm text-slate-600">
         Le livreur dépose le colis à une gare ou chez un transporteur et paie l'envoi, facturé au client. Le prix de la course jusqu'à la gare
         se règle dans « Prix au départ » de chaque commune.
@@ -73,12 +79,12 @@
             <div class="col-span-2 min-w-0 md:col-span-1">
               <p :class="['text-base font-semibold', c.is_active ? '' : 'text-slate-600']">
                 {{ c.name }}
-                <span v-if="interior(c)" class="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">Intérieur</span>
+                <span v-if="!c.is_standard" class="ml-1 rounded-full bg-amber-50 px-1.5 text-xs font-normal text-amber-800 ring-1 ring-amber-200">ajouté</span>
               </p>
               <button v-if="childrenOf(c).length" type="button" class="mt-0.5 text-sm font-medium text-emerald-700 hover:underline" @click="toggleOpen(c)">
                 {{ isOpen(c) ? '▾' : '▸' }} {{ childrenOf(c).length }} quartier{{ childrenOf(c).length > 1 ? 's' : '' }}<template v-if="ownCount(c)"> · {{ ownCount(c) }} à part</template>
               </button>
-              <template v-if="canZones">
+              <template v-if="canZones && !c.is_standard">
                 <button type="button" class="ml-3 text-xs text-blue-700" @click="rename(c)">Renommer</button>
                 <button type="button" class="ml-2 text-xs text-red-700" @click="remove(c)">Supprimer</button>
               </template>
@@ -91,14 +97,10 @@
             </label>
             <!-- Commune couverte par les forfaits de distribution et de mise à disposition -->
             <label v-if="showForfait" class="col-span-2 flex items-center gap-2 text-sm md:col-span-1 md:justify-center">
-              <template v-if="!interior(c)">
-                <input type="checkbox" class="h-5 w-5" :checked="c.in_forfait" :disabled="!canZones || busy[c.id]" :aria-label="`Couverte par les forfaits : ${c.name}`" @change="patch(c, 'in_forfait')"><span class="md:hidden">Couverte par les forfaits</span>
-              </template>
-              <span v-else class="text-xs text-slate-600">selon le contrat</span>
+              <input type="checkbox" class="h-5 w-5" :checked="c.in_forfait" :disabled="!canZones || busy[c.id]" :aria-label="`Couverte par les forfaits : ${c.name}`" @change="patch(c, 'in_forfait')"><span class="md:hidden">Couverte par les forfaits</span>
             </label>
             <div class="col-span-2 flex items-center justify-end gap-3 md:col-span-1">
-              <template v-if="interior(c)"><span class="text-xs text-slate-600">prix dans l'onglet Distribution et MAD</span></template>
-              <template v-else-if="canPrices">
+              <template v-if="canPrices">
                 <span v-if="c.is_active" class="text-xs tabular-nums text-slate-600">{{ progress(c).done }}/{{ progress(c).total }} réglés</span>
                 <button type="button" class="btn-secondary py-1.5" :disabled="!c.is_active" :aria-label="`Prix au départ de ${c.name}`" @click="departure = c">Prix au départ</button>
               </template>
@@ -109,7 +111,8 @@
               <p class="col-span-2 min-w-0 md:col-span-1">
                 ↳ {{ q.name }}
                 <span v-if="hasOwnDeparture(q)" class="ml-1 rounded-full bg-emerald-50 px-1.5 text-xs text-emerald-800 ring-1 ring-emerald-200">prix à part</span>
-                <template v-if="canZones">
+                <span v-if="!q.is_standard" class="ml-1 rounded-full bg-amber-50 px-1.5 text-xs text-amber-800 ring-1 ring-amber-200">ajouté</span>
+                <template v-if="canZones && !q.is_standard">
                   <button type="button" class="ml-3 text-xs text-blue-700" @click="rename(q)">Renommer</button>
                   <button type="button" class="ml-2 text-xs text-red-700" @click="remove(q)">Supprimer</button>
                 </template>
@@ -125,8 +128,65 @@
             </div>
           </template>
         </template>
-        <p v-if="!shownCommunes.length" class="p-6 text-center text-slate-600">Aucun lieu ne correspond.</p>
+        <p v-if="!shownCommunes.length" class="p-6 text-center text-slate-600">Aucune commune ne correspond.</p>
       </div>
+
+      <!-- Villes de l'intérieur : livrées en distribution et en MAD au tarif de la ville (pli, colis, kilo en plus) -->
+      <section v-if="cities.length" class="space-y-2">
+        <h2 class="pt-2 font-semibold">Villes de l'intérieur</h2>
+        <p class="text-sm text-slate-600">
+          Cochez « On livre » pour chaque ville desservie. En distribution et en mise à disposition, la course est facturée au tarif de la ville
+          (onglet Distribution et MAD) ; le contrat de chaque client dit si elle compte dans son forfait. Ajouter un tarif ouvre la ville.
+        </p>
+        <div class="card divide-y overflow-hidden">
+          <template v-for="c in [...openCities, ...(otherCitiesOpen || query.trim() ? otherCities : [])]" :key="c.id">
+            <div :class="['flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3', c.is_active ? '' : 'bg-slate-50']">
+              <div class="min-w-48 flex-1">
+                <p :class="['font-semibold', c.is_active ? '' : 'text-slate-600']">
+                  {{ c.name }}
+                  <span v-if="!c.is_standard" class="ml-1 rounded-full bg-amber-50 px-1.5 text-xs font-normal text-amber-800 ring-1 ring-amber-200">ajouté</span>
+                </p>
+                <button v-if="childrenOf(c).length" type="button" class="mt-0.5 text-sm font-medium text-emerald-700 hover:underline" @click="toggleOpen(c)">
+                  {{ isOpen(c) ? '▾' : '▸' }} {{ childrenOf(c).length }} quartier{{ childrenOf(c).length > 1 ? 's' : '' }}
+                </button>
+                <template v-if="canZones && !c.is_standard">
+                  <button type="button" class="ml-3 text-xs text-blue-700" @click="rename(c)">Renommer</button>
+                  <button type="button" class="ml-2 text-xs text-red-700" @click="remove(c)">Supprimer</button>
+                </template>
+              </div>
+              <label class="flex items-center gap-2 text-sm">
+                <input type="checkbox" class="h-5 w-5" :checked="c.is_active" :disabled="!canZones || busy[c.id]" :aria-label="`On livre ici : ${c.name}`" @change="patch(c, 'is_active')"> On livre
+              </label>
+              <label class="flex items-center gap-2 text-sm">
+                <input type="checkbox" class="h-5 w-5" :checked="pickupOn(c)" :disabled="!canZones || busy[c.id]" :aria-label="`On collecte ici : ${c.name}`" @change="patch(c, 'is_pickup')"> On collecte
+              </label>
+              <span v-if="showForfait" class="w-full text-right text-xs sm:w-56">
+                <span v-if="cityRate(c)" class="text-slate-600">Tarif : {{ cityRate(c) }}</span>
+                <span v-else-if="c.is_active" class="font-medium text-amber-800">Pas encore de tarif pour cette ville</span>
+              </span>
+            </div>
+            <template v-if="isOpen(c)">
+              <div v-for="q in childrenOf(c)" :key="q.id" :class="['flex flex-wrap items-center gap-4 bg-slate-50/60 py-2 pl-8 pr-4 text-sm', q.is_active ? '' : 'opacity-60']">
+                <span class="min-w-40 flex-1">
+                  ↳ {{ q.name }}
+                  <template v-if="canZones && !q.is_standard">
+                    <button type="button" class="ml-3 text-xs text-blue-700" @click="rename(q)">Renommer</button>
+                    <button type="button" class="ml-2 text-xs text-red-700" @click="remove(q)">Supprimer</button>
+                  </template>
+                </span>
+                <label class="flex items-center gap-2">
+                  <input type="checkbox" class="h-5 w-5" :checked="q.is_active" :disabled="!canZones || busy[q.id]" :aria-label="`On livre ici : ${q.name}`" @change="patch(q, 'is_active')"> On livre
+                </label>
+                <span class="text-xs text-slate-600">tarif de {{ c.name }}</span>
+              </div>
+            </template>
+          </template>
+          <button v-if="otherCities.length && !query.trim()" type="button" class="flex w-full items-center px-4 py-3 text-left text-sm text-slate-600 hover:bg-slate-50" @click="otherCitiesOpen = !otherCitiesOpen">
+            {{ otherCitiesOpen ? '▾' : '▸' }} Autres villes ({{ otherCities.length }}) : cochez « On livre » pour en desservir une
+          </button>
+          <p v-if="query.trim() && !openCities.length && !otherCities.length" class="p-4 text-center text-sm text-slate-600">Aucune ville ne correspond.</p>
+        </div>
+      </section>
 
       <!-- Vue d'ensemble : départ en ligne, arrivée en colonne ; en gris, le prix qui s'applique faute de trajet réglé -->
       <details v-if="canPrices" class="card p-4">
@@ -234,9 +294,11 @@ const norm = (s) => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCa
 const key = (a, b) => `${a}-${b}`
 const byId = computed(() => Object.fromEntries(zones.value.map((z) => [z.id, z])))
 const communes = computed(() => zones.value.filter((z) => !z.parent_id && !z.is_shipping))
-const shipping = computed(() => zones.value.filter((z) => z.is_shipping))
 // Ville de l'intérieur : ses prix sont ceux de la distribution (onglet Distribution et MAD)
 const interior = (z) => !!z.city && z.city !== 'Abidjan'
+const abidjan = computed(() => communes.value.filter((c) => !interior(c)))
+const cities = computed(() => communes.value.filter(interior).sort((a, b) => norm(a.name).localeCompare(norm(b.name))))
+const shipping = computed(() => zones.value.filter((z) => z.is_shipping))
 
 const childrenOf = (c) => zones.value.filter((z) => z.parent_id === c.id && !z.is_shipping)
 const opened = ref(new Set())
@@ -248,7 +310,44 @@ function toggleOpen(c) {
 }
 const ownCount = (c) => childrenOf(c).filter((q) => hasOwnDeparture(q)).length
 const matches = (c) => { const q = norm(query.value.trim()); return !q || norm(c.name).includes(q) || childrenOf(c).some((z) => norm(z.name).includes(q)) }
-const shownCommunes = computed(() => communes.value.filter(matches))
+const shownCommunes = computed(() => abidjan.value.filter(matches))
+// Villes livrées d'abord, les autres repliées (ouvertes par la recherche)
+const openCities = computed(() => cities.value.filter((c) => c.is_active && matches(c)))
+const otherCities = computed(() => cities.value.filter((c) => !c.is_active && matches(c)))
+const otherCitiesOpen = ref(false)
+
+// Tarifs de la grille commune des villes de l'intérieur : « 24h : pli 2 000 F, colis 3 000 F »
+const interiorRates = ref([])
+const cityKey = (s) => norm(s).replace(/[^a-z0-9]+/g, '')
+function cityRate(c) {
+  const list = interiorRates.value.filter((r) => cityKey(r.city) === cityKey(c.name))
+  if (!list.length) return null
+  const f = (n) => `${Number(n).toLocaleString('fr-FR')} F`
+  return list.map((r) => `${r.delivery_delay} pli ${f(r.pli_price)}, colis ${f(r.colis_price)}`).join(' · ')
+}
+async function loadInteriorRates() {
+  if (!showForfait.value) return
+  try {
+    interiorRates.value = (await http.get('/interior-rates')).data.data
+  } catch {
+    interiorRates.value = []
+  }
+}
+
+// Ajoute les lieux de la liste qui manquent (communes, quartiers, villes) ; rien n'est retiré
+const syncing = ref(false)
+async function syncPlaces() {
+  syncing.value = true
+  try {
+    const { created, linked } = (await http.post('/zones/standard')).data.data
+    toasts.success(created || linked ? `${created} lieu(x) ajouté(s), ${linked} zone(s) rattachée(s) à la liste.` : 'La liste des lieux est déjà complète.')
+    await load()
+  } catch (e) {
+    toasts.error(apiErrorMessage(e))
+  } finally {
+    syncing.value = false
+  }
+}
 
 // Prix de base de la grille (enregistré avec les autres prix)
 const baseSaved = ref(null)
@@ -262,7 +361,7 @@ const pickupOn = (z) => z.is_pickup && !parentPickupOff(z)
 // Prix au départ : trajet départ → arrivée, sinon prix de base (comme le calcul du serveur)
 const departure = ref(null)
 const cell = (a, b) => resolveRoute(a, b, { byId: byId.value, prices: prices.value, own: {}, base: baseDraft.value })
-const delivered = computed(() => communes.value.filter((c) => c.is_active && !interior(c)))
+const delivered = computed(() => abidjan.value.filter((c) => c.is_active))
 const overview = delivered
 function progress(c) {
   return { done: delivered.value.filter((d) => cell(c, d).kind === 'route').length, total: delivered.value.length }
@@ -426,5 +525,8 @@ function warnBeforeUnload(event) {
 window.addEventListener('beforeunload', warnBeforeUnload)
 onBeforeUnmount(() => window.removeEventListener('beforeunload', warnBeforeUnload))
 
-onMounted(load)
+onMounted(() => {
+  load()
+  loadInteriorRates()
+})
 </script>

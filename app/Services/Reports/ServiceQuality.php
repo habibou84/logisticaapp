@@ -3,6 +3,7 @@
 namespace App\Services\Reports;
 
 use App\Enums\BillingFormula;
+use App\Enums\DeliveryDelay;
 use App\Enums\OrderEventType;
 use App\Enums\OrderStatus;
 use App\Models\BillingPlan;
@@ -46,7 +47,7 @@ class ServiceQuality
 
         $delivered = $orders()->where('status', OrderStatus::Delivered)->whereBetween('delivered_at', [$start->utc(), $end->utc()])
             ->get(['id', 'merchant_id', 'delivery_zone_id', 'delivery_courier_id', 'activity', 'shipment_type', 'shipment_quantity',
-                'delivery_scheduled_date', 'created_at', 'delivered_at', 'picked_up_at', 'internal_due_at', 'billing_plan_id']);
+                'delivery_scheduled_date', 'created_at', 'delivered_at', 'picked_up_at', 'internal_due_at', 'billing_plan_id', 'delivery_delay', 'billing_basis']);
         $activityOf = fn (Order $o) => DailyActivity::activityOf($o);
         $localDay = fn ($moment) => CarbonImmutable::parse($moment)->setTimezone($tz)->toDateString();
 
@@ -63,6 +64,11 @@ class ServiceQuality
                 'by_client' => $this->rates($delivered, fn (Order $o) => $o->merchant_id, $onTime, fn ($k) => $names['merchants'][$k] ?? 'Client'),
                 'by_zone' => $this->rates($delivered, fn (Order $o) => $o->delivery_zone_id, $onTime, fn ($k) => $names['zones'][$k] ?? 'Sans zone'),
                 'by_courier' => $this->rates($delivered, fn (Order $o) => $o->delivery_courier_id, $onTime, fn ($k) => $names['couriers'][$k] ?? 'Sans livreur'),
+                // Par délai vendu (24 h, 48 h, 72 h) ; les villes de l'intérieur à part
+                'by_delay' => $this->rates(
+                    $delivered->filter(fn (Order $o) => $o->delivery_delay !== null || $o->billing_basis === 'interior'),
+                    fn (Order $o) => $o->billing_basis === 'interior' ? 'interior' : $o->delivery_delay->value, $onTime,
+                    fn ($k) => $k === 'interior' ? 'Intérieur' : (DeliveryDelay::tryFrom((string) $k)?->label() ?? (string) $k)),
                 'total' => $delivered->count(),
                 'on_time' => $delivered->filter($onTime)->count(),
                 'rate' => $this->rate($delivered->filter($onTime)->count(), $delivered->count()),

@@ -256,6 +256,7 @@ Route::prefix('v1')->name('v1.')->group(function () {
 
         // Référentiels
         Route::get('zones', [ZoneController::class, 'index'])->name('zones.index');
+        Route::get('zones/cities', [ZoneController::class, 'cities'])->name('zones.cities');
         Route::get('incident-reasons', [ReferenceController::class, 'incidentReasons'])->name('incident-reasons.index');
         Route::get('cancel-reasons', [ReferenceController::class, 'cancelReasons'])->name('cancel-reasons.index');
         Route::get('recipients', [ReferenceController::class, 'recipients'])->name('recipients.index');
@@ -279,6 +280,7 @@ Route::prefix('v1')->name('v1.')->group(function () {
         // Zones et dépôts
         Route::middleware('can:zones.manage')->group(function () {
             Route::post('zones', [ZoneController::class, 'store'])->name('zones.store');
+            Route::post('zones/standard', [ZoneController::class, 'sync'])->name('zones.sync');
             Route::patch('zones/{zone}', [ZoneController::class, 'update'])->name('zones.update');
             Route::delete('zones/{zone}', [ZoneController::class, 'destroy'])->name('zones.destroy');
             Route::post('hubs', [HubController::class, 'store'])->name('hubs.store');
@@ -692,6 +694,13 @@ Route::prefix('v1')->name('v1.')->group(function () {
             Route::get('clients', 'clients')->name('clients');
             Route::get('pivot', 'pivot')->name('pivot');
         });
+        // Statistiques de direction : les activités côte à côte, points à décider
+        Route::get('stats/direction', [StatisticsController::class, 'direction'])->middleware('can:direction.view')->name('stats.direction');
+        Route::get('stats/direction/objectives', [StatisticsController::class, 'directionObjectives'])->middleware('can:direction.view')->name('stats.direction.objectives');
+        Route::put('stats/direction/objectives', [StatisticsController::class, 'saveDirectionObjectives'])->middleware('can:direction.view')->name('stats.direction.objectives.save');
+        Route::get('stats/direction/teams', [StatisticsController::class, 'directionTeams'])->middleware('can:direction.view')->name('stats.direction.teams');
+        Route::get('stats/direction/{activity}', [StatisticsController::class, 'directionActivity'])->whereIn('activity', ['ecommerce', 'distribution', 'mad'])
+            ->middleware('can:direction.view')->name('stats.direction.activity');
         // Intégrations : Excel, lien Google Sheets, point par e-mail ; rapports mensuels des clients
         Route::get('stats/export', [StatsIntegrationController::class, 'export'])->middleware('throttle:20,1')->name('stats.export');
         Route::get('stats/feed-link', [StatsIntegrationController::class, 'feedLink'])->name('stats.feed-link');

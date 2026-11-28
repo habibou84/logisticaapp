@@ -25,11 +25,13 @@ class PreprodGateTest extends TestCase
 
     public function test_every_page_asks_for_the_access_code(): void
     {
-        $this->get('/')->assertUnauthorized()->assertSee('Saisissez le code d\'accès', false)
+        $this->get('/')->assertUnauthorized()->assertSee('name="code"', false)
             ->assertHeader('Cache-Control')->assertHeader('X-Robots-Tag', 'noindex, nofollow');
-        $this->get('/admin')->assertUnauthorized()->assertSee('Préproduction');
+        // Seulement la case du code : ni nom d'application, ni mention de la préproduction
+        $this->get('/admin')->assertUnauthorized()->assertSee('name="code"', false)
+            ->assertDontSee('Jibiat')->assertDontSee('Préproduction')->assertDontSee('<h1', false);
         $this->getJson('/api/v1/auth/me')->assertForbidden()
-            ->assertJson(['message' => 'Préproduction : saisissez le code d\'accès.']);
+            ->assertJson(['message' => 'Code d\'accès requis.']);
     }
 
     public function test_the_right_code_opens_the_site_for_thirty_days(): void

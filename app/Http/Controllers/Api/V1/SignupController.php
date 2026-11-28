@@ -40,7 +40,7 @@ class SignupController extends Controller
             'open' => $open,
             'zones' => $open
                 ? Zone::forCompany($company->id)->active()->where('is_shipping', false)->with('parent')->orderBy('name')->get()
-                    ->map(fn (Zone $z) => ['id' => $z->id, 'name' => $z->parent ? "{$z->name} ({$z->parent->name})" : $z->name])
+                    ->map(fn (Zone $z) => ['id' => $z->id, 'parent_id' => $z->parent_id, 'short_name' => $z->name, 'name' => $z->parent ? "{$z->name} ({$z->parent->name})" : $z->name])
                     ->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)->values()
                 : [],
         ]]);

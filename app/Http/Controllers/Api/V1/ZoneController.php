@@ -7,6 +7,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\V1\ZoneResource;
 use App\Models\Merchant;
 use App\Models\Zone;
+use App\Services\Zones\PlaceList;
+use App\Services\Zones\StandardZones;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -32,6 +34,23 @@ class ZoneController extends Controller
         return ZoneResource::collection($zones);
     }
 
+    /**
+     * Complète les zones avec la liste des lieux (communes, quartiers, villes) : lieux manquants ajoutés, zones du même
+     * nom rattachées. Rien n'est retiré ni modifié.
+     */
+    public function sync(Request $request, StandardZones $standard): JsonResponse
+    {
+        $counts = $standard->sync($request->user()->company);
+
+        return response()->json(['data' => $counts]);
+    }
+
+    /** Villes de l'intérieur de la liste des lieux (tarifs de la distribution et de la MAD) */
+    public function cities(): JsonResponse
+    {
+        return response()->json(['data' => PlaceList::interiorCities()]);
+    }
+
     public function store(Request $request): ZoneResource
     {
         $data = $request->validate($this->rules($request));
@@ -48,6 +67,11 @@ class ZoneController extends Controller
             throw new BusinessRuleException("{$zone->name} a des quartiers : elle ne peut pas être placée dans une autre commune.", 'parent_id');
         }
 
+        // Lieu de la liste : son nom et sa place viennent de la liste
+        if ($zone->isStandard() && ((isset($data['name']) && $data['name'] !== $zone->name) || (array_key_exists('parent_id', $data) && $data['parent_id'] !== $zone->parent_id))) {
+            throw new BusinessRuleException("{$zone->name} vient de la liste des lieux : son nom et sa commune ne se changent pas.", 'name');
+        }
+
         $zone->update($data);
 
         return ZoneResource::make($zone->load('parent'));
@@ -60,6 +84,9 @@ class ZoneController extends Controller
      */
     public function destroy(Zone $zone): JsonResponse
     {
+        if ($zone->isStandard()) {
+            throw new BusinessRuleException("{$zone->name} vient de la liste des lieux : décochez « On livre » si vous n'y livrez pas.");
+        }
         $orders = DB::table('orders')->where(fn ($q) => $q->where('pickup_zone_id', $zone->id)->orWhere('delivery_zone_id', $zone->id))->count();
         $blockers = array_filter([
             $zone->children()->count() ? $zone->children()->count().' quartier(s)' : null,

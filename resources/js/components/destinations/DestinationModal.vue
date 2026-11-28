@@ -5,10 +5,8 @@
         <div><label class="label" for="ds-acr">Sigle</label><input id="ds-acr" v-model="form.acronym" class="input uppercase" maxlength="60" placeholder="ITWA"></div>
         <div><label class="label" for="ds-name">Nom</label><input id="ds-name" v-model="form.name" class="input" required maxlength="255"></div>
       </div>
-      <div class="grid grid-cols-2 gap-3">
-        <div><label class="label" for="ds-zone">Commune</label><ZoneSelect id="ds-zone" v-model="form.zone_id" :zones="zones" /></div>
-        <div><label class="label" for="ds-district">Quartier</label><input id="ds-district" v-model="form.district" class="input" maxlength="120"></div>
-      </div>
+      <CommuneQuartier id="ds-lieu" v-model="form.zone_id" :zones="zones" />
+      <p v-if="form.district && !quartierChosen" class="-mt-1 text-xs text-slate-600">Quartier noté auparavant : {{ form.district }}</p>
       <div><label class="label" for="ds-address">Adresse</label><textarea id="ds-address" v-model="form.address" rows="2" class="input" /></div>
       <div><label class="label" for="ds-landmark">Repère</label><input id="ds-landmark" v-model="form.landmark" class="input" maxlength="255"></div>
 
@@ -79,10 +77,10 @@
 
 <script setup>
 import Icone from '../ui/Icone.vue'
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import http, { apiErrorMessage } from '../../bootstrap/axios'
 import Modal from '../Modal.vue'
-import ZoneSelect from '../ZoneSelect.vue'
+import CommuneQuartier from '../CommuneQuartier.vue'
 import { dateTime, mapsLink } from '../../utils/format'
 import { confirmDialog } from '../../composables/useDialog'
 
@@ -93,6 +91,8 @@ const FIELDS = ['acronym', 'name', 'zone_id', 'district', 'address', 'landmark',
 const SOURCES = { courier: 'confirmée par un livreur', staff: 'posée par l\'équipe' }
 const OUTCOMES = { replaced: ['retenue', 'bg-emerald-100 text-emerald-800'], kept: ['confirme', 'bg-slate-100'], conflict: ['écart', 'bg-red-100 text-red-800'], rejected: ['refusée', 'bg-slate-100'] }
 const form = ref({})
+// Quartier pris dans la liste (sinon, le quartier saisi à la main autrefois reste affiché)
+const quartierChosen = computed(() => !!props.zones.find((z) => z.id === form.value.zone_id)?.parent_id)
 const validated = ref(false)
 const busy = ref(false)
 const error = ref('')

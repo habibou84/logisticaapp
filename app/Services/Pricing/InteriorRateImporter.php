@@ -7,9 +7,12 @@ use App\Exceptions\BusinessRuleException;
 use App\Models\Company;
 use App\Models\InteriorRate;
 use App\Models\Zone;
+use App\Services\Zones\PlaceList;
+use App\Services\Zones\StandardZones;
 use DateTimeInterface;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Jibiat\Socle\Places\Places;
 use OpenSpout\Reader\CSV\Options as CsvOptions;
 use OpenSpout\Reader\CSV\Reader as CsvReader;
 use OpenSpout\Reader\XLSX\Reader as XlsxReader;
@@ -71,9 +74,9 @@ class InteriorRateImporter
 
         // Grille commune, ou prix négociés d'un client
         $existing = InteriorRate::forCompany($company->id)->grid($merchantId)->get()->keyBy(fn (InteriorRate $r) => ClientPricing::cityKey($r->city).'|'.$r->delivery_delay->value);
-        $zoneCities = Zone::forCompany($company->id)->pluck('city')->map(fn ($c) => ClientPricing::cityKey($c))->unique()->all();
-        $newCities = collect($valid)->pluck('city')->unique(fn ($c) => ClientPricing::cityKey($c))
-            ->reject(fn ($c) => in_array(ClientPricing::cityKey($c), $zoneCities, true))->values()->all();
+        // Villes à ouvrir : sans zone livrée (zone créée, ou ville de la liste des lieux rouverte)
+        $zoneCities = Zone::forCompany($company->id)->where('is_active', true)->pluck('city')->map(fn ($c) => ClientPricing::cityKey($c))->unique()->all();
+        $newCities = collect($valid)->pluck('city')->unique(fn ($c) => ClientPricing::cityKey($c))->reject(fn ($c) => in_array(ClientPricing::cityKey($c), $zoneCities, true))->values()->all();
 
         $report = [
             'rows' => count($rows),
@@ -106,16 +109,29 @@ class InteriorRateImporter
     }
 
     /**
-     * Zone de livraison de la ville (créée au besoin) : choisie sur la course pour livrer à l'intérieur.
+     * Zone de livraison de la ville : celle de la liste des lieux (rouverte si elle était masquée), sinon créée.
+     * Choisie sur la course pour livrer à l'intérieur.
      */
     public static function ensureZone(int $companyId, string $city): Zone
     {
-        $existing = Zone::forCompany($companyId)->get()->first(fn (Zone $z) => ClientPricing::cityKey($z->city) === ClientPricing::cityKey($city));
+        $zone = StandardZones::cityZone($companyId, $city)
+            ?? Zone::forCompany($companyId)->get()->first(fn (Zone $z) => ClientPricing::cityKey($z->city) === ClientPricing::cityKey($city));
+        if ($zone !== null) {
+            if (! $zone->is_active) {
+                $zone->update(['is_active' => true]);
+            }
 
-        return $existing ?? Zone::create([
+            return $zone;
+        }
+
+        $place = collect(PlaceList::all())->first(fn (array $p) => $p['type'] === Places::CITY && ClientPricing::cityKey($p['name']) === ClientPricing::cityKey($city));
+
+        return Zone::create([
             'company_id' => $companyId,
-            'name' => $city,
-            'city' => $city,
+            'place_code' => $place['code'] ?? null,
+            'name' => $place['name'] ?? $city,
+            'city' => $place['name'] ?? $city,
+            'is_pickup' => false,
             'sort_order' => (int) Zone::forCompany($companyId)->max('sort_order') + 1,
         ]);
     }

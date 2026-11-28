@@ -46,7 +46,7 @@ class PublicConnectController extends Controller
             'company' => ['name' => $company->name, 'slug' => $company->slug],
             'accepts' => $company->merchant_signup ? 'signup' : 'request',
             'zones' => $company->merchant_signup ? [] : Zone::forCompany($company->id)->active()->where('is_shipping', false)->with('parent')->get()
-                ->map(fn (Zone $z) => ['id' => $z->id, 'name' => $z->parent ? "{$z->name} ({$z->parent->name})" : $z->name])
+                ->map(fn (Zone $z) => ['id' => $z->id, 'parent_id' => $z->parent_id, 'short_name' => $z->name, 'name' => $z->parent ? "{$z->name} ({$z->parent->name})" : $z->name])
                 ->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)->values(),
         ]]);
     }
